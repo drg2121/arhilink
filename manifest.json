@@ -1,8 +1,6 @@
 {
   "name": "ArhiLink",
   "short_name": "ArhiLink",
-  "start_url": "./",
-  "scope": "./",
   "display": "standalone",
   "background_color": "#15161c",
   "theme_color": "#15161c",
