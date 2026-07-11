@@ -1404,19 +1404,36 @@ function pushRepMaintain(){try{
  if(_nflag("rp1_"+ym)===sig)return;_nset("rp1_"+ym,sig);
  pushQueue({action:"schedule",groups:[{prefix:"alk_rep1_"+ym,items:[{key:"alk_rep1_"+ym,at:nm.getTime(),to:to,title:"Raportul de activitate",body:"Completează raportul pentru "+monthName(ym)+" — Arhivă → Ale mele."}]}]});
 }catch(e){}}
+/* --- iPhone: notificările merg doar din aplicația instalată pe ecranul principal --- */
+function _isIOS(){try{return /iPhone|iPad|iPod/i.test(navigator.userAgent)||(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1);}catch(e){return false;}}
+function _isInstalled(){try{return (window.navigator.standalone===true)||(window.matchMedia&&window.matchMedia("(display-mode: standalone)").matches);}catch(e){return false;}}
+function _pushNeedsInstall(){return _isIOS()&&!_isInstalled();}
+function pushIosHelp(){sheet("","Notificări pe iPhone",'<div class="muted" style="margin:0 2px 12px">Pe iPhone, notificările funcționează doar din aplicația instalată pe ecranul principal (iOS 16.4+):</div>'
+ +'<div style="line-height:1.9;font-size:14px;margin:0 2px">'
+ +'<b>1.</b> Jos în Safari apasă <b>Partajează</b> (pătratul cu săgeată în sus)<br>'
+ +'<b>2.</b> Alege <b>„Adaugă la ecranul principal"</b> → Adaugă<br>'
+ +'<b>3.</b> Deschide <b>ArhiLink de pe iconița nouă</b><br>'
+ +'<b>4.</b> Acolo: Setări → Notificări → <b>Activează</b> → Permite</div>'
+ +'<div class="hint" style="margin-top:14px">Gata — temele și reamintirile vin apoi direct pe telefon, chiar și cu aplicația închisă.</div>');}
 /* --- cardul „Notificări" pentru rolurile fără drept de administrare --- */
 function _setLimNotif(){var h='<div class="group gp"><h2>Notificări</h2>';
  if(!pushReady())return h+'<div class="muted">Notificările push nu sunt configurate încă de administrator. Reamintirile locale apar la deschiderea aplicației.</div></div>';
- if(notifPerm()==="granted"){h+='<div class="muted">Notificările push sunt <b>active</b> pe acest dispozitiv'+(myPushEmail()?' pentru <b>'+esc(myPushEmail())+'</b>':'')+' — teme noi, reamintirea din ajun și raportul vin direct pe telefon, chiar și cu aplicația închisă.</div><button class="btn ghost sm" style="width:100%;margin-top:10px" onclick="pushTestBtn()">Trimite un test</button>';}
+ var em=myPushEmail();
+ if(notifPerm()==="granted"){h+='<div class="muted">Notificările push sunt <b>active</b> pe acest dispozitiv'+(em?' pentru <b>'+esc(em)+'</b>':'')+' — teme noi, reamintirea din ajun și raportul vin direct pe telefon, chiar și cu aplicația închisă.</div><button class="btn ghost sm" style="width:100%;margin-top:10px" onclick="pushTestBtn()">Trimite un test</button>';}
+ else if(_pushNeedsInstall()){h+='<div class="muted">Pe iPhone, notificările merg din aplicația <b>instalată pe ecranul principal</b> — durează 30 de secunde.</div><button class="btn pri sm" style="width:100%;margin-top:10px" onclick="pushIosHelp()">Cum le activez pe iPhone</button>';}
  else{h+='<div class="muted">Primești teme noi, reamintiri în ajunul întrunirii și reamintirea raportului direct pe telefon — chiar și cu aplicația închisă.</div>';
   h+=(notifPerm()==="denied")?'<div class="gatetip" style="margin-top:10px">Ai blocat notificările din browser — reactivează-le din setările paginii (lacătul de lângă adresă), apoi revino aici.</div>':'<button class="btn pri sm" style="width:100%;margin-top:10px" onclick="notifAsk()">Activează notificările pe acest dispozitiv</button>';}
- if(!myPushEmail())h+='<div class="gatetip" style="margin-top:10px">Contul tău nu are e-mail în fișa vestitorului — cere administratorului să-l completeze (e-mailul e cheia notificărilor).</div>';
- h+='<div class="muted" style="margin-top:8px;font-size:11.5px">Pe iPhone: adaugă întâi ArhiLink pe ecranul principal (Partajează → Adaugă la ecranul principal), apoi activează notificările din aplicația instalată.</div></div>';
+ if(!em)h+='<div class="gatetip" style="margin-top:10px;cursor:pointer" onclick="meContact()">Nu ai e-mail în fișă — <b>apasă aici</b> și completează-l în „Datele mele de contact" (e-mailul e cheia notificărilor).</div>';
+ h+='</div>';
  return h;}
 /* --- îndemn discret în „Profilul meu" cât timp notificările nu sunt activate --- */
-function _pushNudge(){try{if(!pushReady()||notifPerm()!=="default"||!myPushEmail())return "";
- return '<div class="group gp" style="cursor:pointer" onclick="notifAsk()"><div class="rowflex" style="gap:10px;align-items:center"><span style="font-size:20px">🔔</span><div><b>Activează notificările</b><div class="muted" style="font-size:12px">Teme noi și reamintiri direct pe telefon — chiar și cu aplicația închisă. Apasă aici.</div></div></div></div>';}catch(e){return "";}}
-
+function _pushNudge(){try{if(!pushReady())return "";
+ var em=myPushEmail();
+ var card=function(t,sub,act){return '<div class="group gp" style="cursor:pointer" onclick="'+act+'"><div class="rowflex" style="gap:10px;align-items:center"><span style="font-size:20px">🔔</span><div><b>'+t+'</b><div class="muted" style="font-size:12px">'+sub+' Apasă aici.</div></div></div></div>';};
+ if(_pushNeedsInstall()&&notifPerm()!=="granted")return card("Primește notificări pe iPhone","Adaugă ArhiLink pe ecranul principal și activează-le — vezi pașii.","pushIosHelp()");
+ if(notifPerm()==="default"&&em)return card("Activează notificările","Teme noi și reamintiri direct pe telefon — chiar și cu aplicația închisă.","notifAsk()");
+ if(!em&&notifPerm()!=="denied")return card("Completează-ți e-mailul pentru notificări","E-mailul din „Datele mele de contact” e cheia notificărilor.","meContact()");
+ return "";}catch(e){return "";}}
 function _mwPushBtn(){return (pushReady()&&pushOn("t"))?'<button class="btn ghost sm" style="width:100%;margin-top:8px" onclick="mwPush()">🔔 Trimite doar notificări push (fără e-mail)</button>':'';}
 
 
@@ -1795,7 +1812,7 @@ function renderSet(){if(!_isAdmin()){renderSetLimited();return;}$("#fab").style.
     <label class="fl">URL funcție push (Cloud Functions — se termină în /api)</label><input class="fld" value="${esc((st.push&&st.push.url)||"")}" placeholder="https://europe-west1-famlink-push.cloudfunctions.net/api" onchange="S.settings.push=Object.assign({},PUSH(),{url:this.value.trim()});save();renderSet()">
     <label class="fl" style="margin-top:8px">Secret (PUSH_SECRET — identic cu functions/.env de pe server)</label>
     <div class="rowflex" style="gap:8px"><input class="fld" id="pshSec" type="password" value="${esc((st.push&&st.push.secret)||"")}" onchange="S.settings.push=Object.assign({},PUSH(),{secret:this.value.trim()});save();renderSet()"><button class="btn ghost sm" style="width:auto" onclick="var i=document.getElementById('pshSec');i.type=i.type==='password'?'text':'password'">Arată</button></div>
-    ${pushReady()?`<div class="two" style="margin-top:10px">${notifPerm()==="granted"?`<button class="btn ghost sm" onclick="fcmRegister(true);toast('Dispozitivul a fost reînregistrat ✓')">Reînregistrează dispozitivul</button>`:`<button class="btn pri sm" onclick="notifAsk()">Activează pe acest dispozitiv</button>`}<button class="btn ghost sm" onclick="pushTestBtn()">Trimite un test</button></div>
+    ${pushReady()?`<div class="two" style="margin-top:10px">${notifPerm()==="granted"?`<button class="btn ghost sm" onclick="fcmRegister(true);toast('Dispozitivul a fost reînregistrat ✓')">Reînregistrează dispozitivul</button>`:(_pushNeedsInstall()?`<button class="btn pri sm" onclick="pushIosHelp()">Pe iPhone: instalează întâi</button>`:`<button class="btn pri sm" onclick="notifAsk()">Activează pe acest dispozitiv</button>`)}<button class="btn ghost sm" onclick="pushTestBtn()">Trimite un test</button></div>
     <div class="hint" style="margin-top:8px">${myPushEmail()?("Acest dispozitiv primește notificările pentru <b>"+esc(myPushEmail())+"</b>. Fiecare membru le activează pe dispozitivul lui (iPhone: întâi „Adaugă la ecranul principal”)."):"Contul tău nu are e-mail în fișa vestitorului asociat — completează-l ca să primești și tu push."}</div>
     <label class="fl" style="margin-top:10px">Ce se trimite (valabil pentru toți)</label>
     <label class="famrow"><input type="checkbox" ${pushOn("t")?"checked":""} onchange="_pushTog('t',this.checked)"><span>Teme noi, la „E-mail teme" / „Doar push"</span></label>
