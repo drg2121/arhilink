@@ -481,7 +481,7 @@ Object.assign(IC,{
  book:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg>',
  mark:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15.5 4.5l4 4-9.5 9.5H6v-4z"/><path d="M12.5 7.5l4 4M5 21h14"/></svg>'
 });
-const VERSION="2.59.1";
+const VERSION="2.60.0";
 const SEED_WEEKS=[];
 const SEED_WEEKS_PRE=[];
 const SEED_WEEKS_POST=[];
@@ -2057,10 +2057,243 @@ async function scrDel(id){if(!_isAdmin())return;var m=filesAll().find(function(x
  try{var gid=S.settings.gh&&S.settings.gh.gist3;if(gid){var files={};files[m.gf]=null;await _gfetch("https://api.github.com/gists/"+gid,{method:"PATCH",headers:_scrHdr(),body:JSON.stringify({files:files})},0);}}catch(e){}
  S.files=filesAll().filter(function(x){return x.id!==id;});logAct("Document șters: "+m.n);save();if(tab==="arh")renderArh();toast("Șters");}
 function _scrRow(f){return '<div class="a-rrow"><button class="a-rmain" onclick="scrOpen(\''+f.id+'\')"><span class="gtag" style="min-width:34px;text-align:center;margin:0">'+_scrIcon(f.ext)+'</span><span class="a-rinfo"><span class="nm">'+esc(f.n)+'</span><span class="mt">'+_fmtSz(f.sz)+(f.by?' · '+esc(f.by):'')+' · '+fmtDT(f.t)+'</span></span></button><button class="a-rs21 dl" onclick="scrDownload(\''+f.id+'\')" title="Descarcă">'+IC.dl+'</button><button class="a-rs21 del" onclick="scrDel(\''+f.id+'\')" title="Șterge">'+IC.trash+'</button></div>';}
-function arhScrHtml(){ensureGrpCSS();var fs=filesAll().slice().sort(function(a,b){return b.ym.localeCompare(a.ym)||b.t-a.t;});
- var h='<div class="ebar2"><button class="miniact" style="flex:1;justify-content:center" onclick="scrAdd()">'+IC.plus+' Adaugă document</button></div>';
+/* ============ FOI DE ANUNȚURI (Arhivă › Scrisori) ============
+   Compui o pagină A4 portret cu antet și mai multe anunțuri scurte (poze sau pagini de PDF),
+   fiecare redimensionabil, ca să încapă 2-3 pe aceeași foaie. Foaia rămâne editabilă:
+   în S.anunt stau doar metadatele (titlu, ordine, lățimi), iar imaginile urcă în același
+   gist privat ca documentele — localStorage n-ar duce pozele. */
+function anAll(){S.anunt=S.anunt||[];return S.anunt;}
+var _anImg={};            /* cache pe sesiune: gf -> data URL */
+var _anCur=null;          /* foaia deschisă în editor */
+var AN_CW=184,AN_CH=271;  /* zona utilă a paginii A4, în mm (210-13-13 / 297-14-12) */
+var AN_HD=17;             /* antetul: titlu + lună + linie */
+
+function ensureAnCSS(){if(document.getElementById("ancss"))return;var st=document.createElement("style");st.id="ancss";st.textContent=_anPageCSS()
+ +".anpv{position:relative;width:100%;overflow:hidden;background:var(--surf2);border:1px solid var(--bd);border-radius:12px}"
+ +".anpv .anpg{transform-origin:top left;box-shadow:0 1px 6px rgba(0,0,0,.14)}"
+ +".anrow{display:flex;align-items:center;gap:11px;background:var(--bg);border:1px solid var(--bd);border-radius:12px;padding:10px 11px;margin-bottom:9px}"
+ +".anth{width:44px;height:44px;flex:0 0 auto;border:1px solid var(--bd);border-radius:8px;background:#fff center/contain no-repeat}"
+ +".anrw{flex:1;min-width:0}"
+ +".anrt{font-size:13.5px;font-weight:700;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}"
+ +".anpre{display:flex;gap:5px;margin:6px 0 4px}"
+ +".anpre button{flex:1;border:1px solid var(--bd);background:var(--surf);color:var(--ink2);border-radius:8px;padding:5px 4px;font-size:11.5px;font-weight:700;cursor:pointer}"
+ +".anpre button.on{background:var(--accsoft);border-color:var(--acc);color:var(--acc)}"
+ +".anrng{width:100%;accent-color:var(--acc);margin:0}"
+ +".anbtns{display:flex;flex-direction:column;gap:5px;flex:0 0 auto}"
+ +".anbtns button{border:1px solid var(--bd);background:var(--surf);color:var(--ink2);border-radius:8px;width:30px;height:26px;font-size:13px;line-height:1;cursor:pointer;padding:0}"
+ +".anbtns button.del{color:var(--maroon);border-color:var(--maroon)}"
+ +".anpick{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:9px}"
+ +".anpick label{border:1px solid var(--bd);border-radius:10px;padding:6px;background:var(--bg);cursor:pointer;text-align:center;font-size:11.5px}"
+ +".anpick img{width:100%;background:#fff;border-radius:6px;display:block;margin-bottom:5px}"
+ +".anpick input{accent-color:var(--acc)}";
+ document.head.appendChild(st);}
+/* stilul paginii — identic în previzualizare și în PDF */
+function _anPageCSS(){return ""
++".anpg{width:210mm;padding:14mm 13mm 12mm;background:#fff;color:#14171c;font-family:'Carlito',Arial,sans-serif;font-size:10.5pt;line-height:1.45;box-sizing:border-box}"
++".anhd{text-align:center;font-weight:700;font-size:15pt;letter-spacing:.5px;text-transform:uppercase;margin:0}"
++".ansub{text-align:center;font-size:10.5pt;color:#5b626c;margin-top:1mm}"
++".anrule{height:2px;background:#C77F1A;margin:3mm 0 5mm}"
++".anit{margin:0;text-align:center}"
++".anit img{display:block;margin:0 auto;max-width:100%}"
++".ancap{font-size:10.5pt;font-weight:700;margin:0 0 1.5mm}"
++".ansep{border:0;border-top:1px solid #d7dbe0;margin:4mm 0}";}
+
+/* ---- imagini: aducere, micșorare, PDF → imagine ---- */
+function _anShrink(dataUrl,maxW){return new Promise(function(res){try{var im=new Image();
+ im.onload=function(){try{var w=im.naturalWidth||im.width,h=im.naturalHeight||im.height;
+  var sc=Math.min(1,maxW/(w||maxW)),cw=Math.max(1,Math.round(w*sc)),ch=Math.max(1,Math.round(h*sc));
+  var c=document.createElement("canvas");c.width=cw;c.height=ch;var x=c.getContext("2d");
+  if(!x){res({url:dataUrl,ar:h/w});return;}
+  x.fillStyle="#fff";x.fillRect(0,0,cw,ch);x.drawImage(im,0,0,cw,ch);
+  res({url:c.toDataURL("image/jpeg",0.82),ar:h/w});}catch(e){res({url:dataUrl,ar:1.414});}};
+ im.onerror=function(){res(null);};im.src=dataUrl;}catch(e){res(null);}});}
+var AN_PDFJS="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/";
+function _pdfjs(){if(window.pdfjsLib)return Promise.resolve(window.pdfjsLib);
+ return loadScript(AN_PDFJS+"build/pdf.min.js").then(function(){
+  var L=window.pdfjsLib;if(!L)throw new Error("pdf.js");
+  try{L.GlobalWorkerOptions.workerSrc=AN_PDFJS+"build/pdf.worker.min.js";}catch(e){}
+  return L;});}
+/* toate paginile unui PDF, ca imagini */
+async function _anPdfPages(file){var L=await _pdfjs();
+ var buf=await file.arrayBuffer();
+ /* cmaps + fonturile standard: PDF-urile care nu-și încorporează fontul ies corect */
+ var doc=await L.getDocument({data:new Uint8Array(buf),cMapUrl:AN_PDFJS+"cmaps/",cMapPacked:true,standardFontDataUrl:AN_PDFJS+"standard_fonts/"}).promise;
+ var out=[];
+ for(var p=1;p<=doc.numPages;p++){var pg=await doc.getPage(p);
+  var vp0=pg.getViewport({scale:1});
+  var sc=Math.min(3,1600/(vp0.width||1));           /* ~1600 px lățime: destul pentru tipar */
+  var vp=pg.getViewport({scale:sc});
+  var c=document.createElement("canvas");c.width=Math.round(vp.width);c.height=Math.round(vp.height);
+  var cx=c.getContext("2d");cx.fillStyle="#fff";cx.fillRect(0,0,c.width,c.height);
+  /* intent:"print" — altfel pdf.js randează prin requestAnimationFrame, care nu rulează
+     dacă utilizatorul comută pe altă aplicație în timpul conversiei, și randarea se blochează */
+  await pg.render({canvasContext:cx,viewport:vp,intent:"print"}).promise;
+  out.push({url:c.toDataURL("image/jpeg",0.85),ar:c.height/c.width,n:p});}
+ return out;}
+function _anFileImg(file){return new Promise(function(res,rej){var r=new FileReader();
+ r.onload=function(){_anShrink(String(r.result),1600).then(res);};r.onerror=rej;r.readAsDataURL(file);});}
+
+/* ---- adăugarea unui anunț ---- */
+function anAdd(){if(!_isAdmin())return;
+ return arhPickFile(".pdf,.jpg,.jpeg,.png,.webp,.gif").then(async function(f){if(!f)return;
+  if(f.size>12*1024*1024){toast("Fișierul are "+_fmtSz(f.size)+" — maxim 12 MB",6000);return;}
+  var ext=(f.name.indexOf(".")>=0?f.name.split(".").pop():"").toLowerCase();
+  try{
+   if(ext==="pdf"){toast("Citesc PDF-ul…");var pgs=await _anPdfPages(f);
+    if(!pgs.length){toast("PDF-ul nu are pagini");return;}
+    if(pgs.length===1){_anPush(pgs[0],f.name);return;}
+    _anPagePick(pgs,f.name);return;}
+   var im=await _anFileImg(f);
+   if(!im){toast("Nu am putut citi imaginea");return;}
+   _anPush(im,f.name);
+  }catch(e){toast("Nu am putut adăuga: "+((e&&e.message)||"eroare"),6000);}});}
+function _anPagePick(pgs,fname){window._anPgs=pgs;
+ var H='<div class="muted" style="margin:0 2px 12px">'+esc(fname)+' · '+pgs.length+' pagini — bifează ce vrei pe foaie</div>'
+  +'<div class="anpick">'+pgs.map(function(p,i){return '<label><img src="'+p.url+'"><input type="checkbox" class="anpk" value="'+i+'"> pag. '+p.n+'</label>';}).join("")+'</div>'
+  +'<div class="rowflex" style="gap:9px;margin-top:16px"><div class="spacer"></div><button class="btn ghost sm" style="width:auto" onclick="closeSheet()">Anulează</button>'
+  +'<button class="btn pri sm" style="width:auto" onclick="_anPagePickOk()">Adaugă</button></div>';
+ sheet("","Ce pagini adaugi?",H);}
+function _anPagePickOk(){var pgs=window._anPgs||[],sel=[].map.call(document.querySelectorAll(".anpk:checked"),function(c){return +c.value;});
+ if(!sel.length){toast("Bifează cel puțin o pagină");return;}
+ sel.forEach(function(i){if(pgs[i])_anPush(pgs[i],"",true);});
+ window._anPgs=null;anEdit(_anCur.id,true);}
+function _anPush(im,name,quiet){var id="i"+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+ var gf=id+"_anunt.b64";_anImg[gf]=im.url;
+ _anCur.items.push({id:id,gf:gf,ar:im.ar||1.414,w:100,cap:"",nw:1});
+ if(!quiet)anEdit(_anCur.id,true);}
+
+/* ---- împărțirea pe pagini: un anunț nu se taie niciodată în două ---- */
+function _anItemH(it){return AN_CW*(it.w/100)*(it.ar||1.414)+((it.cap||"").trim()?6:0);}
+function _anPaginate(items){var pages=[],cur=[],h=AN_HD;
+ items.forEach(function(it){var ih=_anItemH(it)+(cur.length?6:0);
+  if(cur.length&&h+ih>AN_CH){pages.push(cur);cur=[];h=AN_HD;ih=_anItemH(it);}
+  cur.push(it);h+=ih;});
+ if(cur.length||!pages.length)pages.push(cur);
+ return pages;}
+function anPagesHtml(sh,cls){var pages=_anPaginate(sh.items||[]);
+ return pages.map(function(list){
+  return '<div class="'+(cls||"")+' anpg">'
+   +'<div class="anhd">'+esc(sh.title||"Anunțuri")+'</div>'
+   +((sh.sub||"").trim()?('<div class="ansub">'+esc(sh.sub)+'</div>'):'')
+   +'<div class="anrule"></div>'
+   +list.map(function(it,i){return (i?'<hr class="ansep">':'')
+     /* aspect-ratio: înălțimea e cunoscută din prima, fără să aștepte imaginea — altfel
+        previzualizarea și împărțirea pe pagini se calculau pe o pagină încă goală */
+     +'<div class="anit">'
+     +((it.cap||"").trim()?('<div class="ancap">'+esc(it.cap)+'</div>'):'')
+     +'<img src="'+(_anImg[it.gf]||"")+'" style="width:'+it.w+'%;aspect-ratio:1/'+(+it.ar||1.414).toFixed(4)+'"></div>';}).join("")
+   +'</div>';});}
+
+/* ---- editorul ---- */
+async function anNew(){if(!_isAdmin())return;
+ var d=new Date();
+ _anCur={id:"an"+Date.now(),t:Date.now(),by:(_curUser()&&_curUser().n)||"",ym:curYM(),
+  title:"Anunțuri — "+((S.settings&&S.settings.cong)||""),sub:monthName(curYM()),items:[]};
+ anEdit(_anCur.id,true);}
+async function anOpen(id){if(!_isAdmin())return;var sh=anAll().find(function(x){return x.id===id;});if(!sh)return;
+ var need=(sh.items||[]).filter(function(it){return !_anImg[it.gf];});
+ if(need.length){toast("Aduc imaginile…");
+  try{var gid=(S.settings.gh&&S.settings.gh.gist3)||await _scrRecoverGist(need[0].gf);
+   if(!gid)throw new Error("gistul de documente lipsește");
+   var r=await _gfetch("https://api.github.com/gists/"+gid,{headers:_scrHdr()},0);
+   if(!r.ok)throw new Error("GitHub "+r.status);
+   var d=await r.json();
+   for(var i=0;i<need.length;i++){var f=d.files&&d.files[need[i].gf];if(!f)continue;
+    var b64=f.content;if(f.truncated&&f.raw_url){var r2=await _gfetch(f.raw_url,{},0);if(r2.ok)b64=await r2.text();}
+    _anImg[need[i].gf]="data:image/jpeg;base64,"+(b64||"").replace(/\s+/g,"");}
+  }catch(e){toast("Nu am putut aduce imaginile: "+((e&&e.message)||"eroare"),6000);}}
+ _anCur=JSON.parse(JSON.stringify(sh));anEdit(sh.id,true);}
+function anEdit(id,keep){if(!_isAdmin())return;ensureAnCSS();if(!_anCur)return;var sh=_anCur;
+ var rows=(sh.items||[]).map(function(it,i){
+  var pre=[[100,"Întreagă"],[50,"Jumătate"],[33,"O treime"]].map(function(p){
+   return '<button class="'+(it.w===p[0]?"on":"")+'" onclick="anSetW('+i+','+p[0]+')">'+p[1]+'</button>';}).join("");
+  return '<div class="anrow"><span class="anth" style="background-image:url('+(_anImg[it.gf]||"")+')"></span>'
+   +'<span class="anrw"><span class="anrt">Anunțul '+(i+1)+' · '+it.w+'%</span>'
+   +'<span class="anpre">'+pre+'</span>'
+   +'<input type="range" class="anrng" min="20" max="100" step="1" value="'+it.w+'" oninput="anSetW('+i+',+this.value,1)">'
+   +'<input class="fld" style="margin-top:6px;font-size:13px;padding:7px 9px" placeholder="titlu deasupra (opțional)" value="'+esc(it.cap||"").replace(/"/g,"&quot;")+'" oninput="anSetCap('+i+',this.value)">'
+   +'</span>'
+   +'<span class="anbtns"><button onclick="anMove('+i+',-1)" title="Mai sus">↑</button>'
+   +'<button onclick="anMove('+i+',1)" title="Mai jos">↓</button>'
+   +'<button class="del" onclick="anDelItem('+i+')" title="Scoate">×</button></span></div>';}).join("")
+  ||'<div class="empty" style="padding:18px 8px">Niciun anunț încă.<br><span class="muted">Apasă „Adaugă anunț" — poză sau PDF.</span></div>';
+ var saved=anAll().some(function(x){return x.id===sh.id;});
+ sheet("",saved?"Foaie de anunțuri":"Foaie de anunțuri nouă",
+  '<label class="fl" style="margin-top:0">Titlu</label><input class="fld" value="'+esc(sh.title||"").replace(/"/g,"&quot;")+'" oninput="_anCur.title=this.value;anPrev()">'
+ +'<label class="fl">Sub titlu (luna)</label><input class="fld" value="'+esc(sh.sub||"").replace(/"/g,"&quot;")+'" oninput="_anCur.sub=this.value;anPrev()">'
+ +'<div class="edsec">Anunțuri</div>'+rows
+ +'<button class="miniact" style="width:100%;justify-content:center;margin-top:2px" onclick="anAdd()">'+IC.plus+' Adaugă anunț (poză sau PDF)</button>'
+ +'<div class="edsec">Cum va arăta</div><div class="anpv" id="anPv"></div>'
+ +'<div class="rowflex" style="gap:9px;margin-top:18px">'
+ +(saved?'<button class="btn danger sm" style="width:auto" onclick="anDel(\''+sh.id+'\')">Șterge</button>':'')
+ +'<div class="spacer"></div><button class="btn ghost sm" style="width:auto" onclick="anPdf()">PDF</button>'
+ +'<button class="btn pri sm" style="width:auto" onclick="anSave()">Salvează</button></div>');
+ anPrev();}
+function anPrev(){var wrap=document.getElementById("anPv");if(!wrap||!_anCur)return;
+ wrap.innerHTML=anPagesHtml(_anCur).join('<div style="height:8px"></div>');
+ _anFit(wrap);
+ /* lățimea finală a foii se știe abia după așezarea în pagină (și se schimbă la rotirea
+    telefonului) — remăsurăm din ResizeObserver, cu setTimeout ca rezervă */
+ try{if(window.ResizeObserver&&!wrap._ro){wrap._ro=new ResizeObserver(function(){_anFit(wrap);});wrap._ro.observe(wrap);}}catch(e){}
+ setTimeout(function(){_anFit(wrap);},60);}
+function _anFit(wrap){if(!wrap||!wrap.isConnected)return;
+ var w=wrap.clientWidth;if(!w)return;
+ var k=w/(210*96/25.4),tot=0;
+ [].forEach.call(wrap.querySelectorAll(".anpg"),function(p){p.style.transform="scale("+k+")";tot+=p.offsetHeight*k+8;});
+ if(tot)wrap.style.height=Math.round(tot)+"px";}
+function anSetW(i,w,live){var it=_anCur.items[i];if(!it)return;it.w=Math.max(20,Math.min(100,w|0));
+ var r=document.querySelectorAll("#sheetBody .anrow")[i];
+ if(r){var t=r.querySelector(".anrt");if(t)t.textContent="Anunțul "+(i+1)+" · "+it.w+"%";
+  [].forEach.call(r.querySelectorAll(".anpre button"),function(b,bi){b.classList.toggle("on",it.w===[100,50,33][bi]);});
+  if(!live){var rg=r.querySelector(".anrng");if(rg)rg.value=it.w;}}
+ anPrev();}
+function anSetCap(i,v){if(_anCur.items[i]){_anCur.items[i].cap=v;anPrev();}}
+function anMove(i,d){var a=_anCur.items,j=i+d;if(!a[i]||j<0||j>=a.length)return;
+ var t=a[i];a[i]=a[j];a[j]=t;anEdit(_anCur.id,true);}
+function anDelItem(i){if(!_anCur.items[i])return;_anCur.items.splice(i,1);anEdit(_anCur.id,true);}
+function anPdf(){if(!_anCur||!(_anCur.items||[]).length){toast("Adaugă întâi un anunț");return;}
+ var fn=((_anCur.title||"Anunțuri").replace(/[\\/:*?"<>|]/g,"-").trim()||"Anunțuri")+".pdf";
+ arhPdfWindow(fn,anPagesHtml(_anCur,"page").join(""),_anPageCSS());}
+async function anSave(){if(!_isAdmin())return;if(!_anCur)return;
+ if(!(_anCur.items||[]).length){toast("Adaugă întâi un anunț");return;}
+ var neu=(_anCur.items||[]).filter(function(it){return it.nw;});
+ if(neu.length){toast("Salvez imaginile…");
+  try{var gid=await _scrGistId();var files={};
+   neu.forEach(function(it){files[it.gf]=({content:(_anImg[it.gf]||"").split(",")[1]||""});});
+   var r=await _gfetch("https://api.github.com/gists/"+gid,{method:"PATCH",headers:_scrHdr(),body:JSON.stringify({files:files})},0);
+   if(!r.ok)throw new Error("GitHub "+r.status);
+   neu.forEach(function(it){delete it.nw;});
+  }catch(e){toast("Nu am putut salva imaginile: "+((e&&e.message)||"eroare"),7000);return;}}
+ _anCur.u=Date.now();_anCur.by=(_curUser()&&_curUser().n)||_anCur.by||"";
+ var A=anAll(),i=A.findIndex(function(x){return x.id===_anCur.id;});
+ if(i>=0)A[i]=JSON.parse(JSON.stringify(_anCur));else A.push(JSON.parse(JSON.stringify(_anCur)));
+ logAct("Foaie de anunțuri salvată: "+(_anCur.title||""));save();closeSheet();
+ if(tab==="arh")renderArh();okSplash("Salvat",(_anCur.items.length)+" anunțuri pe "+_anPaginate(_anCur.items).length+" pagină/pagini");}
+async function anDel(id){if(!_isAdmin())return;var sh=anAll().find(function(x){return x.id===id;});if(!sh)return;
+ if(!confirm("Ștergi foaia „"+(sh.title||"")+"” și imaginile ei?"))return;
+ try{var gid=S.settings.gh&&S.settings.gh.gist3;
+  if(gid&&(sh.items||[]).length){var files={};sh.items.forEach(function(it){files[it.gf]=null;});
+   await _gfetch("https://api.github.com/gists/"+gid,{method:"PATCH",headers:_scrHdr(),body:JSON.stringify({files:files})},0);}
+ }catch(e){}
+ S.anunt=anAll().filter(function(x){return x.id!==id;});_anCur=null;
+ logAct("Foaie de anunțuri ștearsă: "+(sh.title||""));save();closeSheet();
+ if(tab==="arh")renderArh();toast("Ștearsă");}
+function anListHtml(){var A=anAll().slice().sort(function(a,b){return (b.u||b.t)-(a.u||a.t);});
+ var h='<div class="ebar2"><button class="miniact" style="flex:1;justify-content:center" onclick="anNew()">'+IC.plus+' Foaie de anunțuri</button></div>'
+  +'<div class="muted" style="margin:0 2px 12px;font-size:11.5px">Pui mai multe anunțuri scurte (poze sau pagini de PDF) pe aceeași foaie A4, fiecare cât de mare vrei. Foaia rămâne editabilă.</div>';
+ if(!A.length)return h;
+ return h+A.map(function(sh){var n=(sh.items||[]).length,pg=_anPaginate(sh.items||[]).length;
+  return '<div class="a-rrow"><button class="a-rmain" onclick="anOpen(\''+sh.id+'\')">'
+   +'<span class="gtag" style="min-width:34px;text-align:center;margin:0">A4</span>'
+   +'<span class="a-rinfo"><span class="nm">'+esc(sh.title||"Anunțuri")+'</span>'
+   +'<span class="mt">'+n+(n===1?" anunț":" anunțuri")+' · '+pg+(pg===1?" pagină":" pagini")+(sh.by?' · '+esc(sh.by):'')+' · '+fmtDT(sh.u||sh.t)+'</span></span></button>'
+   +'<button class="a-rs21 dl" onclick="anOpen(\''+sh.id+'\')" title="Deschide">'+IC.edit+'</button></div>';}).join("");}
+
+function arhScrHtml(){ensureGrpCSS();ensureAnCSS();var fs=filesAll().slice().sort(function(a,b){return b.ym.localeCompare(a.ym)||b.t-a.t;});
+ var h=anListHtml()+'<div class="edsec">Documente</div>'
+  +'<div class="ebar2"><button class="miniact" style="flex:1;justify-content:center" onclick="scrAdd()">'+IC.plus+' Adaugă document</button></div>';
  h+='<div class="muted" style="margin:0 2px 12px;font-size:11.5px">Scrisori, PDF-uri și documente Word — vizibile doar administratorilor (bătrâni). Maxim 4 MB/fișier. Apasă documentul ca să-l deschizi.</div>';
- if(!fs.length)return h+'<div class="empty" style="padding:26px 8px">Niciun document încă.<br><span class="muted">Apasă „Adaugă document" — alegi fișierul și luna la care aparține.</span></div>';
+ if(!fs.length)return h+'<div class="empty" style="padding:22px 8px">Niciun document încă.<br><span class="muted">Apasă „Adaugă document" — alegi fișierul și luna la care aparține.</span></div>';
  var years={};fs.forEach(function(f){var y=(f.ym||"").slice(0,4)||"—";(years[y]=years[y]||[]).push(f);});
  Object.keys(years).sort().reverse().forEach(function(y,yi){
    var byM={};years[y].forEach(function(f){(byM[f.ym]=byM[f.ym]||[]).push(f);});
@@ -2216,7 +2449,7 @@ function _broPublic(b){return {id:b.id,name:b.name,disp:b.disp,dispExp:b.dispExp
 function _shareFilter(u){var full=JSON.parse(JSON.stringify(S));
  if(!u||u.r==="admin"||u.r==="editor")return full;
  var mods=(u.mods&&u.mods.length)?u.mods:["vcp","arh"];var canArh=(u.r==="guest")||((u.r==="viewer")&&mods.indexOf("arh")>=0);
- var out=full;out.log=[];out.files=[];
+ var out=full;out.log=[];out.files=[];out.anunt=[];
  out.settings.users=(S.settings.users||[]).filter(function(x){return x.n===u.n;});
  delete out.settings.od;out.settings.passHash="";out.settings.gh=out.settings.gh||{};delete out.settings.gh.gist3;
  out.settings.gh={token:"",gist:""};out.settings.roGist=(S.settings.gh&&S.settings.gh.gist2)||"";
@@ -2231,7 +2464,7 @@ function _shareFilter(u){var full=JSON.parse(JSON.stringify(S));
    if(mine&&pub){["phone","email","addr","ecn","ecp","ec2n","ec2p","ec3n","ec3p"].forEach(function(f){pub[f]=mine[f]||"";});pub.cT=mine.cT||0;}}}
  return out;}
 /* canalul doar-citire: un al doilea gist secret, împins automat de admin, citit anonim (fără token) */
-function _roPayload(){var out=JSON.parse(JSON.stringify(S));out.log=[];out.files=[];out.repFlags=_repFlagsOf();
+function _roPayload(){var out=JSON.parse(JSON.stringify(S));out.log=[];out.files=[];out.anunt=[];out.repFlags=_repFlagsOf();
  /* rapoartele merg în canalul doar-citire ca fiecare să-și VADĂ raportul (trimis în Forms și importat)
     fără să-l reintroducă; interfața arată fiecăruia doar raportul lui */
  delete out.settings.od;out.settings.passHash="";out.settings.gh={token:"",gist:""};
