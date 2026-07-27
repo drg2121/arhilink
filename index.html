@@ -481,7 +481,7 @@ Object.assign(IC,{
  book:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg>',
  mark:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15.5 4.5l4 4-9.5 9.5H6v-4z"/><path d="M12.5 7.5l4 4M5 21h14"/></svg>'
 });
-const VERSION="2.60.2";
+const VERSION="2.60.3";
 const SEED_WEEKS=[];
 const SEED_WEEKS_PRE=[];
 const SEED_WEEKS_POST=[];
@@ -2096,10 +2096,12 @@ function _anPageCSS(){return ""
 +".anrule{height:2px;background:#C77F1A;margin:3mm 0 5mm}"
 +".anit{margin:0;text-align:center}"
 +".anit img{display:block;margin:0 auto;max-width:100%}"
-+".anlbl{display:flex;align-items:center;justify-content:flex-start;gap:2.5mm;margin:0 0 2mm;text-align:left}"
+/* numărul „călărește" linia portocalie: ridicat vizual (position/top), ca să nu strice
+   calculul de înălțime; bulina și titlul au fund alb, deci taie linia în dreptul lor */
++".anlbl{position:relative;top:-9.5mm;margin:0 0 -6mm;display:flex;align-items:center;justify-content:flex-start;gap:2.5mm;text-align:left}"
 +".annum{display:inline-flex;align-items:center;justify-content:center;width:6.4mm;height:6.4mm;border-radius:50%;background:#C77F1A;color:#fff;font-size:9.5pt;font-weight:700;line-height:1;flex:0 0 auto}"
-+".ancap{font-size:10.5pt;font-weight:700}"
-+".ansep{border:0;border-top:1.2px solid #C77F1A;margin:4.5mm 0}";}
++".ancap{font-size:10.5pt;font-weight:700;background:#fff;padding:0 2mm 0 0}"
++".ansep{border:0;border-top:1.2px solid #C77F1A;margin:4.5mm 0 5mm}";}
 
 /* ---- imagini: aducere, micșorare, PDF → imagine ---- */
 function _anShrink(dataUrl,maxW){return new Promise(function(res){try{var im=new Image();
@@ -2199,7 +2201,7 @@ async function _anPush(im,name,quiet){
  if(!quiet)anEdit(_anCur.id,true);}
 
 /* ---- împărțirea pe pagini: un anunț nu se taie niciodată în două ---- */
-function _anItemH(it){return AN_CW*(it.w/100)*(it.ar||1.414)+8;}   /* +8mm: rândul cu numărul */
+function _anItemH(it){return AN_CW*(it.w/100)*(it.ar||1.414)+4;}   /* +4mm: rândul cu numărul */
 /* cât spațiu mai e liber pe ultima pagină */
 function _anFill(items){var pages=_anPaginate(items),last=pages[pages.length-1]||[],h=AN_HD;
  last.forEach(function(it,i){h+=_anItemH(it)+(i?6:0);});
@@ -2208,7 +2210,7 @@ function _anFill(items){var pages=_anPaginate(items),last=pages[pages.length-1]|
 function anFitOne(){var it=(_anCur&&_anCur.items)||[];if(!it.length)return;
  if(_anPaginate(it).length===1){toast("Încap deja pe o pagină");return;}
  var imgs=0;it.forEach(function(x){imgs+=AN_CW*(x.w/100)*(x.ar||1.414);});
- var room=AN_CH-AN_HD-8*it.length-6*(it.length-1);
+ var room=AN_CH-AN_HD-4*it.length-6*(it.length-1);
  if(room<=0||imgs<=0){toast("Sunt prea multe anunțuri pentru o singură pagină",5000);return;}
  var k=room/imgs;
  it.forEach(function(x){x.w=Math.max(20,Math.min(100,Math.floor(x.w*k)));});
