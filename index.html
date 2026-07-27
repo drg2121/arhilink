@@ -481,7 +481,7 @@ Object.assign(IC,{
  book:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg>',
  mark:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15.5 4.5l4 4-9.5 9.5H6v-4z"/><path d="M12.5 7.5l4 4M5 21h14"/></svg>'
 });
-const VERSION="2.58.1";
+const VERSION="2.59.0";
 const SEED_WEEKS=[];
 const SEED_WEEKS_PRE=[];
 const SEED_WEEKS_POST=[];
@@ -1566,13 +1566,16 @@ async function pushFlush(){if(_pBusy||!pushReady())return;if(typeof _offline==="
  }finally{_pBusy=false;}
  if(_pQ().length&&!_pTimer){_pTimer=setTimeout(function(){_pTimer=null;pushFlush();},30000);}}
 /* ---------- FCM: înregistrarea dispozitivului pentru push în browser ---------- */
-var _fcmMsg=null,_fcmBusy=false,_fcmFg=false,_fgSeen={};
-async function fcmRegister(force){try{
+var _fcmMsg=null,_fcmBusy=false,_fcmFg=false,_fgSeen={},_fcmLast=0;
+/* Poate fi chemată des (la fiecare revenire în aplicație): are throttle propriu de 5 minute,
+   iar getToken() e servit din cache de SDK cât timp tokenul e valabil. */
+async function fcmRegister(force){var _ran=false;try{
   if(_fcmBusy)return;
+  if(!force&&Date.now()-_fcmLast<300000)return;
   if(typeof firebase==="undefined"||typeof FB_CONFIG==="undefined"||!FB_CONFIG.apiKey)return;/* config Firebase neîncărcat */
   if(!("serviceWorker" in navigator)||!("Notification" in window)||!("PushManager" in window))return;
   if(notifPerm()!=="granted")return;/* fără permisiune nu putem lua token */
-  _fcmBusy=true;
+  _fcmBusy=true;_ran=true;
   if(!firebase.apps.length)firebase.initializeApp(FB_CONFIG);
   var reg=await navigator.serviceWorker.register("firebase-messaging-sw.js");
   _fcmMsg=_fcmMsg||firebase.messaging();
@@ -1584,11 +1587,14 @@ async function fcmRegister(force){try{
       reîncerca niciodată (tokenul părea „deja înregistrat"). Acum semnătura înregistrării REALE
       (token|email|url) se scrie DOAR când cererea chiar se pune în coadă. */
    var sig=token+"|"+em+"|"+((PUSH().url||"").trim());
-   var pSig=null;try{pSig=localStorage.getItem(KEY+"_fcmReg");}catch(e){}
+   var pSig=null,pTok=null;try{pSig=localStorage.getItem(KEY+"_fcmReg");pTok=localStorage.getItem(KEY+"_fcmTok");}catch(e){}
    try{localStorage.setItem(KEY+"_fcmTok",token);localStorage.setItem(KEY+"_fcmEm",em);}catch(e){}
    if(pushReady()&&(force||sig!==pSig)){
+    /* tokenul FCM se rotește singur; dacă nu scoatem înregistrarea VECHE a acestui dispozitiv,
+       e-mailul rămâne legat și de tokenul mort — serverul trimite acolo, iar notificarea se pierde */
+    if(pTok&&pTok!==token)pushQueue({action:"unregister",token:pTok});
     pushQueue({action:"register",token:token,email:em,device:PUSH_DID});
-    try{localStorage.setItem(KEY+"_fcmReg",sig);}catch(e){}}
+    try{localStorage.setItem(KEY+"_fcmReg",sig);localStorage.setItem(KEY+"_fcmRegT",String(Date.now()));}catch(e){}}
    if(!_fcmFg){_fcmFg=true;/* app deschisă (prim-plan) → afișăm tot notificare bogată prin SW */
     _fcmMsg.onMessage(function(p){var n=(p&&(p.data||p.notification))||{};
      /* anti-dublură foreground (5 min) — același mesaj sosit de două ori nu se mai afișează dublu */
@@ -1597,7 +1603,7 @@ async function fcmRegister(force){try{
      var opts={body:n.body||"",icon:"icon-512.png",badge:"apple-touch-icon.png",data:{url:"./"},tag:"alk-"+_hash(n.title||""),requireInteraction:true,vibrate:[90,40,90],timestamp:now,actions:[{action:"open",title:"Deschide ArhiLink"}]};
      navigator.serviceWorker.ready.then(function(rg){rg.showNotification(n.title||"ArhiLink",opts);}).catch(function(){_notifShow(n.title||"ArhiLink",n.body||"","alk-push");});});}
   }
- }catch(e){console.warn("FCM register:",(e&&e.message)||e);}finally{_fcmBusy=false;}}
+ }catch(e){console.warn("FCM register:",(e&&e.message)||e);}finally{if(_ran){_fcmBusy=false;_fcmLast=Date.now();}}}
 function pushInit(){/* SW-ul se înregistrează mereu (ține și modul offline); tokenul doar cu permisiune */
  try{if("serviceWorker" in navigator&&/^https?:$/.test(location.protocol))navigator.serviceWorker.register("firebase-messaging-sw.js").catch(function(){});}catch(e){}
  fcmRegister(false);
@@ -1670,6 +1676,40 @@ function pushIosHelp(){sheet("","Notificări pe iPhone",'<div class="muted" styl
  +'<b>3.</b> Deschide <b>ArhiLink de pe iconița nouă</b><br>'
  +'<b>4.</b> Acolo: Setări → Notificări → <b>Activează</b> → Permite</div>'
  +'<div class="hint" style="margin-top:14px">Gata — temele și reamintirile vin apoi direct pe telefon, chiar și cu aplicația închisă.</div>');}
+/* Diagnostic notificări — fiecare condiție care trebuie îndeplinită, cu starea ei.
+   „Nu prea îmi vin notificări" devine astfel ceva ce se vede și se poate repara. */
+function _diagRow(ok,t,sub){
+ var c=(ok===true)?"var(--teal)":((ok===false)?"var(--maroon)":"var(--ink3)");
+ var ic=(ok===true)?"✓":((ok===false)?"✕":"•");
+ return '<div style="display:flex;gap:11px;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--bd)">'
+  +'<span style="color:'+c+';font-weight:800;width:13px;flex:0 0 auto;line-height:1.35">'+ic+'</span>'
+  +'<div style="min-width:0"><div style="font-size:14px;font-weight:700;line-height:1.35">'+t+'</div>'
+  +(sub?('<div class="muted" style="font-size:12px;margin-top:2px;overflow-wrap:break-word">'+sub+'</div>'):'')+'</div></div>';}
+function pushDiag(){
+ var perm=notifPerm(),em=myPushEmail(),p=PUSH(),tok="",reg="",regT=0,q=0;
+ try{tok=localStorage.getItem(KEY+"_fcmTok")||"";reg=localStorage.getItem(KEY+"_fcmReg")||"";regT=+(localStorage.getItem(KEY+"_fcmRegT")||0);}catch(e){}
+ try{q=_pQ().length;}catch(e){}
+ var H='<div class="muted" style="margin:0 2px 10px">Ca să primești notificări cu aplicația închisă, toate rândurile de mai jos trebuie să fie verzi.</div>';
+ H+=_diagRow(!!(p.url&&p.secret),"Serverul de notificări e configurat",
+   (p.url?"URL setat":"lipsește URL-ul funcției")+" · "+(p.secret?"secret setat":"lipsește secretul")+" — se ocupă administratorul, o singură dată pentru toată congregația");
+ if(_isIOS())H+=_diagRow(_isInstalled(),"Aplicația e deschisă de pe ecranul principal",
+   _isInstalled()?"cerința iPhone e îndeplinită":'pe iPhone notificările merg <b>doar</b> din aplicația adăugată pe ecranul principal — <span style="text-decoration:underline">vezi pașii</span>');
+ H+=_diagRow(perm==="granted","Permisiunea de notificări",
+   ({granted:"dată pe acest dispozitiv",denied:"blocată din browser — redă-o din setările paginii (lacătul de lângă adresă), apoi revino aici",
+     "default":"încă nu a fost cerută pe acest dispozitiv",unsupported:"browserul acesta nu suportă notificări"})[perm]||perm);
+ H+=_diagRow(!!em,"E-mail în fișa vestitorului",
+   em?esc(em):"lipsește — e cheia după care serverul știe cui să trimită; completează-l în „Datele mele de contact”");
+ H+=_diagRow(!!tok,"Dispozitivul are token de la Firebase",tok?("se termină în …"+esc(tok.slice(-10))):"nu s-a putut obține tokenul de la Firebase");
+ H+=_diagRow(!!reg,"Înregistrat pe server",reg?("ultima înregistrare: "+(regT?fmtDT(regT):"înainte de această versiune")):"înregistrarea nu a plecat încă spre server");
+ H+=_diagRow(q===0,"Cereri în așteptare",q?(q+" în coadă — pleacă singure când revine internetul"):"niciuna");
+ H+='<div class="hint" style="margin-top:12px">Tokenul se reînnoiește singur: la fiecare revenire în aplicație și cel puțin o dată la 6 ore. Dacă un rând e roșu, repară-l acolo unde scrie — apoi „Reînregistrează".</div>'
+  +'<div class="two" style="margin-top:12px">'
+  +'<button class="btn ghost sm" onclick="fcmRegister(true);setTimeout(pushDiag,900);toast(\'Reînregistrez dispozitivul…\')">Reînregistrează</button>'
+  +'<button class="btn pri sm" onclick="pushTestBtn()">Trimite un test</button></div>'
+  +(_isIOS()&&!_isInstalled()?'<button class="btn ghost sm" style="width:100%;margin-top:9px" onclick="pushIosHelp()">Cum le activez pe iPhone</button>':'')
+  +(perm==="default"?'<button class="btn pri sm" style="width:100%;margin-top:9px" onclick="closeSheet();notifAsk()">Activează notificările acum</button>':'')
+  +(!em?'<button class="btn ghost sm" style="width:100%;margin-top:9px" onclick="closeSheet();meContact()">Completează-mi e-mailul</button>':'');
+ sheet("","Diagnostic notificări",H);}
 /* --- cardul „Notificări" pentru rolurile fără drept de administrare --- */
 function _setLimNotif(){var h='<div class="group gp"><h2>Notificări</h2>';
  if(!pushReady())return h+'<div class="muted">Notificările push nu sunt configurate încă de administrator. Reamintirile locale apar la deschiderea aplicației.</div></div>';
@@ -1679,6 +1719,7 @@ function _setLimNotif(){var h='<div class="group gp"><h2>Notificări</h2>';
  else{h+='<div class="muted">Primești teme noi, reamintiri în ajunul întrunirii și reamintirea raportului direct pe telefon — chiar și cu aplicația închisă.</div>';
   h+=(notifPerm()==="denied")?'<div class="gatetip" style="margin-top:10px">Ai blocat notificările din browser — reactivează-le din setările paginii (lacătul de lângă adresă), apoi revino aici.</div>':'<button class="btn pri sm" style="width:100%;margin-top:10px" onclick="notifAsk()">Activează notificările pe acest dispozitiv</button>';}
  if(!em)h+='<div class="gatetip" style="margin-top:10px;cursor:pointer" onclick="meContact()">Nu ai e-mail în fișă — <b>apasă aici</b> și completează-l în „Datele mele de contact" (e-mailul e cheia notificărilor).</div>';
+ h+='<button class="btn ghost sm" style="width:100%;margin-top:8px" onclick="pushDiag()">De ce nu primesc notificări?</button>';
  h+='</div>';
  return h;}
 /* --- îndemn discret în „Profilul meu" cât timp notificările nu sunt activate --- */
@@ -1748,7 +1789,11 @@ function notifCheck(){try{
     push a sosit prin sincronizare DUPĂ activarea notificărilor — reîncearcă înregistrarea */
  try{if(pushReady()&&notifPerm()==="granted"){var _rs=null;try{_rs=localStorage.getItem(KEY+"_fcmReg");}catch(e){}
   var _pp=_rs?_rs.split("|"):[];
-  if(!_rs||_pp[1]!==(myPushEmail()||"")||_pp[2]!==((PUSH().url||"").trim()))fcmRegister(false);}}catch(e){}
+  /* și periodic (6h): tokenul se rotește singur — la reinstalare, la curățarea datelor din
+     browser sau după o perioadă de inactivitate. Fără reînnoire, serverul trimite către un
+     token mort și notificările „nu mai vin", fără niciun semn în aplicație. */
+  var _rt=0;try{_rt=+(localStorage.getItem(KEY+"_fcmRegT")||0);}catch(e){}
+  if(!_rs||_pp[1]!==(myPushEmail()||"")||_pp[2]!==((PUSH().url||"").trim())||Date.now()-_rt>216e5)fcmRegister(false);}}catch(e){}
  try{pushRepMaintain();}catch(e){}
 }catch(e){}}
 function notifRemindAll(){if(!_needEdit())return;var pk=_prevK();
@@ -2097,6 +2142,7 @@ function renderSet(){if(!_isAdmin()){renderSetLimited();return;}$("#fab").style.
     <label class="fl" style="margin-top:8px">Secret (PUSH_SECRET — identic cu functions/.env de pe server)</label>
     <div class="rowflex" style="gap:8px"><input class="fld" id="pshSec" type="password" value="${esc((st.push&&st.push.secret)||"")}" onchange="S.settings.push=Object.assign({},PUSH(),{secret:this.value.trim()});save();try{fcmRegister(true)}catch(e){};renderSet()"><button class="btn ghost sm" style="width:auto" onclick="var i=document.getElementById('pshSec');i.type=i.type==='password'?'text':'password'">Arată</button></div>
     ${pushReady()?`<div class="two" style="margin-top:10px">${notifPerm()==="granted"?`<button class="btn ghost sm" onclick="fcmRegister(true);toast('Dispozitivul a fost reînregistrat ✓')">Reînregistrează dispozitivul</button>`:(_pushNeedsInstall()?`<button class="btn pri sm" onclick="pushIosHelp()">Pe iPhone: instalează întâi</button>`:`<button class="btn pri sm" onclick="notifAsk()">Activează pe acest dispozitiv</button>`)}<button class="btn ghost sm" onclick="pushTestBtn()">Trimite un test</button></div>
+    <button class="btn ghost sm" style="width:100%;margin-top:8px" onclick="pushDiag()">Diagnostic notificări — ce lipsește pe acest dispozitiv</button>
     <div class="hint" style="margin-top:8px">${myPushEmail()?("Acest dispozitiv primește notificările pentru <b>"+esc(myPushEmail())+"</b>. Fiecare membru le activează pe dispozitivul lui (iPhone: întâi „Adaugă la ecranul principal”)."):"Contul tău nu are e-mail în fișa vestitorului asociat — completează-l ca să primești și tu push."}</div>
     <label class="fl" style="margin-top:10px">Ce se trimite (valabil pentru toți)</label>
     <label class="famrow"><input type="checkbox" ${pushOn("t")?"checked":""} onchange="_pushTog('t',this.checked)"><span>Teme noi, la „E-mail teme" / „Doar push"</span></label>
@@ -2373,7 +2419,7 @@ function _errMsg(e){var m=(e&&e.message)||"";
 function _syncEvents(){if(_syncEvOn)return;_syncEvOn=true;
  window.addEventListener("online",function(){updateSyncInfo();if(_busy)return;if(autoOn())ghSync(true);else if(typeof roOn==="function"&&roOn())roSync(true);});
  window.addEventListener("offline",updateSyncInfo);
- document.addEventListener("visibilitychange",function(){if(!document.hidden){if(_busy)return;if(autoOn()){ghSync(true);roFlush();try{boxTake();}catch(e){}}else if(typeof roOn==="function"&&roOn()){roSync(true);try{boxFlush();}catch(e){}}}else{autoFlush();}});
+ document.addEventListener("visibilitychange",function(){if(!document.hidden){try{fcmRegister(false);}catch(e){}if(_busy)return;if(autoOn()){ghSync(true);roFlush();try{boxTake();}catch(e){}}else if(typeof roOn==="function"&&roOn()){roSync(true);try{boxFlush();}catch(e){}}}else{autoFlush();}});
  window.addEventListener("pagehide",function(){autoFlush();});}
 function nextRev(){return Math.max((S._rev||0)+1,Date.now());}
 function pushedRev(){try{return +localStorage.getItem(KEY+"_pushedRev")||0;}catch(e){return 0;}}
