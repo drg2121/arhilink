@@ -481,7 +481,7 @@ Object.assign(IC,{
  book:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg>',
  mark:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15.5 4.5l4 4-9.5 9.5H6v-4z"/><path d="M12.5 7.5l4 4M5 21h14"/></svg>'
 });
-const VERSION="2.58.0";
+const VERSION="2.58.1";
 const SEED_WEEKS=[];
 const SEED_WEEKS_PRE=[];
 const SEED_WEEKS_POST=[];
@@ -1135,48 +1135,93 @@ function broGroupsHtml(list,withTools){ensureGrpCSS();var grps=grpsAll();var h="
  if(rest.length)h+=grps.length?('<details class="gcard">'+_gcardHead({name:"Fără grupă",sup:"",asis:""},-1,rest.length)+'<div class="gbody">'+rest.map(broRowHtml).join("")+'</div></details>'):rest.map(broRowHtml).join("");
  if(curs.length)h+='<details class="gcard">'+_gcardHead({name:"Cursanți VCP",sup:"",asis:""},-1,curs.length)+'<div class="gbody">'+curs.map(broRowHtml).join("")+'</div></details>';
  return h;}
-function editBro(id){if(!_needEdit())return;const b=id?S.bros.find(x=>x.id===id):{id:"b"+Date.now(),name:"",gen:"M",rol:"Vestitor",active:true,roles:[],dispExp:true,canPartner:true,famIds:[]};
+/* fișa vestitorului: secțiuni pliabile, închise la deschidere — antetul fiecăreia arată
+   pe scurt ce e înăuntru, ca să nu fie nevoie să le deschizi ca să vezi ce ai completat */
+function ensureEdCSS(){if(document.getElementById("edcss"))return;var st=document.createElement("style");st.id="edcss";st.textContent=
+ ".edx{border:1px solid var(--bd);border-radius:13px;background:var(--bg);margin-bottom:8px;overflow:hidden}"
++".edx>summary{list-style:none;display:flex;align-items:center;gap:10px;padding:12px 13px;cursor:pointer;user-select:none}"
++".edx>summary::-webkit-details-marker{display:none}"
++".edx>summary::after{content:'';width:7px;height:7px;border-right:2px solid var(--ink3);border-bottom:2px solid var(--ink3);transform:rotate(-45deg);transition:transform .18s;flex:0 0 auto;margin-left:2px}"
++".edx[open]>summary::after{transform:rotate(45deg)}"
++".edx[open]>summary{border-bottom:1px solid var(--bd)}"
++".edxt{flex:0 0 auto;font-size:14.5px;font-weight:800;color:var(--ink)}"
++".edxv{flex:1;min-width:0;text-align:right;font-size:12px;color:var(--ink3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}"
++".edxb{padding:0 13px 13px}"
++".edxb .grpttl:first-child{margin-top:12px}"
++".edxb .ck:last-of-type{border-bottom:0}"
++".edtop .fl{margin-top:0}"
++".edbar{position:sticky;bottom:calc(-20px - env(safe-area-inset-bottom));z-index:3;background:var(--surf);border-top:1px solid var(--bd);display:flex;align-items:center;gap:9px;margin:12px 0 calc(-20px - env(safe-area-inset-bottom));padding:11px 0 calc(20px + env(safe-area-inset-bottom))}"
++".edbar .btn{margin:0}";
+ document.head.appendChild(st);}
+function _edSec(t,vid,body,open){return '<details class="edx"'+(open?" open":"")
+ +'><summary><span class="edxt">'+esc(t)+'</span><span class="edxv" id="'+vid+'">—</span></summary><div class="edxb">'+body+'</div></details>';}
+/* rezumatele din antete se recalculează la fiecare modificare din fișă */
+function edSumAll(){try{
+ var g=function(id){var e=document.getElementById(id);return e?String(e.value||"").trim():"";};
+ var set=function(id,t){var e=document.getElementById(id);if(e)e.textContent=t||"—";};
+ var gs=document.getElementById("bgrp"),gn=(gs&&gs.selectedIndex>0)?gs.options[gs.selectedIndex].text:"";
+ var rol=g("br"),pio=g("bpio"),p=[g("bg")==="F"?"soră":"frate"];
+ if(rol)p.push(rol==="Slujitor"?"slujitor auxiliar":"bătrân");
+ if(pio)p.push(pioLabel(pio).toLowerCase());
+ if(g("ba")==="0")p.push("inactiv");
+ if(gn)p.push(gn);
+ set("edvBase",p.join(" · "));
+ var np=document.querySelectorAll("#edform .prv:checked").length;
+ set("edvPrv",np?(np+(np===1?" privilegiu":" privilegii")):"niciunul");
+ var nf=document.querySelectorAll("#famlist .famck:checked").length;
+ set("edvFam",nf?(nf+(nf===1?" membru":" membri")):"—");
+ set("edvCt",[g("bphone"),g("bemail")].filter(Boolean).join(" · "));
+ var ne=[["becn","becp"],["bec2n","bec2p"],["bec3n","bec3p"]].filter(function(x){return g(x[0])||g(x[1]);}).length;
+ set("edvEc",ne?(ne+(ne===1?" contact":" contacte")):"—");
+ set("edvPdf",g("bd"));
+ }catch(e){}}
+/* openSec: secțiunea deschisă la intrare (ex. la revenirea din foaia de arhivare) */
+function editBro(id,openSec){if(!_needEdit())return;ensureEdCSS();
+ const b=id?S.bros.find(x=>x.id===id):{id:"b"+Date.now(),name:"",gen:"M",rol:"Vestitor",active:true,roles:[],dispExp:true,canPartner:true,famIds:[]};
  const others=S.bros.filter(x=>x.id!==b.id&&x.active!==false&&!isArchNow(x)).slice().sort((a,c)=>a.name.localeCompare(c.name,"ro"));
- const selFam=others.filter(x=>(b.famIds||[]).includes(x.id)).map(x=>x.name);
- const famSumTxt=selFam.length?(selFam.length<=2?selFam.join(", "):selFam.length+" membri"):"Alege membri…";
- const famPh=selFam.length?"":"ph";
  const famrows=others.map(x=>`<label class="famrow" data-nm="${esc((x.name||"").toLowerCase())}"><input type="checkbox" class="famck" value="${x.id}" ${(b.famIds||[]).includes(x.id)?"checked":""}><span>${esc(x.name)}</span></label>`).join("")||'<div class="muted" style="padding:9px">Niciun alt vestitor.</div>';
  const rh=GROUPS.map(([g,rs])=>`<div class="grpttl">${esc(g)}</div>`+(g==="Să fim mai eficienți în predicare"?`<div class="hint">Demonstrațiile pot fi ținute de frați sau surori (partener de același sex sau din familie).</div><label class="ck"><input type="checkbox" id="bcp" ${b.canPartner!==false?"checked":""}><span>Poate fi <b>partener</b> la demonstrația altcuiva</span></label>`:"")+rs.map(r=>`<label class="ck"><input type="checkbox" class="prv" value="${esc(r)}" ${(b.roles||[]).includes(r)?"checked":""}><span>${esc(roleLabel(r))}</span></label>`).join("")).join("");
- sheet("Vestitor",(id?"Editează vestitor":"Vestitor nou"),`
-  <div class="rowflex" style="gap:9px;margin:0 0 2px"><div class="spacer"></div><button class="btn pri sm" style="width:auto" onclick="saveBro('${b.id}',${id?1:0})">Salvează</button></div>
-  <div class="edsec" style="border-top:0;padding-top:2px;margin-top:0">Date</div>
-  <label class="fl">Nume (ca în PDF, ex. PRICHINDEL Marius)</label><input id="bn" class="fld" oninput="bdAuto(this.value)" value="${(b.name||"").replace(/"/g,"&quot;")}">
-  <div class="two" style="margin-top:8px"><div><label class="fl">Gen</label><select id="bg" class="fld"><option value="M" ${b.gen!=="F"?"selected":""}>Frate</option><option value="F" ${b.gen==="F"?"selected":""}>Soră</option></select></div>
+ const q=s=>(s||"").replace(/"/g,"&quot;");
+
+ const secBase=`<div class="two"><div><label class="fl">Gen</label><select id="bg" class="fld"><option value="M" ${b.gen!=="F"?"selected":""}>Frate</option><option value="F" ${b.gen==="F"?"selected":""}>Soră</option></select></div>
    <div><label class="fl">Rol</label><select id="br" class="fld"><option value="Bătrân" ${b.rol==="Bătrân"?"selected":""}>Bătrân</option><option value="Slujitor" ${b.rol==="Slujitor"?"selected":""}>Slujitor auxiliar</option><option value="" ${(!b.rol||b.rol==="Vestitor")?"selected":""}>— (fără numire)</option></select></div></div>
   <div class="two" style="margin-top:8px"><div><label class="fl">Stare</label><select id="ba" class="fld"><option value="1" ${b.active!==false?"selected":""}>Activ</option><option value="0" ${b.active===false?"selected":""}>Inactiv</option></select></div>
    <div><label class="fl">Privilegiu</label><select id="bpio" class="fld"><option value="" ${(!b.pio&&b.isPub!==false)?"selected":""}>Vestitor</option><option value="Vestitor nebotezat" ${b.pio==="Vestitor nebotezat"?"selected":""}>Vestitor nebotezat</option><option value="Pionier" ${b.pio==="Pionier"?"selected":""}>Pionier regular</option><option value="Pionier auxiliar" ${b.pio==="Pionier auxiliar"?"selected":""}>Pionier auxiliar (permanent)</option><option value="Pionier special" ${b.pio==="Pionier special"?"selected":""}>Pionier special</option><option value="Misionar" ${b.pio==="Misionar"?"selected":""}>Misionar</option><option value="Cursant" ${(b.pio==="Cursant"||b.isPub===false)?"selected":""}>Cursant</option></select></div></div>
-  <label class="fl" style="margin-top:8px">Grupa de serviciu</label><select id="bgrp" class="fld"><option value="">— fără grupă —</option>${grpsAll().map(g=>`<option value="${g.id}" ${grpOf(b)===g.id?"selected":""}>${esc(g.name)}</option>`).join("")}</select>
-  <div class="hint" style="margin-top:8px"><b>Inactiv</b> = rămâne în congregație (nu-i dai teme o vreme) și intră în continuare la numărul de vestitori. Dacă a <b>plecat</b> din congregație, folosește Arhiva, mai jos.</div>
-  ${id?archEditBlock(b):""}
-   <div class="edsec">Date pentru rapoarte (S-21)</div>
-   <div class="two"><div><label class="fl">Telefon</label><input id="bphone" class="fld" value="${(b.phone||"").replace(/"/g,"&quot;")}"></div><div><label class="fl">Speranță</label><select id="bhope" class="fld"><option value="alte_oi" ${b.hope!=="uns"?"selected":""}>Alte oi</option><option value="uns" ${b.hope==="uns"?"selected":""}>Uns</option></select></div></div>
-   <label class="fl" style="margin-top:8px">E-mail (pentru temele repartizate)</label><input id="bemail" class="fld" type="email" autocomplete="off" value="${(b.email||"").replace(/"/g,"&quot;")}" placeholder="nume@gmail.com">
-   <label class="fl" style="margin-top:8px">Adresă</label><input id="baddr" class="fld" value="${(b.addr||"").replace(/"/g,"&quot;")}" placeholder="Str. …, nr …, sect …, București">
-   <div class="two" style="margin-top:8px"><div><label class="fl">Contact urgență 1 — nume</label><input id="becn" class="fld" value="${(b.ecn||"").replace(/"/g,"&quot;")}" placeholder="ex. Familia …"></div><div><label class="fl">Contact urgență 1 — telefon</label><input id="becp" class="fld" value="${(b.ecp||"").replace(/"/g,"&quot;")}" placeholder="07…"></div></div>
-   <div class="two" style="margin-top:8px"><div><label class="fl">Contact urgență 2 — nume</label><input id="bec2n" class="fld" value="${(b.ec2n||"").replace(/"/g,"&quot;")}" placeholder="opțional"></div><div><label class="fl">Contact urgență 2 — telefon</label><input id="bec2p" class="fld" value="${(b.ec2p||"").replace(/"/g,"&quot;")}" placeholder="07…"></div></div>
-   <div class="two" style="margin-top:8px"><div><label class="fl">Contact urgență 3 — nume</label><input id="bec3n" class="fld" value="${(b.ec3n||"").replace(/"/g,"&quot;")}" placeholder="opțional"></div><div><label class="fl">Contact urgență 3 — telefon</label><input id="bec3p" class="fld" value="${(b.ec3p||"").replace(/"/g,"&quot;")}" placeholder="07…"></div></div>
-   <div class="two" style="margin-top:8px"><div><label class="fl">Data nașterii</label><input id="bbdate" class="fld" type="date" value="${b.bdate||""}"></div><div><label class="fl">Data botezului</label><input id="bbaptism" class="fld" type="date" value="${b.baptism||""}"></div></div>
-  <div class="edsec">Nume în export PDF</div>
-  <label class="fl">Cum apare în PDF</label>
-  <div class="rowflex" style="gap:9px"><input id="bd" class="fld" style="flex:1" oninput="this.dataset.custom='1'" data-custom="${(b.disp&&b.disp!==shortName(b.name||""))?"1":""}" value="${(b.disp||shortName(b.name||"")).replace(/"/g,"&quot;")}"><label class="ckmini"><input type="checkbox" id="bde" ${b.dispExp!==false?"checked":""}>scurt în PDF</label></div>
-  <div class="edsec">Familie</div>
-  <div class="muted" style="margin:-3px 2px 9px">Membrii aceleiași familii pot fi parteneri de sex diferit la demonstrație.</div>
-  <details class="famx">
-   <summary class="fambtn"><span id="famsum" class="famsumtxt ${famPh}">${esc(famSumTxt)}</span><span class="famchev">&#8250;</span></summary>
-   <div class="fambox"><input class="fld" placeholder="caută nume…" oninput="filterFam(this.value)" style="margin-bottom:7px">
-   <div class="famlist" id="famlist" onchange="famSum()">${famrows}</div></div>
-  </details>
-  <div class="edsec">Privilegii — ce teme poate ține</div>
-  ${rh}
-  <div class="rowflex" style="gap:9px;margin-top:20px">
-   ${id?`<button class="btn danger sm" onclick="delBro('${id}')">Șterge</button>`:""}<div class="spacer"></div>
+  <label class="fl">Grupa de serviciu</label><select id="bgrp" class="fld"><option value="">— fără grupă —</option>${grpsAll().map(g=>`<option value="${g.id}" ${grpOf(b)===g.id?"selected":""}>${esc(g.name)}</option>`).join("")}</select>`;
+
+ const secFam=`<div class="muted" style="margin:11px 2px 9px">Membrii aceleiași familii pot fi parteneri de sex diferit la demonstrație.</div>
+  <input class="fld" placeholder="caută nume…" oninput="filterFam(this.value)" style="margin:0 0 7px">
+  <div class="famlist" id="famlist">${famrows}</div>`;
+
+ const secCt=`<div class="two"><div><label class="fl">Telefon</label><input id="bphone" class="fld" value="${q(b.phone)}"></div>
+   <div><label class="fl">Speranță</label><select id="bhope" class="fld"><option value="alte_oi" ${b.hope!=="uns"?"selected":""}>Alte oi</option><option value="uns" ${b.hope==="uns"?"selected":""}>Uns</option></select></div></div>
+  <label class="fl">E-mail (pentru temele repartizate)</label><input id="bemail" class="fld" type="email" autocomplete="off" value="${q(b.email)}" placeholder="nume@gmail.com">
+  <label class="fl">Adresă</label><input id="baddr" class="fld" value="${q(b.addr)}" placeholder="Str. …, nr …, sect …, București">
+  <div class="two" style="margin-top:2px"><div><label class="fl">Data nașterii</label><input id="bbdate" class="fld" type="date" value="${b.bdate||""}"></div>
+   <div><label class="fl">Data botezului</label><input id="bbaptism" class="fld" type="date" value="${b.baptism||""}"></div></div>`;
+
+ const secEc=[["1","becn","becp",b.ecn,b.ecp,"ex. Familia …"],["2","bec2n","bec2p",b.ec2n,b.ec2p,"opțional"],["3","bec3n","bec3p",b.ec3n,b.ec3p,"opțional"]]
+  .map(c=>`<div class="two"${c[0]==="1"?"":' style="margin-top:2px"'}><div><label class="fl">Contact ${c[0]} — nume</label><input id="${c[1]}" class="fld" value="${q(c[3])}" placeholder="${c[5]}"></div>
+   <div><label class="fl">Contact ${c[0]} — telefon</label><input id="${c[2]}" class="fld" value="${q(c[4])}" placeholder="07…"></div></div>`).join("");
+
+ const secPdf=`<label class="fl">Cum apare în PDF</label>
+  <div class="rowflex" style="gap:9px"><input id="bd" class="fld" style="flex:1;margin-top:0" oninput="this.dataset.custom='1'" data-custom="${(b.disp&&b.disp!==shortName(b.name||""))?"1":""}" value="${q(b.disp||shortName(b.name||""))}"><label class="ckmini"><input type="checkbox" id="bde" ${b.dispExp!==false?"checked":""}>scurt în PDF</label></div>`;
+
+ sheet("Vestitor",(id?"Editează vestitor":"Vestitor nou"),
+  `<div id="edform" oninput="edSumAll()" onchange="edSumAll()">
+   <div class="edtop"><label class="fl">Nume (ca în PDF, ex. PRICHINDEL Marius)</label><input id="bn" class="fld" oninput="bdAuto(this.value);edSumAll()" value="${q(b.name)}"></div>`
+ + _edSec("Date de bază","edvBase",secBase,!id)
+ + _edSec("Privilegii","edvPrv",rh)
+ + _edSec("Familie","edvFam",secFam)
+ + _edSec("Contact și date S-21","edvCt",secCt)
+ + _edSec("Contacte de urgență","edvEc",secEc)
+ + _edSec("Nume în export PDF","edvPdf",secPdf)
+ + (id?_edSec("Arhivă","edvArh",archEditBlock(b),openSec==="arh"):"")
+ + `</div><div class="edbar">${id?`<button class="btn danger sm" style="width:auto" onclick="delBro('${id}')">Șterge</button>`:""}<div class="spacer"></div>
    <button class="btn ghost sm" style="width:auto" onclick="closeSheet()">Anulează</button>
    <button class="btn pri sm" style="width:auto" onclick="saveBro('${b.id}',${id?1:0})">Salvează</button></div>`);
+ edSumAll();
+ var _av=document.getElementById("edvArh");if(_av&&id)_av.textContent=archEditSum(b);
 }
 function saveBro(bid,exists){if(!_needEdit())return;const name=$("#bn").value.trim();if(!name){toast("Adaugă numele");return;}
  const roles=[...document.querySelectorAll(".prv:checked")].map(c=>c.value);
@@ -1202,7 +1247,6 @@ function saveBro(bid,exists){if(!_needEdit())return;const name=$("#bn").value.tr
  syncFamily(o.id,o.famIds||[]);if(typeof userSyncBro==="function")userSyncBro(o,!exists);logAct((exists?"Vestitor modificat: ":"Vestitor adăugat: ")+(o.name||""));save();closeSheet();renderBros();toast("Salvat");}
 function syncFamily(id,fam){S.bros.forEach(function(b){if(b.id===id)return;b.famIds=b.famIds||[];var has=b.famIds.indexOf(id)>=0;if(fam.indexOf(b.id)>=0){if(!has)b.famIds.push(id);}else if(has){b.famIds=b.famIds.filter(function(x){return x!==id;});}});}
 function filterFam(q){q=(q||"").toLowerCase();document.querySelectorAll("#famlist .famrow").forEach(function(r){r.style.display=(r.dataset.nm||"").indexOf(q)>=0?"":"none";});}
- function famSum(){const el=document.getElementById("famsum");if(!el)return;const ck=[].slice.call(document.querySelectorAll("#famlist .famck:checked"));if(!ck.length){el.textContent="Alege membri…";el.classList.add("ph");return;}const nm=ck.map(function(c){const s=c.parentNode.querySelector("span");return s?s.textContent:"";}).filter(Boolean);el.textContent=nm.length<=2?nm.join(", "):(nm.length+" membri");el.classList.remove("ph");}
 function delBro(id){if(!_needEdit())return;if(!confirm("Ștergi definitiv „"+broDisp(id)+"”? Dispare din listă, din grupă și de la responsabilități (rapoartele salvate rămân în backup-uri)."))return;
  logAct("Vestitor șters: "+broDisp(id));S.bros=S.bros.filter(x=>x.id!==id);S.bros.forEach(function(b){if(b.famIds)b.famIds=b.famIds.filter(function(x){return x!==id;});});
  var us=(S.settings&&S.settings.users)||[];var ui=us.findIndex(function(u){return u.bro===id;});
@@ -1227,6 +1271,22 @@ function archFutureAssign(id,k){var out=[];
  return out;}
 function _archUserOf(id){var us=_users()||[];for(var i=0;i<us.length;i++)if(us[i].bro===id)return us[i];return null;}
 function _archRerender(){if(tab==="arh")renderArh();else renderBros();}
+/* eliberează locul persoanei arhivate: contul, grupa, rolul din grupă și responsabilitățile.
+   Ce i se ia se notează în b.arch, ca să i se dea înapoi dacă e readusă în congregație. */
+function _archStrip(b){var a=b&&b.arch;if(!a||a.done)return false;var id=b.id;
+ var us=_users(),u=_archUserOf(id);
+ if(u&&!u.off){var adm=us.filter(function(x){return x.r==="admin"&&!x.off;}).length;
+  if(u.r==="admin"&&adm<=1)toast("Contul rămâne activ — e ultimul administrator",4000);
+  else{u.off=1;a.uoff=1;}}
+ a.grp=b.grp||"";b.grp="";
+ var supG=[],asisG=[],resR=[],resA=[];
+ grpsAll().forEach(function(g){if(g.sup===id){g.sup="";supG.push(g.id);}if(g.asis===id){g.asis="";asisG.push(g.id);}});
+ respAll().forEach(function(d,i){if(d.r===id){d.r="";resR.push(i);}if(d.a===id){d.a="";resA.push(i);}});
+ a.sup=supG;a.asis=asisG;a.resR=resR;a.resA=resA;a.done=1;return true;}
+/* la deschiderea aplicației: arhivările programate pentru o lună care a venit între timp */
+function archSweep(){var k=curYM(),ch=0;
+ (S.bros||[]).forEach(function(b){var a=archOf(b);if(a&&!a.done&&a.k<=k&&_archStrip(b))ch++;});
+ if(ch){logAct("Arhivări intrate în vigoare: "+ch);save();}return ch;}
 /* anii teocratici în care persoana are rapoarte (pentru fișele S-21) */
 function archYears(id){var set={},R=(S.reports||{})[id]||{},b=(S.bros||[]).find(function(x){return x.id===id;});
  Object.keys(R).forEach(function(k){set[theoStartOf(k)]=1;});
@@ -1235,14 +1295,15 @@ function archYears(id){var set={},R=(S.reports||{})[id]||{},b=(S.bros||[]).find(
  return ys.length?ys:[curTheoStart()];}
 
 /* --- blocul din fișa vestitorului --- */
-function archEditBlock(b){var a=archOf(b),h='<div class="edsec">Arhivă</div>';
+function archEditSum(b){var a=archOf(b);return a?(archLabel(a)+" · "+archWhen(a)):"în congregație";}
+function archEditBlock(b){var a=archOf(b),h='';
  var past=archAll(b).filter(function(p){return p.end&&curYM()>=p.end;});
  var pastTxt=past.length?('<div class="muted" style="margin:6px 2px 0;font-size:11.5px">A mai fost în arhivă: '+past.map(function(p){return esc(monthName(p.k)+" – "+monthName(ymShift(p.end,-1)));}).join(", ")+'</div>'):'';
  if(a)return h
-  +'<div class="hint" style="border-left:3px solid var(--acc)">'+esc(archWhen(a).charAt(0).toUpperCase()+archWhen(a).slice(1))+' · '+esc(archReason(a))+'.<br>Nu apare în listele congregației și nu intră la numărul de vestitori în lunile acelea. Restul lunilor rămân neatinse.</div>'
+  +'<div class="hint" style="margin-top:11px;border-left:3px solid var(--acc)">'+esc(archWhen(a).charAt(0).toUpperCase()+archWhen(a).slice(1))+' · '+esc(archReason(a))+'.<br>Nu apare în listele congregației și nu intră la numărul de vestitori în lunile acelea. Restul lunilor rămân neatinse.</div>'
   +'<button class="miniact" style="margin-top:8px;width:100%;justify-content:center" onclick="archRestoreSheet(\''+b.id+'\')">'+(a.end?"Schimbă luna revenirii":"Readu în congregație")+'</button>'+pastTxt;
  return h
-  +'<div class="hint">A plecat din congregație (mutat sau altceva)? Trece-l în arhivă: dispare din liste, din grupe și de la numărul de vestitori <b>începând cu luna pe care o alegi</b>. Lunile de dinainte rămân neatinse, iar rapoartele și fișele lui rămân disponibile în tabul Arhivă.</div>'
+  +'<div class="hint" style="margin-top:11px">A plecat din congregație (mutat sau altceva)? Trece-l în arhivă: dispare din liste, din grupe și de la numărul de vestitori <b>începând cu luna pe care o alegi</b>. Lunile de dinainte rămân neatinse, iar rapoartele și fișele lui rămân disponibile în tabul Arhivă.</div>'
   +pastTxt
   +'<button class="miniact" style="margin-top:8px;width:100%;justify-content:center" onclick="archSheet(\''+b.id+'\')">Mută în arhivă — mutat / altele</button>';}
 
@@ -1263,11 +1324,11 @@ function archSheet(id){if(!_needEdit())return;var b=(S.bros||[]).find(function(x
  +'<label class="fl" style="margin-top:8px" id="amNl">Detalii <span class="muted" style="font-weight:400">(opțional)</span></label><input id="amN" class="fld" placeholder="ex. mutat la Congregația …">'
  +'<label class="fl" style="margin-top:8px">Se aplică din luna</label><select id="amK" class="fld">'+archMonthOpts(k)+'</select>'
  +'<div class="hint" style="margin-top:8px">Din luna aceasta încolo nu mai apare în nicio listă și nu mai intră la numărul de vestitori. <b>Lunile de dinainte rămân neatinse</b> — S-1, fișele și procentajele deja calculate nu se schimbă.</div>'
- +(w.length?('<div class="hint" style="margin-top:8px;border-left:3px solid var(--acc)">La salvare se curăță automat:<br>· '+w.join('<br>· ')+'</div>'):'')
+ +(w.length?('<div class="hint" style="margin-top:8px;border-left:3px solid var(--acc)">Când arhivarea intră în vigoare se eliberează automat:<br>· '+w.join('<br>· ')+'</div>'):'')
  +'<div class="rowflex" style="gap:9px;margin-top:20px"><div class="spacer"></div>'
  +'<button class="btn ghost sm" style="width:auto" onclick="closeSheet()">Anulează</button>'
  +'<button class="btn pri sm" style="width:auto" onclick="archApply(\''+id+'\')">Mută în arhivă</button></div>');
- _sheetBackTo(function(){editBro(id);});}
+ _sheetBackTo(function(){editBro(id,"arh");});}
 function archStChg(){var s=$("#amSt"),n=$("#amN"),l=$("#amNl");if(!s||!n||!l)return;
  var alt=(s.value==="alt");l.innerHTML=alt?'Motivul <span class="muted" style="font-weight:400">(scrie pe scurt)</span>':'Detalii <span class="muted" style="font-weight:400">(opțional)</span>';
  n.placeholder=alt?"ex. decedat / s-a retras / nu mai este vestitor":"ex. mutat la Congregația …";}
@@ -1276,17 +1337,11 @@ function archApply(id){if(!_needEdit())return;var b=(S.bros||[]).find(function(x
  if(st!=="mutat"&&!note){toast("Scrie pe scurt motivul");return;}
  var fut=archFutureAssign(id,k),nA=0;
  fut.forEach(function(f){f.keys.forEach(function(key){delete S.plans[f.wi].a[key];nA++;});});
- var us=_users(),u=_archUserOf(id),uoff=0;
- if(u&&!u.off){
-  var adm=us.filter(function(x){return x.r==="admin"&&!x.off;}).length;
-  if(u.r==="admin"&&adm<=1)toast("Contul rămâne activ — e ultimul administrator",4000);
-  else{u.off=1;uoff=1;}}
  if(b.arch&&b.arch.k){b.archPast=(b.archPast||[]).concat([b.arch]);}   /* o perioadă mai veche nu se pierde */
- var oldGrp=b.grp||"";b.grp="";
- var supG=[],asisG=[],resR=[],resA=[];
- grpsAll().forEach(function(g){if(g.sup===id){g.sup="";supG.push(g.id);}if(g.asis===id){g.asis="";asisG.push(g.id);}});
- respAll().forEach(function(d,i){if(d.r===id){d.r="";resR.push(i);}if(d.a===id){d.a="";resA.push(i);}});
- b.arch={st:st,note:note,k:k,t:Date.now(),grp:oldGrp,sup:supG,asis:asisG,resR:resR,resA:resA,uoff:uoff,by:(_curUser()&&_curUser().n)||""};
+ b.arch={st:st,note:note,k:k,t:Date.now(),by:(_curUser()&&_curUser().n)||""};
+ /* grupa, contul și rolurile se eliberează abia când arhivarea intră în vigoare — până atunci
+    persoana e încă în congregație și trebuie să-și păstreze locul */
+ if(k<=curYM())_archStrip(b);
  logAct("Vestitor în arhivă: "+(b.name||"")+" ("+archLabel(b.arch)+", din "+monthName(k)+")");
  save();closeSheet();_archRerender();
  okSplash("Trecut în arhivă",(b.disp||b.name||"")+" — din "+monthName(k)+(nA?(" · "+nA+" teme eliberate"):""));}
@@ -2460,7 +2515,7 @@ function masterGo(){var p=(($("#gMk")&&$("#gMk").value)||"").trim();
 function _logo(){var im=document.querySelector(".logoimg");return im?im.src:"";}
 function _userGet(){try{return localStorage.getItem(KEY+"_user")||"";}catch(e){return "";}}
 function _userSet(n){try{if(n)localStorage.setItem(KEY+"_user",n);}catch(e){}}
-function startApp(){_dirty=(S._rev||0)>pushedRev();applyTheme();try{bkpMigrate();}catch(e){}try{usersLinkBros();_sessRefresh();_sessSave();}catch(e){}go("weeks");updateSyncInfo();autoPullLoad();startSyncTimer();try{if(_upgNeeded())setTimeout(function(){if(!sheetOpen())upgSheet();},1500);}catch(e){}try{setTimeout(odAuto,4000);setInterval(odAuto,60000);}catch(e){}
+function startApp(){_dirty=(S._rev||0)>pushedRev();applyTheme();try{bkpMigrate();}catch(e){}try{archSweep();}catch(e){}try{usersLinkBros();_sessRefresh();_sessSave();}catch(e){}go("weeks");updateSyncInfo();autoPullLoad();startSyncTimer();try{if(_upgNeeded())setTimeout(function(){if(!sheetOpen())upgSheet();},1500);}catch(e){}try{setTimeout(odAuto,4000);setInterval(odAuto,60000);}catch(e){}
  try{setTimeout(notifCheck,3000);setInterval(notifCheck,120000);}catch(e){}
  try{setTimeout(pushInit,2500);}catch(e){}
  try{setTimeout(function(){if(typeof autoOn==="function"&&autoOn())boxTake(true);else boxFlush(true);},6000);}catch(e){}}
