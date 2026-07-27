@@ -481,7 +481,7 @@ Object.assign(IC,{
  book:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg>',
  mark:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15.5 4.5l4 4-9.5 9.5H6v-4z"/><path d="M12.5 7.5l4 4M5 21h14"/></svg>'
 });
-const VERSION="2.60.0";
+const VERSION="2.60.1";
 const SEED_WEEKS=[];
 const SEED_WEEKS_PRE=[];
 const SEED_WEEKS_POST=[];
@@ -2074,7 +2074,8 @@ function ensureAnCSS(){if(document.getElementById("ancss"))return;var st=documen
  +".anrow{display:flex;align-items:center;gap:11px;background:var(--bg);border:1px solid var(--bd);border-radius:12px;padding:10px 11px;margin-bottom:9px}"
  +".anth{width:44px;height:44px;flex:0 0 auto;border:1px solid var(--bd);border-radius:8px;background:#fff center/contain no-repeat}"
  +".anrw{flex:1;min-width:0}"
- +".anrt{font-size:13.5px;font-weight:700;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}"
+ +".anrt{font-size:13.5px;font-weight:700;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:flex;align-items:center;gap:7px}"
+ +".annr{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;background:var(--acc);color:#fff;font-size:11.5px;flex:0 0 auto}"
  +".anpre{display:flex;gap:5px;margin:6px 0 4px}"
  +".anpre button{flex:1;border:1px solid var(--bd);background:var(--surf);color:var(--ink2);border-radius:8px;padding:5px 4px;font-size:11.5px;font-weight:700;cursor:pointer}"
  +".anpre button.on{background:var(--accsoft);border-color:var(--acc);color:var(--acc)}"
@@ -2095,8 +2096,10 @@ function _anPageCSS(){return ""
 +".anrule{height:2px;background:#C77F1A;margin:3mm 0 5mm}"
 +".anit{margin:0;text-align:center}"
 +".anit img{display:block;margin:0 auto;max-width:100%}"
-+".ancap{font-size:10.5pt;font-weight:700;margin:0 0 1.5mm}"
-+".ansep{border:0;border-top:1px solid #d7dbe0;margin:4mm 0}";}
++".anlbl{display:flex;align-items:center;justify-content:center;gap:2.5mm;margin:0 0 2mm}"
++".annum{display:inline-flex;align-items:center;justify-content:center;width:6.4mm;height:6.4mm;border-radius:50%;background:#C77F1A;color:#fff;font-size:9.5pt;font-weight:700;line-height:1;flex:0 0 auto}"
++".ancap{font-size:10.5pt;font-weight:700}"
++".ansep{border:0;border-top:1.2px solid #C77F1A;margin:4.5mm 0}";}
 
 /* ---- imagini: aducere, micșorare, PDF → imagine ---- */
 function _anShrink(dataUrl,maxW){return new Promise(function(res){try{var im=new Image();
@@ -2108,6 +2111,37 @@ function _anShrink(dataUrl,maxW){return new Promise(function(res){try{var im=new
   res({url:c.toDataURL("image/jpeg",0.82),ar:h/w});}catch(e){res({url:dataUrl,ar:1.414});}};
  im.onerror=function(){res(null);};im.src=dataUrl;}catch(e){res(null);}});}
 var AN_PDFJS="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/";
+/* Marginile albe ale unui PDF (S-307 are ~2 cm sus) ocupau degeaba jumătate din spațiul
+   paginii. Le tăiem la adăugare, păstrând o ramă mică. Dacă ar tăia mai mult de trei sferturi
+   din imagine, renunțăm — semn că pragul n-a nimerit (poză deschisă la culoare, fundal alb). */
+function _anTrim(dataUrl){return new Promise(function(res){try{var im=new Image();
+ im.onload=function(){try{
+  var w=im.naturalWidth||im.width,h=im.naturalHeight||im.height;
+  if(!w||!h){res(null);return;}
+  var c=document.createElement("canvas");c.width=w;c.height=h;
+  var x=c.getContext("2d",{willReadFrequently:true})||c.getContext("2d");
+  if(!x){res(null);return;}
+  x.drawImage(im,0,0);
+  var d=x.getImageData(0,0,w,h).data,TH=243,p;
+  var rowWhite=function(y){for(var i=0;i<w;i++){p=(y*w+i)*4;if(d[p]<TH||d[p+1]<TH||d[p+2]<TH)return false;}return true;};
+  var colWhite=function(i,t,b){for(var y=t;y<=b;y++){p=(y*w+i)*4;if(d[p]<TH||d[p+1]<TH||d[p+2]<TH)return false;}return true;};
+  var top=0,bot=h-1,left=0,right=w-1;
+  while(top<bot&&rowWhite(top))top++;
+  while(bot>top&&rowWhite(bot))bot--;
+  while(left<right&&colWhite(left,top,bot))left++;
+  while(right>left&&colWhite(right,top,bot))right--;
+  var pad=Math.round(Math.max(w,h)*0.015);
+  top=Math.max(0,top-pad);left=Math.max(0,left-pad);
+  bot=Math.min(h-1,bot+pad);right=Math.min(w-1,right+pad);
+  var nw=right-left+1,nh=bot-top+1;
+  if(nw>=w&&nh>=h){res(null);return;}                       /* n-a fost nimic de tăiat */
+  if(nw<w*0.25||nh<h*0.25){res(null);return;}               /* ar tăia prea mult — lăsăm cum e */
+  var c2=document.createElement("canvas");c2.width=nw;c2.height=nh;
+  var x2=c2.getContext("2d");x2.fillStyle="#fff";x2.fillRect(0,0,nw,nh);
+  x2.drawImage(c,left,top,nw,nh,0,0,nw,nh);
+  res({url:c2.toDataURL("image/jpeg",0.85),ar:nh/nw});
+ }catch(e){res(null);}};
+ im.onerror=function(){res(null);};im.src=dataUrl;}catch(e){res(null);}});}
 function _pdfjs(){if(window.pdfjsLib)return Promise.resolve(window.pdfjsLib);
  return loadScript(AN_PDFJS+"build/pdf.min.js").then(function(){
   var L=window.pdfjsLib;if(!L)throw new Error("pdf.js");
@@ -2141,11 +2175,11 @@ function anAdd(){if(!_isAdmin())return;
   try{
    if(ext==="pdf"){toast("Citesc PDF-ul…");var pgs=await _anPdfPages(f);
     if(!pgs.length){toast("PDF-ul nu are pagini");return;}
-    if(pgs.length===1){_anPush(pgs[0],f.name);return;}
+    if(pgs.length===1){await _anPush(pgs[0],f.name);return;}
     _anPagePick(pgs,f.name);return;}
    var im=await _anFileImg(f);
    if(!im){toast("Nu am putut citi imaginea");return;}
-   _anPush(im,f.name);
+   await _anPush(im,f.name);
   }catch(e){toast("Nu am putut adăuga: "+((e&&e.message)||"eroare"),6000);}});}
 function _anPagePick(pgs,fname){window._anPgs=pgs;
  var H='<div class="muted" style="margin:0 2px 12px">'+esc(fname)+' · '+pgs.length+' pagini — bifează ce vrei pe foaie</div>'
@@ -2153,17 +2187,34 @@ function _anPagePick(pgs,fname){window._anPgs=pgs;
   +'<div class="rowflex" style="gap:9px;margin-top:16px"><div class="spacer"></div><button class="btn ghost sm" style="width:auto" onclick="closeSheet()">Anulează</button>'
   +'<button class="btn pri sm" style="width:auto" onclick="_anPagePickOk()">Adaugă</button></div>';
  sheet("","Ce pagini adaugi?",H);}
-function _anPagePickOk(){var pgs=window._anPgs||[],sel=[].map.call(document.querySelectorAll(".anpk:checked"),function(c){return +c.value;});
+async function _anPagePickOk(){var pgs=window._anPgs||[],sel=[].map.call(document.querySelectorAll(".anpk:checked"),function(c){return +c.value;});
  if(!sel.length){toast("Bifează cel puțin o pagină");return;}
- sel.forEach(function(i){if(pgs[i])_anPush(pgs[i],"",true);});
+ for(var k=0;k<sel.length;k++){if(pgs[sel[k]])await _anPush(pgs[sel[k]],"",true);}
  window._anPgs=null;anEdit(_anCur.id,true);}
-function _anPush(im,name,quiet){var id="i"+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+async function _anPush(im,name,quiet){
+ try{var t=await _anTrim(im.url);if(t)im=t;}catch(e){}
+ var id="i"+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
  var gf=id+"_anunt.b64";_anImg[gf]=im.url;
  _anCur.items.push({id:id,gf:gf,ar:im.ar||1.414,w:100,cap:"",nw:1});
  if(!quiet)anEdit(_anCur.id,true);}
 
 /* ---- împărțirea pe pagini: un anunț nu se taie niciodată în două ---- */
-function _anItemH(it){return AN_CW*(it.w/100)*(it.ar||1.414)+((it.cap||"").trim()?6:0);}
+function _anItemH(it){return AN_CW*(it.w/100)*(it.ar||1.414)+8;}   /* +8mm: rândul cu numărul */
+/* cât spațiu mai e liber pe ultima pagină */
+function _anFill(items){var pages=_anPaginate(items),last=pages[pages.length-1]||[],h=AN_HD;
+ last.forEach(function(it,i){h+=_anItemH(it)+(i?6:0);});
+ return {pages:pages.length,left:Math.max(0,Math.round(AN_CH-h))};}
+/* micșorează proporțional toate anunțurile până încap pe o singură pagină */
+function anFitOne(){var it=(_anCur&&_anCur.items)||[];if(!it.length)return;
+ if(_anPaginate(it).length===1){toast("Încap deja pe o pagină");return;}
+ var imgs=0;it.forEach(function(x){imgs+=AN_CW*(x.w/100)*(x.ar||1.414);});
+ var room=AN_CH-AN_HD-8*it.length-6*(it.length-1);
+ if(room<=0||imgs<=0){toast("Sunt prea multe anunțuri pentru o singură pagină",5000);return;}
+ var k=room/imgs;
+ it.forEach(function(x){x.w=Math.max(20,Math.min(100,Math.floor(x.w*k)));});
+ for(var g=0;g<40&&_anPaginate(it).length>1;g++)it.forEach(function(x){x.w=Math.max(20,x.w-2);});
+ if(_anPaginate(it).length>1)toast("Nu încap toate pe o pagină nici la mărimea minimă",5000);
+ anEdit(_anCur.id,true);}
 function _anPaginate(items){var pages=[],cur=[],h=AN_HD;
  items.forEach(function(it){var ih=_anItemH(it)+(cur.length?6:0);
   if(cur.length&&h+ih>AN_CH){pages.push(cur);cur=[];h=AN_HD;ih=_anItemH(it);}
@@ -2176,11 +2227,12 @@ function anPagesHtml(sh,cls){var pages=_anPaginate(sh.items||[]);
    +'<div class="anhd">'+esc(sh.title||"Anunțuri")+'</div>'
    +((sh.sub||"").trim()?('<div class="ansub">'+esc(sh.sub)+'</div>'):'')
    +'<div class="anrule"></div>'
-   +list.map(function(it,i){return (i?'<hr class="ansep">':'')
-     /* aspect-ratio: înălțimea e cunoscută din prima, fără să aștepte imaginea — altfel
-        previzualizarea și împărțirea pe pagini se calculau pe o pagină încă goală */
+   /* aspect-ratio pe imagine: înălțimea e cunoscută din prima, fără să aștepte încărcarea —
+      altfel previzualizarea și împărțirea pe pagini s-ar calcula pe o pagină încă goală */
+   +list.map(function(it,i){var nr=(sh.items||[]).indexOf(it)+1;
+    return (i?'<hr class="ansep">':'')
      +'<div class="anit">'
-     +((it.cap||"").trim()?('<div class="ancap">'+esc(it.cap)+'</div>'):'')
+     +'<div class="anlbl"><span class="annum">'+nr+'</span>'+((it.cap||"").trim()?('<span class="ancap">'+esc(it.cap)+'</span>'):'')+'</div>'
      +'<img src="'+(_anImg[it.gf]||"")+'" style="width:'+it.w+'%;aspect-ratio:1/'+(+it.ar||1.414).toFixed(4)+'"></div>';}).join("")
    +'</div>';});}
 
@@ -2208,7 +2260,7 @@ function anEdit(id,keep){if(!_isAdmin())return;ensureAnCSS();if(!_anCur)return;v
   var pre=[[100,"Întreagă"],[50,"Jumătate"],[33,"O treime"]].map(function(p){
    return '<button class="'+(it.w===p[0]?"on":"")+'" onclick="anSetW('+i+','+p[0]+')">'+p[1]+'</button>';}).join("");
   return '<div class="anrow"><span class="anth" style="background-image:url('+(_anImg[it.gf]||"")+')"></span>'
-   +'<span class="anrw"><span class="anrt">Anunțul '+(i+1)+' · '+it.w+'%</span>'
+   +'<span class="anrw"><span class="anrt"><b class="annr">'+(i+1)+'</b> '+it.w+'% din lățime</span>'
    +'<span class="anpre">'+pre+'</span>'
    +'<input type="range" class="anrng" min="20" max="100" step="1" value="'+it.w+'" oninput="anSetW('+i+',+this.value,1)">'
    +'<input class="fld" style="margin-top:6px;font-size:13px;padding:7px 9px" placeholder="titlu deasupra (opțional)" value="'+esc(it.cap||"").replace(/"/g,"&quot;")+'" oninput="anSetCap('+i+',this.value)">'
@@ -2223,7 +2275,12 @@ function anEdit(id,keep){if(!_isAdmin())return;ensureAnCSS();if(!_anCur)return;v
  +'<label class="fl">Sub titlu (luna)</label><input class="fld" value="'+esc(sh.sub||"").replace(/"/g,"&quot;")+'" oninput="_anCur.sub=this.value;anPrev()">'
  +'<div class="edsec">Anunțuri</div>'+rows
  +'<button class="miniact" style="width:100%;justify-content:center;margin-top:2px" onclick="anAdd()">'+IC.plus+' Adaugă anunț (poză sau PDF)</button>'
- +'<div class="edsec">Cum va arăta</div><div class="anpv" id="anPv"></div>'
+ +'<div class="edsec">Cum va arăta</div>'
+ +(function(){if(!(sh.items||[]).length)return "";var f=_anFill(sh.items);
+   return '<div class="rowflex" style="gap:9px;margin:-2px 2px 9px"><span class="muted" style="flex:1;font-size:12px">'
+    +f.pages+(f.pages===1?" pagină":" pagini")+' · pe ultima mai încap ~'+f.left+' mm</span>'
+    +(f.pages>1?'<button class="miniact" style="padding:6px 10px;font-size:12px" onclick="anFitOne()">Potrivește pe o pagină</button>':'')+'</div>';})()
+ +'<div class="anpv" id="anPv"></div>'
  +'<div class="rowflex" style="gap:9px;margin-top:18px">'
  +(saved?'<button class="btn danger sm" style="width:auto" onclick="anDel(\''+sh.id+'\')">Șterge</button>':'')
  +'<div class="spacer"></div><button class="btn ghost sm" style="width:auto" onclick="anPdf()">PDF</button>'
@@ -2243,7 +2300,7 @@ function _anFit(wrap){if(!wrap||!wrap.isConnected)return;
  if(tot)wrap.style.height=Math.round(tot)+"px";}
 function anSetW(i,w,live){var it=_anCur.items[i];if(!it)return;it.w=Math.max(20,Math.min(100,w|0));
  var r=document.querySelectorAll("#sheetBody .anrow")[i];
- if(r){var t=r.querySelector(".anrt");if(t)t.textContent="Anunțul "+(i+1)+" · "+it.w+"%";
+ if(r){var t=r.querySelector(".anrt");if(t)t.innerHTML='<b class="annr">'+(i+1)+'</b> '+it.w+"% din lățime";
   [].forEach.call(r.querySelectorAll(".anpre button"),function(b,bi){b.classList.toggle("on",it.w===[100,50,33][bi]);});
   if(!live){var rg=r.querySelector(".anrng");if(rg)rg.value=it.w;}}
  anPrev();}
