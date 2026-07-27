@@ -481,7 +481,7 @@ Object.assign(IC,{
  book:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg>',
  mark:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15.5 4.5l4 4-9.5 9.5H6v-4z"/><path d="M12.5 7.5l4 4M5 21h14"/></svg>'
 });
-const VERSION="2.59.0";
+const VERSION="2.59.1";
 const SEED_WEEKS=[];
 const SEED_WEEKS_PRE=[];
 const SEED_WEEKS_POST=[];
@@ -1138,42 +1138,39 @@ function broGroupsHtml(list,withTools){ensureGrpCSS();var grps=grpsAll();var h="
 /* fișa vestitorului: secțiuni pliabile, închise la deschidere — antetul fiecăreia arată
    pe scurt ce e înăuntru, ca să nu fie nevoie să le deschizi ca să vezi ce ai completat */
 function ensureEdCSS(){if(document.getElementById("edcss"))return;var st=document.createElement("style");st.id="edcss";st.textContent=
- ".edx{border:1px solid var(--bd);border-radius:13px;background:var(--bg);margin-bottom:8px;overflow:hidden}"
-+".edx>summary{list-style:none;display:flex;align-items:center;gap:10px;padding:12px 13px;cursor:pointer;user-select:none}"
+ /* aceleași rânduri ca „.pmrow" din restul foilor: iconiță ștearsă, titlu, sub el pe scurt ce e înăuntru */
+ ".edx{background:var(--bg);border:1px solid var(--bd);border-radius:12px;margin-bottom:9px;overflow:hidden}"
++".edx>summary{list-style:none;display:flex;align-items:center;gap:13px;padding:12px 14px;cursor:pointer;user-select:none}"
 +".edx>summary::-webkit-details-marker{display:none}"
-+".edx>summary::after{content:'';width:7px;height:7px;border-right:2px solid var(--ink3);border-bottom:2px solid var(--ink3);transform:rotate(-45deg);transition:transform .18s;flex:0 0 auto;margin-left:2px}"
-+".edx[open]>summary::after{transform:rotate(45deg)}"
++".edx>summary>svg{width:20px;height:20px;flex:0 0 auto;color:var(--ink3)}"
++".edxw{flex:1;min-width:0}"
++".edxt{display:block;font-size:15px;font-weight:600;color:var(--ink);line-height:1.3}"
++".edxv{display:block;font-size:12px;color:var(--ink3);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}"
++".edxch{flex:0 0 auto;display:flex;color:var(--ink3);transition:transform .16s}"
++".edxch svg{width:18px;height:18px}"
++".edx[open] .edxch{transform:rotate(90deg)}"
 +".edx[open]>summary{border-bottom:1px solid var(--bd)}"
-+".edxt{flex:0 0 auto;font-size:14.5px;font-weight:800;color:var(--ink)}"
-+".edxv{flex:1;min-width:0;text-align:right;font-size:12px;color:var(--ink3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}"
-+".edxb{padding:0 13px 13px}"
++".edxb{padding:0 14px 14px}"
 +".edxb .grpttl:first-child{margin-top:12px}"
 +".edxb .ck:last-of-type{border-bottom:0}"
-+".edtop .fl{margin-top:0}"
-+".edbar{position:sticky;bottom:calc(-20px - env(safe-area-inset-bottom));z-index:3;background:var(--surf);border-top:1px solid var(--bd);display:flex;align-items:center;gap:9px;margin:12px 0 calc(-20px - env(safe-area-inset-bottom));padding:11px 0 calc(20px + env(safe-area-inset-bottom))}"
-+".edbar .btn{margin:0}";
++".edtop>.fl:first-child{margin-top:0}"
++".edbar{position:sticky;bottom:calc(-20px - env(safe-area-inset-bottom));z-index:3;background:var(--surf);border-top:1px solid var(--bd);display:flex;align-items:center;gap:9px;margin:14px 0 calc(-20px - env(safe-area-inset-bottom));padding:11px 0 calc(20px + env(safe-area-inset-bottom))}";
  document.head.appendChild(st);}
-function _edSec(t,vid,body,open){return '<details class="edx"'+(open?" open":"")
- +'><summary><span class="edxt">'+esc(t)+'</span><span class="edxv" id="'+vid+'">—</span></summary><div class="edxb">'+body+'</div></details>';}
+function _edSec(ic,t,vid,body,open){return '<details class="edx"'+(open?" open":"")+'><summary>'+ic
+ +'<span class="edxw"><span class="edxt">'+esc(t)+'</span><span class="edxv" id="'+vid+'">—</span></span>'
+ +'<span class="edxch">'+IC.chev+'</span></summary><div class="edxb">'+body+'</div></details>';}
 /* rezumatele din antete se recalculează la fiecare modificare din fișă */
 function edSumAll(){try{
  var g=function(id){var e=document.getElementById(id);return e?String(e.value||"").trim():"";};
- var set=function(id,t){var e=document.getElementById(id);if(e)e.textContent=t||"—";};
- var gs=document.getElementById("bgrp"),gn=(gs&&gs.selectedIndex>0)?gs.options[gs.selectedIndex].text:"";
- var rol=g("br"),pio=g("bpio"),p=[g("bg")==="F"?"soră":"frate"];
- if(rol)p.push(rol==="Slujitor"?"slujitor auxiliar":"bătrân");
- if(pio)p.push(pioLabel(pio).toLowerCase());
- if(g("ba")==="0")p.push("inactiv");
- if(gn)p.push(gn);
- set("edvBase",p.join(" · "));
+ var set=function(id,t){var e=document.getElementById(id);if(e)e.textContent=t||"";};
  var np=document.querySelectorAll("#edform .prv:checked").length;
- set("edvPrv",np?(np+(np===1?" privilegiu":" privilegii")):"niciunul");
+ set("edvPrv",np?(np+(np===1?" privilegiu":" privilegii")):"niciun privilegiu");
  var nf=document.querySelectorAll("#famlist .famck:checked").length;
- set("edvFam",nf?(nf+(nf===1?" membru":" membri")):"—");
- set("edvCt",[g("bphone"),g("bemail")].filter(Boolean).join(" · "));
+ set("edvFam",nf?(nf+(nf===1?" membru":" membri")):"niciun membru");
+ set("edvCt",[g("bphone"),g("bemail")].filter(Boolean).join(" · ")||"fără telefon sau e-mail");
  var ne=[["becn","becp"],["bec2n","bec2p"],["bec3n","bec3p"]].filter(function(x){return g(x[0])||g(x[1]);}).length;
- set("edvEc",ne?(ne+(ne===1?" contact":" contacte")):"—");
- set("edvPdf",g("bd"));
+ set("edvEc",ne?(ne+(ne===1?" contact":" contacte")):"niciunul");
+ set("edvPdf",g("bd")||"—");
  }catch(e){}}
 /* openSec: secțiunea deschisă la intrare (ex. la revenirea din foaia de arhivare) */
 function editBro(id,openSec){if(!_needEdit())return;ensureEdCSS();
@@ -1183,7 +1180,7 @@ function editBro(id,openSec){if(!_needEdit())return;ensureEdCSS();
  const rh=GROUPS.map(([g,rs])=>`<div class="grpttl">${esc(g)}</div>`+(g==="Să fim mai eficienți în predicare"?`<div class="hint">Demonstrațiile pot fi ținute de frați sau surori (partener de același sex sau din familie).</div><label class="ck"><input type="checkbox" id="bcp" ${b.canPartner!==false?"checked":""}><span>Poate fi <b>partener</b> la demonstrația altcuiva</span></label>`:"")+rs.map(r=>`<label class="ck"><input type="checkbox" class="prv" value="${esc(r)}" ${(b.roles||[]).includes(r)?"checked":""}><span>${esc(roleLabel(r))}</span></label>`).join("")).join("");
  const q=s=>(s||"").replace(/"/g,"&quot;");
 
- const secBase=`<div class="two"><div><label class="fl">Gen</label><select id="bg" class="fld"><option value="M" ${b.gen!=="F"?"selected":""}>Frate</option><option value="F" ${b.gen==="F"?"selected":""}>Soră</option></select></div>
+ const secBase=`<div class="two" style="margin-top:8px"><div><label class="fl">Gen</label><select id="bg" class="fld"><option value="M" ${b.gen!=="F"?"selected":""}>Frate</option><option value="F" ${b.gen==="F"?"selected":""}>Soră</option></select></div>
    <div><label class="fl">Rol</label><select id="br" class="fld"><option value="Bătrân" ${b.rol==="Bătrân"?"selected":""}>Bătrân</option><option value="Slujitor" ${b.rol==="Slujitor"?"selected":""}>Slujitor auxiliar</option><option value="" ${(!b.rol||b.rol==="Vestitor")?"selected":""}>— (fără numire)</option></select></div></div>
   <div class="two" style="margin-top:8px"><div><label class="fl">Stare</label><select id="ba" class="fld"><option value="1" ${b.active!==false?"selected":""}>Activ</option><option value="0" ${b.active===false?"selected":""}>Inactiv</option></select></div>
    <div><label class="fl">Privilegiu</label><select id="bpio" class="fld"><option value="" ${(!b.pio&&b.isPub!==false)?"selected":""}>Vestitor</option><option value="Vestitor nebotezat" ${b.pio==="Vestitor nebotezat"?"selected":""}>Vestitor nebotezat</option><option value="Pionier" ${b.pio==="Pionier"?"selected":""}>Pionier regular</option><option value="Pionier auxiliar" ${b.pio==="Pionier auxiliar"?"selected":""}>Pionier auxiliar (permanent)</option><option value="Pionier special" ${b.pio==="Pionier special"?"selected":""}>Pionier special</option><option value="Misionar" ${b.pio==="Misionar"?"selected":""}>Misionar</option><option value="Cursant" ${(b.pio==="Cursant"||b.isPub===false)?"selected":""}>Cursant</option></select></div></div>
@@ -1209,14 +1206,15 @@ function editBro(id,openSec){if(!_needEdit())return;ensureEdCSS();
 
  sheet("Vestitor",(id?"Editează vestitor":"Vestitor nou"),
   `<div id="edform" oninput="edSumAll()" onchange="edSumAll()">
-   <div class="edtop"><label class="fl">Nume (ca în PDF, ex. PRICHINDEL Marius)</label><input id="bn" class="fld" oninput="bdAuto(this.value);edSumAll()" value="${q(b.name)}"></div>`
- + _edSec("Date de bază","edvBase",secBase,!id)
- + _edSec("Privilegii","edvPrv",rh)
- + _edSec("Familie","edvFam",secFam)
- + _edSec("Contact și date S-21","edvCt",secCt)
- + _edSec("Contacte de urgență","edvEc",secEc)
- + _edSec("Nume în export PDF","edvPdf",secPdf)
- + (id?_edSec("Arhivă","edvArh",archEditBlock(b),openSec==="arh"):"")
+   <div class="edtop"><label class="fl">Nume (ca în PDF, ex. PRICHINDEL Marius)</label><input id="bn" class="fld" oninput="bdAuto(this.value);edSumAll()" value="${q(b.name)}">
+   ${secBase}</div>
+   <div class="edsec">Detalii</div>`
+ + _edSec(IC.star,"Privilegii","edvPrv",rh)
+ + _edSec(IC.ppl,"Familie","edvFam",secFam)
+ + _edSec(IC.book,"Contact și date S-21","edvCt",secCt)
+ + _edSec(IC.info,"Contacte de urgență","edvEc",secEc)
+ + _edSec(IC.pdf,"Nume în export PDF","edvPdf",secPdf)
+ + (id?_edSec(IC.hist,"Arhivă","edvArh",archEditBlock(b),openSec==="arh"):"")
  + `</div><div class="edbar">${id?`<button class="btn danger sm" style="width:auto" onclick="delBro('${id}')">Șterge</button>`:""}<div class="spacer"></div>
    <button class="btn ghost sm" style="width:auto" onclick="closeSheet()">Anulează</button>
    <button class="btn pri sm" style="width:auto" onclick="saveBro('${b.id}',${id?1:0})">Salvează</button></div>`);
