@@ -481,7 +481,7 @@ Object.assign(IC,{
  book:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg>',
  mark:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15.5 4.5l4 4-9.5 9.5H6v-4z"/><path d="M12.5 7.5l4 4M5 21h14"/></svg>'
 });
-const VERSION="2.61.0";
+const VERSION="2.61.1";
 const SEED_WEEKS=[];
 const SEED_WEEKS_PRE=[];
 const SEED_WEEKS_POST=[];
@@ -4495,7 +4495,9 @@ function _cleanSeed(){
  var C=[["BUCUREȘTII NOI","POPESCU MIHAI"],["BUCUREȘTI NORD","IONUȚ OLARU"],["BUCUREȘTI RROMANI","TUDORACHE"]];
  var M=["IANUARIE","FEBRUARIE","MARTIE","APRILIE","MAI","IUNIE","IULIE","AUGUST","SEPTEMBRIE","OCTOMBRIE","NOIEMBRIE","DECEMBRIE"];
  var yr=+(S.settings.baseYear||new Date().getFullYear());
- return {title:"Curățenie generală lunară "+yr,upd:"26.11.2025",ckl:"Efectuat",t:0,
+ /* org = antetul din PDF: curățenia generală se face pe rând de mai multe congregații,
+    așa că foaia poartă numele asociației (ASR), nu al congregației noastre */
+ return {title:"Curățenie generală lunară "+yr,upd:"26.11.2025",ckl:"Efectuat",org:"ASR",t:0,
   cols:["Congregația","Luna","Responsabil"],
   rows:M.map(function(m,i){var c=C[i%3];return {id:"cl"+(i+1),v:[c[0],m,c[1]],ok:i<5};})};}
 /* se creează în memorie la prima deschidere; se scrie pe disc abia la prima modificare */
@@ -4531,12 +4533,14 @@ function cleanTog(id){if(!_needClean())return;var r=cleanRowById(id);if(!r)retur
 function cleanTitleSheet(){if(!_needClean())return;var C=cleanD();
  sheet("","Titlul foii",
   '<label class="fl">Titlu</label><input class="fld" id="clT" value="'+esc(C.title||"")+'">'
+ +'<label class="fl" style="margin-top:12px">Antetul din PDF <span class="muted" style="font-weight:400">(curățenia generală se face pe rând de mai multe congregații)</span></label><input class="fld" id="clOrg" value="'+esc(C.org||"ASR")+'" placeholder="ASR">'
  +'<label class="fl" style="margin-top:12px">Textul coloanei cu bifa</label><input class="fld" id="clCk" value="'+esc(C.ckl||"Efectuat")+'">'
  +'<label class="fl" style="margin-top:12px">Actualizat</label><input class="fld" id="clU" value="'+esc(C.upd||"")+'" placeholder="'+esc(fmtDMY(new Date()))+'">'
  +'<div class="muted" style="font-size:11.5px;margin-top:5px">Se pune singură data de azi la fiecare modificare; o poți scrie și manual.</div>'
  +'<button class="btn pri" style="width:100%;margin-top:16px" onclick="cleanTitleSave()">Salvează</button>');}
 function cleanTitleSave(){if(!_needClean())return;var C=cleanD();
  C.title=($("#clT")?$("#clT").value:"").trim()||"Curățenie generală";
+ C.org=($("#clOrg")?$("#clOrg").value:"").trim()||"ASR";
  C.ckl=($("#clCk")?$("#clCk").value:"").trim()||"Efectuat";
  var u=($("#clU")?$("#clU").value:"").trim();
  cleanCommit("Curățenie generală: titlu modificat");if(u)C.upd=u;save();
@@ -4593,31 +4597,34 @@ function cleanReset(){if(!_needClean())return;
  if(!confirm("Refaci tabelul standard pe 12 luni? Rândurile de acum se pierd."))return;
  S.clean=_cleanSeed();S.clean.upd=fmtDMY(new Date());
  cleanCommit("Curățenie generală: tabel refăcut");renderArhRoute();toast("Gata");}
-/* --- PDF curățenie generală --- */
-function _dHouseIco(){return '<svg viewBox="0 0 24 24" fill="none" stroke="#2f5597" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5L12 3l9 7.5"/><path d="M5 9.8V21h14V9.8"/><path d="M9.5 21v-6h5v6"/></svg>';}
+/* --- PDF curățenie generală (același tipar ca Grupele și Responsabilitățile) --- */
 function pdfClean(){var C=cleanD();
  if(!C.rows.length){toast("Tabelul e gol");return;}
- var head='<tr>'+C.cols.map(function(c){return '<th>'+esc(String(c).toUpperCase())+'</th>';}).join("")+'<th style="width:20%">'+esc(String(C.ckl||"Efectuat").toUpperCase())+'</th></tr>';
+ var head='<tr>'+C.cols.map(function(c){return '<th>'+esc(String(c).toUpperCase())+'</th>';}).join("")+'<th style="width:19%">'+esc(String(C.ckl||"Efectuat").toUpperCase())+'</th></tr>';
  var body=C.rows.map(function(r){
-  return '<tr>'+C.cols.map(function(c,ci){return '<td>'+esc((r.v&&r.v[ci])||"")+'</td>';}).join("")
-   +'<td class="okc">'+(r.ok?'<span class="okm">✓ DA</span>':'')+'</td></tr>';}).join("");
+  return '<tr>'+C.cols.map(function(c,ci){return '<td'+(ci===0?' class="cn"':'')+'>'+esc((r.v&&r.v[ci])||"")+'</td>';}).join("")
+   +'<td class="okc"><span class="okw"><span class="cbx'+(r.ok?" on":"")+'">'+(r.ok?"✓":"")+'</span>'+(r.ok?'<b>DA</b>':'')+'</span></td></tr>';}).join("");
  var inner='<div class="page clpg">'
-  +'<div class="clhd"><span class="clic">'+_dHouseIco()+'</span><span class="clcg">'+esc(S.settings.cong||"")+'</span><span class="clup">Actualizat '+esc(C.upd||fmtDMY(new Date()))+'</span></div>'
-  +'<div class="clttl">'+esc(C.title||"Curățenie generală")+'</div>'
+  +'<div class="s1h"><h1>'+esc(String(C.title||"Curățenie generală").toUpperCase())+'</h1>'
+  +'<div class="sub">'+esc(C.org||"ASR")+' · actualizat '+esc(C.upd||fmtDMY(new Date()))+'</div></div>'
   +'<table class="cltb"><thead>'+head+'</thead><tbody>'+body+'</tbody></table>'
-  +'<div class="ftt3">Printat '+fmtDMY(new Date())+'</div></div>';
+  +'<div class="ftt2">Printat '+fmtDMY(new Date())+'</div></div>';
  arhPdfWindow((C.title||"Curatenie generala")+".pdf",inner,
-  ".clpg{padding:14mm 16mm 12mm;position:relative}"
- +".clhd{display:flex;align-items:center;gap:3mm;margin-bottom:10mm}"
- +".clic{width:9mm;height:9mm;flex:0 0 auto}.clic svg{width:100%;height:100%}"
- +".clcg{font-size:13pt;font-weight:700;color:#1f3864;flex:1}"
- +".clup{font-size:9pt;font-weight:700;color:#1f3864}"
- +".clttl{text-align:center;font-size:22pt;font-style:italic;font-weight:700;color:#2f5597;margin:0 0 12mm}"
- +".cltb{width:100%;border-collapse:collapse;table-layout:fixed}"
- +".cltb th{border:1px solid #2f5597;color:#1f3864;font-size:11pt;font-weight:700;letter-spacing:.4px;text-align:center;padding:3.2mm 2mm}"
- +".cltb td{border:1px solid #2f5597;color:#2f5597;font-size:11pt;text-align:center;padding:3.4mm 2mm;height:9mm}"
- +".cltb .okc{color:#1a7f5a}.cltb .okm{font-weight:700;font-size:12pt;letter-spacing:.5px}"
- +".ftt3{position:absolute;bottom:8mm;right:16mm;font-size:7.5pt;color:#8a929c;letter-spacing:.3px}");}
+  ".clpg{padding:9mm 9mm 9mm;position:relative}.clpg .s1h{margin-bottom:5mm}"
+ +".clpg .s1h h1{font-size:18pt;letter-spacing:1.2px;color:#14171c}"
+ +".clpg .s1h h1::after{content:'';display:block;width:30mm;height:2.6px;background:#C77F1A;margin:2mm auto 0;border-radius:2px}"
+ +".clpg .s1h .sub{font-size:11pt;margin-top:1.6mm}"
+ +".cltb{width:100%;border-collapse:collapse;border:1px solid #eadfc8;border-radius:2mm;overflow:hidden;table-layout:fixed}"
+ +".cltb thead th{background:#faf3e6;color:#7a5510;font-size:10pt;font-weight:800;letter-spacing:.5px;text-align:center;padding:2.8mm 2mm 2.4mm;border-bottom:2.5px solid #C77F1A}"
+ +".cltb td{padding:2.5mm 2.5mm;font-size:10pt;line-height:1.25;border-bottom:1px solid #f2ede1;color:#14171c;text-align:center}"
+ +".cltb tbody tr:nth-child(even) td{background:#fcfaf5}.cltb tbody tr:last-child td{border-bottom:0}"
+ +".cltb .cn{font-weight:700;text-align:left}"
+  /* lățime rezervată: bifele stau una sub alta, iar grupul „bifă + DA" rămâne centrat în coloană */
+ +".cltb .okc .okw{display:inline-flex;align-items:center;justify-content:flex-start;gap:2.2mm;width:15mm;text-align:left}"
+ +".cltb .okc .cbx{width:14px;height:14px;line-height:12px;font-size:11px;border-color:#C77F1A;color:#fff;margin:0;flex:0 0 auto;vertical-align:0}"
+ +".cltb .okc .cbx.on{background:#C77F1A}"
+ +".cltb .okc b{color:#7a5510;font-size:10.5pt;letter-spacing:.5px}"
+ +".ftt2{position:absolute;bottom:3.5mm;right:9mm;font-size:7pt;color:#8a929c;letter-spacing:.3px}");}
 function arhFabClean(){var ed=_canEditClean();
  var H='<button class="pmrow" onclick="closeSheet();pdfClean()">'+IC.pdf+'<span><b>PDF — '+esc(cleanD().title||"Curățenie generală")+'</b></span></button>';
  if(ed){H+='<div class="pmlbl" style="margin-top:12px">Editare</div>'
@@ -4634,13 +4641,23 @@ function arhFabClean(){var ed=_canEditClean();
    în programul săptămânii (sarcină sau parte din VCP). */
 const DUTY_CATS=[["audio","Audio"],["video","Video"],["mic","Microfon"],["ord","Ordine"],["pod","Podium"]];
 function dutyCatLbl(c){var x=DUTY_CATS.find(function(o){return o[0]===c;});return x?x[1]:(c||"—");}
+/* oamenii de ordine stau unul după altul (sală, intrare I, intrare II), podiumul la final */
 function _dutySeedPosts(){return [
  {id:"d1",n:"Audio",c:"audio"},{id:"d2",n:"Video",c:"video"},
  {id:"d3",n:"Microfon I",c:"mic"},{id:"d4",n:"Microfon II",c:"mic"},
- {id:"d5",n:"Ordine (sală)",c:"ord"},{id:"d6",n:"Podium",c:"pod"},
- {id:"d7",n:"Ordine (intrare I)",c:"ord"},{id:"d8",n:"Ordine (intrare II)",c:"ord"}];}
-function dutyD(){if(!S.duty||!S.duty.posts)S.duty={title:"Audio – Video / Oameni de ordine / Curățenie",upd:"",t:0,posts:_dutySeedPosts(),a:{}};
- S.duty.a=S.duty.a||{};S.duty.posts=S.duty.posts||[];return S.duty;}
+ {id:"d5",n:"Ordine (sală)",c:"ord"},{id:"d7",n:"Ordine (intrare I)",c:"ord"},
+ {id:"d8",n:"Ordine (intrare II)",c:"ord"},{id:"d6",n:"Podium",c:"pod"}];}
+const DUTY_V=2;
+/* foile făcute înainte de ordinea nouă se rearanjează singure, fără să piardă atribuirile;
+   dacă posturile au fost deja modificate manual, le lăsăm cum sunt */
+function _dutyMigrate(D){if((D.v||0)>=DUTY_V)return;
+ var ids=D.posts.map(function(p){return p.id;}).slice().sort().join(",");
+ if(ids==="d1,d2,d3,d4,d5,d6,d7,d8"){
+  D.posts=["d1","d2","d3","d4","d5","d7","d8","d6"].map(function(id){
+   return D.posts.find(function(p){return p.id===id;});}).filter(Boolean);}
+ D.v=DUTY_V;}
+function dutyD(){if(!S.duty||!S.duty.posts)S.duty={title:"Audio – Video / Oameni de ordine / Curățenie",upd:"",t:0,v:DUTY_V,posts:_dutySeedPosts(),a:{}};
+ S.duty.a=S.duty.a||{};S.duty.posts=S.duty.posts||[];_dutyMigrate(S.duty);return S.duty;}
 function dutyPosts(){return dutyD().posts;}
 function dutyPost(pid){return dutyPosts().find(function(p){return p.id===pid;})||null;}
 function dutyOf(wi){return dutyD().a[String(wi)]||{};}
@@ -4655,12 +4672,12 @@ function dutyGrpNum(gid){var i=grpsAll().findIndex(function(g){return g.id===gid
 function dutyGrpTxt(o){if(!o)return "";if(o.grp){var n=dutyGrpNum(o.grp);var nm=grpName(o.grp);return n?(n+(nm?(" — "+nm):"")):nm;}return o.grpT||"";}
 function dutyGrpShort(o){if(!o)return "";if(o.grp){var n=dutyGrpNum(o.grp);if(n)return n;return grpName(o.grp);}return o.grpT||"";}
 function dutyFilled(wi){var o=dutyOf(wi);return dutyPosts().filter(function(p){return o[p.id];}).length;}
-/* cine poate fi pus la un post; dacă nimeni nu are bifa, arătăm toți frații activi */
-function dutyPool(cat,all){var act=(S.bros||[]).filter(function(b){return b.active!==false&&!isArchNow(b);});
- if(all)return act;
- var m=act.filter(function(b){return (b.duties||[]).indexOf(cat)>=0;});
- return m.length?m:act;}
-function dutyPoolIsFallback(cat){return !(S.bros||[]).some(function(b){return b.active!==false&&!isArchNow(b)&&(b.duties||[]).indexOf(cat)>=0;});}
+/* cine poate fi pus la un post: DOAR cei bifați în fișă la categoria respectivă.
+   Fără portiță de rezervă — dacă nu e nimeni bifat, nu se atribuie nimeni; așa nimeni
+   nu ajunge din greșeală la audio sau la microfon fără să fi fost trecut acolo.
+   (Curățenia nu trece pe aici — acolo se alege o grupă de serviciu.) */
+function dutyPool(cat){return (S.bros||[]).filter(function(b){return b.active!==false&&!isArchNow(b)&&(b.duties||[]).indexOf(cat)>=0;});}
+function dutyPoolN(cat){return dutyPool(cat).length;}
 /* ce mai are persoana în săptămâna asta: alte posturi + părțile din VCP */
 function dutyBusy(wi,id,skipPid){var out=[];if(!id)return out;
  var o=dutyOf(wi);dutyPosts().forEach(function(p){if(p.id!==skipPid&&o[p.id]===id)out.push({t:"d",n:p.n});});
@@ -4769,21 +4786,29 @@ function dutyGrpTxtSave(wi){if(!_needDuty())return;var v=($("#dgT")?$("#dgT").va
 /* --- alegerea persoanei pentru un post --- */
 var _dpk=null;
 function dutyPick(wi,pid){if(!_needDuty())return;var p=dutyPost(pid);if(!p)return;
- _dpk={wi:wi,pid:pid,q:"",all:false};dutyPickRender();}
+ _dpk={wi:wi,pid:pid,q:""};dutyPickRender();}
 function dutyPickQ(v){if(_dpk){_dpk.q=v;dutyPickList();}}
-function dutyPickAll(){if(!_dpk)return;_dpk.all=!_dpk.all;dutyPickRender();}
+/* din lista goală ajungi direct la Vestitori, ca să pui bifa */
+function dutyGoBros(){closeSheet();_dpk=null;if(_tabAllowed("bros"))go("bros");else toast("Bifele se pun din tabul Vestitori");}
 function dutyPickRender(){if(!_dpk)return;var p=dutyPost(_dpk.pid);if(!p)return;
- var fb=dutyPoolIsFallback(p.c);
- var H='<div class="muted" style="padding:2px 4px 10px">'+esc(tc(S.weeks[_dpk.wi].date))+' · categoria <b>'+esc(dutyCatLbl(p.c))+'</b></div>';
- if(fb&&!_dpk.all)H+='<div class="hint" style="margin:0 0 10px">Nimeni nu are încă bifa „'+esc(dutyCatLbl(p.c))+'” în fișă, așa că sunt afișați toți. Bifele se pun în <b>Vestitori → fișă → Sarcini (ordine, audio/video)</b>.</div>';
+ var n=dutyPoolN(p.c);
+ var H='<div class="muted" style="padding:2px 4px 10px">'+esc(tc(S.weeks[_dpk.wi].date))+' · categoria <b>'+esc(dutyCatLbl(p.c))+'</b>'+(n?(' · '+n+(n===1?" vestitor bifat":" vestitori bifați")):'')+'</div>';
+ if(!n)return dutyPickEmpty(p);
  H+='<div class="brosrch"><span class="brosrch-ic">'+IC.search+'</span><input id="dpq" class="brosrch-in" type="search" autocomplete="off" placeholder="Caută vestitor…" value="'+esc(_dpk.q||"")+'" oninput="dutyPickQ(this.value)"></div>';
- H+='<div class="pfbar2" style="margin-bottom:8px"><button class="fchip '+(_dpk.all?"on":"")+'" onclick="dutyPickAll()">Arată toți vestitorii</button></div>';
  H+='<div class="pcard"><button class="psel" onclick="dutySet(\'\')"><span class="pava" style="background:var(--surf2);color:var(--ink3)">—</span><span class="pinfo"><span class="pnm" style="color:var(--ink3)">— niciunul —</span><span class="psub">scoate atribuirea</span></span></button></div>';
  H+='<div id="dpkList"></div>';
  sheet("Alege",p.n,H);dutyPickList();}
+/* nimeni bifat la categoria asta: nu atribuim la întâmplare, ci trimitem la fișa vestitorului */
+function dutyPickEmpty(p){
+ sheet("Alege",p.n,
+  '<div class="empty" style="padding:24px 8px 18px">Niciun vestitor bifat la „'+esc(dutyCatLbl(p.c))+'”.<br>'
+ +'<span class="muted">Ca să nu ajungă cineva din greșeală la un post pe care nu-l face, aici apar doar cei bifați în fișă.</span></div>'
+ +'<div class="hint" style="margin:0 0 14px">Deschide <b>Vestitori</b> → fișa lui → <b>Sarcini (ordine, audio/video)</b> și bifează „'+esc(dutyCatLbl(p.c))+'”. Pe urmă revino aici.</div>'
+ +'<button class="btn pri" style="width:100%" onclick="dutyGoBros()">Deschide lista de vestitori</button>'
+ +(dutyOf(_dpk.wi)[p.id]?('<button class="btn ghost sm" style="width:100%;margin-top:8px" onclick="dutySet(\'\')">Scoate pe '+esc(broDisp(dutyOf(_dpk.wi)[p.id]))+' de la acest post</button>'):''));}
 function dutyPickList(){var wrap=document.getElementById("dpkList");if(!wrap||!_dpk)return;
  var p=dutyPost(_dpk.pid);if(!p)return;var wi=_dpk.wi;var cur=dutyOf(wi)[p.id]||"";
- var pool=dutyPool(p.c,_dpk.all);
+ var pool=dutyPool(p.c);
  var q=fold((_dpk.q||"").trim());if(q)pool=pool.filter(function(b){return fold(b.name).indexOf(q)>=0;});
  var list=pool.map(function(b){var h=dutyHist(b.id,p.c,1);return {b:b,last:h[0]||null,busy:dutyBusy(wi,b.id,p.id)};});
  list.sort(function(x,y){
@@ -4791,14 +4816,14 @@ function dutyPickList(){var wrap=document.getElementById("dpkList");if(!wrap||!_
   var lx=x.last?x.last.wi:-1,ly=y.last?y.last.wi:-1;
   if(lx!==ly)return lx-ly;
   return x.b.name.localeCompare(y.b.name,"ro");});
- if(!list.length){wrap.innerHTML='<div class="empty" style="padding:26px 8px">Niciun vestitor găsit.<br><span class="muted">Schimbă căutarea sau apasă „Arată toți vestitorii".</span></div>';return;}
+ if(!list.length){wrap.innerHTML='<div class="empty" style="padding:26px 8px">Niciun vestitor găsit.<br><span class="muted">Schimbă căutarea.</span></div>';return;}
  wrap.innerHTML=list.map(function(o){var b=o.b;
   var lt=o.last?('ultima dată: '+esc(tc(S.weeks[o.last.wi].date))+' · '+esc(o.last.p.n)):'nu a mai avut '+esc(dutyCatLbl(p.c)).toLowerCase();
   var bw=o.busy.length?('⚠ deja în această săptămână: '+o.busy.map(function(x){return esc(x.n)+(x.t==="v"?" (VCP)":"");}).join(" · ")):'';
   return '<div class="dcand '+(cur===b.id?"cur ":"")+(o.busy.length?"busy":"")+'">'
    +'<button class="dcb" onclick="dutySet(\''+b.id+'\')"><span class="dca">'+(initials(b.name)||"·")+'</span>'
    +'<span class="dci"><span class="dcn">'+esc(broDisp(b.id))+(cur===b.id?' <span class="dtag g">ales</span>':'')+'</span>'
-   +'<span class="dcs">'+(b.gen==="F"?"soră":"frate")+((b.rol&&b.rol!=="Vestitor")?(" · "+rolLabel(b.rol)):"")+((b.duties||[]).indexOf(p.c)<0?' · <i>fără bifa '+esc(dutyCatLbl(p.c))+'</i>':'')+'</span>'
+   +'<span class="dcs">'+(b.gen==="F"?"soră":"frate")+((b.rol&&b.rol!=="Vestitor")?(" · "+rolLabel(b.rol)):"")+'</span>'
    +'<span class="dcl">'+lt+'</span>'+(bw?('<span class="dcw">'+bw+'</span>'):'')+'</span></button>'
    +'<button class="dcinfo" title="Istoric" onclick="dutyPerson(\''+b.id+'\')">'+IC.info+'</button></div>';}).join("");}
 function dutySet(id){if(!_dpk)return;if(!_needDuty())return;var wi=_dpk.wi,pid=_dpk.pid;var p=dutyPost(pid);
@@ -4827,8 +4852,9 @@ function dutyTitleSheet(){if(!_needDuty())return;var D=dutyD();
   '<label class="fl">Titlu (apare în PDF)</label><input class="fld" id="duT" value="'+esc(D.title||"")+'">'
  +'<label class="fl" style="margin-top:12px">Actualizat</label><input class="fld" id="duU" value="'+esc(D.upd||"")+'" placeholder="'+esc(fmtDMY(new Date()))+'">'
  +'<div class="pmlbl" style="margin-top:16px">Posturile de pe foaie</div>'
- +'<div class="muted" style="margin:0 2px 8px;font-size:11.5px">Categoria hotărăște cine apare în listă: în fișa vestitorului bifezi la ce poate fi pus.</div>'
- +dutyPosts().map(function(p,i){return '<button class="pmrow" onclick="dutyPostSheet(\''+p.id+'\')">'+IC.edit+'<span><b>'+esc(p.n)+'</b> — '+esc(dutyCatLbl(p.c))+'</span></button>';}).join("")
+ +'<div class="muted" style="margin:0 2px 8px;font-size:11.5px">Categoria hotărăște cine apare în listă: în fișa vestitorului bifezi la ce poate fi pus. Fără bifă nu se poate atribui nimeni.</div>'
+ +dutyPosts().map(function(p,i){var n=dutyPoolN(p.c);
+   return '<button class="pmrow" onclick="dutyPostSheet(\''+p.id+'\')">'+IC.edit+'<span><b>'+esc(p.n)+'</b> — '+esc(dutyCatLbl(p.c))+' · '+(n?(n+" bifați"):'<b style="color:var(--maroon)">niciun bifat</b>')+'</span></button>';}).join("")
  +'<button class="pmrow" onclick="dutyPostSheet(\'\')">'+IC.plus+'<span><b>Adaugă un post</b></span></button>'
  +'<button class="btn pri" style="width:100%;margin-top:16px" onclick="dutyTitleSave()">Salvează titlul</button>');}
 function dutyTitleSave(){if(!_needDuty())return;var D=dutyD();
@@ -4841,8 +4867,8 @@ function dutyPostSheet(pid){if(!_needDuty())return;var p=pid?dutyPost(pid):null;
  var i=dutyPosts().indexOf(p);
  var H='<label class="fl">Numele postului</label><input class="fld" id="dpN" value="'+esc(p.n||"")+'" placeholder="ex. Ordine (intrare I)">'
   +'<label class="fl" style="margin-top:12px">Categoria</label><select class="fld" id="dpC">'
-  +DUTY_CATS.map(function(c){return '<option value="'+c[0]+'" '+(p.c===c[0]?"selected":"")+'>'+esc(c[1])+'</option>';}).join("")+'</select>'
-  +'<div class="muted" style="font-size:11.5px;margin-top:5px">La alegere apar doar vestitorii cu această bifă în fișă.</div>';
+  +DUTY_CATS.map(function(c){var n=dutyPoolN(c[0]);return '<option value="'+c[0]+'" '+(p.c===c[0]?"selected":"")+'>'+esc(c[1])+' ('+n+' bifați)</option>';}).join("")+'</select>'
+  +'<div class="muted" style="font-size:11.5px;margin-top:5px">La alegere apar <b>doar</b> vestitorii cu această bifă în fișă. Bifele se pun în Vestitori → fișă → „Sarcini (ordine, audio/video)”.</div>';
  if(!isNew&&dutyPosts().length>1){
   H+='<div class="rowflex" style="gap:8px;margin-top:14px">'
    +(i>0?'<button class="btn ghost sm" style="flex:1" onclick="dutyPostMove(\''+p.id+'\',-1)">↑ Mai sus</button>':'')
@@ -4872,30 +4898,32 @@ function pdfDuty(list){var D=dutyD(),posts=dutyPosts();
  if(!list.length){toast("Nicio săptămână de tipărit");return;}
  var blocks=list.map(function(wi){var w=S.weeks[wi],o=dutyOf(wi);var rows="";
   for(var j=0;j<posts.length;j+=2){var p1=posts[j],p2=posts[j+1];
-   rows+='<tr><td class="dl">'+esc(p1.n)+'</td><td class="dv">'+esc(o[p1.id]?expNameS(o[p1.id]):"")+'</td>'
+   rows+='<tr><td class="dl">'+esc(p1.n)+'</td><td class="dv mid">'+esc(o[p1.id]?expNameS(o[p1.id]):"")+'</td>'
     +(p2?('<td class="dl">'+esc(p2.n)+'</td><td class="dv">'+esc(o[p2.id]?expNameS(o[p2.id]):"")+'</td>')
         :'<td class="dl"></td><td class="dv"></td>')+'</tr>';}
-  rows+='<tr><td class="dl">Grupă (curățenie)</td><td class="dv" colspan="3">'+esc(dutyGrpShort(o))+'</td></tr>';
+  rows+='<tr class="grp"><td class="dl">Grupă (curățenie)</td><td class="dv" colspan="3">'+esc(dutyGrpShort(o))+'</td></tr>';
   return '<table class="dutb"><thead><tr><th colspan="4">Săptămâna '+esc(tc(w.date))+'</th></tr></thead><tbody>'+rows+'</tbody></table>';}).join("");
  var fn=D.title+" — "+tc(S.weeks[list[0]].date)+(list.length>1?(" … "+tc(S.weeks[list[list.length-1]].date)):"");
  var inner='<div class="page dupg">'
-  +'<div class="duhd"><span class="duic">'+_dHouseIco()+'</span><span class="ducg">'+esc(S.settings.cong||"")+'</span><span class="duup">Actualizat '+esc(D.upd||fmtDMY(new Date()))+'</span></div>'
-  +'<div class="duttl">'+esc(D.title||"Sarcini")+'</div>'
+  +'<div class="s1h"><h1>'+esc(String(D.title||"Sarcini").toUpperCase())+'</h1>'
+  +'<div class="sub">'+esc(S.settings.cong||"")+' · actualizat '+esc(D.upd||fmtDMY(new Date()))+'</div></div>'
   +'<div class="duwrap">'+blocks+'</div>'
-  +'<div class="ftt3">Printat '+fmtDMY(new Date())+'</div></div>';
+  +'<div class="ftt2">Printat '+fmtDMY(new Date())+'</div></div>';
  arhPdfWindow(fn.replace(/[\\/:*?"<>|]/g,"-")+".pdf",inner,
-  ".dupg{padding:12mm 14mm 12mm;position:relative}"
- +".duhd{display:flex;align-items:center;gap:3mm;margin-bottom:8mm}"
- +".duic{width:9mm;height:9mm;flex:0 0 auto}.duic svg{width:100%;height:100%}"
- +".ducg{font-size:13pt;font-weight:700;color:#1f3864;flex:1}"
- +".duup{font-size:9pt;font-weight:700;color:#1f3864}"
- +".duttl{text-align:center;font-size:20pt;font-style:italic;font-weight:700;color:#2f5597;margin:0 0 10mm}"
- +".duwrap{max-width:150mm;margin:0 auto}"
- +".dutb{width:100%;border-collapse:collapse;table-layout:fixed;margin-bottom:6mm;page-break-inside:avoid;break-inside:avoid}"
- +".dutb th{border:1.4px solid #2f5597;background:#fff;color:#1f3864;font-size:11pt;font-weight:700;text-align:center;padding:2.4mm 2mm}"
- +".dutb td{border:1px solid #2f5597;font-size:10pt;padding:1.9mm 2.4mm;color:#1f3864;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}"
- +".dutb .dl{font-weight:700;width:26%}.dutb .dv{width:24%;font-weight:600}"
- +".ftt3{position:absolute;bottom:8mm;right:14mm;font-size:7.5pt;color:#8a929c;letter-spacing:.3px}");}
+  ".dupg{padding:9mm 9mm 9mm;position:relative}.dupg .s1h{margin-bottom:5mm}"
+ +".dupg .s1h h1{font-size:17pt;letter-spacing:1.1px;color:#14171c}"
+ +".dupg .s1h h1::after{content:'';display:block;width:30mm;height:2.6px;background:#C77F1A;margin:2mm auto 0;border-radius:2px}"
+ +".dupg .s1h .sub{font-size:11pt;margin-top:1.6mm}"
+ +".duwrap{max-width:165mm;margin:0 auto}"
+ +".dutb{width:100%;border-collapse:collapse;border:1px solid #eadfc8;border-radius:2mm;overflow:hidden;table-layout:fixed;margin-bottom:5mm;page-break-inside:avoid;break-inside:avoid}"
+ +".dutb thead th{background:#faf3e6;color:#7a5510;font-size:10.5pt;font-weight:800;letter-spacing:.5px;text-align:center;padding:2.6mm 2mm 2.2mm;border-bottom:2.5px solid #C77F1A}"
+ +".dutb td{padding:1.9mm 3mm;font-size:9.8pt;line-height:1.25;border-bottom:1px solid #f2ede1;color:#14171c;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}"
+ +".dutb tbody tr:nth-child(even) td{background:#fcfaf5}.dutb tbody tr:last-child td{border-bottom:0}"
+ +".dutb .dl{font-weight:700;color:#7a5510;width:26%;border-right:1px solid #f2ede1}"
+ +".dutb .dv{width:24%;font-weight:700}"
+ +".dutb .dv.mid{border-right:1px solid #f2ede1}"
+ +".dutb .grp td{background:#fcf8ef!important;border-top:1px solid #eadfc8}"
+ +".ftt2{position:absolute;bottom:3.5mm;right:9mm;font-size:7pt;color:#8a929c;letter-spacing:.3px}");}
 function dutyPdfSheet(){var cw=vcpCurWeek();
  var H='<div class="muted" style="margin:0 2px 10px">Alege ce intră în PDF.</div>';
  if(dutyW>=0)H+='<button class="pmrow" onclick="closeSheet();pdfDuty(['+dutyW+'])">'+IC.pdf+'<span><b>Doar săptămâna deschisă</b> — '+esc(tc(S.weeks[dutyW].date))+'</span></button>';
