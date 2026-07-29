@@ -481,7 +481,7 @@ Object.assign(IC,{
  book:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg>',
  mark:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15.5 4.5l4 4-9.5 9.5H6v-4z"/><path d="M12.5 7.5l4 4M5 21h14"/></svg>'
 });
-const VERSION="2.61.3";
+const VERSION="2.62.0";
 const SEED_WEEKS=[];
 const SEED_WEEKS_PRE=[];
 const SEED_WEEKS_POST=[];
@@ -537,6 +537,8 @@ function _wkDraftActive(){return !!(_wkDraft&&tab==="weeks"&&typeof curW!=="unde
 function save(){
  if(_wkDraftActive()&&!_applying){/* cât timp editezi o săptămână NU scriem în localStorage — modificarea trăiește doar în memorie; la refresh/închidere fără „Salvează" se pierde, iar „Salvează"/„Anulează" o comit sau o revin */
   if(!_wkDraft.dirty){_wkDraft.dirty=true;}_wkDirtyBtn();return;}
+ /* la fel pentru Curățenie / Sarcini din Arhivă */
+ if(typeof _secDraftActive==="function"&&_secDraftActive()&&!_applying){_secTouch(null);return;}
  if(!_applying){S._rev=nextRev();_dirty=true;}
  try{localStorage.setItem(KEY,JSON.stringify(S));}
  catch(e){/* quota plină: eliberăm automat și reîncercăm — backup-urile vechi din localStorage se mută oricum în IndexedDB */
@@ -562,7 +564,7 @@ function wkCommit(){if(!_wkDraft)return;var i=_wkDraft.i;_wkDraft=null;
  openWeek(i);}
 function wkCancel(){if(!_wkDraft)return;var i=_wkDraft.i;if(_wkDraft.dirty&&!confirm("Anulezi modificările din această săptămână?"))return;_wkRestore();toast("Modificările au fost anulate");openWeek(i);}
 /* avertizează dacă închizi/reîncarci pagina cu o săptămână nesalvată */
-try{window.addEventListener("beforeunload",function(e){if(_wkDraft&&_wkDraft.dirty){e.preventDefault();e.returnValue="";}});}catch(e){}
+try{window.addEventListener("beforeunload",function(e){if((_wkDraft&&_wkDraft.dirty)||(typeof _secDraft!=="undefined"&&_secDraft&&_secDraft.dirty)){e.preventDefault();e.returnValue="";}});}catch(e){}
 
 /* ==== Trage în jos pentru actualizare (date + versiune aplicație) ==== */
 function _verGt(a,b){var pa=String(a).split(".").map(Number),pb=String(b).split(".").map(Number);for(var i=0;i<3;i++){var x=pa[i]||0,y=pb[i]||0;if(x>y)return true;if(x<y)return false;}return false;}
@@ -3430,6 +3432,7 @@ function esc(s){return (s+"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace
 /* nav + sheet */
 let tab="weeks";
 function go(t){if(_wkDraft&&!_wkGuard())return;/* nu părăsim săptămâna cu modificări nesalvate fără confirmare */
+ if(t!==tab&&typeof _secGuard==="function"&&!_secGuard())return;/* la fel pentru Curățenie / Sarcini */
  if(!_tabAllowed(t))t=_firstTab();if(t==="vcp"&&tab!=="vcp")vcpW=-1;tab=t;document.querySelectorAll(".nb").forEach(b=>b.classList.toggle("on",b.dataset.tab===t));
  _applyNavVis();
  var R={vcp:renderVcp,weeks:renderWeeks,meu:renderMeu,bros:renderBros,arh:renderArhRoute,set:renderSet};
@@ -3747,7 +3750,8 @@ function arhFabResp(){var H='';
  if(_canEditArh())H+='<button class="pmrow" onclick="arhFabGo(function(){respEdit(-1);},arhFabResp)">'+IC.plus+'<span><b>Departament nou</b></span></button>';
  H+='<button class="pmrow" onclick="closeSheet();pdfResp()">'+IC.pdf+'<span><b>Responsabilități (PDF)</b> — listă pentru avizier</span></button>';
  sheet("","Responsabilități — descarcă și unelte",H);}
-function arhGo(s){arhSub=s;_arhLastSub=null;renderArh();$("#body").scrollTop=0;try{window.scrollTo(0,0);}catch(e){}}
+function arhGo(s){if(s!==arhSub&&typeof _secGuard==="function"&&!_secGuard())return;
+ arhSub=s;_arhLastSub=null;renderArh();$("#body").scrollTop=0;try{window.scrollTo(0,0);}catch(e){}}
 
 /* selector lună (an teocratic + lună) */
 function arhMonthPicker(){var years=theoYearsAvail();
@@ -4425,11 +4429,51 @@ function pdfResp(){var L=_respLists();var deps=respAll();
    Implicit doar administratorii pot edita; dreptul se dă per persoană din
    Setări → Utilizatori. Toți ceilalți VĂD ambele secțiuni, fără să poată schimba ceva. */
 
+/* ---- ciornă: modificările NU pleacă spre nimeni până nu apeși „Salvează" ----
+   Același tipar ca la o săptămână din Programări: cât timp ciorna e deschisă nu se
+   scrie nici pe telefon, nici în cloud; „Salvează" comite și trimite, „Anulează" revine. */
+var _secDraft=null;
+function _arhCurSub(){return _arhFull()?arhSub:arhLiteSub;}
+function _secDraftActive(){return !!(_secDraft&&tab==="arh"&&_secDraft.sub===_arhCurSub());}
+function _secSnap(sub){return JSON.stringify(sub==="cur"?(S.clean||null):(S.duty||null));}
+function _secBegin(sub){if(_secDraft&&_secDraft.sub===sub)return _secDraft;
+ _secDraft={sub:sub,snap:_secSnap(sub),logs:[],dirty:false};return _secDraft;}
+function _secTouch(msg){if(!_secDraft)return;if(msg)_secDraft.logs.push(msg);_secDraft.dirty=true;_secDirtyBtn();}
+function _secRestore(d){try{var o=JSON.parse(d.snap);
+ if(d.sub==="cur"){if(o)S.clean=o;else delete S.clean;}
+ else{if(o)S.duty=o;else delete S.duty;}}catch(e){}}
+function _secLbl(sub){return sub==="cur"?"Curățenie":"Sarcini";}
+function _secBarBtns(){return '<button class="btn pri sm" style="width:auto" onclick="secSave()">Salvează</button>'
+ +'<button class="btn ghost sm" style="width:auto" onclick="secCancel()">Anulează</button>';}
+function _secBar(sub){return '<div class="wksavebar" id="secSaveSlot">'+((_secDraft&&_secDraft.sub===sub&&_secDraft.dirty)?_secBarBtns():'')+'</div>';}
+function _secDirtyBtn(){var el=document.getElementById("secSaveSlot");
+ if(el&&_secDraft&&_secDraft.dirty&&!el.querySelector("button"))el.innerHTML=_secBarBtns();}
+function secSave(){if(!_secDraft)return;var d=_secDraft;_secDraft=null;
+ var O=(d.sub==="cur")?cleanD():dutyD();if(!d.keepUpd)O.upd=fmtDMY(new Date());O.t=Date.now();
+ d.logs.forEach(function(m){logAct(m);});
+ save();
+ if(_dSendDirect()){try{if(typeof ghSync==="function")ghSync(true);}catch(e){}}
+ else{try{boxQueue(d.sub==="cur"?{k:"cln",cln:JSON.parse(JSON.stringify(S.clean)),by:_dWho(),t:O.t}
+                                :{k:"dut",dut:JSON.parse(JSON.stringify(S.duty)),by:_dWho(),t:O.t});boxFlush(true);}catch(e){}}
+ renderArhRoute();
+ okSplash("Salvat",_secLbl(d.sub)+" — se trimite tuturor");}
+function secCancel(){if(!_secDraft)return;var d=_secDraft;
+ if(d.dirty&&!confirm("Anulezi modificările nesalvate de la "+_secLbl(d.sub)+"?"))return;
+ _secDraft=null;_secRestore(d);save();renderArhRoute();toast("Modificările au fost anulate");}
+/* la ieșirea din secțiune / din tab: nu pierdem nimic fără să întrebăm */
+function _secGuard(){if(!_secDraft)return true;
+ if(!_secDraft.dirty){_secDraft=null;return true;}
+ if(confirm("Ai modificări nesalvate la "+_secLbl(_secDraft.sub)+". Renunți la ele?")){
+  var d=_secDraft;_secDraft=null;_secRestore(d);save();return true;}
+ return false;}
+
 /* ---- cine poate edita ---- */
 function _canEditClean(){if(_isAdmin())return true;var u=_curUser();return !!(u&&u.curE);}
 function _canEditDuty(){if(_isAdmin())return true;var u=_curUser();return !!(u&&u.sarE);}
-function _needClean(){if(_canEditClean())return true;toast("Doar vizualizare — dreptul de editare se dă din Setări → Utilizatori");return false;}
-function _needDuty(){if(_canEditDuty())return true;toast("Doar vizualizare — dreptul de editare se dă din Setări → Utilizatori");return false;}
+/* orice drum de editare trece pe aici, deci tot aici deschidem ciorna — instantaneul se ia
+   ÎNAINTE de prima modificare, ca „Anulează" să poată reveni complet */
+function _needClean(){if(_canEditClean()){_secBegin("cur");return true;}toast("Doar vizualizare — dreptul de editare se dă din Setări → Utilizatori");return false;}
+function _needDuty(){if(_canEditDuty()){_secBegin("sarc");return true;}toast("Doar vizualizare — dreptul de editare se dă din Setări → Utilizatori");return false;}
 /* dispozitivele fără token GitHub (vestitori, vizitatori) trimit modificarea prin cutia poștală */
 function _dSendDirect(){return (typeof autoOn==="function"&&autoOn());}
 function _dWho(){var u=_curUser();return (u&&u.n)||"";}
@@ -4463,14 +4507,21 @@ function ensureDutyCSS(){if(document.getElementById("dutycss"))return;var st=doc
 +".dwrow .dwi{flex:1;min-width:0;display:block}.dwrow .dwt{display:block;font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}"
 +".dwrow .dws{display:block;font-size:11.5px;color:var(--ink3);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}"
  /* --- posturile dintr-o săptămână --- */
-+".dpr{display:flex;align-items:center;gap:10px;padding:9px 13px;border-bottom:1px solid var(--bd)}"
++".dpr{display:flex;align-items:flex-start;gap:9px;padding:10px 13px;border-bottom:1px solid var(--bd)}"
 +".dpr:last-child{border-bottom:0}"
-+".dpr .dpl{flex:0 0 40%;max-width:40%;font-size:12.5px;color:var(--ink2);font-weight:600;line-height:1.3}"
-+".dpb{flex:1;min-width:0;display:flex;align-items:center;gap:7px;background:var(--bg);border:1px solid var(--bd);border-radius:11px;padding:9px 11px;color:var(--ink);font-size:13.5px;font-weight:700;text-align:left;cursor:pointer}"
++".dpr .dpl{flex:0 0 36%;max-width:36%;font-size:12.5px;color:var(--ink2);font-weight:600;line-height:1.3;padding-top:11px}"
++".dprr{flex:1;min-width:0;display:flex;flex-direction:column;gap:6px}"
++".dpb{width:100%;display:flex;align-items:center;gap:7px;background:var(--bg);border:1px solid var(--bd);border-radius:11px;padding:9px 11px;color:var(--ink);font-size:13.5px;font-weight:700;text-align:left;cursor:pointer}"
 +".dpb.ph{color:var(--ink3);font-weight:500}.dpb.warn{border-color:var(--acc)}.dpb span.dpx{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}"
 +".dpb .dpc{flex:0 0 auto;color:var(--ink3);display:flex}.dpb .dpc svg{width:16px;height:16px}"
-+".dpwarn{font-size:11px;color:var(--acc);padding:0 13px 8px 13px;margin-top:-4px;line-height:1.4}"
-+".dpclr{flex:0 0 auto;width:32px;height:32px;border:1px solid var(--bd);background:var(--bg);border-radius:10px;color:var(--ink3);font-size:17px;line-height:1;cursor:pointer}"
+ /* avertizarea: o fâșie discretă sub nume, nu text liber peste tot rândul */
++".dpw{display:flex;gap:7px;align-items:flex-start;font-size:11.5px;line-height:1.4;color:var(--acc);background:var(--accsoft);border-radius:10px;padding:6px 9px}"
++".dpwi{flex:0 0 auto;width:15px;height:15px;border-radius:50%;background:var(--acc);color:#fff;font-size:10.5px;font-weight:800;line-height:15px;text-align:center;margin-top:.5px}"
++".dpclr{flex:0 0 auto;width:32px;height:32px;margin-top:4px;border:1px solid var(--bd);background:var(--bg);border-radius:10px;color:var(--ink3);font-size:17px;line-height:1;cursor:pointer}"
+ /* pe telefon numele nu încape lângă etichetă — o trecem deasupra, ca titlu de rând */
++"@media(max-width:430px){.dpr{flex-wrap:wrap;padding:11px 13px 12px}"
++".dpr .dpl{flex:1 1 100%;max-width:none;padding-top:0;margin-bottom:1px;font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.45px;color:var(--ink3)}"
++".dprr{flex:1 1 0;min-width:0}.dpclr{margin-top:0;align-self:center}}"
  /* --- lista de alegere --- */
 +".dcand{display:flex;align-items:stretch;gap:7px;margin-bottom:7px}"
 +".dcand .dcb{flex:1;min-width:0;display:flex;align-items:center;gap:11px;background:var(--surf);border:1px solid var(--bd);border-radius:12px;padding:10px 12px;text-align:left;color:var(--ink);cursor:pointer}"
@@ -4479,7 +4530,7 @@ function ensureDutyCSS(){if(document.getElementById("dutycss"))return;var st=doc
 +".dcand .dci{flex:1;min-width:0}.dcand .dcn{font-size:14px;font-weight:700;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}"
 +".dcand .dcs{font-size:11px;color:var(--ink3);display:block;margin-top:1px}"
 +".dcand .dcl{font-size:11px;color:var(--ink2);display:block;margin-top:2px}"
-+".dcand .dcw{font-size:11px;color:var(--gold,var(--acc));font-weight:700;display:block;margin-top:2px}"
++".dcand .dpw{margin-top:6px;font-size:11px;padding:5px 8px}"
 +".dcinfo{flex:0 0 auto;width:42px;border:1px solid var(--bd);background:var(--surf);color:var(--ink2);border-radius:12px;cursor:pointer;display:grid;place-items:center}.dcinfo svg{width:18px;height:18px}"
 +".dtag{display:inline-block;font-size:10px;font-weight:800;letter-spacing:.3px;padding:2px 7px;border-radius:999px;background:var(--accsoft);color:var(--acc);margin-left:6px;vertical-align:1px}"
 +".dtag.g{background:rgba(53,195,179,.16);color:var(--tealtx)}";
@@ -4502,13 +4553,11 @@ function _cleanSeed(){
 function cleanD(){if(!S.clean||!S.clean.cols||!S.clean.rows)S.clean=_cleanSeed();
  S.clean.cols=S.clean.cols||[];S.clean.rows=S.clean.rows||[];return S.clean;}
 function cleanRowById(id){return cleanD().rows.find(function(r){return r.id===id;})||null;}
-/* orice modificare: actualizează data „Actualizat", scrie în istoric și pleacă spre ceilalți */
-function cleanCommit(msg){var C=cleanD();C.upd=fmtDMY(new Date());C.t=Date.now();
- logAct(msg);save();
- if(!_dSendDirect()){try{boxQueue({k:"cln",cln:JSON.parse(JSON.stringify(C)),by:_dWho(),t:C.t});boxFlush(true);}catch(e){}}}
+/* orice modificare intră în ciornă: „Actualizat" și trimiterea se fac abia la „Salvează" */
+function cleanCommit(msg){cleanD();_secBegin("cur");_secTouch(msg);}
 
 function arhCleanHtml(){ensureDutyCSS();var C=cleanD(),ed=_canEditClean();
- var h='<div class="dsh"><div class="dst"><div class="dstt">'+esc(C.title||"Curățenie generală")+'</div>'
+ var h=_secBar("cur")+'<div class="dsh"><div class="dst"><div class="dstt">'+esc(C.title||"Curățenie generală")+'</div>'
   +'<div class="dsu">'+(C.upd?("Actualizat "+esc(C.upd)):"nemodificat încă")+' · '+C.rows.length+(C.rows.length===1?" rând":" rânduri")+'</div></div>'
   +(ed?('<button class="dse" title="Editează titlul" onclick="cleanTitleSheet()">'+IC.edit+'</button>'):'')+'</div>';
  if(!ed)h+='<div class="muted" style="margin:0 2px 10px;font-size:11.5px">Doar vizualizare. Dreptul de editare se dă din Setări → Utilizatori.</div>';
@@ -4545,8 +4594,9 @@ function cleanTitleSave(){if(!_needClean())return;var C=cleanD();
  C.org=($("#clOrg")?$("#clOrg").value:"").trim()||"ASR";
  C.ckl=($("#clCk")?$("#clCk").value:"").trim()||"Efectuat";
  var u=($("#clU")?$("#clU").value:"").trim();
- cleanCommit("Curățenie generală: titlu modificat");if(u)C.upd=u;save();
- closeSheet();renderArhRoute();toast("Salvat");}
+ cleanCommit("Curățenie generală: titlu modificat");
+ if(u){C.upd=u;if(_secDraft)_secDraft.keepUpd=true;}
+ closeSheet();renderArhRoute();}
 function cleanRowSheet(id){if(!_needClean())return;var C=cleanD();var r=cleanRowById(id);var isNew=!r;
  if(isNew)r={id:"cl"+Date.now(),v:C.cols.map(function(){return "";}),ok:false};
  var i=C.rows.indexOf(r);
@@ -4666,9 +4716,7 @@ function dutyOf(wi){return dutyD().a[String(wi)]||{};}
 function dutySetVal(wi,k,v){var D=dutyD(),key=String(wi);var o=D.a[key]||(D.a[key]={});
  if(v)o[k]=v;else delete o[k];
  if(!Object.keys(o).length)delete D.a[key];}
-function dutyCommit(msg){var D=dutyD();D.upd=fmtDMY(new Date());D.t=Date.now();
- logAct(msg);save();
- if(!_dSendDirect()){try{boxQueue({k:"dut",dut:JSON.parse(JSON.stringify(D)),by:_dWho(),t:D.t});boxFlush(true);}catch(e){}}}
+function dutyCommit(msg){dutyD();_secBegin("sarc");_secTouch(msg);}
 /* numărul grupei de serviciu, cum apare pe foaie („Grupă (curățenie) 2") */
 function dutyGrpNum(gid){var i=grpsAll().findIndex(function(g){return g.id===gid;});return i<0?"":String(i+1);}
 function dutyGrpTxt(o){if(!o)return "";if(o.grp){var n=dutyGrpNum(o.grp);var nm=grpName(o.grp);return n?(n+(nm?(" — "+nm):"")):nm;}return o.grpT||"";}
@@ -4698,9 +4746,11 @@ function dutyBusy(wi,id,skipPid){var out=[];if(!id)return out;
 function dutyBusyTxt(busy){var v=busy.filter(function(x){return x.t==="v";}).map(function(x){return x.n;});
  var d=busy.filter(function(x){return x.t==="d";}).map(function(x){return x.n;});
  var p=[];
- if(v.length)p.push("temă la VCP — "+v.join(", "));
+ if(v.length)p.push((v.length===1?"o temă la VCP: ":"teme la VCP: ")+v.join(", "));
  if(d.length)p.push((d.length===1?"sarcina ":"sarcinile ")+d.join(", "));
  return p.join(" · ");}
+/* fâșia de avertizare de sub nume — aceeași formă și în rând, și în lista de alegere */
+function dutyWarnHtml(busy){return '<span class="dpw"><span class="dpwi">!</span><span>Are deja '+esc(dutyBusyTxt(busy))+'</span></span>';}
 /* istoricul sarcinilor unei persoane, cele mai recente primele */
 function dutyHist(id,cat,limit){var out=[],D=dutyD(),posts=dutyPosts();
  for(var wi=S.weeks.length-1;wi>=0&&out.length<(limit||99);wi--){var o=D.a[String(wi)];if(!o)continue;
@@ -4720,7 +4770,7 @@ function arhDutyHtml(){ensureDutyCSS();
 function dutyGo(wi){dutyW=wi;_arhLastSub=null;renderArhRoute();}
 function dutyBack(){dutyW=-1;_arhLastSub=null;renderArhRoute();}
 function dutyListHtml(){var D=dutyD(),ed=_canEditDuty();
- var h='<div class="dsh"><div class="dst"><div class="dstt">'+esc(D.title||"Sarcini")+'</div>'
+ var h=_secBar("sarc")+'<div class="dsh"><div class="dst"><div class="dstt">'+esc(D.title||"Sarcini")+'</div>'
   +'<div class="dsu">'+(D.upd?("Actualizat "+esc(D.upd)):"nemodificat încă")+' · '+dutyPosts().length+' posturi pe săptămână</div></div>'
   +(ed?('<button class="dse" title="Editează titlul" onclick="dutyTitleSheet()">'+IC.edit+'</button>'):'')+'</div>';
  if(!ed)h+='<div class="muted" style="margin:0 2px 10px;font-size:11.5px">Doar vizualizare. Dreptul de editare se dă din Setări → Utilizatori.</div>';
@@ -4752,7 +4802,7 @@ function dutyListHtml(){var D=dutyD(),ed=_canEditDuty();
  return h;}
 function dutyWeekHtml(wi){var w=S.weeks[wi],o=dutyOf(wi),ed=_canEditDuty(),posts=dutyPosts();
  var np=function(i){return (i>=0&&i<S.weeks.length);};
- var h='<div class="wkbar"><button class="bk" onclick="dutyBack()">'+IC.back+' Sarcini</button>'
+ var h=_secBar("sarc")+'<div class="wkbar"><button class="bk" onclick="dutyBack()">'+IC.back+' Sarcini</button>'
   +'<div class="wknavc"><button class="wkb" onclick="dutyGo('+(wi-1)+')" '+(np(wi-1)?"":"disabled")+' title="Săptămâna anterioară">'+IC.back+'</button>'
   +'<span class="wkpos">'+esc(tc(w.date))+'</span>'
   +'<button class="wkb" onclick="dutyGo('+(wi+1)+')" '+(np(wi+1)?"":"disabled")+' title="Săptămâna următoare">'+IC.fwd+'</button></div><span class="wkspace"></span></div>';
@@ -4761,10 +4811,12 @@ function dutyWeekHtml(wi){var w=S.weeks[wi],o=dutyOf(wi),ed=_canEditDuty(),posts
  h+='<div class="group" style="overflow:hidden">';
  posts.forEach(function(p){var id=o[p.id]||"";var busy=id?dutyBusy(wi,id,p.id):[];
   h+='<div class="dpr"><div class="dpl">'+esc(p.n)+'</div>'
-   +'<button class="dpb '+(id?"":"ph")+(busy.length?" warn":"")+'" '+(ed?('onclick="dutyPick('+wi+',\''+p.id+'\')"'):'disabled style="cursor:default"')+'>'
-   +'<span class="dpx">'+(id?esc(broDisp(id)):"—")+'</span>'+(ed?('<span class="dpc">'+IC.chev+'</span>'):'')+'</button>'
-   +((ed&&id)?('<button class="dpclr" title="Scoate" onclick="dutyClear('+wi+',\''+p.id+'\')">×</button>'):'')+'</div>';
-  if(busy.length)h+='<div class="dpwarn">⚠ <b>'+esc(broDisp(id))+'</b> are deja în această săptămână: '+esc(dutyBusyTxt(busy))+'</div>';});
+   +'<div class="dprr">'
+    +'<button class="dpb '+(id?"":"ph")+(busy.length?" warn":"")+'" '+(ed?('onclick="dutyPick('+wi+',\''+p.id+'\')"'):'disabled style="cursor:default"')+'>'
+    +'<span class="dpx">'+(id?esc(broDisp(id)):"—")+'</span>'+(ed?('<span class="dpc">'+IC.chev+'</span>'):'')+'</button>'
+    +(busy.length?dutyWarnHtml(busy):'')
+   +'</div>'
+   +((ed&&id)?('<button class="dpclr" title="Scoate" onclick="dutyClear('+wi+',\''+p.id+'\')">×</button>'):'')+'</div>';});
  h+='</div>';
  var gt=dutyGrpTxt(o);
  h+='<div class="group" style="overflow:hidden"><div class="dpr"><div class="dpl">Grupă (curățenie)</div>'
@@ -4830,12 +4882,12 @@ function dutyPickList(){var wrap=document.getElementById("dpkList");if(!wrap||!_
  if(!list.length){wrap.innerHTML='<div class="empty" style="padding:26px 8px">Niciun vestitor găsit.<br><span class="muted">Schimbă căutarea.</span></div>';return;}
  wrap.innerHTML=list.map(function(o){var b=o.b;
   var lt=o.last?('ultima dată: '+esc(tc(S.weeks[o.last.wi].date))+' · '+esc(o.last.p.n)):'nu a mai avut '+esc(dutyCatLbl(p.c)).toLowerCase();
-  var bw=o.busy.length?('⚠ are deja în această săptămână: '+esc(dutyBusyTxt(o.busy))):'';
+  var bw=o.busy.length?dutyWarnHtml(o.busy):'';
   return '<div class="dcand '+(cur===b.id?"cur ":"")+(o.busy.length?"busy":"")+'">'
    +'<button class="dcb" onclick="dutySet(\''+b.id+'\')"><span class="dca">'+(initials(b.name)||"·")+'</span>'
    +'<span class="dci"><span class="dcn">'+esc(broDisp(b.id))+(cur===b.id?' <span class="dtag g">ales</span>':'')+'</span>'
    +'<span class="dcs">'+(b.gen==="F"?"soră":"frate")+((b.rol&&b.rol!=="Vestitor")?(" · "+rolLabel(b.rol)):"")+'</span>'
-   +'<span class="dcl">'+lt+'</span>'+(bw?('<span class="dcw">'+bw+'</span>'):'')+'</span></button>'
+   +'<span class="dcl">'+lt+'</span>'+bw+'</span></button>'
    +'<button class="dcinfo" title="Istoric" onclick="dutyPerson(\''+b.id+'\')">'+IC.info+'</button></div>';}).join("");}
 function dutySet(id){if(!_dpk)return;if(!_needDuty())return;var wi=_dpk.wi,pid=_dpk.pid;var p=dutyPost(pid);
  var old=dutyOf(wi)[pid]||"";
@@ -4846,7 +4898,7 @@ function dutySet(id){if(!_dpk)return;if(!_needDuty())return;var wi=_dpk.wi,pid=_
   +(busy.length?(" [are deja: "+dutyBusyTxt(busy)+"]"):""));
  closeSheet();_dpk=null;renderArhRoute();
  /* atenționare chiar în clipa atribuirii — nu doar linia galbenă de pe rând */
- if(busy.length)toast("⚠ "+broDisp(id)+" are deja în această săptămână: "+dutyBusyTxt(busy),6500);}
+ if(busy.length)toast(broDisp(id)+" are deja "+dutyBusyTxt(busy),6000);}
 /* istoricul unei persoane la sarcini — deschis din „i" în lista de alegere */
 function dutyPerson(id){var b=(S.bros||[]).find(function(x){return x.id===id;});if(!b)return;
  var h=dutyHist(id,null,20);
@@ -4876,8 +4928,9 @@ function dutyTitleSheet(){if(!_needDuty())return;var D=dutyD();
 function dutyTitleSave(){if(!_needDuty())return;var D=dutyD();
  D.title=($("#duT")?$("#duT").value:"").trim()||"Sarcini";
  var u=($("#duU")?$("#duU").value:"").trim();
- dutyCommit("Sarcini: titlu modificat");if(u){D.upd=u;save();}
- closeSheet();renderArhRoute();toast("Salvat");}
+ dutyCommit("Sarcini: titlu modificat");
+ if(u){D.upd=u;if(_secDraft)_secDraft.keepUpd=true;}
+ closeSheet();renderArhRoute();}
 function dutyPostSheet(pid){if(!_needDuty())return;var p=pid?dutyPost(pid):null;var isNew=!p;
  if(isNew)p={id:"d"+Date.now(),n:"",c:"ord"};
  var i=dutyPosts().indexOf(p);
@@ -4912,34 +4965,39 @@ function dutyPostMove(pid,d){if(!_needDuty())return;var ps=dutyPosts();var i=ps.
 function pdfDuty(list){var D=dutyD(),posts=dutyPosts();
  list=(list||[]).filter(function(i){return S.weeks[i];});
  if(!list.length){toast("Nicio săptămână de tipărit");return;}
- var blocks=list.map(function(wi){var w=S.weeks[wi],o=dutyOf(wi);var rows="";
+ var block=function(wi){var w=S.weeks[wi],o=dutyOf(wi);var rows="";
   for(var j=0;j<posts.length;j+=2){var p1=posts[j],p2=posts[j+1];
    rows+='<tr><td class="dl">'+esc(p1.n)+'</td><td class="dv mid">'+esc(o[p1.id]?expNameS(o[p1.id]):"")+'</td>'
     +(p2?('<td class="dl">'+esc(p2.n)+'</td><td class="dv">'+esc(o[p2.id]?expNameS(o[p2.id]):"")+'</td>')
         :'<td class="dl"></td><td class="dv"></td>')+'</tr>';}
   rows+='<tr class="grp"><td class="dl">Grupă (curățenie)</td><td class="dv" colspan="3">'+esc(dutyGrpShort(o))+'</td></tr>';
-  return '<table class="dutb"><thead><tr><th colspan="4">Săptămâna '+esc(tc(w.date))+'</th></tr></thead><tbody>'+rows+'</tbody></table>';}).join("");
+  return '<table class="dutb"><thead><tr><th colspan="4">Săptămâna '+esc(tc(w.date))+'</th></tr></thead><tbody>'+rows+'</tbody></table>';};
  var fn=D.title+" — "+tc(S.weeks[list[0]].date)+(list.length>1?(" … "+tc(S.weeks[list[list.length-1]].date)):"");
- var inner='<div class="page dupg">'
-  +'<div class="s1h"><h1>'+esc(String(D.title||"Sarcini").toUpperCase())+'</h1>'
-  +'<div class="sub">'+esc(S.settings.cong||"")+' · actualizat '+esc(D.upd||fmtDMY(new Date()))+'</div></div>'
-  +'<div class="duwrap">'+blocks+'</div>'
-  +'<div class="ftt2">Printat '+fmtDMY(new Date())+'</div></div>';
+ /* cel mult două săptămâni pe pagină: tabelele nu se mai rup la schimbarea de foaie
+    și rămâne loc ca fiecare să fie mare și aerisită */
+ var PER=2,inner="";
+ for(var k=0;k<list.length;k+=PER){var grp=list.slice(k,k+PER);
+  inner+='<div class="page dupg">'
+   +'<div class="s1h"><h1>'+esc(String(D.title||"Sarcini").toUpperCase())+'</h1>'
+   +'<div class="sub">'+esc(S.settings.cong||"")+' · actualizat '+esc(D.upd||fmtDMY(new Date()))+'</div></div>'
+   +'<div class="duwrap">'+grp.map(block).join("")+'</div>'
+   +'<div class="ftt2">Printat '+fmtDMY(new Date())+(list.length>PER?(" · pagina "+(k/PER+1)+" din "+Math.ceil(list.length/PER)):"")+'</div></div>';}
  arhPdfWindow(fn.replace(/[\\/:*?"<>|]/g,"-")+".pdf",inner,
-  ".dupg{padding:11mm 11mm 11mm;position:relative}.dupg .s1h{margin-bottom:7mm}"
- +".dupg .s1h h1{font-size:19pt;letter-spacing:.9px;color:#14171c;font-weight:700}"
- +".dupg .s1h h1::after{content:'';display:block;width:34mm;height:3px;background:#C77F1A;margin:2.4mm auto 0;border-radius:2px}"
- +".dupg .s1h .sub{font-size:11pt;color:#3a4048;font-weight:600;margin-top:2mm}"
- +".duwrap{max-width:172mm;margin:0 auto}"
+  ".dupg{padding:13mm 12mm 13mm;position:relative}.dupg .s1h{margin-bottom:11mm}"
+ +".dupg .s1h h1{font-size:20pt;letter-spacing:.9px;color:#14171c;font-weight:700}"
+ +".dupg .s1h h1::after{content:'';display:block;width:36mm;height:3px;background:#C77F1A;margin:2.6mm auto 0;border-radius:2px}"
+ +".dupg .s1h .sub{font-size:11.5pt;color:#3a4048;font-weight:600;margin-top:2.2mm}"
+ +".duwrap{max-width:178mm;margin:0 auto}"
   /* chenare vizibile și rânduri înalte: foaia se citește de pe avizier, de la distanță */
- +".dutb{width:100%;border-collapse:collapse;border:1.7px solid #C77F1A;table-layout:fixed;margin-bottom:7mm;page-break-inside:avoid;break-inside:avoid}"
- +".dutb thead th{background:#f3e6cd;color:#5d3d06;font-size:12pt;font-weight:700;letter-spacing:.5px;text-align:center;padding:3.2mm 2mm 2.9mm;border-bottom:2.2px solid #C77F1A}"
- +".dutb td{padding:2.9mm 3.4mm;font-size:11pt;line-height:1.25;border:1px solid #dcc9a3;color:#14171c;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}"
- +".dutb .dl{font-weight:700;color:#5d3d06;background:#fbf5e9;width:26%}"
+ +".dutb{width:100%;border-collapse:collapse;border:2px solid #C77F1A;table-layout:fixed;margin-bottom:12mm;page-break-inside:avoid;break-inside:avoid}"
+ +".dutb:last-child{margin-bottom:0}"
+ +".dutb thead th{background:#f3e6cd;color:#5d3d06;font-size:13.5pt;font-weight:700;letter-spacing:.6px;text-align:center;padding:4.2mm 2mm 3.8mm;border-bottom:2.4px solid #C77F1A}"
+ +".dutb td{padding:3.9mm 4mm;font-size:12.5pt;line-height:1.2;border:1px solid #dcc9a3;color:#14171c;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}"
+ +".dutb .dl{font-weight:700;color:#5d3d06;background:#fbf5e9;width:26%;font-size:11.5pt}"
  +".dutb .dv{width:24%;font-weight:700;color:#14171c;letter-spacing:.2px}"
- +".dutb .grp td{background:#f3e6cd;border-top:1.7px solid #C77F1A}"
- +".dutb .grp .dl{background:#f3e6cd}.dutb .grp .dv{font-size:12pt;color:#5d3d06}"
- +".ftt2{position:absolute;bottom:4mm;right:11mm;font-size:7.5pt;color:#8a929c;letter-spacing:.3px}");}
+ +".dutb .grp td{background:#f3e6cd;border-top:2px solid #C77F1A}"
+ +".dutb .grp .dl{background:#f3e6cd}.dutb .grp .dv{font-size:13.5pt;color:#5d3d06}"
+ +".ftt2{position:absolute;bottom:5mm;right:12mm;font-size:7.5pt;color:#8a929c;letter-spacing:.3px}");}
 function dutyPdfSheet(){var cw=vcpCurWeek();
  var H='<div class="muted" style="margin:0 2px 10px">Alege ce intră în PDF.</div>';
  if(dutyW>=0)H+='<button class="pmrow" onclick="closeSheet();pdfDuty(['+dutyW+'])">'+IC.pdf+'<span><b>Doar săptămâna deschisă</b> — '+esc(tc(S.weeks[dutyW].date))+'</span></button>';
@@ -4984,7 +5042,8 @@ function renderArhLite(){ensureDutyCSS();try{ensureGrpCSS();arhEnsureCSS();}catc
  else if(arhLiteSub==="sarc")_arhFabSet(arhFabDuty,_canEditDuty()?IC.tune:IC.dl);
  else if(f)f.style.display="none";}
 function _arhFabSet(fn,ic){var f=$("#fab");if(!f)return;f.innerHTML=ic;f.title="Descarcă / unelte";f.style.display="flex";f.onclick=fn;}
-function arhLiteGo(s){arhLiteSub=s;if(s!=="sarc")dutyW=-1;renderArhLite();try{$("#body").scrollTop=0;window.scrollTo(0,0);}catch(e){}}
+function arhLiteGo(s){if(s!==arhLiteSub&&!_secGuard())return;
+ arhLiteSub=s;if(s!=="sarc")dutyW=-1;renderArhLite();try{$("#body").scrollTop=0;window.scrollTo(0,0);}catch(e){}}
 
 /* ---------- EXPORT ---------- */
 function arhExpHtml(){var h=arhMonthPicker();
