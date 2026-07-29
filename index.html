@@ -481,7 +481,7 @@ Object.assign(IC,{
  book:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg>',
  mark:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15.5 4.5l4 4-9.5 9.5H6v-4z"/><path d="M12.5 7.5l4 4M5 21h14"/></svg>'
 });
-const VERSION="2.61.1";
+const VERSION="2.61.2";
 const SEED_WEEKS=[];
 const SEED_WEEKS_PRE=[];
 const SEED_WEEKS_POST=[];
@@ -4441,20 +4441,18 @@ function ensureDutyCSS(){if(document.getElementById("dutycss"))return;var st=doc
 +".dsh .dsu{font-size:11.5px;color:var(--ink3);margin-top:3px}"
 +".dsh .dse{flex:0 0 auto;width:40px;height:40px;border:1px solid var(--bd);background:var(--bg);border-radius:12px;color:var(--ink3);display:grid;place-items:center;cursor:pointer}"
 +".dsh .dse:hover{border-color:var(--acc);color:var(--acc)}.dsh .dse svg{width:18px;height:18px}"
- /* --- tabelul curățeniei generale --- */
-+".clnw{overflow-x:auto;-webkit-overflow-scrolling:touch;border:1px solid var(--bd);border-radius:14px;background:var(--surf)}"
-+".clnt{width:100%;border-collapse:collapse;font-size:13px;min-width:340px}"
-+".clnt th{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.4px;color:var(--acc);padding:10px 9px;border-bottom:2px solid var(--acc);text-align:left;white-space:nowrap}"
-+".clnt td{padding:10px 9px;border-bottom:1px solid var(--bd);vertical-align:middle}"
-+".clnt tbody tr:last-child td{border-bottom:0}.clnt tbody tr.ed{cursor:pointer}.clnt tbody tr.ed:hover td{background:var(--surf2)}"
-+".clnt td.c1{font-weight:700;white-space:nowrap}.clnt td.ck{text-align:center;width:74px;padding:6px}"
-+".clnt tr.done td{background:rgba(53,195,179,.06)}"
- /* pe telefon tabelul se derulează pe orizontală — bifa rămâne mereu la vedere, lipită în dreapta */
-+".clnt thead th:last-child,.clnt tbody td.ck{position:sticky;right:0;background-color:var(--surf);background-image:none;z-index:1}"
-+".clnt thead th:last-child{z-index:2}"
-+".clnt tbody tr.done td.ck{background-image:linear-gradient(rgba(53,195,179,.06),rgba(53,195,179,.06))}"
-+".clnt tbody td.ck::before,.clnt thead th:last-child::before{content:'';position:absolute;left:0;top:0;bottom:0;width:8px;transform:translateX(-100%);background:linear-gradient(to right,transparent,rgba(0,0,0,.10));pointer-events:none}"
-+".clnck{width:100%;min-width:58px;border:1.5px solid var(--bd);background:var(--bg);color:var(--ink3);border-radius:9px;padding:6px 4px;font-size:12px;font-weight:800;cursor:pointer}"
+ /* --- curățenia generală: carduri, nu tabel. Pe telefon un tabel cu 4 coloane fie se
+    înghesuie, fie cere derulare laterală — aici fiecare lună e un card, cu bifa la vedere. */
++".clist{display:flex;flex-direction:column;gap:8px}"
++".clc{display:flex;align-items:center;gap:10px;background:var(--surf);border:1px solid var(--bd);border-left:4px solid var(--bd);border-radius:14px;padding:11px 13px}"
++".clc.on{border-left-color:var(--teal);background:linear-gradient(135deg,rgba(53,195,179,.10),transparent)}"
++".clc-b{flex:1;min-width:0;display:block;text-align:left;background:none;border:0;padding:0;margin:0;color:var(--ink);font:inherit}"
++"button.clc-b{cursor:pointer}"
++".clc-t{display:block;font-size:15px;font-weight:800;line-height:1.25;overflow-wrap:anywhere}"
++".clc-kv{display:grid;grid-template-columns:auto minmax(0,1fr);gap:3px 10px;margin-top:7px;align-items:baseline}"
++".clc-k{font-size:9.5px;font-weight:800;text-transform:uppercase;letter-spacing:.4px;color:var(--ink3);white-space:nowrap;padding-top:1px}"
++".clc-v{font-size:13.5px;font-weight:600;color:var(--ink2);min-width:0;overflow-wrap:anywhere;line-height:1.3}"
++".clnck{flex:0 0 auto;align-self:center;width:66px;border:1.5px solid var(--bd);background:var(--bg);color:var(--ink3);border-radius:10px;padding:9px 4px;font-size:12px;font-weight:800;cursor:pointer;line-height:1}"
 +".clnck.on{background:rgba(53,195,179,.16);border-color:var(--teal);color:var(--tealtx)}"
 +".clnck.ro{cursor:default;opacity:.9}"
  /* --- lista de săptămâni din Sarcini (aceleași grupări ca în Programări) --- */
@@ -4518,15 +4516,19 @@ function arhCleanHtml(){ensureDutyCSS();var C=cleanD(),ed=_canEditClean();
   if(ed)h+='<button class="btn pri sm" style="width:100%;margin-top:10px" onclick="cleanReset()">Refă tabelul standard (12 luni)</button>';
   return h;}
  var nOk=C.rows.filter(function(r){return r.ok;}).length;
- h+='<div class="clnw"><table class="clnt"><thead><tr>'
-  +C.cols.map(function(c){return '<th>'+esc(c)+'</th>';}).join("")
-  +'<th style="text-align:center">'+esc(C.ckl||"Efectuat")+'</th></tr></thead><tbody>';
+ h+='<div class="clist">';
  C.rows.forEach(function(r){
-  h+='<tr class="'+(ed?"ed ":"")+(r.ok?"done":"")+'"'+(ed?(' onclick="cleanRowSheet(\''+r.id+'\')"'):'')+'>'
-   +C.cols.map(function(c,ci){return '<td class="'+(ci===0?"c1":"")+'">'+esc((r.v&&r.v[ci])||"")+'</td>';}).join("")
-   +'<td class="ck"><button class="clnck'+(r.ok?" on":"")+(ed?"":" ro")+'"'+(ed?(' onclick="event.stopPropagation();cleanTog(\''+r.id+'\')"'):' disabled')+'>'+(r.ok?"✓ DA":"—")+'</button></td></tr>';});
- h+='</tbody></table></div>';
- h+='<div class="muted" style="margin:9px 2px 0;font-size:11.5px">'+nOk+' din '+C.rows.length+' efectuate'+(ed?' · apasă un rând ca să-l editezi, sau bifa ca s-o schimbi':'')+'.</div>';
+  var kv=C.cols.slice(1).map(function(c,i){var v=(r.v&&r.v[i+1])||"";
+   return '<span class="clc-k">'+esc(c)+'</span><span class="clc-v">'+(v?esc(v):'—')+'</span>';}).join("");
+  h+='<div class="clc'+(r.ok?" on":"")+'">'
+   +'<'+(ed?"button":"div")+' class="clc-b"'+(ed?(' onclick="cleanRowSheet(\''+r.id+'\')"'):'')+'>'
+    +'<span class="clc-t">'+esc((r.v&&r.v[0])||"—")+'</span>'
+    +(kv?('<span class="clc-kv">'+kv+'</span>'):'')
+   +'</'+(ed?"button":"div")+'>'
+   +'<button class="clnck'+(r.ok?" on":"")+(ed?"":" ro")+'"'+(ed?(' title="'+esc(C.ckl||"Efectuat")+'" onclick="cleanTog(\''+r.id+'\')"'):' disabled')+'>'+(r.ok?"✓ DA":"—")+'</button>'
+   +'</div>';});
+ h+='</div>';
+ h+='<div class="muted" style="margin:10px 2px 0;font-size:11.5px">'+nOk+' din '+C.rows.length+' '+esc(String(C.ckl||"efectuat").toLowerCase())+(ed?' · apasă un card ca să-l editezi, sau bifa ca s-o schimbi':'')+'.</div>';
  return h;}
 function cleanTog(id){if(!_needClean())return;var r=cleanRowById(id);if(!r)return;r.ok=!r.ok;
  cleanCommit("Curățenie generală: "+((r.v&&r.v[1])||(r.v&&r.v[0])||"rând")+" — "+(r.ok?"efectuat ✓":"neefectuat"));renderArhRoute();}
@@ -4610,21 +4612,21 @@ function pdfClean(){var C=cleanD();
   +'<table class="cltb"><thead>'+head+'</thead><tbody>'+body+'</tbody></table>'
   +'<div class="ftt2">Printat '+fmtDMY(new Date())+'</div></div>';
  arhPdfWindow((C.title||"Curatenie generala")+".pdf",inner,
-  ".clpg{padding:9mm 9mm 9mm;position:relative}.clpg .s1h{margin-bottom:5mm}"
- +".clpg .s1h h1{font-size:18pt;letter-spacing:1.2px;color:#14171c}"
- +".clpg .s1h h1::after{content:'';display:block;width:30mm;height:2.6px;background:#C77F1A;margin:2mm auto 0;border-radius:2px}"
- +".clpg .s1h .sub{font-size:11pt;margin-top:1.6mm}"
- +".cltb{width:100%;border-collapse:collapse;border:1px solid #eadfc8;border-radius:2mm;overflow:hidden;table-layout:fixed}"
- +".cltb thead th{background:#faf3e6;color:#7a5510;font-size:10pt;font-weight:800;letter-spacing:.5px;text-align:center;padding:2.8mm 2mm 2.4mm;border-bottom:2.5px solid #C77F1A}"
- +".cltb td{padding:2.5mm 2.5mm;font-size:10pt;line-height:1.25;border-bottom:1px solid #f2ede1;color:#14171c;text-align:center}"
- +".cltb tbody tr:nth-child(even) td{background:#fcfaf5}.cltb tbody tr:last-child td{border-bottom:0}"
- +".cltb .cn{font-weight:700;text-align:left}"
+  ".clpg{padding:11mm 11mm 11mm;position:relative}.clpg .s1h{margin-bottom:7mm}"
+ +".clpg .s1h h1{font-size:19pt;letter-spacing:.9px;color:#14171c;font-weight:700}"
+ +".clpg .s1h h1::after{content:'';display:block;width:34mm;height:3px;background:#C77F1A;margin:2.4mm auto 0;border-radius:2px}"
+ +".clpg .s1h .sub{font-size:11pt;color:#3a4048;font-weight:600;margin-top:2mm}"
+  /* aceleași chenare ferme ca la foaia de sarcini — se citește de pe avizier */
+ +".cltb{width:100%;border-collapse:collapse;border:1.7px solid #C77F1A;table-layout:fixed}"
+ +".cltb thead th{background:#f3e6cd;color:#5d3d06;font-size:11.5pt;font-weight:700;letter-spacing:.5px;text-align:center;padding:3.2mm 2mm 2.9mm;border-bottom:2.2px solid #C77F1A}"
+ +".cltb td{padding:3mm 3mm;font-size:11pt;line-height:1.25;border:1px solid #dcc9a3;color:#14171c;text-align:center}"
+ +".cltb .cn{font-weight:700;text-align:left;background:#fbf5e9;color:#5d3d06}"
   /* lățime rezervată: bifele stau una sub alta, iar grupul „bifă + DA" rămâne centrat în coloană */
- +".cltb .okc .okw{display:inline-flex;align-items:center;justify-content:flex-start;gap:2.2mm;width:15mm;text-align:left}"
- +".cltb .okc .cbx{width:14px;height:14px;line-height:12px;font-size:11px;border-color:#C77F1A;color:#fff;margin:0;flex:0 0 auto;vertical-align:0}"
+ +".cltb .okc .okw{display:inline-flex;align-items:center;justify-content:flex-start;gap:2.4mm;width:16mm;text-align:left}"
+ +".cltb .okc .cbx{width:16px;height:16px;line-height:14px;font-size:12px;border:1.6px solid #C77F1A;color:#fff;margin:0;flex:0 0 auto;vertical-align:0}"
  +".cltb .okc .cbx.on{background:#C77F1A}"
- +".cltb .okc b{color:#7a5510;font-size:10.5pt;letter-spacing:.5px}"
- +".ftt2{position:absolute;bottom:3.5mm;right:9mm;font-size:7pt;color:#8a929c;letter-spacing:.3px}");}
+ +".cltb .okc b{color:#5d3d06;font-size:11pt;letter-spacing:.5px}"
+ +".ftt2{position:absolute;bottom:4mm;right:11mm;font-size:7.5pt;color:#8a929c;letter-spacing:.3px}");}
 function arhFabClean(){var ed=_canEditClean();
  var H='<button class="pmrow" onclick="closeSheet();pdfClean()">'+IC.pdf+'<span><b>PDF — '+esc(cleanD().title||"Curățenie generală")+'</b></span></button>';
  if(ed){H+='<div class="pmlbl" style="margin-top:12px">Editare</div>'
@@ -4910,20 +4912,20 @@ function pdfDuty(list){var D=dutyD(),posts=dutyPosts();
   +'<div class="duwrap">'+blocks+'</div>'
   +'<div class="ftt2">Printat '+fmtDMY(new Date())+'</div></div>';
  arhPdfWindow(fn.replace(/[\\/:*?"<>|]/g,"-")+".pdf",inner,
-  ".dupg{padding:9mm 9mm 9mm;position:relative}.dupg .s1h{margin-bottom:5mm}"
- +".dupg .s1h h1{font-size:17pt;letter-spacing:1.1px;color:#14171c}"
- +".dupg .s1h h1::after{content:'';display:block;width:30mm;height:2.6px;background:#C77F1A;margin:2mm auto 0;border-radius:2px}"
- +".dupg .s1h .sub{font-size:11pt;margin-top:1.6mm}"
- +".duwrap{max-width:165mm;margin:0 auto}"
- +".dutb{width:100%;border-collapse:collapse;border:1px solid #eadfc8;border-radius:2mm;overflow:hidden;table-layout:fixed;margin-bottom:5mm;page-break-inside:avoid;break-inside:avoid}"
- +".dutb thead th{background:#faf3e6;color:#7a5510;font-size:10.5pt;font-weight:800;letter-spacing:.5px;text-align:center;padding:2.6mm 2mm 2.2mm;border-bottom:2.5px solid #C77F1A}"
- +".dutb td{padding:1.9mm 3mm;font-size:9.8pt;line-height:1.25;border-bottom:1px solid #f2ede1;color:#14171c;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}"
- +".dutb tbody tr:nth-child(even) td{background:#fcfaf5}.dutb tbody tr:last-child td{border-bottom:0}"
- +".dutb .dl{font-weight:700;color:#7a5510;width:26%;border-right:1px solid #f2ede1}"
- +".dutb .dv{width:24%;font-weight:700}"
- +".dutb .dv.mid{border-right:1px solid #f2ede1}"
- +".dutb .grp td{background:#fcf8ef!important;border-top:1px solid #eadfc8}"
- +".ftt2{position:absolute;bottom:3.5mm;right:9mm;font-size:7pt;color:#8a929c;letter-spacing:.3px}");}
+  ".dupg{padding:11mm 11mm 11mm;position:relative}.dupg .s1h{margin-bottom:7mm}"
+ +".dupg .s1h h1{font-size:19pt;letter-spacing:.9px;color:#14171c;font-weight:700}"
+ +".dupg .s1h h1::after{content:'';display:block;width:34mm;height:3px;background:#C77F1A;margin:2.4mm auto 0;border-radius:2px}"
+ +".dupg .s1h .sub{font-size:11pt;color:#3a4048;font-weight:600;margin-top:2mm}"
+ +".duwrap{max-width:172mm;margin:0 auto}"
+  /* chenare vizibile și rânduri înalte: foaia se citește de pe avizier, de la distanță */
+ +".dutb{width:100%;border-collapse:collapse;border:1.7px solid #C77F1A;table-layout:fixed;margin-bottom:7mm;page-break-inside:avoid;break-inside:avoid}"
+ +".dutb thead th{background:#f3e6cd;color:#5d3d06;font-size:12pt;font-weight:700;letter-spacing:.5px;text-align:center;padding:3.2mm 2mm 2.9mm;border-bottom:2.2px solid #C77F1A}"
+ +".dutb td{padding:2.9mm 3.4mm;font-size:11pt;line-height:1.25;border:1px solid #dcc9a3;color:#14171c;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}"
+ +".dutb .dl{font-weight:700;color:#5d3d06;background:#fbf5e9;width:26%}"
+ +".dutb .dv{width:24%;font-weight:700;color:#14171c;letter-spacing:.2px}"
+ +".dutb .grp td{background:#f3e6cd;border-top:1.7px solid #C77F1A}"
+ +".dutb .grp .dl{background:#f3e6cd}.dutb .grp .dv{font-size:12pt;color:#5d3d06}"
+ +".ftt2{position:absolute;bottom:4mm;right:11mm;font-size:7.5pt;color:#8a929c;letter-spacing:.3px}");}
 function dutyPdfSheet(){var cw=vcpCurWeek();
  var H='<div class="muted" style="margin:0 2px 10px">Alege ce intră în PDF.</div>';
  if(dutyW>=0)H+='<button class="pmrow" onclick="closeSheet();pdfDuty(['+dutyW+'])">'+IC.pdf+'<span><b>Doar săptămâna deschisă</b> — '+esc(tc(S.weeks[dutyW].date))+'</span></button>';
