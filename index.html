@@ -481,7 +481,7 @@ Object.assign(IC,{
  book:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg>',
  mark:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15.5 4.5l4 4-9.5 9.5H6v-4z"/><path d="M12.5 7.5l4 4M5 21h14"/></svg>'
 });
-const VERSION="2.61.2";
+const VERSION="2.61.3";
 const SEED_WEEKS=[];
 const SEED_WEEKS_PRE=[];
 const SEED_WEEKS_POST=[];
@@ -4692,6 +4692,15 @@ function dutyBusy(wi,id,skipPid){var out=[];if(!id)return out;
     if(p)out.push({t:"v",n:(p.num?p.num+". ":"")+(p.title||roleLabel(partRole(p)))});
     else if(SP[k])out.push({t:"v",n:SP[k]});});}}catch(e){}
  return out;}
+/* textul avertismentului, cu VCP separat de celelalte sarcini.
+   Atenționarea merge într-un singur sens: aici spunem dacă are deja o temă la VCP,
+   dar la repartizarea temelor VCP NU deranjăm cu sarcinile de aici. */
+function dutyBusyTxt(busy){var v=busy.filter(function(x){return x.t==="v";}).map(function(x){return x.n;});
+ var d=busy.filter(function(x){return x.t==="d";}).map(function(x){return x.n;});
+ var p=[];
+ if(v.length)p.push("temă la VCP — "+v.join(", "));
+ if(d.length)p.push((d.length===1?"sarcina ":"sarcinile ")+d.join(", "));
+ return p.join(" · ");}
 /* istoricul sarcinilor unei persoane, cele mai recente primele */
 function dutyHist(id,cat,limit){var out=[],D=dutyD(),posts=dutyPosts();
  for(var wi=S.weeks.length-1;wi>=0&&out.length<(limit||99);wi--){var o=D.a[String(wi)];if(!o)continue;
@@ -4755,7 +4764,7 @@ function dutyWeekHtml(wi){var w=S.weeks[wi],o=dutyOf(wi),ed=_canEditDuty(),posts
    +'<button class="dpb '+(id?"":"ph")+(busy.length?" warn":"")+'" '+(ed?('onclick="dutyPick('+wi+',\''+p.id+'\')"'):'disabled style="cursor:default"')+'>'
    +'<span class="dpx">'+(id?esc(broDisp(id)):"—")+'</span>'+(ed?('<span class="dpc">'+IC.chev+'</span>'):'')+'</button>'
    +((ed&&id)?('<button class="dpclr" title="Scoate" onclick="dutyClear('+wi+',\''+p.id+'\')">×</button>'):'')+'</div>';
-  if(busy.length)h+='<div class="dpwarn">⚠ '+esc(broDisp(id))+' mai are în această săptămână: '+busy.map(function(x){return esc(x.n)+(x.t==="v"?" (VCP)":"");}).join(" · ")+'</div>';});
+  if(busy.length)h+='<div class="dpwarn">⚠ <b>'+esc(broDisp(id))+'</b> are deja în această săptămână: '+esc(dutyBusyTxt(busy))+'</div>';});
  h+='</div>';
  var gt=dutyGrpTxt(o);
  h+='<div class="group" style="overflow:hidden"><div class="dpr"><div class="dpl">Grupă (curățenie)</div>'
@@ -4821,7 +4830,7 @@ function dutyPickList(){var wrap=document.getElementById("dpkList");if(!wrap||!_
  if(!list.length){wrap.innerHTML='<div class="empty" style="padding:26px 8px">Niciun vestitor găsit.<br><span class="muted">Schimbă căutarea.</span></div>';return;}
  wrap.innerHTML=list.map(function(o){var b=o.b;
   var lt=o.last?('ultima dată: '+esc(tc(S.weeks[o.last.wi].date))+' · '+esc(o.last.p.n)):'nu a mai avut '+esc(dutyCatLbl(p.c)).toLowerCase();
-  var bw=o.busy.length?('⚠ deja în această săptămână: '+o.busy.map(function(x){return esc(x.n)+(x.t==="v"?" (VCP)":"");}).join(" · ")):'';
+  var bw=o.busy.length?('⚠ are deja în această săptămână: '+esc(dutyBusyTxt(o.busy))):'';
   return '<div class="dcand '+(cur===b.id?"cur ":"")+(o.busy.length?"busy":"")+'">'
    +'<button class="dcb" onclick="dutySet(\''+b.id+'\')"><span class="dca">'+(initials(b.name)||"·")+'</span>'
    +'<span class="dci"><span class="dcn">'+esc(broDisp(b.id))+(cur===b.id?' <span class="dtag g">ales</span>':'')+'</span>'
@@ -4830,9 +4839,14 @@ function dutyPickList(){var wrap=document.getElementById("dpkList");if(!wrap||!_
    +'<button class="dcinfo" title="Istoric" onclick="dutyPerson(\''+b.id+'\')">'+IC.info+'</button></div>';}).join("");}
 function dutySet(id){if(!_dpk)return;if(!_needDuty())return;var wi=_dpk.wi,pid=_dpk.pid;var p=dutyPost(pid);
  var old=dutyOf(wi)[pid]||"";
+ /* ce mai are în săptămâna asta se citește ÎNAINTE de atribuire, ca să nu apară postul de acum */
+ var busy=id?dutyBusy(wi,id,pid):[];
  dutySetVal(wi,pid,id);
- dutyCommit("Sarcini "+tc(S.weeks[wi].date)+" · "+((p||{}).n||pid)+": "+(id?broDisp(id):"scos")+(old&&id?(" (în locul lui "+broDisp(old)+")"):""));
- closeSheet();_dpk=null;renderArhRoute();}
+ dutyCommit("Sarcini "+tc(S.weeks[wi].date)+" · "+((p||{}).n||pid)+": "+(id?broDisp(id):"scos")+(old&&id?(" (în locul lui "+broDisp(old)+")"):"")
+  +(busy.length?(" [are deja: "+dutyBusyTxt(busy)+"]"):""));
+ closeSheet();_dpk=null;renderArhRoute();
+ /* atenționare chiar în clipa atribuirii — nu doar linia galbenă de pe rând */
+ if(busy.length)toast("⚠ "+broDisp(id)+" are deja în această săptămână: "+dutyBusyTxt(busy),6500);}
 /* istoricul unei persoane la sarcini — deschis din „i" în lista de alegere */
 function dutyPerson(id){var b=(S.bros||[]).find(function(x){return x.id===id;});if(!b)return;
  var h=dutyHist(id,null,20);
