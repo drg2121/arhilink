@@ -495,7 +495,7 @@ Object.assign(IC,{
  book:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg>',
  mark:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15.5 4.5l4 4-9.5 9.5H6v-4z"/><path d="M12.5 7.5l4 4M5 21h14"/></svg>'
 });
-const VERSION="2.70.0";
+const VERSION="2.70.1";
 const SEED_WEEKS=[];
 const SEED_WEEKS_PRE=[];
 const SEED_WEEKS_POST=[];
@@ -630,32 +630,10 @@ function wkCommit(){if(!_wkDraft)return;var i=_wkDraft.i;_wkDraft=null;
  save();toast("Planificarea a fost salvată — se trimite tuturor ✓",4000);
  try{if(typeof ghSync==="function")ghSync(true);}catch(e){}
  openWeek(i);
- /* Salvarea trimite planificarea pe toate dispozitivele, dar NU anunță pe nimeni: până acum
-    notificarea pleca doar dacă intrai separat în „E-mail teme". Aici întrebăm o singură dată,
-    imediat după salvare, și doar dacă chiar sunt oameni de anunțat. */
- try{setTimeout(function(){wkNotifyAsk(i);},900);}catch(e){}}
-/* câți au teme noi sau modificate față de ultima trimitere (aceeași socoteală ca în „E-mail teme") */
-function _wkPend(i){var out=[];try{(S.bros||[]).forEach(function(b){
-  var as=myAssignments(b.id).filter(function(e){return e.wi===i;});if(!as.length)return;
-  var txt=as.map(function(it){return it.label+(it.partner?" cu "+it.partner:"");}).join("; ");
-  var sent=(S.mailLog||{})[i+"|"+b.id];
-  if(!sent||sent.h!==_hash(txt))out.push(b.name);});}catch(e){}
- return out;}
-function wkNotifyAsk(i){if(!_canEditVcp()||editBusy())return;
- var w=S.weeks[i];if(!w)return;var pend=_wkPend(i);if(!pend.length)return;
- var canPush=(typeof pushReady==="function"&&pushReady()&&typeof pushOn==="function"&&pushOn("t"));
- var canMail=!!((S.settings.mailHook||"").trim());
- if(!canPush&&!canMail)return;/* n-avem prin ce anunța — nu deranjăm */
- var lst=pend.slice(0,6).map(esc).join(", ")+(pend.length>6?(" și încă "+(pend.length-6)):"");
- sheet("","Îi anunți pe cei repartizați?",
-  '<div class="muted" style="margin:0 2px 12px">Planificarea pentru <b>'+esc(tc(w.date))+'</b> e salvată și a plecat pe toate dispozitivele. '
-  +'<b>'+pend.length+'</b> '+(pend.length===1?"persoană are o temă nouă sau modificată":"persoane au teme noi sau modificate")+' față de ultima anunțare:</div>'
-  +'<div style="margin:0 2px 14px;font-size:13.5px;line-height:1.6">'+lst+'</div>'
-  +'<button class="btn pri" style="width:100%" onclick="closeSheet();mailWeekSheet('+i+')">Deschide „E-mail teme" — aleg eu cine primește</button>'
-  +'<button class="btn ghost sm" style="width:100%;margin-top:8px" onclick="closeSheet()">Mai târziu</button>');}
-async function wkCancel(){if(!_wkDraft)return;var i=_wkDraft.i;
- if(_wkDraft.dirty&&!(await uiConfirm("Modificările făcute acum la această săptămână se pierd.",{title:"Anulezi modificările?",yes:"Anulează modificările",no:"Înapoi",danger:true})))return;
- _wkRestore();toast("Modificările au fost anulate");openWeek(i);}
+ /* Salvarea trimite planificarea pe toate dispozitivele. Cei repartizați văd tema în aplicație
+    (notificarea „Temă nouă atribuită" din notifCheck). Dacă vrei să le trimiți și e-mail sau push,
+    o faci când vrei tu, din butonul „E-mail teme" al săptămânii — nu întrebăm la fiecare salvare. */
+}
 /* avertizează dacă închizi/reîncarci pagina cu o săptămână nesalvată */
 try{window.addEventListener("beforeunload",function(e){if((_wkDraft&&_wkDraft.dirty)||(typeof _secDraft!=="undefined"&&_secDraft&&_secDraft.dirty)){e.preventDefault();e.returnValue="";}});}catch(e){}
 
