@@ -495,7 +495,7 @@ Object.assign(IC,{
  book:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg>',
  mark:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15.5 4.5l4 4-9.5 9.5H6v-4z"/><path d="M12.5 7.5l4 4M5 21h14"/></svg>'
 });
-const VERSION="2.68.0";
+const VERSION="2.68.1";
 const SEED_WEEKS=[];
 const SEED_WEEKS_PRE=[];
 const SEED_WEEKS_POST=[];
@@ -1500,15 +1500,27 @@ function evEdit(id){if(!_isAdmin())return;
  var used=isNew?0:evUsedBy(t.id,t.n);
  var opts=EV_KINDS.map(function(k){return '<option value="'+k[0]+'" '+(t.k===k[0]?"selected":"")+'>'+esc(k[1])+'</option>';}).join("");
  var hints=EV_KINDS.map(function(k){return '<div class="muted evh" data-k="'+k[0]+'" style="display:'+(t.k===k[0]?'block':'none')+';font-size:11.5px;margin-top:6px">'+esc(k[2])+'</div>';}).join("");
+ /* alegerea săptămânilor direct de aici — altfel trebuia intrat în fiecare săptămână în parte */
+ var wl=(S.weeks||[]).map(function(w,i){
+   var mine=(w.evId&&w.evId===t.id)||(w.event&&w.event===t.n);
+   var other=(!mine&&w.event)?evLabel(w):"";
+   return '<label class="ckrow"><input type="checkbox" class="evwk" value="'+i+'" '+(mine?"checked":"")+'>'
+    +'<span>'+esc(tc(w.date))+(other?(' <span class="muted" style="font-size:11px">· acum: '+esc(other)+'</span>'):'')+'</span></label>';}).join("");
  sheet("",isNew?"Eveniment nou":"Editează evenimentul",
   '<label class="fl">Numele evenimentului</label><input class="fld" id="evN" value="'+esc(t.n).replace(/"/g,"&quot;")+'" placeholder="ex. Congres regional „Vestea bună!”">'
  +'<label class="fl" style="margin-top:10px">Ce se întâmplă în acea săptămână</label><select class="fld" id="evK" onchange="evKindChg()">'+opts+'</select>'+hints
+ +'<div class="grpttl" style="margin-top:16px">În ce săptămâni</div>'
+ +(wl?('<div class="muted" style="margin:0 2px 8px;font-size:11.5px">Bifează săptămânile în care cade acest eveniment. O săptămână poate avea un singur eveniment — dacă avea altul, e înlocuit.</div>'
+   +'<div class="rowflex" style="gap:8px;margin-bottom:8px"><button class="btn ghost sm" style="width:auto" onclick="evWkAll(0)">Debifează tot</button></div>'
+   +'<div style="max-height:34vh;overflow:auto;border:1px solid var(--bd);border-radius:12px;padding:6px 10px">'+wl+'</div>')
+   :'<div class="muted" style="margin:0 2px">Nicio săptămână în caiet încă.</div>')
  +(used?('<div class="hint" style="margin-top:12px">Folosit acum în <b>'+used+'</b> '+(used===1?'săptămână':'săptămâni')+'. Modificările se aplică peste tot.</div>'):'')
  +'<div class="rowflex" style="gap:9px;margin-top:18px">'+(isNew?'':'<button class="btn danger sm" onclick="evDel(\''+t.id+'\')">Șterge</button>')
  +'<div class="spacer"></div><button class="btn ghost sm" style="width:auto" onclick="evSheet()">Înapoi</button>'
  +'<button class="btn pri sm" style="width:auto" onclick="evSave(\''+t.id+'\','+(isNew?1:0)+')">Salvează</button></div>');}
 function evKindChg(){var v=$("#evK").value;
  [].forEach.call(document.querySelectorAll(".evh"),function(n){n.style.display=(n.getAttribute("data-k")===v)?"block":"none";});}
+function evWkAll(v){[].forEach.call(document.querySelectorAll(".evwk"),function(c){c.checked=!!v;});}
 function evSave(id,isNew){if(!_isAdmin())return;
  var n=($("#evN").value||"").trim();if(!n){toast("Pune un nume evenimentului");return;}
  var k=$("#evK").value||"none",L=evTypes();
@@ -1517,8 +1529,16 @@ function evSave(id,isNew){if(!_isAdmin())return;
  if(t){var old=t.n;t.n=n;t.k=k;
   /* săptămânile care îl foloseau după nume rămân legate după redenumire */
   (S.weeks||[]).forEach(function(w){if(w&&w.event===old){w.event=n;w.evId=t.id;}});}
- else L.push({id:id,n:n,k:k});
- logAct("Eveniment salvat: "+n);save();evSheet();toast("Salvat");}
+ else{t={id:id,n:n,k:k};L.push(t);}
+ /* săptămânile bifate aici primesc evenimentul; cele debifate care îl aveau rămân fără */
+ var picked={};[].forEach.call(document.querySelectorAll(".evwk:checked"),function(c){picked[+c.value]=1;});
+ var nAdd=0,nRem=0;
+ (S.weeks||[]).forEach(function(w,i){var mine=(w.evId&&w.evId===t.id)||(w.event&&w.event===t.n);
+  if(picked[i]){if(!mine){w.event=t.n;w.evId=t.id;nAdd++;}}
+  else if(mine){delete w.event;delete w.evId;nRem++;}});
+ logAct("Eveniment salvat: "+n+(nAdd?(" · +"+nAdd+" săpt."):"")+(nRem?(" · -"+nRem+" săpt."):""));
+ save();evSheet();
+ toast(nAdd||nRem?("Salvat · "+(nAdd?(nAdd+" săptămâni marcate"):"")+(nAdd&&nRem?", ":"")+(nRem?(nRem+" eliberate"):"")):"Salvat");}
 async function evDel(id){if(!_isAdmin())return;var t=evById(id);if(!t)return;
  var used=evUsedBy(t.id,t.n);
  if(!(await uiConfirm("Ștergi „"+t.n+"” din lista de evenimente?"+(used?(" E folosit în "+used+(used===1?" săptămână":" săptămâni")+" — acolo rămâne notat, dar nu-l mai poți alege din listă."):""),
