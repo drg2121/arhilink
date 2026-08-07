@@ -527,7 +527,7 @@ Object.assign(IC,{
  box:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h18v13H3z"/><path d="M3 7l2-4h14l2 4"/><path d="M10 11h4"/></svg>',
  mark:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15.5 4.5l4 4-9.5 9.5H6v-4z"/><path d="M12.5 7.5l4 4M5 21h14"/></svg>'
 });
-const VERSION="2.76.0";
+const VERSION="2.77.0";
 const SEED_WEEKS=[];
 const SEED_WEEKS_PRE=[];
 const SEED_WEEKS_POST=[];
@@ -617,16 +617,26 @@ function load(){try{const r=JSON.parse(localStorage.getItem(KEY));if(r&&r.settin
  /* prima deschidere a unui fișier distribuit: datele sunt incluse în pagină */
  try{var E=window.ALK_EMBED;if(E&&E.settings){var se=Object.assign(blank(),JSON.parse(JSON.stringify(E)));se.songs=Object.assign({},SEED_SONGS,E.songs||{});ensureBroRoles(se.bros||[]);try{localStorage.setItem(KEY,JSON.stringify(se));localStorage.setItem(KEY+"_pushedRev",String(se._rev||0));}catch(_e){}return se;}}catch(e){}
  var bl=blank();ensureBroRoles(bl.bros);return bl;}
+/* Privilegiile se propun O SINGURĂ DATĂ, la prima întâlnire a persoanei (după rol și gen).
+   Înainte se re-adăugau la fiecare încărcare și după fiecare sincronizare, așa că dacă
+   scoteai o bifă și salvai, ea reapărea singură — părea că nu se salvează. */
 function ensureBroRoles(bros){var ALLR=[];GROUPS.forEach(function(g){g[1].forEach(function(r){if(ALLR.indexOf(r)<0)ALLR.push(r);});});
  var DEMO=["Începe o conversație","Fă vizite ulterioare","Fă discipoli","Explică-ți convingerile"];
  function addr(b,r){if(b.roles.indexOf(r)<0)b.roles.push(r);}
  (bros||[]).forEach(function(b){b.roles=b.roles||[];
+  if(b.rSeed)return;/* deja i s-au propus o dată — de acum hotărăsc doar bifele */
   if(b.roles.indexOf("Viața/Necesități")>=0)addr(b,"Necesități locale");
   if(b.roles.indexOf("Predicare (demonstrație)")>=0)DEMO.forEach(function(d){addr(b,d);});
   if(b.rol==="Bătrân"){ALLR.forEach(function(r){if(meetsS38(b,r))addr(b,r);});}
   else if(b.rol==="Slujitor"){DEMO.forEach(function(d){addr(b,d);});addr(b,"Predicare (cuvântare)");addr(b,"Ce ai putea spune?");}
-  else if(b.gen==="F"){DEMO.forEach(function(d){addr(b,d);});if(b.canPartner===undefined)b.canPartner=true;}});
+  else if(b.gen==="F"){DEMO.forEach(function(d){addr(b,d);});if(b.canPartner===undefined)b.canPartner=true;}
+  b.rSeed=1;});
  return bros;}
+/* privilegiile care chiar se pot bifa (cele din listă) — pentru numărătoare.
+   Datele mai vechi pot avea și însemnări care nu mai apar nicăieri (ex. „Predicare
+   (demonstrație)"), iar acelea făceau ca numărul din listă să nu se potrivească cu bifele. */
+function broPrivN(b){var ALL={};GROUPS.forEach(function(g){g[1].forEach(function(r){ALL[r]=1;});});
+ return ((b&&b.roles)||[]).filter(function(r){return ALL[r];}).length;}
 /* ciornă în Programări: modificările săptămânii NU pleacă spre nimeni până nu apeși „Salvează" */
 var _wkDraft=null;
 function _wkDraftActive(){return !!(_wkDraft&&tab==="weeks"&&typeof curW!=="undefined"&&curW===_wkDraft.i&&_canEditVcp());}
@@ -1379,7 +1389,7 @@ function personHistory(id,sec,limit){const out=[];
    let had=false,partner=null;
    if(study){if(a.cond===id){had=true;partner=a.cit?broDisp(a.cit):null;}else if(a.cit===id){had=true;partner=a.cond?broDisp(a.cond):null;}}
    else if(hasPartner(p,role)){if(a[k+"_a"]===id){had=true;partner=a[k+"_b"]?broDisp(a[k+"_b"]):null;}else if(a[k+"_b"]===id){had=true;partner=a[k+"_a"]?broDisp(a[k+"_a"]):null;}}
-   else if(a[k]===id){had=true;}
+   else if(asgOf(a,p)===id){had=true;}
    if(had)out.push({wi,p,partner});}}
  return out;}
 function personHistAny(id,role,sec,limit){if(sec)return personHistory(id,sec,limit);
@@ -1879,7 +1889,7 @@ function broRowHtml(b){
  return `<div class="group"><button class="item" onclick="editBro('${b.id}')">
    <div class="av">${initials(b.name)||"·"}</div>
    <div class="spacer"><div class="nm">${esc(b.name)}${b.active===false?' <span class="pill" style="font-size:10px;padding:2px 8px">inactiv</span>':''}</div>
-   <div class="mt">${b.gen==="F"?"soră":"frate"} · ${(b.roles||[]).length} privilegii${b.disp?' · „'+esc(b.disp)+'”':''}</div></div>
+   <div class="mt">${b.gen==="F"?"soră":"frate"} · ${broPrivN(b)} ${broPrivN(b)===1?"privilegiu":"privilegii"}${b.disp?' · „'+esc(b.disp)+'”':''}</div></div>
    ${(b.pio||b.isPub===false)?'<span class="roltag pio">'+esc(pioLabel(b.pio||"Cursant"))+'</span>':''}${apptTag(b.rol)}<span class="chev">${IC.chev}</span></button></div>`;}
 function _gcardHead(g,i,n){var sa=[];
  if(g.sup)sa.push('<span><span class="gsl">S</span>'+esc(broDisp(g.sup))+'</span>');
@@ -2011,7 +2021,7 @@ function saveBro(bid,exists){if(!_needEdit())return;const name=$("#bn").value.tr
  const isPub=(pio!=="Cursant");
  let grp=$("#bgrp")?$("#bgrp").value:((S.bros.find(x=>x.id===bid)||{}).grp||"");
  if(pio==="Cursant")grp="";/* cursanții nu fac parte din grupele de serviciu */
- const o={id:bid,name,disp,dispExp,famIds,canPartner,pio,phone,email,addr,ecn,ecp,ec2n,ec2p,ec3n,ec3p,cT,hope,bdate,baptism,isPub,grp,duties,gen:$("#bg").value,rol:$("#br").value,active:$("#ba").value==="1",roles};
+ const o={id:bid,name,disp,dispExp,famIds,canPartner,pio,phone,email,addr,ecn,ecp,ec2n,ec2p,ec3n,ec3p,cT,hope,bdate,baptism,isPub,grp,duties,gen:$("#bg").value,rol:$("#br").value,active:$("#ba").value==="1",roles,rSeed:1};
  if(exists){const i=S.bros.findIndex(x=>x.id===bid);S.bros[i]=o;}else S.bros.push(o);
  syncFamily(o.id,o.famIds||[]);if(typeof userSyncBro==="function")userSyncBro(o,!exists);logAct((exists?"Vestitor modificat: ":"Vestitor adăugat: ")+(o.name||""));save();closeSheet();renderBros();toast("Salvat");}
 function syncFamily(id,fam){S.bros.forEach(function(b){if(b.id===id)return;b.famIds=b.famIds||[];var has=b.famIds.indexOf(id)>=0;if(fam.indexOf(b.id)>=0){if(!has)b.famIds.push(id);}else if(has){b.famIds=b.famIds.filter(function(x){return x!==id;});}});}
