@@ -235,6 +235,8 @@ label.fl{display:block;font-size:11.5px;color:var(--ink2);margin:12px 0 5px;font
 .pmchips{display:flex;flex-wrap:wrap;gap:8px}
 .pmchip{font-size:13.5px;font-weight:700;border:1.5px solid var(--bd);background:var(--bg);color:var(--ink2);border-radius:999px;padding:8px 15px;cursor:pointer}
 .pmchip.on{background:#fff3a3;border-color:#e6c200;color:#3a3000}
+.pwhy{display:block;font-size:11px;color:var(--ink3);margin-top:2px;line-height:1.35}
+.pwarn{color:var(--maroon);font-weight:700}
 .aow{display:flex;align-items:center;gap:10px;padding:9px 4px;font-size:14px;cursor:pointer;color:var(--ink);border-radius:9px}
 .aow:hover{background:var(--surf2)}
 .aow>span{display:flex;align-items:center;gap:7px;flex-wrap:wrap;min-width:0}
@@ -503,7 +505,7 @@ Object.assign(IC,{
  book:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg>',
  mark:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15.5 4.5l4 4-9.5 9.5H6v-4z"/><path d="M12.5 7.5l4 4M5 21h14"/></svg>'
 });
-const VERSION="2.71.0";
+const VERSION="2.72.0";
 const SEED_WEEKS=[];
 const SEED_WEEKS_PRE=[];
 const SEED_WEEKS_POST=[];
@@ -1138,7 +1140,71 @@ function autoAll(t,on){document.querySelectorAll(t==="wk"?".auto-wk":".auto-cat"
 function autoOnlyThis(){document.querySelectorAll(".auto-wk").forEach(c=>{c.checked=!c.disabled&&(+c.value===curW);});autoCount();}
 function autoPref(b){return !!b&&(b.pio==="Pionier"||b.pio==="Pionier special");}
 function autoRecentPartners(mid,n){const out=[];for(let wi=S.weeks.length-1;wi>=0&&out.length<n;wi--){const w=S.weeks[wi];ensureIds(w);const a=(S.plans[wi]||{}).a||{};const ps=w.parts||[];for(let pi=ps.length-1;pi>=0&&out.length<n;pi--){const p=ps[pi];if(p.sec!=="Predicare")continue;const role=partRole(p);if(role==="Predicare (cuvântare)")continue;const k=p.id;if(a[k+"_a"]===mid&&a[k+"_b"])out.push(a[k+"_b"]);else if(a[k+"_b"]===mid&&a[k+"_a"])out.push(a[k+"_a"]);}}return out;}
-function autoRank(pool,role,prefPio){const sec=secOfRole(role);const isDemo=(sec==="Predicare"&&role!=="Predicare (cuvântare)");return pool.map(b=>{const ph=personHistAny(b.id,role,sec,1);const last=ph[0]||getLast(b.id,role,sec);return {b,fem:(isDemo&&b.gen!=="F")?1:0,pref:(prefPio&&autoPref(b))?0:1,wi:last?last.wi:-1};}).sort((x,y)=>{if(x.fem!==y.fem)return x.fem-y.fem;if(x.pref!==y.pref)return x.pref-y.pref;if(x.wi!==y.wi)return x.wi-y.wi;return x.b.name.localeCompare(y.b.name,"ro");});}
+/* ============================================================================
+   RECOMANDAREA — pe ce se pune cineva mai sus în listă
+   ----------------------------------------------------------------------------
+   Înainte, ordinea se făcea după ultima parte din SECȚIUNE, nu după ultima dată la tema
+   respectivă: la „Cuvântare" apărea primul cineva a cărui ultimă parte din Comori fusese
+   „Nestemate", ceea ce nu spunea nimic despre cât de demult a ținut o cuvântare.
+
+   Acum criteriile sunt, în ordine:
+     1. cerințele S-38 care erau deja (partener de același sex; la demonstrații, surorile
+        înaintea fraților; la atribuirea automată, pionierii înaintea celorlalți)
+     2. cine e deja pus în ACEEAȘI săptămână coboară la urmă — n-are rost să primească două
+     3. cine a ținut cel mai demult TEMA ACEASTA urcă primul (niciodată = primul)
+     4. la egalitate, cine a avut cel mai demult ORICE parte
+     5. alfabetic
+   Istoricul se calculează o singură dată per listă, nu o dată pentru fiecare persoană. */
+var _histIdx=null,_histIdxRev=-1;
+function histIdx(){
+ var rev=(S._rev||0)+"|"+(S.weeks?S.weeks.length:0);
+ if(_histIdx&&_histIdxRev===rev)return _histIdx;
+ var role={},any={},wk={},all={};
+ (S.weeks||[]).forEach(function(w,wi){var pl=S.plans[wi];if(!w||!pl||!pl.a)return;
+  var a=pl.a;
+  var put=function(id,r){if(!id)return;
+   if(r){role[r]=role[r]||{};if(role[r][id]==null||role[r][id]<wi)role[r][id]=wi;}
+   if(any[id]==null||any[id]<wi)any[id]=wi;
+   (wk[wi]=wk[wi]||{})[id]=1;
+   (all[id]=all[id]||{})[wi]=1;};
+  put(a.pres,"Președinte");put(a.open_pr,"Rugăciune");put(a.close_pr,"Rugăciune");
+  put(a.cond,"Conducător studiu");put(a.cit,"Cititor studiu");
+  try{ensureIds(w);}catch(e){}
+  (w.parts||[]).forEach(function(p){
+   var r=partRole(p);
+   if((p.title||"").toLowerCase().indexOf("studiul")>=0)return;/* tratat prin cond/cit */
+   if(hasPartner(p,r)){put(a[p.id+"_a"],r);put(a[p.id+"_b"],r);}
+   else put(asgOf(a,p),r);});});
+ var allA={};Object.keys(all).forEach(function(id){allA[id]=Object.keys(all[id]).map(Number).sort(function(a,b){return a-b;});});
+ _histIdx={role:role,any:any,wk:wk,all:allA};_histIdxRev=rev;return _histIdx;}
+/* ultima săptămână în care persoana a avut EXACT tema asta (-1 = niciodată) */
+function lastRoleWi(id,r){var H=histIdx();return (H.role[r]&&H.role[r][id]!=null)?H.role[r][id]:-1;}
+/* ultima săptămână în care a avut orice parte */
+function lastAnyWi(id){var H=histIdx();return H.any[id]!=null?H.any[id]:-1;}
+/* e deja pus în săptămâna asta? */
+function usedInWi(id,wi){var H=histIdx();return !!(H.wk[wi]&&H.wk[wi][id]);}
+/* la câte săptămâni distanță e cea mai apropiată parte a lui, față de săptămâna wi.
+   Fără nimic în jur = 99. Se folosește ca să nu iasă cineva două săptămâni la rând. */
+function nearGap(id,wi){if(wi<0)return 99;var H=histIdx(),L=H.all[id];if(!L||!L.length)return 99;
+ var best=99;for(var i=0;i<L.length;i++){if(L[i]===wi)continue;var d=Math.abs(L[i]-wi);if(d<best)best=d;if(best===1)break;}
+ return best;}
+/* comparatorul comun: aceleași criterii peste tot (listă și atribuire automată) */
+function rankCmp(role,wi,opts){opts=opts||{};
+ return function(xb,yb){
+  if(opts.mate){var sx=xb.gen===opts.mate.gen?0:1,sy=yb.gen===opts.mate.gen?0:1;if(sx!==sy)return sx-sy;}
+  if(opts.femFirst){var fx=xb.gen==="F"?0:1,fy=yb.gen==="F"?0:1;if(fx!==fy)return fx-fy;}
+  if(opts.prefPio){var px=autoPref(xb)?0:1,py=autoPref(yb)?0:1;if(px!==py)return px-py;}
+  if(wi>=0){var ux=usedInWi(xb.id,wi)?1:0,uy=usedInWi(yb.id,wi)?1:0;if(ux!==uy)return ux-uy;
+   /* cine are ceva chiar în săptămâna de dinainte sau de după coboară: programul trebuie
+      să fie echilibrat, nu două săptămâni la rând pentru aceeași persoană */
+   var gx=nearGap(xb.id,wi)<=1?1:0,gy=nearGap(yb.id,wi)<=1?1:0;if(gx!==gy)return gx-gy;}
+  var rx=lastRoleWi(xb.id,role),ry=lastRoleWi(yb.id,role);if(rx!==ry)return rx-ry;
+  var ax=lastAnyWi(xb.id),ay=lastAnyWi(yb.id);if(ax!==ay)return ax-ay;
+  return xb.name.localeCompare(yb.name,"ro");};}
+function autoRank(pool,role,prefPio,wi,mate){const sec=secOfRole(role);
+ const isDemo=(sec==="Predicare"&&role!=="Predicare (cuvântare)");
+ return pool.slice().sort(rankCmp(role,(wi==null?-1:wi),{femFirst:isDemo,prefPio:!!prefPio,mate:mate||null}))
+  .map(function(b){return {b:b};});}
 function autoRun(){
  const selW=[],selC={};
  document.querySelectorAll(".auto-wk:checked").forEach(c=>selW.push(+c.value));
@@ -1172,11 +1238,11 @@ function autoRun(){
     const recent=autoRecentPartners(mid,3);
     const famOk=partnerFamOk(s.role);
     const pool=S.bros.filter(b=>b.active!==false&&!isArchNow(b)&&b.canPartner!==false&&b.id!==mid&&!used[b.id]&&(b.gen===main.gen||(famOk&&((main.famIds&&main.famIds.indexOf(b.id)>=0)||(b.famIds&&b.famIds.indexOf(mid)>=0))))&&recent.indexOf(b.id)<0);
-    const rk=autoRank(pool,s.role,true);
+    const rk=autoRank(pool,s.role,true,wi,main);
     if(rk.length){pl.a[s.key]=rk[0].b.id;used[rk[0].b.id]=true;nA++;}else nS++;
    }else{
     const pool=eligible(s.role).filter(b=>meetsS38(b,s.role,s.part)&&!used[b.id]);
-    const rk=autoRank(pool,s.role,false);
+    const rk=autoRank(pool,s.role,false,wi,null);
     if(rk.length){pl.a[s.key]=rk[0].b.id;used[rk[0].b.id]=true;nA++;}else nS++;
    }
   });
@@ -1243,18 +1309,25 @@ function renderPickList(){const wrap=document.getElementById("pickList");if(!wra
  let pool=isPartner?S.bros.filter(b=>b.active!==false&&!isArchNow(b)&&b.canPartner!==false):eligible(role).filter(b=>meetsS38(b,role,part));
  if(mate){const famOk=partnerFamOk(role);pool=pool.filter(b=>b.gen===mate.gen||(famOk&&((mate.famIds&&mate.famIds.indexOf(b.id)>=0)||(b.famIds&&b.famIds.indexOf(mate.id)>=0))));}
  let list=pool.map(b=>{const ph=personHistAny(b.id,role,sec,1);const last=ph[0]||getLast(b.id,role,sec);return {b,last};});
+ const _isDemo=(sec==="Predicare"&&role!=="Predicare (cuvântare)");
  if(pickFilter.sex)list=list.filter(o=>o.b.gen===pickFilter.sex);
  if(pickFilter.pio){const t=pickFilter.pio;if(t==="Bătrân"||t==="Slujitor")list=list.filter(o=>(o.b.rol||"Vestitor")===t);else list=list.filter(o=>(o.b.pio||"")===t);}
  const q=fold((pickSearch||"").trim());if(q)list=list.filter(o=>fold(o.b.name).includes(q));
- list.sort((x,y)=>{if(mate){const sx=x.b.gen===mate.gen?0:1,sy=y.b.gen===mate.gen?0:1;if(sx!==sy)return sx-sy;}if(sec==="Predicare"&&role!=="Predicare (cuvântare)"){var fx=x.b.gen==="F"?0:1,fy=y.b.gen==="F"?0:1;if(fx!==fy)return fx-fy;}const lx=x.last?x.last.wi:-1,ly=y.last?y.last.wi:-1;return (lx===ly)?x.b.name.localeCompare(y.b.name,"ro"):(lx-ly);});
+ {const cmp=rankCmp(role,curW,{mate:mate||null,femFirst:_isDemo&&!isPartner});
+  list.sort((x,y)=>cmp(x.b,y.b));}
  let h="";
  if(!list.length&&(pickFilter.sex||pickFilter.pio||q))h+=`<div class="empty" style="padding:26px 8px">Niciun vestitor pentru filtrele alese.<br><span class="muted">Schimbă filtrele sau căutarea.</span></div>`;else if(!list.length)h+=`<div class="empty" style="padding:30px 8px">Niciun vestitor cu privilegiul „${esc(roleLabel(role))}".<br><span class="muted">Adaugă-l din tabul Vestitori.</span></div>`;
  list.forEach(({b,last})=>{const here=used[b.id]&&pl.a[pickCtx.key]!==b.id;const cur=pl.a[pickCtx.key]===b.id;
    let plast;
    if(last){const wk=tc(S.weeks[last.wi].date);const cu=last.partner?(' · cu <span class="pcu">'+esc(last.partner)+'</span>'):'';const pt=last.p?(' · <span class="pt2">'+esc((last.p.num?last.p.num+". ":"")+(last.p.title||roleLabel(partRole(last.p))))+'</span>'):'';plast='ultima: '+wk+cu+pt;}
    else plast='neatribuit';
+   /* de ce e aici în listă: de când n-a mai avut TEMA ASTA și dacă are ceva în săptămâna vecină */
+   const _rw=lastRoleWi(b.id,role),_gp=nearGap(b.id,curW);
+   let why=(_rw<0)?'<b>niciodată la această temă</b>'
+     :('la această temă: '+esc(tc((S.weeks[_rw]||{}).date||''))+((curW>=0&&_rw<curW)?(' · acum '+(curW-_rw)+(curW-_rw===1?' săptămână':' săptămâni')):''));
+   if(_gp<=1)why+=' · <span class="pwarn">are ceva în săptămâna vecină</span>';
    h+=`<div class="pcard ${here?'hl':''} ${cur?'cur':''}">`
-     +`<button class="psel" onclick="setPick('${b.id}')"><span class="pava">${initials(b.name)||'·'}</span><span class="pinfo"><span class="pnm">${esc(broDisp(b.id))}${cur?' <span class="selbadge">✓ selectat</span>':''}${here?' <span class="ybadge">deja</span>':''}</span><span class="psub">${b.gen==="F"?"soră":"frate"}${(b.rol&&b.rol!=="Vestitor")?" · "+rolLabel(b.rol):""}</span><span class="plast">${plast}</span></span></button>`
+     +`<button class="psel" onclick="setPick('${b.id}')"><span class="pava">${initials(b.name)||'·'}</span><span class="pinfo"><span class="pnm">${esc(broDisp(b.id))}${cur?' <span class="selbadge">✓ selectat</span>':''}${here?' <span class="ybadge">deja</span>':''}</span><span class="psub">${b.gen==="F"?"soră":"frate"}${(b.rol&&b.rol!=="Vestitor")?" · "+rolLabel(b.rol):""}</span><span class="plast">${plast}</span><span class="pwhy">${why}</span></span></button>`
      +`<button class="iinfo" onclick="showPersonDetail('${b.id}')" aria-label="Detalii">${IC.info}</button>`
      +`</div>`;});
  wrap.innerHTML=h;}
