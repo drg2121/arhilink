@@ -481,7 +481,7 @@ Object.assign(IC,{
  book:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg>',
  mark:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15.5 4.5l4 4-9.5 9.5H6v-4z"/><path d="M12.5 7.5l4 4M5 21h14"/></svg>'
 });
-const VERSION="2.63.0";
+const VERSION="2.63.1";
 const SEED_WEEKS=[];
 const SEED_WEEKS_PRE=[];
 const SEED_WEEKS_POST=[];
@@ -2586,7 +2586,7 @@ async function roSync(silent){if(!roOn()||_offline()||_busy)return;_roLast=Date.
      orice actualizare de planificare. Ținem separat ultima versiune de cloud aplicată. */
   var lastRo=0;try{lastRo=+(localStorage.getItem(KEY+"_rorev")||0);}catch(e){}
   if((R._rev||0)<=lastRo){if(!silent)toast("Deja actualizat");setSyncNow();return;}
-  if(sheetOpen())return;
+  if(editBusy())return;
   try{localStorage.setItem(KEY+"_rorev",String(R._rev||0));}catch(e){}
   var myB=_myBro();var myOld=myB?(S.bros||[]).find(function(b){return b.id===myB;}):null;
   var cuN=_curUser()&&_curUser().n;var myUOld=cuN?(S.settings.users||[]).find(function(x){return x.n===cuN;}):null;
@@ -2631,7 +2631,7 @@ async function roSync(silent){if(!roOn()||_offline()||_busy)return;_roLast=Date.
   /* sesiunea primește pe loc rolul/funcțiile actualizate de admin (ex. devii administrator sau primești drept de prezență) */
   try{_sessRefresh();_sessSave();}catch(e){}
   localStorage.setItem(KEY,JSON.stringify(S));_applying=false;
-  applyTheme();if(!sheetOpen())go(tab);setSyncNow();if(!silent)toast("Actualizat");}catch(e){}}
+  applyTheme();if(!editBusy())go(tab);setSyncNow();if(!silent)toast("Actualizat");}catch(e){}}
 
 /* Distribuie aplicația: un singur fișier .html cu datele + conexiunea de sincronizare incluse */
 async function _buildShareFile(data){var src="";
@@ -2730,6 +2730,12 @@ function nextRev(){return Math.max((S._rev||0)+1,Date.now());}
 function pushedRev(){try{return +localStorage.getItem(KEY+"_pushedRev")||0;}catch(e){return 0;}}
 function setPushed(v){try{localStorage.setItem(KEY+"_pushedRev",String(v));}catch(e){}_dirty=(S._rev||0)>v;try{updateSyncInfo();}catch(e){}}
 function sheetOpen(){var o=$("#ov");return !!(o&&o.classList.contains("show"));}
+/* „acum se editează ceva" — o fereastră deschisă SAU o ciornă nesalvată (săptămâna din Programări,
+   Curățenie, Sarcini). Cât ține, nu aducem și nu îmbinăm date din cloud peste ecran: altfel
+   sincronizarea automată (la 12s) îți schimba datele sub mână sau îți cerea să renunți la ciornă. */
+function editBusy(){try{if(sheetOpen())return true;
+ if(typeof _wkDraft!=="undefined"&&_wkDraft&&_wkDraft.dirty)return true;
+ if(typeof _secDraft!=="undefined"&&_secDraft&&_secDraft.dirty)return true;}catch(e){}return false;}
 function hasData(x){return !!(x&&((x.weeks&&x.weeks.length)||(x.bros&&x.bros.length)));}
 /* protecție API GitHub: la 401 (token invalid/expirat) oprim încercările automate și arătăm mesaj clar;
    la 403/429 (limită atinsă) facem pauză până la resetarea limitei (headerul x-ratelimit-reset).
@@ -2775,7 +2781,7 @@ async function ghSync(silent){const g=S.settings.gh;if(!g.token||!g.gist){if(!si
   if(!r.ok){_noteHttp(r);let m="";try{m=(await r.json()).message;}catch(e){}throw new Error(r.status+(m?": "+m:""));}
   try{_getag=r.headers.get("etag")||"";}catch(e){_getag="";}
   const d=await r.json();const R=JSON.parse(d.files["plan.json"].content);const rr=R._rev||0,lr=S._rev||0;const ldata=hasData(S),rdata=hasData(R);var doApply=false;
-  if(!ldata&&rdata){doApply=!sheetOpen();}
+  if(!ldata&&rdata){doApply=!editBusy();}
   else if(ldata&&!rdata){doPush=true;}
   else{
    /* Baza = ultima stare pe care acest dispozitiv și cloudul au avut-o identică. Cu ea știm exact
@@ -2784,34 +2790,35 @@ async function ghSync(silent){const g=S.settings.gh;if(!g.token||!g.gist){if(!si
    var _bt=null;try{_bt=await _baseGet();}catch(e){_bt=null;}
    var _bs=_baseSig(_bt),_rCh=_bs?(_sig3(_canon3(R))!==_bs):false;
    if(_bs&&_dirty&&_rCh){/* am modificat și eu, și cloudul → îmbinare, apoi trimit rezultatul */
-    if(rr>pushedRev()){try{bkpAdd({t:Date.now(),rev:rr,w:(R.weeks||[]).length,b:(R.bros||[]).length,u:"☁ cloud",data:d.files["plan.json"].content},function(a){return a.rev===rr;});}catch(e){}}
-    try{_mergeCloudReps(R);}catch(e){}/* rapoarte / ștergeri de rapoarte / prezență: câștigă ora mai nouă */
-    var _chg=false;try{_chg=_merge3(_bt,R);}catch(e){}
-    S._rev=Math.max(nextRev(),rr+1);localStorage.setItem(KEY,JSON.stringify(S));
-    if(_chg){try{_sessRefresh();_sessSave();}catch(e){}try{applyTheme();}catch(e){}if(!sheetOpen())try{go(tab);}catch(e){}}
-    doPush=true;}
-   else if(_bs&&_dirty){doPush=true;}/* doar eu am modificat → trimit */
-   else if(_bs){if(_rCh)doApply=!sheetOpen();}/* doar cloudul s-a modificat → preiau */
+    if(!editBusy()){/* nu îmbinăm sub mâna cuiva care editează — reluăm la ciclul următor */
+     if(rr>pushedRev()){try{bkpAdd({t:Date.now(),rev:rr,w:(R.weeks||[]).length,b:(R.bros||[]).length,u:"☁ cloud",data:d.files["plan.json"].content},function(a){return a.rev===rr;});}catch(e){}}
+     try{_mergeCloudReps(R);}catch(e){}/* rapoarte / ștergeri de rapoarte / prezență: câștigă ora mai nouă */
+     var _chg=false;try{_chg=_merge3(_bt,R);}catch(e){}
+     S._rev=Math.max(nextRev(),rr+1);localStorage.setItem(KEY,JSON.stringify(S));
+     if(_chg){try{_sessRefresh();_sessSave();}catch(e){}try{applyTheme();}catch(e){}try{go(tab);}catch(e){}}
+     doPush=true;}}
+   else if(_bs&&_dirty){doPush=true;}/* doar eu am modificat → trimit (nu deranjează ecranul) */
+   else if(_bs){if(_rCh)doApply=!editBusy();}/* doar cloudul s-a modificat → preiau */
    else if(_dirty){/* fără bază (prima sincronizare după actualizare) — comportamentul de dinainte */
-    if(rr>=lr){
+    if(rr<lr){doPush=true;}
+    else if(!editBusy()){
      if(rr>pushedRev()){try{bkpAdd({t:Date.now(),rev:rr,w:(R.weeks||[]).length,b:(R.bros||[]).length,u:"☁ cloud",data:d.files["plan.json"].content},function(a){return a.rev===rr;});}catch(e){}}
      try{_mergeCloudReps(R);}catch(e){}
-     S._rev=Math.max(nextRev(),rr+1);localStorage.setItem(KEY,JSON.stringify(S));}
-    doPush=true;}
-   else if(!sheetOpen()&&rr>lr){doApply=true;}
+     S._rev=Math.max(nextRev(),rr+1);localStorage.setItem(KEY,JSON.stringify(S));doPush=true;}}
+   else if(!editBusy()&&rr>lr){doApply=true;}
    else if(lr>rr){doPush=true;}}
   /* setările Microsoft Forms (od) se ADOPTĂ din cloud dacă lipsesc local — altfel un dispozitiv fără ele
      (1) nu are rotița „Sincronizează cu Forms” la Rapoarte și (2) le-ar ȘTERGE din cloud la următorul push.
      Aceeași clasă de bug ca „gist3 lipsă” (v2.49.3). */
   try{var _rod=R.settings&&R.settings.od;if(_rod&&(_rod.rap||_rod.prez)){var _lod=S.settings&&S.settings.od;
-   if(!_lod||(!_lod.rap&&!_lod.prez)){S.settings.od=JSON.parse(JSON.stringify(_rod));if(!doApply){localStorage.setItem(KEY,JSON.stringify(S));if(tab==="arh"&&!sheetOpen())try{arhRerender();}catch(_e){}}}}}catch(e){}
+   if(!_lod||(!_lod.rap&&!_lod.prez)){S.settings.od=JSON.parse(JSON.stringify(_rod));if(!doApply){localStorage.setItem(KEY,JSON.stringify(S));if(tab==="arh"&&!editBusy())try{arhRerender();}catch(_e){}}}}}catch(e){}
   if(doApply){bkpPush();var _g=S.settings.gh;_applying=true;S=Object.assign(blank(),R);
    /* păstrăm tokenul + gistul principal ale acestui dispozitiv, dar ADOPTĂM canalele partajate gist2 (vestitori) și gist3 (documente) din cloud — altfel un dispozitiv care doar primește nu află niciodată gist3 și nu poate deschide documentele */
    var _rg=(R.settings&&R.settings.gh)||{};if(S.settings)S.settings.gh={token:_g.token||"",gist:_g.gist||"",gist2:_g.gist2||_rg.gist2||"",gist3:_g.gist3||_rg.gist3||""};
    try{_fixCursanti(S.bros);}catch(_e){}
    try{_sessRefresh();_sessSave();}catch(_e){}/* rolul/funcțiile schimbate de alt admin se aplică pe loc și aici */
    try{_baseSet(R);}catch(_e){}/* de acum baza comună cu cloudul e chiar ce tocmai am preluat */
-   localStorage.setItem(KEY,JSON.stringify(S));_applying=false;setPushed(S._rev||0);applyTheme();if(!sheetOpen())go(tab);else updateSyncInfo();if(!silent)toast("Adus din gist");}
+   localStorage.setItem(KEY,JSON.stringify(S));_applying=false;setPushed(S._rev||0);applyTheme();if(!editBusy())go(tab);else updateSyncInfo();if(!silent)toast("Adus din gist");}
   else if(!doPush&&!silent){toast("Deja sincronizat");}
   setSyncNow();
  }catch(e){if(!silent)toast("Eroare sync: "+_errMsg(e));updateSyncInfo();}
@@ -2887,7 +2894,9 @@ function _key3(x){if(!_isObj3(x))return null;
  if(x.id!=null)return "i"+x.id;
  if(x.n!=null&&(x.r!=null||x.p!=null))return "u"+x.n;
  return null;}
-function _keyed3(a){if(!a.length)return false;var s={};for(var i=0;i<a.length;i++){var k=_key3(a[i]);if(k==null||s[k])return false;s[k]=1;}return true;}
+/* o listă goală se potrivește cu orice listă cu chei — altfel „am șters TOT din secțiune" cădea pe
+   ramura pozițională și ștergerea nu se mai respecta (ex. golirea listei de documente) */
+function _keyed3(a){if(!a.length)return true;var s={};for(var i=0;i<a.length;i++){var k=_key3(a[i]);if(k==null||s[k])return false;s[k]=1;}return true;}
 /* secțiuni care au marcaj propriu de timp și se iau ÎNTREGI de la partea mai nouă (sunt tabele,
    nu are sens să amestecăm două variante rând cu rând) */
 var _M3T={"clean":1,"duty":1,"notif":1};
@@ -2919,9 +2928,12 @@ function _m3arr(b,l,r,p){var i,k;
   for(i=0;i<ord.length;i++){k=ord[i];
    var hb=Object.prototype.hasOwnProperty.call(B,k),hl=Object.prototype.hasOwnProperty.call(L,k),hr=Object.prototype.hasOwnProperty.call(RR,k);
    if(hl&&hr){out.push(_m3(hb?B[k]:undefined,L[k],RR[k],p+".*"));continue;}
-   if(hl){if(hb&&_sig3(B[k])===_sig3(L[k]))continue;/* șters în cloud, neatins de mine */out.push(L[k]);continue;}
-   if(hb&&_sig3(B[k])===_sig3(RR[k]))continue;/* șters de mine, neatins în cloud */
-   out.push(RR[k]);}
+   /* există în bază dar lipsește într-o parte → a fost ȘTERS acolo. Ștergerea câștigă chiar dacă
+      celălalt dispozitiv l-a editat între timp: ștergerea unei persoane / grupe / document e o
+      acțiune confirmată și cu efect în lanț (atribuiri, rapoarte, contul de utilizator), deci
+      elementul nu trebuie să „învie" pe jumătate. */
+   if(hb)continue;
+   out.push(hl?L[k]:RR[k]);}/* apărut doar într-o parte → intră */
   return out;}
  /* liste fără cheie: dacă doar una dintre părți a schimbat lungimea, o luăm întreagă de la ea
     (adăugări/ștergeri de rânduri); dacă au aceeași lungime, îmbinăm poziție cu poziție */
@@ -2932,12 +2944,32 @@ function _m3log(l,r){var seen={},out=[];
  (Array.isArray(l)?l:[]).concat(Array.isArray(r)?r:[]).forEach(function(e){if(!e)return;
   var k=(e.t||0)+"|"+(e.u||"")+"|"+(e.a||"");if(seen[k])return;seen[k]=1;out.push(e);});
  out.sort(function(a,b){return (a.t||0)-(b.t||0);});return out.slice(-250);}
-/* săptămânile și planurile lor sunt legate prin INDEX (S.plans[i] ↔ S.weeks[i]): dacă o parte a
-   adăugat sau a șters săptămâni, luăm perechea ÎNTREAGĂ de la acea parte, ca să nu se desincronizeze */
-function _m3weeks(b,l,r){var bw=(b.weeks||[]).length,lw=(l.weeks||[]).length,rw=(r.weeks||[]).length;
- if(lw!==bw&&rw===bw)return {weeks:l.weeks,plans:l.plans};
- if(rw!==bw&&lw===bw)return {weeks:r.weeks,plans:r.plans};
- if(lw!==rw)return {weeks:l.weeks,plans:l.plans};/* ambele au schimbat structura → păstrez local */
+/* Săptămânile și planurile lor sunt legate prin INDEX (S.plans[i] ↔ S.weeks[i]), deci nu le putem
+   îmbina separat. Le identificăm după TEXTUL BIBLIC (așa le identifică și importul din caiet, vezi
+   importEpub), altfel după dată — și îmbinăm perechea săptămână+plan pe identitate, nu pe poziție.
+   Fără asta, dacă unul importă caietul nou (adaugă săptămâni) iar celălalt face atribuiri în paralel,
+   una dintre cele două munci se pierdea complet la prima sincronizare. */
+function _wkKey(w){if(!w)return null;var b=(w.bible||"").replace(/\s+/g," ").trim();
+ if(b)return "b:"+b.toLowerCase();
+ var d=(w.date||"").replace(/\s+/g," ").trim();return d?("d:"+d.toLowerCase()):null;}
+function _wkIdx(ws){var m={},i,k;ws=ws||[];for(i=0;i<ws.length;i++){k=_wkKey(ws[i]);if(!k||m[k]!=null)return null;m[k]=i;}return m;}
+function _m3weeks(b,l,r){var bw=b.weeks||[],lw=l.weeks||[],rw=r.weeks||[];
+ var bi=_wkIdx(bw),li=_wkIdx(lw),ri=_wkIdx(rw);
+ if(bi&&li&&ri){var ord=[],seen={},W=[],P={};
+  Object.keys(li).forEach(function(k){if(!seen[k]){seen[k]=1;ord.push(k);}});/* întâi în ordinea mea */
+  Object.keys(ri).forEach(function(k){if(!seen[k]){seen[k]=1;ord.push(k);}});/* apoi cele venite din cloud */
+  ord.forEach(function(k){var hb=bi[k]!=null,hl=li[k]!=null,hr=ri[k]!=null,w,p;
+   if(hl&&hr){w=_m3(bw[bi[k]],lw[li[k]],rw[ri[k]],"weeks.*");
+              p=_m3(hb?(b.plans||{})[bi[k]]:undefined,(l.plans||{})[li[k]],(r.plans||{})[ri[k]],"plans.*");}
+   else{if(hb)return;/* ștearsă într-o parte → rămâne ștearsă */
+        w=hl?lw[li[k]]:rw[ri[k]];p=hl?(l.plans||{})[li[k]]:(r.plans||{})[ri[k]];}
+   var i=W.length;W.push(w);if(p!==undefined)P[i]=p;});
+  return {weeks:W,plans:P};}
+ /* fără identitate sigură (săptămâni fără text biblic și fără dată, sau duplicate):
+    perechea întreagă de la partea care a schimbat structura */
+ if(lw.length!==bw.length&&rw.length===bw.length)return {weeks:l.weeks,plans:l.plans};
+ if(rw.length!==bw.length&&lw.length===bw.length)return {weeks:r.weeks,plans:r.plans};
+ if(lw.length!==rw.length)return {weeks:l.weeks,plans:l.plans};
  return {weeks:_m3(b.weeks,l.weeks,r.weeks,"weeks"),plans:_m3(b.plans,l.plans,r.plans,"plans")};}
 /* îmbină starea din cloud în cea locală pornind de la bază. Rapoartele, ștergerile lor și prezența
    NU trec pe aici — au deja regula proprie (marcaj de timp) în _mergeCloudReps, apelat înainte.
