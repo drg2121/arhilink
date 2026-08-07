@@ -505,7 +505,7 @@ Object.assign(IC,{
  book:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg>',
  mark:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15.5 4.5l4 4-9.5 9.5H6v-4z"/><path d="M12.5 7.5l4 4M5 21h14"/></svg>'
 });
-const VERSION="2.72.0";
+const VERSION="2.73.0";
 const SEED_WEEKS=[];
 const SEED_WEEKS_PRE=[];
 const SEED_WEEKS_POST=[];
@@ -644,6 +644,10 @@ function wkCommit(){if(!_wkDraft)return;var i=_wkDraft.i;_wkDraft=null;
     (notificarea „Temă nouă atribuită" din notifCheck). Dacă vrei să le trimiți și e-mail sau push,
     o faci când vrei tu, din butonul „E-mail teme" al săptămânii — nu întrebăm la fiecare salvare. */
 }
+async function wkCancel(){if(!_wkDraft)return;var i=_wkDraft.i;
+ if(_wkDraft.dirty&&!(await uiConfirm("Modificările făcute acum la această săptămână se pierd.",
+  {title:"Anulezi modificările?",yes:"Anulează modificările",no:"Înapoi",danger:true})))return;
+ _wkRestore();toast("Modificările au fost anulate");openWeek(i);}
 /* avertizează dacă închizi/reîncarci pagina cu o săptămână nesalvată */
 try{window.addEventListener("beforeunload",function(e){if((_wkDraft&&_wkDraft.dirty)||(typeof _secDraft!=="undefined"&&_secDraft&&_secDraft.dirty)){e.preventDefault();e.returnValue="";}});}catch(e){}
 
@@ -1103,15 +1107,52 @@ function partMenu(i,k){
  H+=`<div class="pmchips">`+marks.map(m=>`<button class="pmchip ${pl.done[m[0]]?'on':''}" onclick="toggleDone('${m[0]}');partMenu(${i},'${k}')">${esc(m[1])}</button>`).join("")+`</div>`;
  sheet("",ttl,H);
 }
+/* cheia din program (s_open / s_mid / s_close) ↔ locul cântării în planul săptămânii */
+var SONG_SLOT={s_open:"open",s_mid:"mid",s_close:"close"};
 function songMenu(n,key){
  const pl=S.plans[curW];const done=!!(pl&&pl.done&&key&&pl.done[key]);
- let H=`<button class="pmrow" onclick="closeSheet();editSong(${n})">${IC.edit}<span>Editează titlul</span></button>`;
+ const slot=SONG_SLOT[key]||"";
+ let H="";
+ if(slot&&_canEditVcp()){
+  const vis=(typeof isVisitEv==="function")&&isVisitEv(S.weeks[curW])&&slot==="close";
+  H+=`<button class="pmrow" onclick="songPick('${slot}')">${IC.edit}<span><b>Alege altă cântare</b>${vis?'<div class="muted" style="font-size:11.5px;margin-top:2px">Cântarea de încheiere o alege supraveghetorul de circumscripție (S-38 §21).</div>':''}</span></button>`;
+  if(pl&&pl.songs&&pl.songs[slot]!=null)
+   H+=`<button class="pmrow" onclick="songReset('${slot}')">${IC.back}<span>Revino la cea din caiet</span></button>`;
+ }
+ H+=`<button class="pmrow" onclick="closeSheet();editSong(${n})">${IC.edit}<span>Editează titlul</span></button>`;
  if(key){
   H+=`<div class="pmlbl">Marchează ca modificat (galben)</div>`;
   H+=`<div class="pmchips"><button class="pmchip ${done?'on':''}" onclick="toggleDone('${key}');songMenu(${n},'${key}')">Cântarea</button></div>`;
  }
  sheet("",songLine(n),H);
 }
+var _songQ="";
+function songPickSearch(v){_songQ=v||"";songPickList();}
+function songPick(slot){if(!_canEditVcp())return;_songQ="";
+ sheet("","Alege cântarea",
+  `<div class="brosrch"><span class="brosrch-ic">${IC.search}</span><input id="songq" class="brosrch-in" type="search" autocomplete="off" placeholder="Caută după număr sau titlu…" oninput="songPickSearch(this.value)"><button class="brosrch-x" tabindex="-1" onclick="var i=document.getElementById('songq');if(i){i.value='';i.focus();}songPickSearch('')">×</button></div>`
+  +`<div id="songList" style="max-height:58vh;overflow:auto;margin-top:8px"></div>`);
+ window._songSlot=slot;songPickList();
+ setTimeout(function(){var i=document.getElementById("songq");if(i)i.focus();},120);}
+function songPickList(){var el=document.getElementById("songList");if(!el)return;
+ var pl=S.plans[curW]||{},w=S.weeks[curW]||{},slot=window._songSlot;
+ var cur=(pl.songs&&pl.songs[slot]!=null)?pl.songs[slot]:(w.songs||[])[{open:0,mid:1,close:2}[slot]];
+ var q=fold((_songQ||"").trim());
+ var nums=Object.keys(S.songs||{}).map(Number).filter(function(n){return !isNaN(n);}).sort(function(a,b){return a-b;});
+ var out=nums.filter(function(n){if(!q)return true;
+   return String(n).indexOf(q)===0||fold(String(S.songs[String(n)]||"")).indexOf(q)>=0;}).slice(0,200);
+ el.innerHTML=out.length?out.map(function(n){
+   return '<button class="pmrow'+(n===cur?' on':'')+'" style="align-items:center" onclick="songSet('+n+')">'
+    +'<span class="gtag" style="min-width:34px;text-align:center;margin:0">'+n+'</span>'
+    +'<span style="min-width:0">'+esc(S.songs[String(n)]||"")+(n===cur?' <span class="gtag t2">acum</span>':'')+'</span></button>';}).join("")
+  :'<div class="muted" style="padding:18px 4px;text-align:center">Nicio cântare găsită.</div>';}
+function songSet(n){if(!_canEditVcp())return;var slot=window._songSlot;if(!slot)return;
+ var pl=S.plans[curW]=S.plans[curW]||{a:{},songs:{}};pl.songs=pl.songs||{};
+ pl.songs[slot]=n;logAct("Cântare schimbată ("+slot+"): "+n+" · "+tc((S.weeks[curW]||{}).date||""));
+ save();closeSheet();openWeek(curW);toast("Cântarea "+n+" ✓");}
+function songReset(slot){if(!_canEditVcp())return;
+ var pl=S.plans[curW];if(pl&&pl.songs)delete pl.songs[slot];
+ save();closeSheet();openWeek(curW);toast("Revenit la cântarea din caiet");}
 var AUTO_CATS=[["pres","Președinte",["Președinte"]],["pray","Rugăciune",["Rugăciune"]],["talk","Cuvântare (Comori)",["Cuvântare Comori"]],["gems","Nestemate",["Nestemate"]],["read","Citirea Bibliei",["Citirea Bibliei"]],["demo","Demonstrații",["Începe o conversație","Fă vizite ulterioare","Fă discipoli","Explică-ți convingerile"]],["stud","Cuvântare cursant",["Predicare (cuvântare)"]],["cond","Conducător",["Conducător studiu"]],["cit","Cititor",["Cititor studiu"]],["life","Viața / Necesități",["Viața/Necesități","Necesități locale"]]];
 function autoSheet(){
  /* Lista arăta toate săptămânile din caiet, inclusiv cele trecute și lunile arhivate — nu ai ce
@@ -1166,7 +1207,9 @@ function histIdx(){
    if(r){role[r]=role[r]||{};if(role[r][id]==null||role[r][id]<wi)role[r][id]=wi;}
    if(any[id]==null||any[id]<wi)any[id]=wi;
    (wk[wi]=wk[wi]||{})[id]=1;
-   (all[id]=all[id]||{})[wi]=1;};
+   /* rugăciunea nu e o temă: cine se roagă într-o săptămână poate avea liniștit o parte în
+      cea următoare, deci n-o punem la socoteala „săptămâni una după alta" */
+   if(r!=="Rugăciune")(all[id]=all[id]||{})[wi]=1;};
   put(a.pres,"Președinte");put(a.open_pr,"Rugăciune");put(a.close_pr,"Rugăciune");
   put(a.cond,"Conducător studiu");put(a.cit,"Cititor studiu");
   try{ensureIds(w);}catch(e){}
