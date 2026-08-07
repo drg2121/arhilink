@@ -527,7 +527,7 @@ Object.assign(IC,{
  box:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h18v13H3z"/><path d="M3 7l2-4h14l2 4"/><path d="M10 11h4"/></svg>',
  mark:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15.5 4.5l4 4-9.5 9.5H6v-4z"/><path d="M12.5 7.5l4 4M5 21h14"/></svg>'
 });
-const VERSION="2.79.0";
+const VERSION="2.79.1";
 const SEED_WEEKS=[];
 const SEED_WEEKS_PRE=[];
 const SEED_WEEKS_POST=[];
@@ -900,7 +900,7 @@ function broName(id){const b=S.bros.find(x=>x.id===id);return b?b.name:"";}
    se despart numai la spațiu, iar dacă e virgulă, ea separă familia de prenume.
    Înainte fiecare persoană putea avea o formă scrisă de mână, așa că în aceeași listă
    apăreau și „PASĂRE Daniela", și „NEDELEA I." */
-function _nmParts(n){n=String(n||"").replace(/\s+/g," ").trim();
+function _nmParts(n){n=String(n||"").replace(/\s*-\s*/g,"-").replace(/\s+/g," ").trim();
  if(!n)return null;
  var sur,giv;
  var ci=n.indexOf(",");
@@ -914,9 +914,19 @@ function _capWord(w){w=String(w||"");if(!w)return "";
 /* forma scurtă: FAMILIA I. */
 function shortName(n){var p=_nmParts(n);if(!p)return "";
  return p.sur.toLocaleUpperCase("ro")+(p.giv?(" "+p.giv.charAt(0).toLocaleUpperCase("ro")+"."):"");}
-/* forma întreagă: FAMILIA Prenume */
+/* forma întreagă pentru planificare: FAMILIA Prenume (doar primul prenume) */
 function fullName(n){var p=_nmParts(n);if(!p)return "";
  return p.sur.toLocaleUpperCase("ro")+(p.giv?(" "+_capWord(p.giv)):"");}
+/* numele COMPLET, cu toate prenumele — pentru listele din Microsoft Forms. Acolo numele scurtate
+   ar fi o problemă reală: „ANGHEL L." și „ANGHEL Viorel" se potrivesc amândouă cu aceeași persoană,
+   deci raportul ar ajunge la cine nu trebuie. */
+function fullNameAll(n){n=String(n||"").replace(/\s*-\s*/g,"-").replace(/\s+/g," ").trim();
+ if(!n)return "";
+ var sur,rest,ci=n.indexOf(",");
+ if(ci>0){sur=n.slice(0,ci).trim();rest=n.slice(ci+1).trim();}
+ else{var t=n.split(" ").filter(Boolean);if(t.length<2)return n.toLocaleUpperCase("ro");
+  sur=t[0];rest=t.slice(1).join(" ");}
+ return sur.toLocaleUpperCase("ro")+(rest?(" "+rest.split(" ").filter(Boolean).map(_capWord).join(" ")):"");}
 /* numele unei persoane după regula de mai sus. pair=true → tema cu partener, se scurtează și frații */
 /* „Cum apare" din fișă era completat automat cu forma scurtă veche, așa că aproape toți aveau
    ceva scris acolo și regula unitară ar fi fost ocolită — de aici numele amestecate în aceeași
@@ -1618,7 +1628,7 @@ async function refParseEpub(file){
    în aplicație și în PDF, ca răspunsurile din Forms să se potrivească la import fără ambiguități. */
 function formsNames(){
  return (S.bros||[]).filter(function(b){return isPublisher(b)&&b.active!==false&&!isArchNow(b);})
-  .map(function(b){return {id:b.id,gen:b.gen,n:nameOf(b.id,false),raw:b.name};})
+  .map(function(b){return {id:b.id,gen:b.gen,n:fullNameAll(b.name),raw:b.name};})
   .sort(function(a,b){return a.n.localeCompare(b.n,"ro");});}
 function formsSheet(){if(!_isAdmin()){toast("Doar administratorul");return;}
  var L=formsNames();
@@ -1627,12 +1637,25 @@ function formsSheet(){if(!_isAdmin()){toast("Doar administratorul");return;}
  window._formsTxt=txt;
  var f=L.filter(function(x){return x.gen==="F";}).length;
  sheet("Forms","Lista de nume pentru Forms",
-  '<div class="muted" style="margin:0 2px 12px"><b>'+L.length+' vestitori activi</b> ('+f+' surori, '+(L.length-f)+' frați), scriși exact ca în aplicație și în PDF. Copiază lista și lipește-o în întrebarea de tip „alegere" din Microsoft Forms — așa răspunsurile se potrivesc automat la import.</div>'
+  '<div class="muted" style="margin:0 2px 12px"><b>'+L.length+' vestitori activi</b> ('+f+' surori, '+(L.length-f)+' frați), cu numele <b>complete</b>. Copiază lista și lipește-o în întrebarea de tip „alegere" din Microsoft Forms — așa raportul venit de acolo nimerește persoana potrivită.</div>'
+  +_formsCheckHtml(L)
   +'<textarea id="formsTxt" class="fld" readonly style="height:44vh;font-family:ui-monospace,Menlo,monospace;font-size:12.5px;line-height:1.6">'+esc(txt)+'</textarea>'
   +'<div class="rowflex" style="gap:9px;margin-top:12px">'
    +'<button class="btn pri sm" style="width:auto;flex:1" onclick="formsCopy()">Copiază lista</button>'
    +'<button class="btn ghost sm" style="width:auto;flex:1" onclick="formsDl()">Descarcă (.txt)</button></div>'
-  +'<div class="hint" style="margin-top:10px">Surorile apar cu inițiala prenumelui, frații cu prenumele întreg — la fel ca pe foaia tipărită. Dacă schimbi un nume în fișa vestitorului, regenerează lista de aici.</div>');}
+  +'<div class="hint" style="margin-top:10px">Aici numele sunt întregi, ca importul rapoartelor să nu greșească persoana. Pe planificare și în PDF rămân scurtate cum ai cerut: surorile cu inițiala, frații cu prenumele, iar la temele cu partener și frații cu inițiala. Dacă schimbi un nume în fișa vestitorului, regenerează lista de aici.</div>');}
+/* Verificare înainte de a folosi lista: trecem fiecare nume prin exact potrivirea care se face la
+   importul rapoartelor din Forms și ne asigurăm că nimerește persoana potrivită, fără dubii. */
+function _formsCheckHtml(L){var bad=[];
+ L.forEach(function(x){
+  var m=null;try{m=matchBro(x.n);}catch(e){}
+  if(!m||m.id!==x.id)bad.push({n:x.n,raw:x.raw,got:(m?m.name:"—")});
+  else if(L.filter(function(y){return y.n===x.n;}).length>1&&!bad.some(function(z){return z.n===x.n;}))
+   bad.push({n:x.n,raw:x.raw,got:"apare de mai multe ori în listă"});});
+ if(!bad.length)return '<div class="hint" style="margin:0 0 10px;border-left:3px solid var(--teal)"><b>Verificat:</b> toate cele '+L.length+' nume nimeresc persoana potrivită la importul rapoartelor.</div>';
+ return '<div class="hint" style="margin:0 0 10px;border-left:3px solid var(--maroon)"><b>'+bad.length+' nume ar putea greși la import:</b><br>'
+  +bad.map(function(b){return esc(b.n)+' <span class="muted">(în fișă: '+esc(b.raw)+' · s-ar potrivi cu: '+esc(b.got)+')</span>';}).join("<br>")
+  +'<br><span class="muted">Corectează numele în fișa vestitorului, apoi regenerează lista.</span></div>';}
 function formsCopy(){var t=document.getElementById("formsTxt");if(!t)return;
  t.focus();t.select();try{t.setSelectionRange(0,99999);}catch(e){}
  try{document.execCommand("copy");}catch(e){}
