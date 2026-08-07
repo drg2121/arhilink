@@ -235,7 +235,15 @@ label.fl{display:block;font-size:11.5px;color:var(--ink2);margin:12px 0 5px;font
 .pmchips{display:flex;flex-wrap:wrap;gap:8px}
 .pmchip{font-size:13.5px;font-weight:700;border:1.5px solid var(--bd);background:var(--bg);color:var(--ink2);border-radius:999px;padding:8px 15px;cursor:pointer}
 .pmchip.on{background:#fff3a3;border-color:#e6c200;color:#3a3000}
-.aow{display:flex;align-items:center;gap:10px;padding:8px 2px;font-size:14px;cursor:pointer;color:var(--ink)}
+.aow{display:flex;align-items:center;gap:10px;padding:9px 4px;font-size:14px;cursor:pointer;color:var(--ink);border-radius:9px}
+.aow:hover{background:var(--surf2)}
+.aow>span{display:flex;align-items:center;gap:7px;flex-wrap:wrap;min-width:0}
+.aomh{font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--ink3);padding:12px 4px 4px;border-top:1px solid var(--bd);margin-top:6px}
+.aomh:first-child{border-top:0;margin-top:0;padding-top:4px}
+.aotag{background:var(--acc);color:#fff;font-size:10px;font-weight:800;padding:1px 7px;border-radius:99px;letter-spacing:.03em}
+.aoev{color:var(--acc);font-size:11.5px;font-weight:700}
+.aodis{opacity:.5;cursor:default}.aodis:hover{background:transparent}
+.aonow>span{font-weight:700}
 .aow input{width:18px;height:18px;flex:0 0 auto;accent-color:var(--acc)}
 .aobtns{display:flex;gap:7px;margin:2px 0 8px;flex-wrap:wrap}
 .achip{font-size:12px;font-weight:700;border:1px solid var(--bd);background:var(--bg);color:var(--ink2);border-radius:999px;padding:6px 13px;cursor:pointer}
@@ -495,7 +503,7 @@ Object.assign(IC,{
  book:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg>',
  mark:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15.5 4.5l4 4-9.5 9.5H6v-4z"/><path d="M12.5 7.5l4 4M5 21h14"/></svg>'
 });
-const VERSION="2.70.1";
+const VERSION="2.71.0";
 const SEED_WEEKS=[];
 const SEED_WEEKS_PRE=[];
 const SEED_WEEKS_POST=[];
@@ -1104,15 +1112,30 @@ function songMenu(n,key){
 }
 var AUTO_CATS=[["pres","Președinte",["Președinte"]],["pray","Rugăciune",["Rugăciune"]],["talk","Cuvântare (Comori)",["Cuvântare Comori"]],["gems","Nestemate",["Nestemate"]],["read","Citirea Bibliei",["Citirea Bibliei"]],["demo","Demonstrații",["Începe o conversație","Fă vizite ulterioare","Fă discipoli","Explică-ți convingerile"]],["stud","Cuvântare cursant",["Predicare (cuvântare)"]],["cond","Conducător",["Conducător studiu"]],["cit","Cititor",["Cititor studiu"]],["life","Viața / Necesități",["Viața/Necesități","Necesități locale"]]];
 function autoSheet(){
- const wk=S.weeks.map((w,idx)=>`<label class="aow"><input type="checkbox" class="auto-wk" value="${idx}" ${idx===curW?"checked":""} onchange="autoCount()"><span>${esc(tc(w.date))}${w.event?' · '+esc(w.event):''}</span></label>`).join("");
+ /* Lista arăta toate săptămânile din caiet, inclusiv cele trecute și lunile arhivate — nu ai ce
+    atribui în urmă. Rămân cele care urmează (plus cea deschisă acum, chiar dacă a trecut), grupate
+    pe luni, cu săptămânile fără întrunire însemnate și neselectabile. */
+ const _cw=(typeof vcpCurWeek==="function")?vcpCurWeek():-1;
+ const _rows=[];let _lastM="",_nOld=0;
+ S.weeks.forEach((w,idx)=>{
+  const old=((_cw>=0&&idx<_cw)||wkArchIs(_wkMonthKey(idx)))&&idx!==curW;
+  if(old){_nOld++;return;}
+  const mk=monthLabel(monthKey(w.date))+" "+(_wkMonthKey(idx).split("|")[0]||"");
+  if(mk!==_lastM){_lastM=mk;_rows.push(`<div class="aomh">${esc(mk)}</div>`);}
+  const noMeet=evNoMeet(w);
+  _rows.push(`<label class="aow${noMeet?' aodis':''}${idx===_cw?' aonow':''}">`
+   +`<input type="checkbox" class="auto-wk" value="${idx}" ${(idx===curW&&!noMeet)?"checked":""} ${noMeet?"disabled":""} onchange="autoCount()">`
+   +`<span>${esc(tc(w.date))}${idx===_cw?'<span class="aotag">acum</span>':''}`
+   +`${w.event?`<span class="aoev">${esc(evLabel(w))}${noMeet?" · fără întrunire":""}</span>`:''}</span></label>`);});
+ const wk=_rows.length?_rows.join(""):'<div class="muted" style="padding:10px 2px">Nicio săptămână de programat.</div>';
  const ct=AUTO_CATS.map(c=>`<label class="aow"><input type="checkbox" class="auto-cat" value="${c[0]}" checked onchange="autoCount()"><span>${esc(c[1])}</span></label>`).join("");
- const H=`<div class="aosec" id="aosec-wk"><button class="aohd" onclick="autoTog('wk')"><span class="aoht">Săptămâni</span><span class="aosum" id="aosum-wk"></span><span class="aochev">${IC.chev}</span></button><div class="aobody"><div class="aobtns"><button class="achip" onclick="autoAll('wk',1)">Toate</button><button class="achip" onclick="autoAll('wk',0)">Niciuna</button><button class="achip" onclick="autoOnlyThis()">Doar asta</button></div>${wk}</div></div><div class="aosec" id="aosec-cat"><button class="aohd" onclick="autoTog('cat')"><span class="aoht">Categorii</span><span class="aosum" id="aosum-cat"></span><span class="aochev">${IC.chev}</span></button><div class="aobody"><div class="aobtns"><button class="achip" onclick="autoAll('cat',1)">Toate</button><button class="achip" onclick="autoAll('cat',0)">Niciuna</button></div>${ct}</div></div><label class="aow" style="margin-top:6px"><input type="checkbox" id="auto-empty" checked><span><b>Doar pozițiile goale</b> — nu suprascrie ce ai pus manual</span></label><button class="btn pri" style="margin-top:16px" onclick="autoRun()">Atribuie</button>`;
+ const H=`<div class="aosec" id="aosec-wk"><button class="aohd" onclick="autoTog('wk')"><span class="aoht">Săptămâni</span><span class="aosum" id="aosum-wk"></span><span class="aochev">${IC.chev}</span></button><div class="aobody"><div class="aobtns"><button class="achip" onclick="autoAll('wk',1)">Toate</button><button class="achip" onclick="autoAll('wk',0)">Niciuna</button><button class="achip" onclick="autoOnlyThis()">Doar asta</button></div>${wk}${_nOld?`<div class="muted" style="padding:8px 2px 2px;font-size:11.5px">${_nOld} ${_nOld===1?"săptămână trecută":"săptămâni trecute"} nu apar aici.</div>`:''}</div></div><div class="aosec" id="aosec-cat"><button class="aohd" onclick="autoTog('cat')"><span class="aoht">Categorii</span><span class="aosum" id="aosum-cat"></span><span class="aochev">${IC.chev}</span></button><div class="aobody"><div class="aobtns"><button class="achip" onclick="autoAll('cat',1)">Toate</button><button class="achip" onclick="autoAll('cat',0)">Niciuna</button></div>${ct}</div></div><label class="aow" style="margin-top:6px"><input type="checkbox" id="auto-empty" checked><span><b>Doar pozițiile goale</b> — nu suprascrie ce ai pus manual</span></label><button class="btn pri" style="margin-top:16px" onclick="autoRun()">Atribuie</button>`;
  sheet("","Auto-atribuire",H);autoCount();
 }
 function autoTog(which){const s=$("#aosec-"+which);if(s)s.classList.toggle("open");}
-function autoCount(){const fmt=(n,t)=>n===0?"niciuna":(n===t?("toate ("+t+")"):(n===1?"1 selectată":n+" selectate"));const wk=document.querySelectorAll(".auto-wk").length,wkc=document.querySelectorAll(".auto-wk:checked").length,ct=document.querySelectorAll(".auto-cat").length,ctc=document.querySelectorAll(".auto-cat:checked").length;if($("#aosum-wk"))$("#aosum-wk").textContent=fmt(wkc,wk);if($("#aosum-cat"))$("#aosum-cat").textContent=fmt(ctc,ct);}
-function autoAll(t,on){document.querySelectorAll(t==="wk"?".auto-wk":".auto-cat").forEach(c=>{c.checked=!!on;});autoCount();}
-function autoOnlyThis(){document.querySelectorAll(".auto-wk").forEach(c=>{c.checked=(+c.value===curW);});autoCount();}
+function autoCount(){const fmt=(n,t)=>n===0?"niciuna":(n===t?("toate ("+t+")"):(n===1?"1 selectată":n+" selectate"));const wk=document.querySelectorAll(".auto-wk:not(:disabled)").length,wkc=document.querySelectorAll(".auto-wk:checked").length,ct=document.querySelectorAll(".auto-cat").length,ctc=document.querySelectorAll(".auto-cat:checked").length;if($("#aosum-wk"))$("#aosum-wk").textContent=fmt(wkc,wk);if($("#aosum-cat"))$("#aosum-cat").textContent=fmt(ctc,ct);}
+function autoAll(t,on){document.querySelectorAll(t==="wk"?".auto-wk":".auto-cat").forEach(c=>{if(!c.disabled)c.checked=!!on;});autoCount();}
+function autoOnlyThis(){document.querySelectorAll(".auto-wk").forEach(c=>{c.checked=!c.disabled&&(+c.value===curW);});autoCount();}
 function autoPref(b){return !!b&&(b.pio==="Pionier"||b.pio==="Pionier special");}
 function autoRecentPartners(mid,n){const out=[];for(let wi=S.weeks.length-1;wi>=0&&out.length<n;wi--){const w=S.weeks[wi];ensureIds(w);const a=(S.plans[wi]||{}).a||{};const ps=w.parts||[];for(let pi=ps.length-1;pi>=0&&out.length<n;pi--){const p=ps[pi];if(p.sec!=="Predicare")continue;const role=partRole(p);if(role==="Predicare (cuvântare)")continue;const k=p.id;if(a[k+"_a"]===mid&&a[k+"_b"])out.push(a[k+"_b"]);else if(a[k+"_b"]===mid&&a[k+"_a"])out.push(a[k+"_a"]);}}return out;}
 function autoRank(pool,role,prefPio){const sec=secOfRole(role);const isDemo=(sec==="Predicare"&&role!=="Predicare (cuvântare)");return pool.map(b=>{const ph=personHistAny(b.id,role,sec,1);const last=ph[0]||getLast(b.id,role,sec);return {b,fem:(isDemo&&b.gen!=="F")?1:0,pref:(prefPio&&autoPref(b))?0:1,wi:last?last.wi:-1};}).sort((x,y)=>{if(x.fem!==y.fem)return x.fem-y.fem;if(x.pref!==y.pref)return x.pref-y.pref;if(x.wi!==y.wi)return x.wi-y.wi;return x.b.name.localeCompare(y.b.name,"ro");});}
