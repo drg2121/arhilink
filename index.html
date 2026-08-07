@@ -513,7 +513,7 @@ Object.assign(IC,{
  box:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h18v13H3z"/><path d="M3 7l2-4h14l2 4"/><path d="M10 11h4"/></svg>',
  mark:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15.5 4.5l4 4-9.5 9.5H6v-4z"/><path d="M12.5 7.5l4 4M5 21h14"/></svg>'
 });
-const VERSION="2.75.0";
+const VERSION="2.75.1";
 const SEED_WEEKS=[];
 const SEED_WEEKS_PRE=[];
 const SEED_WEEKS_POST=[];
@@ -4979,8 +4979,17 @@ function arhCatList(c){var ids;var title;
 
 /* ---------- RAPOARTE ---------- */
 function arhRapRow(b,c){var start=theoStartOf(arhYM);var r=repOf(b.id,arhYM);var done=!!r;
-  var meta=r?(((catHasHours(c)&&r.h!=null)?r.h+'h ':'')+(r.st?'· '+r.st+' studii ':'')+(r.aux?'· aux ':'')+(r.cr?'· Cr'+r.cr:'')).trim():'de completat';
-  return '<div class="a-rrow"><button class="a-rmain" onclick="arhEditReport(\''+b.id+'\',\''+arhYM+'\')"><span class="a-rck '+(done?'on':'')+'">'+(done?IC.check:'')+'</span><span class="a-rinfo"><span class="nm">'+esc(b.name)+'</span><span class="mt">'+esc(meta||"de completat")+'</span></span></button><button class="a-rs21" onclick="repCard(\''+b.id+'\','+start+')" title="Fișa anuală — toate lunile">S-21</button></div>';}
+  /* părțile se leagă cu „·" doar între ele — altfel rămânea un punct la început când n-are ore,
+     iar un raport doar cu „am predicat" ieșea gol și părea necompletat */
+  var meta;
+  if(r){var _p=[];
+   if(catHasHours(c)&&r.h!=null)_p.push(r.h+"h");
+   if(r.st)_p.push(r.st+(r.st==1?" studiu":" studii"));
+   if(r.aux)_p.push("aux");
+   if(r.cr)_p.push("Cr"+r.cr);
+   meta=_p.join(" · ")||"raportat";}
+  else meta="de completat";
+  return '<div class="a-rrow"><button class="a-rmain" onclick="arhEditReport(\''+b.id+'\',\''+arhYM+'\')"><span class="a-rck '+(done?'on':'')+'">'+(done?IC.check:'')+'</span><span class="a-rinfo"><span class="nm">'+esc(b.name)+'</span><span class="mt">'+esc(meta)+'</span></span></button><button class="a-rs21" onclick="repCard(\''+b.id+'\','+start+')" title="Fișa anuală — toate lunile">S-21</button></div>';}
 var arhGrpF="";
 function arhRapHtml(){ensureGrpCSS();var h=arhMonthPicker();
   var all=(S.bros||[]).filter(function(b){return isPublisher(b)&&!isArch(b,arhYM);}).slice().sort(function(a,b){return a.name.localeCompare(b.name,"ro");});
@@ -6337,7 +6346,7 @@ function repCard(id,start){var b=(S.bros||[]).find(function(x){return x.id===id;
       +'<td class="c">'+(cv!==""?cv:"")+'</td><td class="pio-obsc">'+obs+'</td>'+(canEd?'<td class="c pio-edc">'+IC.edit+'</td>':'')+'</tr>';}).join("");
   var av=theoYearsAvail();[start,start-1,start-2,curTheoStart()].forEach(function(y){if(av.indexOf(y)<0)av.push(y);});
   av.sort(function(a,b){return b-a;});
-  var sel='<select class="fld" style="width:auto;padding:6px 10px" onchange="repCard(\''+id+'\',+this.value)">'
+  var sel='<select class="fld" style="width:auto;padding:6px 30px 6px 12px" onchange="repCard(\''+id+'\',+this.value)">'
     +av.map(function(y){return '<option value="'+y+'" '+(y===start?"selected":"")+'>An '+theoLabel(y)+'</option>';}).join("")+'</select>';
   var head;
   if(goal){head='<div class="pio-mtop"><div class="pio-mtot'+(done?' done':'')+'"><b>'+total+'</b> / '+goal+' h</div>'
