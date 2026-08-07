@@ -481,7 +481,7 @@ Object.assign(IC,{
  book:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg>',
  mark:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15.5 4.5l4 4-9.5 9.5H6v-4z"/><path d="M12.5 7.5l4 4M5 21h14"/></svg>'
 });
-const VERSION="2.64.0";
+const VERSION="2.64.1";
 const SEED_WEEKS=[];
 const SEED_WEEKS_PRE=[];
 const SEED_WEEKS_POST=[];
@@ -3252,7 +3252,13 @@ function _userSet(n){try{if(n)localStorage.setItem(KEY+"_user",n);}catch(e){}}
 function startApp(){_dirty=(S._rev||0)>pushedRev();applyTheme();try{bkpMigrate();}catch(e){}try{archSweep();}catch(e){}try{usersLinkBros();_sessRefresh();_sessSave();}catch(e){}go("weeks");updateSyncInfo();autoPullLoad();startSyncTimer();try{if(_upgNeeded())setTimeout(function(){if(!sheetOpen())upgSheet();},1500);}catch(e){}try{setTimeout(odAuto,4000);setInterval(odAuto,60000);}catch(e){}
  try{setTimeout(notifCheck,3000);setInterval(notifCheck,120000);}catch(e){}
  try{setTimeout(usersUpgradePins,2500);}catch(e){}
- try{caietImgHydrate().then(function(){setTimeout(function(){caietImgFetch(true);},3500);});}catch(e){}
+ try{caietImgHydrate().then(function(){setTimeout(function(){
+   /* pozele importate ÎNAINTE de această versiune stau doar pe acest dispozitiv — dacă e
+      dispozitivul unui admin, le urcăm o dată, ca să ajungă și la ceilalți */
+   try{if(_isAdmin()&&S.settings.gh&&S.settings.gh.token){var _ci=caietImgGet(),_ix=caietIdx();
+    var _miss=Object.keys(_ci).filter(function(k){var a=_ci[k],d=_ix[k];return a&&a.length&&(!d||(d.n||0)<a.length);});
+    if(_miss.length)caietImgPush(_miss);}}catch(e){}
+   caietImgFetch(true);},3500);});}catch(e){}
  try{setTimeout(pushInit,2500);}catch(e){}
  try{setTimeout(function(){if(typeof autoOn==="function"&&autoOn())boxTake(true);else boxFlush(true);},6000);}catch(e){}}
 function bootGate(){applyTheme();_sessHydrate();_offGuard();if(_curUser()){_gateClose();startApp();return;}var us=_users();var lg=_logo();
