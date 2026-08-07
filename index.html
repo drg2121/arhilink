@@ -527,7 +527,7 @@ Object.assign(IC,{
  box:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h18v13H3z"/><path d="M3 7l2-4h14l2 4"/><path d="M10 11h4"/></svg>',
  mark:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15.5 4.5l4 4-9.5 9.5H6v-4z"/><path d="M12.5 7.5l4 4M5 21h14"/></svg>'
 });
-const VERSION="2.77.0";
+const VERSION="2.78.0";
 const SEED_WEEKS=[];
 const SEED_WEEKS_PRE=[];
 const SEED_WEEKS_POST=[];
@@ -1383,8 +1383,24 @@ let broSearch="";
 function fold(s){return (s||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");}
 function broSearchUpd(v){broSearch=v;renderBroList();}
 function broClear(){var i=$("#broq");if(i){i.value="";i.focus();}broSearchUpd("");}
-function personHistory(id,sec,limit){const out=[];
- for(let wi=S.weeks.length-1;wi>=0&&out.length<limit;wi--){const w=S.weeks[wi];ensureIds(w);const pl=S.plans[wi];if(!pl||!pl.a)continue;const a=pl.a;
+/* Fereastra de istoric: ultimele HIST_MONTHS luni de la săptămâna de referință.
+   Lunile arhivate INTRĂ la socoteală — arhivarea doar le scoate din liste, nu din istoric. */
+var HIST_MONTHS=6;
+function _wkMonthNum(i){var k=_wkMonthKey(i);if(!k)return null;
+ var p=k.split("|"),y=+p[0],mi=monthIdx(p[1]!=null?p[1]:"");
+ if(isNaN(y)||mi<0)return null;return y*12+mi;}
+/* de la ce săptămână începe fereastra de 6 luni, socotită față de săptămâna „acum" */
+function histFromWi(baseWi){
+ if(baseWi==null||baseWi<0)baseWi=(typeof vcpCurWeek==="function"?vcpCurWeek():-1);
+ if(baseWi<0)baseWi=(S.weeks||[]).length-1;
+ var bn=_wkMonthNum(baseWi);
+ if(bn==null)return Math.max(0,baseWi-26);/* fără dată lizibilă: ~26 de săptămâni */
+ for(var i=0;i<(S.weeks||[]).length;i++){var n=_wkMonthNum(i);
+  if(n!=null&&n>bn-HIST_MONTHS)return i;}
+ return 0;}
+function personHistory(id,sec,limit,fromWi){const out=[];
+ if(fromWi==null)fromWi=0;
+ for(let wi=S.weeks.length-1;wi>=fromWi&&out.length<limit;wi--){const w=S.weeks[wi];ensureIds(w);const pl=S.plans[wi];if(!pl||!pl.a)continue;const a=pl.a;
   for(let pi=w.parts.length-1;pi>=0&&out.length<limit;pi--){const p=w.parts[pi];if(p.sec!==sec)continue;const k=p.id;const study=(p.title||"").toLowerCase().includes("studiul");const role=partRole(p);
    let had=false,partner=null;
    if(study){if(a.cond===id){had=true;partner=a.cit?broDisp(a.cit):null;}else if(a.cit===id){had=true;partner=a.cond?broDisp(a.cond):null;}}
@@ -1392,7 +1408,7 @@ function personHistory(id,sec,limit){const out=[];
    else if(asgOf(a,p)===id){had=true;}
    if(had)out.push({wi,p,partner});}}
  return out;}
-function personHistAny(id,role,sec,limit){if(sec)return personHistory(id,sec,limit);
+function personHistAny(id,role,sec,limit,fromWi){if(sec)return personHistory(id,sec,limit,fromWi);
  const out=[];for(let wi=S.weeks.length-1;wi>=0&&out.length<limit;wi--){const a=(S.plans[wi]||{}).a||{};
   if(role==="Președinte"&&a.pres===id)out.push({wi,role});
   else if(role==="Rugăciune"&&(a.open_pr===id||a.close_pr===id))out.push({wi,role});}
@@ -1449,11 +1465,12 @@ function renderPickList(){const wrap=document.getElementById("pickList");if(!wra
      +`</div>`;});
  wrap.innerHTML=h;}
 function showPersonDetail(id){const b=S.bros.find(x=>x.id===id);if(!b||!pickCtx)return;const role=pickCtx.role,sec=secOfRole(role);
- const ph=personHistAny(id,role,sec,15);
+ const _from=histFromWi(typeof curW!=="undefined"?curW:-1);
+ const ph=personHistAny(id,role,sec,60,_from);
  let H=`<div class="pdhead"><span class="pava big">${initials(b.name)||'·'}</span><div><div class="pdnm">${esc(broDisp(id))}</div><div class="psub">${b.gen==="F"?"soră":"frate"}${(b.rol&&b.rol!=="Vestitor")?" · "+rolLabel(b.rol):""}</div></div></div>`;
- H+=`<div class="grpttl">Recent · ${esc(secName(sec)||roleLabel(role))}</div>`;
+ H+=`<div class="grpttl">Ultimele ${HIST_MONTHS} luni · ${esc(secName(sec)||roleLabel(role))}</div>`;
  if(ph.length)H+=ph.map(e=>{const ttl=e.p?((e.p.num?e.p.num+". ":"")+(e.p.title||roleLabel(partRole(e.p)))):(e.role||roleLabel(role));const pn=e.partner?('<span class="pcu">cu '+esc(e.partner)+'</span>'):'<span class="muted">—</span>';return `<div class="pdrow"><div class="pdw">${tc(S.weeks[e.wi].date)}</div><div class="pdb"><div class="pdt">${esc(ttl)}</div><div class="pdp">${pn}</div></div></div>`;}).join("");
- else H+=`<div class="phnote">Nicio atribuire anterioară la „${esc(roleLabel(role))}".</div>`;
+ else H+=`<div class="phnote">Nicio atribuire în ultimele ${HIST_MONTHS} luni la „${esc(roleLabel(role))}".</div>`;
  H+=`<button class="btn pri" style="margin-top:18px" onclick="setPick('${id}')">Alege pe ${esc(broDisp(id))}</button>`;
  const bk=$("#sheetBack");if(bk){bk.style.display="";bk.onclick=()=>openPick(pickCtx.role,pickCtx.key);}
  $("#sheetHd").textContent=broDisp(id);$("#sheetBody").innerHTML=H;$("#ov").classList.add("show");}
