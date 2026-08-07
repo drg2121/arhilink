@@ -495,7 +495,7 @@ Object.assign(IC,{
  book:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg>',
  mark:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15.5 4.5l4 4-9.5 9.5H6v-4z"/><path d="M12.5 7.5l4 4M5 21h14"/></svg>'
 });
-const VERSION="2.68.1";
+const VERSION="2.69.0";
 const SEED_WEEKS=[];
 const SEED_WEEKS_PRE=[];
 const SEED_WEEKS_POST=[];
@@ -895,6 +895,18 @@ function monthKey(date){const m=(date||"").toLowerCase();const L=["ianuarie","fe
 function monthIdx(date){const m=(date||"").toLowerCase();const L=["ianuarie","februarie","martie","aprilie","mai","iunie","iulie","august","septembrie","octombrie","noiembrie","decembrie"];for(let j=0;j<L.length;j++){if(m.includes(L[j]))return j;}return -1;}
 function monthLabel(k){return k.charAt(0).toUpperCase()+k.slice(1);}
 function grpOpen(key){S.ui=S.ui||{};S.ui.open=S.ui.open||{};return (S.ui.open[key]!==undefined)?S.ui.open[key]:(key.indexOf("|")<0);}
+/* ---- arhivarea lunilor din Programări ----
+   Lunile încheiate se pot da deoparte ca să nu mai încarce lista. Datele rămân neatinse:
+   luna arhivată reapare oricând din comutatorul „Arată lunile arhivate", iar rapoartele,
+   prezența și celelalte secțiuni nu sunt afectate. */
+function wkArch(){S.settings.wkArch=S.settings.wkArch||{};return S.settings.wkArch;}
+function wkArchIs(k){return !!wkArch()[k];}
+function wkArchShow(){return !!(S.ui&&S.ui.showArch);}
+function wkArchToggleShow(){S.ui=S.ui||{};S.ui.showArch=!S.ui.showArch;save();renderWeeks();}
+function wkArchSet(k,v){if(!_canEditVcp()){toast("Doar administratorii/editorii VCP");return;}
+ var A=wkArch();if(v)A[k]=1;else delete A[k];
+ logAct((v?"Lună arhivată: ":"Lună scoasă din arhivă: ")+k);save();renderWeeks();
+ toast(v?"Luna a fost arhivată — o revezi din „Arată lunile arhivate”":"Luna a revenit în listă");}
 function renderWeeks(){
  $("#fab").style.display="none";const b=$("#body");
  let h=`<div class="ebar" style="margin-bottom:10px"><div class="lead" style="margin:0">Caiet · ${S.weeks.length} săptămâni</div><div class="spacer"></div><button class="miniact" onclick="openExportPick()">${IC.pdf} Descarcă PDF</button></div>`;
@@ -904,10 +916,14 @@ function renderWeeks(){
   const Y=years[ym[year]];const mk=monthKey(w.date);
   if(!(mk in Y.mm)){Y.mm[mk]=Y.ms.length;Y.ms.push({mk,items:[]});}
   Y.ms[Y.mm[mk]].items.push(i);});
+ const _showA=wkArchShow();let _nA=0;
+ years.forEach(Y=>{Y.ms.forEach(M=>{if(wkArchIs(Y.y+"|"+M.mk))_nA++;});});
+ if(_nA)h+=`<button class="btn ghost sm" style="width:100%;margin-bottom:10px" onclick="wkArchToggleShow()">${_showA?"Ascunde":"Arată"} lunile arhivate (${_nA})</button>`;
  years.forEach(Y=>{const yk="y"+Y.y;const yo=grpOpen(yk);
+  const _vis=Y.ms.filter(M=>_showA||!wkArchIs(Y.y+"|"+M.mk));if(!_vis.length)return;
   h+=`<div class="ygroup"><button class="yhead" onclick="toggleGrp('${yk}')"><span class="mchev ${yo?'op':''}">${IC.chev}</span><span class="yttl">${Y.y}</span></button><div class="ybody" id="g_${yk}" style="display:${yo?'block':'none'}">`;
-  Y.ms.forEach(M=>{const mk2=yk+"|"+M.mk;const mo=grpOpen(mk2);
-   h+=`<div class="mgroup"><button class="mhead" onclick="toggleGrp('${mk2}')"><span class="mchev ${mo?'op':''}">${IC.chev}</span><span class="mttl">${monthLabel(M.mk)}</span><span class="mcount">${M.items.length} săpt.</span></button><div class="mbody" id="g_${mk2}" style="display:${mo?'block':'none'}">`;
+  _vis.forEach(M=>{const mk2=yk+"|"+M.mk;const _ak=Y.y+"|"+M.mk,_isA=wkArchIs(_ak);const mo=_isA?false:grpOpen(mk2);
+   h+=`<div class="mgroup"${_isA?' style="opacity:.72"':''}><div class="mhead" style="display:flex;align-items:center"><button class="mhead" style="flex:1;border:0;background:none;padding:0" onclick="toggleGrp('${mk2}')"><span class="mchev ${mo?'op':''}">${IC.chev}</span><span class="mttl">${monthLabel(M.mk)}${_isA?' <span class="gtag t2">arhivată</span>':''}</span><span class="mcount">${M.items.length} săpt.</span></button>${_canEditVcp()?`<button class="pico" title="${_isA?'Scoate din arhivă':'Arhivează luna'}" style="flex:0 0 auto;margin-left:6px" onclick="event.stopPropagation();wkArchSet('${_ak}',${_isA?0:1})">${_isA?IC.back:IC.box||IC.trash}</button>`:''}</div><div class="mbody" id="g_${mk2}" style="display:${mo?'block':'none'}">`;
    M.items.forEach(i=>{const w=S.weeks[i];const pl=S.plans[i]||{};const f=Object.keys(pl.a||{}).filter(k=>pl.a[k]).length;
     const sub=w.event?'<span style="color:var(--acc);font-weight:700">'+esc(w.event)+'</span>':esc(w.bible||'');
     const pill=w.event?'<span class="pill has">eveniment</span>':'<span class="pill '+(f?'has':'')+'">'+(f?f+' alocate':'gol')+'</span>';
@@ -955,7 +971,8 @@ function openWeek(i){if(_wkDraft&&_wkDraft.i!==i&&!_wkGuard())return;
   const study=(p.title||"").toLowerCase().includes("studiul");let mn=p.min||0;
   let title=p.num===2?"Nestemate spirituale "+w.bible:p.title;const role=partRole(p);let sel;
   if(study&&isVisit){title="Cuvântare de serviciu"+(w.coTalk?" — "+w.coTalk:"");mn=30;
-    sel=`<div style="padding:9px 12px;border:1px solid var(--bd);border-radius:10px;color:var(--ink2);font-size:13px">Supraveghetorul de circumscripție<br><b>${esc(S.settings.co||'— setează în Setări —')}</b></div>`;}
+    sel=`<button class="pick ${w.coTalk?'':'ph'}" style="text-align:left" onclick="coTalkEdit(${i})"><span>${esc(w.coTalk||'Pune tema cuvântării')}</span><span class="pcv">${IC.edit}</span></button>`
+     +`<div class="muted" style="font-size:11.5px;margin-top:5px">Supraveghetorul de circumscripție: <b>${esc(S.settings.co||'— setează în Setări → Congregație —')}</b></div>`;}
   else if(study)sel=`<div class="two asgpair">${dd("Conducător studiu","cond",pl,"Conducător")}${dd("Cititor studiu","cit",pl,"Cititor")}</div>`;
   else if(hasPartner(p,role))sel=`<div class="two asgpair">${dd(role,k+"_a",pl,"Cursant")}${dd(role,k+"_b",pl,"Partener")}</div>`;
   else sel=dd(role,k,pl,roleLabel(role));
@@ -1318,8 +1335,17 @@ async function refParseEpub(file){
    var num=t.match(/^(\d{1,2})[.)]\s+/);
    if(num){pn=+num[1];pts[String(pn)]=t.replace(/^\d{1,2}[.)]\s+/,"").slice(0,600);}
    else if(pn&&pts[String(pn)]&&pts[String(pn)].length<400)pts[String(pn)]+=" "+t.slice(0,300);}
-  var sum="";var firstP=body.match(/<p[^>]*>([\s\S]*?)<\/p>/);
-  if(firstP)sum=txt(firstP[1]).replace(/\s+/g," ").trim().slice(0,300);
+  /* rezumatul: obiectivul lecției dacă există, altfel primul paragraf care chiar spune ceva
+     (nu marcajul „LECȚIA n" și nu titlul) — se arată la trimiterile fără număr de punct */
+  var sum="";
+  var ps=body.match(/<p[^>]*>[\s\S]*?<\/p>/g)||[];
+  for(var q=0;q<ps.length;q++){
+   var pt=txt(ps[q]).replace(/\s+/g," ").trim();
+   if(!pt||pt.length<12)continue;
+   if(/^lec[țt]ia\s*\d+$/i.test(pt))continue;
+   if(pt.toLowerCase()===title.toLowerCase())continue;
+   if(/^obiectiv/i.test(pt)){sum=pt.slice(0,300);break;}
+   if(!sum)sum=pt.slice(0,300);}
   lessons[key]={t:title,pts:pts,sum:sum};n++;}
  return {lessons:lessons,n:n};}
 /* ---- Setări → Referințe ---- */
@@ -1377,8 +1403,15 @@ function showPartInfo(wi,pid){const w=S.weeks[wi];ensureIds(w);const p=(w.parts|
  const inf=infoFor(w,p);const sec={Comori:"Comori din Cuvântul lui Dumnezeu",Predicare:"Să fim mai eficienți în predicare",Viata:"Viața de creștin"}[p.sec]||"";
  let H=`<div class="pikead"><div class="pikt">${esc((p.num?p.num+". ":"")+(p.title||""))}</div><div class="piks">${esc(sec)}${p.min?" · "+p.min+" min.":""}${(function(){var f=fmtLabel(partFmt(p));return f?" · "+f:"";})()}</div></div>`;
  /* tema pentru cursanți: scenariul din caiet și lecția la care lucrează */
- if(p.d)H+='<div class="pikbody"><div class="pikl">'+esc(p.d)+'</div></div>';
- var _refs=(p.ref&&p.ref.length)?p.ref:refParse((p.d||"")+" "+(p.title||""));
+ /* trimiterea se caută și în detaliile deja existente (S.info), nu doar în ce a reținut importul:
+    săptămânile importate ÎNAINTE de această versiune n-au p.ref, dar au textul cu „(lmd lecția 9,
+    punctul 5)" — așa merge fără să reimporți caietul */
+ var _detTxt=(inf&&inf.info)||"";
+ var _refs=(p.ref&&p.ref.length)?p.ref:refParse((p.d||"")+" "+_detTxt+" "+(p.title||""));
+ /* scenariul: fără paranteza cu trimiterea, fiindcă apare oricum dedesubt, scrisă pe larg */
+ var _dTxt=p.d||(p.sec==="Predicare"?_detTxt:"");
+ if(_dTxt&&_refs.length)_dTxt=_dTxt.replace(/\([^()]*\b(?:th|lmd|lff|ijwbq|bt|bhs|jy|cf|od)\b[^()]*\)/gi," ").replace(/\s{2,}/g," ").trim();
+ if(_dTxt)H+='<div class="pikbody"><div class="pikl">'+esc(_dTxt)+'</div></div>';
  if(_refs.length){H+='<div class="grpttl">La ce lucrează</div>';
   _refs.forEach(function(r){
    var L=refGetLesson(r.b,r);
@@ -1392,7 +1425,7 @@ function showPartInfo(wi,pid){const w=S.weeks[wi];ensureIds(w);const p=(w.parts|
    if(inf.info){
      /* la temele din „Predicare" scenariul e deja afișat sus (p.d) — nu-l repetăm */
      const _norm=x=>String(x||"").replace(/\([^()]*\)/g," ").replace(/\s+/g," ").trim().toLowerCase();
-     const _d=_norm(p.d);
+     const _d=_norm(_dTxt||p.d);
      const lines=inf.info.split(/\n/).map(s=>s.trim()).filter(Boolean)
        .filter(s=>{const n=_norm(s);return !(_d&&n&&(_d.indexOf(n)>=0||n.indexOf(_d)>=0));});
      if(lines.length)H+='<div class="pikbody">'+lines.map(s=>'<div class="pikl">'+esc(s)+'</div>').join('')+'</div>';}
@@ -1482,18 +1515,25 @@ function evNoMeet(w){var t=evOf(w);return !!(t&&t.k==="none");}
 function evVisit(w){var t=evOf(w);return !!(t&&t.k==="visit");}
 function evLabel(w){var t=evOf(w);return (t&&t.n)||(w&&w.event)||"";}
 /* ---- Setări → Evenimente: lista editabilă ---- */
+var _evShowOld=false;
+function evShowOld(id,v){_evShowOld=!!v;evEdit(id);}
+/* cheia „an|lună" a unei săptămâni, la fel cum o construiește lista din Programări */
+function _wkMonthKey(idx){try{var base=+(S.settings.baseYear||2026),year=base,prev=-1;
+ for(var i=0;i<(S.weeks||[]).length;i++){var mi=monthIdx(S.weeks[i].date);
+  if(prev>=0&&mi>=0&&mi<prev)year++;if(mi>=0)prev=mi;
+  if(i===idx)return year+"|"+monthKey(S.weeks[i].date);}}catch(e){}return "";}
 function evUsedBy(id,name){var n=0;(S.weeks||[]).forEach(function(w){if(!w||!w.event)return;
  if((w.evId&&w.evId===id)||w.event===name)n++;});return n;}
 function evSheet(){if(!_isAdmin()){toast("Doar administratorul");return;}
  var L=evTypes();
  var rows=L.map(function(t,i){var used=evUsedBy(t.id,t.n);
-  return '<button class="pmrow" style="align-items:flex-start" onclick="evEdit(\''+t.id+'\')">'+IC.edit
+  return '<button class="pmrow" style="align-items:flex-start" onclick="_evShowOld=false;evEdit(\''+t.id+'\')">'+IC.edit
    +'<span style="min-width:0"><b>'+esc(t.n)+'</b>'
    +'<div class="muted" style="font-size:11.5px;margin-top:2px">'+esc(evKindLbl(t.k))+(used?(' · folosit în '+used+(used===1?' săptămână':' săptămâni')):'')+'</div></span></button>';}).join("");
  sheet("Evenimente","Evenimente",
   '<div class="muted" style="margin:0 2px 12px">Săptămânile speciale din Instrucțiunile S-38, plus ale tale. Poți avea oricâte congrese, fiecare cu numele lui. Le atribui unei săptămâni din <b>Programări → săptămâna → Detalii</b>.</div>'
   +(rows||'<div class="muted">Niciun eveniment.</div>')
-  +'<button class="pmrow" onclick="evEdit(\'\')">'+IC.plus+'<span><b>Adaugă un eveniment</b></span></button>');}
+  +'<button class="pmrow" onclick="_evShowOld=false;evEdit(\'\')">'+IC.plus+'<span><b>Adaugă un eveniment</b></span></button>');}
 function evEdit(id){if(!_isAdmin())return;
  var t=id?evById(id):null,isNew=!t;
  if(isNew)t={id:"e"+Date.now(),n:"",k:"none"};
@@ -1511,7 +1551,8 @@ function evEdit(id){if(!_isAdmin())return;
  +'<label class="fl" style="margin-top:10px">Ce se întâmplă în acea săptămână</label><select class="fld" id="evK" onchange="evKindChg()">'+opts+'</select>'+hints
  +'<div class="grpttl" style="margin-top:16px">În ce săptămâni</div>'
  +(wl?('<div class="muted" style="margin:0 2px 8px;font-size:11.5px">Bifează săptămânile în care cade acest eveniment. O săptămână poate avea un singur eveniment — dacă avea altul, e înlocuit.</div>'
-   +'<div class="rowflex" style="gap:8px;margin-bottom:8px"><button class="btn ghost sm" style="width:auto" onclick="evWkAll(0)">Debifează tot</button></div>'
+   +'<div class="rowflex" style="gap:8px;margin-bottom:8px"><button class="btn ghost sm" style="width:auto" onclick="evWkAll(0)">Debifează tot</button>'
+   +(nOld?('<button class="btn ghost sm" style="width:auto" onclick="evShowOld(\''+t.id+'\','+(showOld?0:1)+')">'+(showOld?"Ascunde":"Arată")+' săptămânile trecute ('+nOld+')</button>'):'')+'</div>'
    +'<div style="max-height:34vh;overflow:auto;border:1px solid var(--bd);border-radius:12px;padding:6px 10px">'+wl+'</div>')
    :'<div class="muted" style="margin:0 2px">Nicio săptămână în caiet încă.</div>')
  +(used?('<div class="hint" style="margin-top:12px">Folosit acum în <b>'+used+'</b> '+(used===1?'săptămână':'săptămâni')+'. Modificările se aplică peste tot.</div>'):'')
@@ -1546,6 +1587,13 @@ async function evDel(id){if(!_isAdmin())return;var t=evById(id);if(!t)return;
  S.settings.evTypes=evTypes().filter(function(x){return x.id!==id;});
  logAct("Eveniment șters: "+t.n);save();evSheet();}
 function isVisitEv(w){return evVisit(w);}
+/* tema cuvântării de serviciu se pune direct de pe rândul ei din program, nu doar din „Detalii" */
+async function coTalkEdit(i){if(!_canEditVcp())return;const w=S.weeks[i];if(!w)return;
+ const v=await uiPrompt("Tema cuvântării de serviciu",w.coTalk||"",
+  {msg:"Cuvântarea de 30 de minute ținută de supraveghetorul de circumscripție (S-38 §21).",yes:"Salvează"});
+ if(v==null)return;
+ const t=v.trim();if(t)w.coTalk=t;else delete w.coTalk;
+ logAct("Temă cuvântare de serviciu: "+(t||"ștearsă"));save();openWeek(i);}
 function editWeekMeta(i){const w=S.weeks[i];
  const L=evTypes(),cur=evOf(w),curId=cur?(cur.id||""):"",vis=evVisit(w);
  const qa=s=>(s||"").replace(/"/g,"&quot;");
