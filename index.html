@@ -495,7 +495,7 @@ Object.assign(IC,{
  book:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg>',
  mark:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15.5 4.5l4 4-9.5 9.5H6v-4z"/><path d="M12.5 7.5l4 4M5 21h14"/></svg>'
 });
-const VERSION="2.69.0";
+const VERSION="2.69.1";
 const SEED_WEEKS=[];
 const SEED_WEEKS_PRE=[];
 const SEED_WEEKS_POST=[];
@@ -1322,40 +1322,39 @@ async function refParseEpub(file){
   var h1=(body.match(/<h1[^>]*>([\s\S]*?)<\/h1>/)||[])[1];
   var title=txt(h1||"").replace(/\s+/g," ").trim();
   if(!title)continue;
-  /* numărul lecției: din marcajul „LECȚIA n" sau din numele fișierului */
-  var lm=body.match(/LEC[ȚT]IA\s*(\d+)/i)||raw.match(/LEC[ȚT]IA\s*(\d+)/i);
-  var ap=body.match(/APENDICE(?:LE)?\s*([A-Z])/i);
+  var lm=body.match(/LEC[ȚT]IA\s*(\d+)/i);
+  var ap=body.match(/APENDICE(?:LE)?\s*([A-Z])\b/i);
   var key=lm?("l:"+lm[1]):(ap?("ap:"+ap[1].toUpperCase()):null);
   if(!key)continue;
-  /* punctele numerotate ale lecției */
-  var pts={},pn=0;
-  var re=/<p[^>]*>([\s\S]*?)<\/p>/g,m2;
+  /* Punctele lecției: EXACT paragraful care începe cu „N." — nimic din ce urmează după el.
+     Textele biblice citate la final (extScrpCiteTxt), marcajul „LECȚIA n" și lista „VEZI ȘI"
+     nu fac parte din lecție și se lasă deoparte. */
+  var pts={},sum="",obj="";
+  var re=/<p([^>]*)>([\s\S]*?)<\/p>/g,m2;
   while((m2=re.exec(body))){
-   var t=txt(m2[1]).replace(/\s+/g," ").trim();if(!t||t.length<12)continue;
-   var num=t.match(/^(\d{1,2})[.)]\s+/);
-   if(num){pn=+num[1];pts[String(pn)]=t.replace(/^\d{1,2}[.)]\s+/,"").slice(0,600);}
-   else if(pn&&pts[String(pn)]&&pts[String(pn)].length<400)pts[String(pn)]+=" "+t.slice(0,300);}
-  /* rezumatul: obiectivul lecției dacă există, altfel primul paragraf care chiar spune ceva
-     (nu marcajul „LECȚIA n" și nu titlul) — se arată la trimiterile fără număr de punct */
-  var sum="";
-  var ps=body.match(/<p[^>]*>[\s\S]*?<\/p>/g)||[];
-  for(var q=0;q<ps.length;q++){
-   var pt=txt(ps[q]).replace(/\s+/g," ").trim();
-   if(!pt||pt.length<12)continue;
-   if(/^lec[țt]ia\s*\d+$/i.test(pt))continue;
-   if(pt.toLowerCase()===title.toLowerCase())continue;
-   if(/^obiectiv/i.test(pt)){sum=pt.slice(0,300);break;}
-   if(!sum)sum=pt.slice(0,300);}
-  lessons[key]={t:title,pts:pts,sum:sum};n++;}
+   var cls=(m2[1]||"");
+   if(/extScrpCite|contextTtl|footnote|pageNum/i.test(cls))continue;
+   var t=txt(m2[2]).replace(/\s+/g," ").trim();
+   if(!t)continue;
+   if(/^lec[țt]ia\s*\d+$/i.test(t))continue;
+   if(/^(vezi [șs]i|principiu\s*:)/i.test(t)&&!sum){if(/^principiu/i.test(t))sum=t.slice(0,300);continue;}
+   if(/^obiectiv\s*:/i.test(t)){obj=t.slice(0,300);continue;}
+   var num=t.match(/^(\d{1,2})[.)]\s+(.+)$/);
+   if(num&&+num[1]>=1&&+num[1]<=20)pts[num[1]]=num[2].slice(0,600);
+   else if(!sum&&t.length>25&&t.length<300&&!/^[A-ZĂÂÎȘȚ ]{6,}$/.test(t))sum=t;}
+  lessons[key]={t:title,pts:pts,sum:obj||sum};n++;}
  return {lessons:lessons,n:n};}
 /* ---- Setări → Referințe ---- */
 function refSheet(){if(!_isAdmin()){toast("Doar administratorul");return;}
+ try{arhEnsureCSS();}catch(e){}
  var idx=refIdx(),codes=Object.keys(idx);
+ /* aceleași rânduri ca la Evenimente — clasele din Arhivă nu se aplică în ferestre */
  var rows=codes.map(function(c){var d=idx[c];
-  return '<div class="a-rrow"><button class="a-rmain" onclick="refInfo(\''+c+'\')"><span class="gtag" style="min-width:40px;text-align:center;margin:0">'+esc(c)+'</span>'
-   +'<span class="a-rinfo"><span class="nm">'+esc(d.n||refName(c))+'</span>'
-   +'<span class="mt">'+(d.lessons||0)+' lecții'+(d.by?(' · '+esc(d.by)):'')+' · '+fmtDT(d.t)+'</span></span></button>'
-   +'<button class="a-rs21 del" onclick="refDel(\''+c+'\')" title="Șterge">'+IC.trash+'</button></div>';}).join("");
+  return '<div style="display:flex;align-items:center;gap:8px;margin-bottom:7px">'
+   +'<button class="pmrow" style="flex:1;align-items:flex-start;margin:0" onclick="refInfo(\''+c+'\')">'+IC.edit
+   +'<span style="min-width:0"><b>'+esc(d.n||refName(c))+'</b> <span class="gtag t2">'+esc(c)+'</span>'
+   +'<div class="muted" style="font-size:11.5px;margin-top:2px">'+(d.lessons||0)+' lecții'+(d.by?(' · '+esc(d.by)):'')+' · '+fmtDT(d.t)+'</div></span></button>'
+   +'<button class="btn ghost sm" style="width:auto;flex:0 0 auto;color:var(--maroon)" onclick="refDel(\''+c+'\')">Șterge</button></div>';}).join("");
  sheet("Referințe","Referințe",
   '<div class="muted" style="margin:0 2px 12px">Broșurile la care trimite caietul. Când apeși <b>„i"</b> la o temă pentru cursanți vezi lecția la care lucrează — iar dacă broșura e încărcată aici, vezi și titlul lecției și textul punctului. Le încarcă doar administratorul; ajung singure la toți.</div>'
   +(rows||'<div class="muted" style="margin:0 2px 12px">Nicio broșură încărcată încă.</div>')
@@ -1540,12 +1539,20 @@ function evEdit(id){if(!_isAdmin())return;
  var used=isNew?0:evUsedBy(t.id,t.n);
  var opts=EV_KINDS.map(function(k){return '<option value="'+k[0]+'" '+(t.k===k[0]?"selected":"")+'>'+esc(k[1])+'</option>';}).join("");
  var hints=EV_KINDS.map(function(k){return '<div class="muted evh" data-k="'+k[0]+'" style="display:'+(t.k===k[0]?'block':'none')+';font-size:11.5px;margin-top:6px">'+esc(k[2])+'</div>';}).join("");
- /* alegerea săptămânilor direct de aici — altfel trebuia intrat în fiecare săptămână în parte */
+ /* Alegerea săptămânilor direct de aici — altfel trebuia intrat în fiecare săptămână în parte.
+    Implicit arătăm doar ce urmează: evenimentele se pun înainte, nu în urmă. Cele trecute (și
+    lunile arhivate) apar la cerere, ca să poți totuși însemna una din trecut. */
+ var cw=(typeof vcpCurWeek==="function")?vcpCurWeek():-1;
+ var showOld=!!_evShowOld,nOld=0;
  var wl=(S.weeks||[]).map(function(w,i){
    var mine=(w.evId&&w.evId===t.id)||(w.event&&w.event===t.n);
+   var old=(cw>=0&&i<cw)||wkArchIs(_wkMonthKey(i));
+   if(old&&!mine)nOld++;
+   if(old&&!showOld&&!mine)return "";
    var other=(!mine&&w.event)?evLabel(w):"";
    return '<label class="ckrow"><input type="checkbox" class="evwk" value="'+i+'" '+(mine?"checked":"")+'>'
-    +'<span>'+esc(tc(w.date))+(other?(' <span class="muted" style="font-size:11px">· acum: '+esc(other)+'</span>'):'')+'</span></label>';}).join("");
+    +'<span>'+esc(tc(w.date))+(old?' <span class="muted" style="font-size:11px">· trecută</span>':'')
+    +(other?(' <span class="muted" style="font-size:11px">· acum: '+esc(other)+'</span>'):'')+'</span></label>';}).join("");
  sheet("",isNew?"Eveniment nou":"Editează evenimentul",
   '<label class="fl">Numele evenimentului</label><input class="fld" id="evN" value="'+esc(t.n).replace(/"/g,"&quot;")+'" placeholder="ex. Congres regional „Vestea bună!”">'
  +'<label class="fl" style="margin-top:10px">Ce se întâmplă în acea săptămână</label><select class="fld" id="evK" onchange="evKindChg()">'+opts+'</select>'+hints
