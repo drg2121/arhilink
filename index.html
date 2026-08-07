@@ -235,6 +235,13 @@ label.fl{display:block;font-size:11.5px;color:var(--ink2);margin:12px 0 5px;font
 .pmchips{display:flex;flex-wrap:wrap;gap:8px}
 .pmchip{font-size:13.5px;font-weight:700;border:1.5px solid var(--bd);background:var(--bg);color:var(--ink2);border-radius:999px;padding:8px 15px;cursor:pointer}
 .pmchip.on{background:#fff3a3;border-color:#e6c200;color:#3a3000}
+.scrm{border:1px solid var(--bd);border-radius:12px;margin-bottom:8px;overflow:hidden;background:var(--surf)}
+.scrmh{display:flex;align-items:center;gap:9px;width:100%;border:0;background:transparent;color:var(--ink);padding:11px 12px;cursor:pointer;font-size:14px;font-weight:800;text-align:left}
+.scrmn{flex:1;min-width:0}
+.scrfold{margin:6px 8px 8px}
+.scrfh{display:flex;align-items:center;gap:8px;width:100%;border:0;background:var(--surf2);border-radius:10px;color:var(--ink);padding:8px 10px;cursor:pointer;font-size:13px;font-weight:700;text-align:left}
+.scrfh svg{width:16px;height:16px;flex:0 0 auto}
+.scrfn{flex:1;min-width:0}
 .pwhy{display:block;font-size:11px;color:var(--ink3);margin-top:2px;line-height:1.35}
 .pwarn{color:var(--maroon);font-weight:700}
 .aow{display:flex;align-items:center;gap:10px;padding:9px 4px;font-size:14px;cursor:pointer;color:var(--ink);border-radius:9px}
@@ -503,9 +510,10 @@ Object.assign(IC,{
  star:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3l2.6 5.6 6.1.7-4.5 4.2 1.2 6L12 16.9 6.6 19.5l1.2-6L3.3 9.3l6.1-.7z"/></svg>',
  info:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 11.5v4.5"/><circle cx="12" cy="7.8" r="0.9" fill="currentColor" stroke="none"/></svg>',
  book:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg>',
+ box:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h18v13H3z"/><path d="M3 7l2-4h14l2 4"/><path d="M10 11h4"/></svg>',
  mark:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15.5 4.5l4 4-9.5 9.5H6v-4z"/><path d="M12.5 7.5l4 4M5 21h14"/></svg>'
 });
-const VERSION="2.73.0";
+const VERSION="2.74.0";
 const SEED_WEEKS=[];
 const SEED_WEEKS_PRE=[];
 const SEED_WEEKS_POST=[];
@@ -2717,28 +2725,57 @@ async function _scrGistId(){var g=S.settings.gh;if(!g||!g.token)throw new Error(
  if(g.gist3)return g.gist3;
  var r=await _gfetch("https://api.github.com/gists",{method:"POST",headers:_scrHdr(),body:JSON.stringify({description:"ArhiLink — scrisori și documente",public:false,files:{"_arhilink.txt":{content:"Documentele congregației — încărcate din ArhiLink."}}})},0);
  if(!r.ok)throw new Error("GitHub "+r.status);var d=await r.json();g.gist3=d.id;save();return d.id;}
-function scrAdd(){if(!_isAdmin())return;arhPickFile(".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.txt,.rtf,.odt").then(function(f){if(!f)return;
- if(f.size>4*1024*1024){toast("Fișierul are "+_fmtSz(f.size)+" — maxim 4 MB pe fișier",6000);return;}
- window._scrF=f;var d=new Date(),ys=[];for(var y=d.getFullYear();y>=d.getFullYear()-5;y--)ys.push(y);
- var H='<div class="muted" style="margin:0 2px 12px">'+esc(f.name)+' · '+_fmtSz(f.size)+'</div>'
-  +'<label class="fl">Titlu (cum apare în listă)</label><input id="scr_n" class="fld" value="'+esc(f.name).replace(/"/g,"&quot;")+'">'
+function scrFolders(){var o={};filesAll().forEach(function(f){if(f.fold)o[f.fold]=1;});return Object.keys(o).sort(function(a,b){return a.localeCompare(b,"ro");});}
+function scrAdd(){if(!_isAdmin())return;
+ arhPickFiles(".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.txt,.rtf,.odt").then(function(fs){
+ if(!fs||!fs.length)return;
+ var big=fs.filter(function(f){return f.size>4*1024*1024;});
+ fs=fs.filter(function(f){return f.size<=4*1024*1024;});
+ if(big.length)toast(big.length+(big.length===1?" fișier depășește":" fișiere depășesc")+" 4 MB și nu se încarcă: "+big.map(function(f){return f.name;}).join(", "),8000);
+ if(!fs.length)return;
+ window._scrF=fs;var d=new Date(),ys=[];for(var y=d.getFullYear();y>=d.getFullYear()-5;y--)ys.push(y);
+ var one=fs.length===1;
+ var folds=scrFolders();
+ var H='<div class="muted" style="margin:0 2px 12px">'+(one?(esc(fs[0].name)+' · '+_fmtSz(fs[0].size))
+   :('<b>'+fs.length+' fișiere</b> · '+_fmtSz(fs.reduce(function(a,f){return a+f.size;},0))+'<div style="margin-top:5px">'+fs.map(function(f){return esc(f.name);}).join("<br>")+'</div>'))+'</div>'
+  +(one?('<label class="fl">Titlu (cum apare în listă)</label><input id="scr_n" class="fld" value="'+esc(fs[0].name).replace(/"/g,"&quot;")+'">')
+       :'<div class="hint" style="margin-bottom:8px">Fiecare document păstrează numele lui de fișier.</div>')
   +'<div class="two" style="margin-top:8px"><div><label class="fl">Luna</label><select id="scr_m" class="fld">'+RO_MONTHS_CAP.map(function(m,i){return '<option value="'+i+'" '+(i===d.getMonth()?"selected":"")+'>'+m+'</option>';}).join("")+'</select></div>'
   +'<div><label class="fl">Anul</label><select id="scr_y" class="fld">'+ys.map(function(y){return '<option value="'+y+'">'+y+'</option>';}).join("")+'</select></div></div>'
-  +'<div class="rowflex" style="gap:9px;margin-top:18px"><div class="spacer"></div><button class="btn ghost sm" style="width:auto" onclick="closeSheet()">Anulează</button><button class="btn pri sm" style="width:auto" onclick="scrUpload()">Încarcă</button></div>';
- sheet("","Adaugă document",H);});}
-async function scrUpload(){if(!_isAdmin())return;var f=window._scrF;if(!f)return;
- var name=($("#scr_n").value||f.name).trim();var ym=ymOf(+$("#scr_y").value,+$("#scr_m").value);
- toast("Încarc „"+name+"”…");
+  +'<label class="fl" style="margin-top:10px">Dosar <span class="muted" style="font-weight:400">(opțional — ex. „Transfer")</span></label>'
+  +'<input id="scr_f" class="fld" list="scrfolds" placeholder="fără dosar" autocomplete="off">'
+  +'<datalist id="scrfolds">'+folds.map(function(x){return '<option value="'+esc(x).replace(/"/g,"&quot;")+'">';}).join("")+'</datalist>'
+  +(folds.length?('<div class="muted" style="font-size:11.5px;margin-top:5px">Dosare existente: '+folds.map(esc).join(" · ")+'</div>'):'')
+  +'<div class="rowflex" style="gap:9px;margin-top:18px"><div class="spacer"></div><button class="btn ghost sm" style="width:auto" onclick="closeSheet()">Anulează</button><button class="btn pri sm" style="width:auto" onclick="scrUpload()">Încarcă'+(one?'':' ('+fs.length+')')+'</button></div>';
+ sheet("",one?"Adaugă document":"Adaugă documente",H);});}
+async function scrUpload(){if(!_isAdmin())return;
+ var fs=window._scrF;if(!fs)return;if(!Array.isArray(fs))fs=[fs];if(!fs.length)return;
+ var ym=ymOf(+$("#scr_y").value,+$("#scr_m").value);
+ var fold=($("#scr_f")?$("#scr_f").value:"").trim().slice(0,40);
+ var nameOne=($("#scr_n")?($("#scr_n").value||"").trim():"");
+ closeSheet();
+ var okN=0,failN=0;
  try{var gid=await _scrGistId();
-  var b64=await new Promise(function(res,rej){var r=new FileReader();r.onload=function(){res(String(r.result).split(",")[1]||"");};r.onerror=rej;r.readAsDataURL(f);});
-  var id="f"+Date.now();var ext=(f.name.indexOf(".")>=0?f.name.split(".").pop():"").toLowerCase();
-  var gf=id+"_"+f.name.replace(/[^A-Za-z0-9._-]/g,"_")+".b64";
-  var files={};files[gf]={content:b64};
-  var r=await _gfetch("https://api.github.com/gists/"+gid,{method:"PATCH",headers:_scrHdr(),body:JSON.stringify({files:files})},0);
-  if(!r.ok)throw new Error("GitHub "+r.status);
-  filesAll().push({id:id,n:name,ext:ext,ym:ym,sz:f.size,by:(_curUser()&&_curUser().n)||"",t:Date.now(),gf:gf});
-  logAct("Document adăugat: "+name);save();closeSheet();window._scrF=null;if(tab==="arh")renderArh();toast("Încărcat ✓ — vizibil pentru toți administratorii");
- }catch(e){toast("Nu am putut încărca: "+((e&&e.message)||"eroare"),6000);}}
+  for(var i=0;i<fs.length;i++){var f=fs[i];
+   toast("Încarc "+(i+1)+" din "+fs.length+" — „"+f.name+"”…",4000);
+   try{
+    var b64=await new Promise(function(res,rej){var r=new FileReader();r.onload=function(){res(String(r.result).split(",")[1]||"");};r.onerror=rej;r.readAsDataURL(f);});
+    var id="f"+Date.now()+"_"+i;var ext=(f.name.indexOf(".")>=0?f.name.split(".").pop():"").toLowerCase();
+    var gf=id+"_"+f.name.replace(/[^A-Za-z0-9._-]/g,"_")+".b64";
+    var files={};files[gf]={content:b64};
+    var r2=await _gfetch("https://api.github.com/gists/"+gid,{method:"PATCH",headers:_scrHdr(),body:JSON.stringify({files:files})},0);
+    if(!r2.ok)throw new Error("GitHub "+r2.status);
+    var nm=(fs.length===1&&nameOne)?nameOne:f.name;
+    var rec={id:id,n:nm,ext:ext,ym:ym,sz:f.size,by:(_curUser()&&_curUser().n)||"",t:Date.now(),gf:gf};
+    if(fold)rec.fold=fold;
+    filesAll().push(rec);okN++;
+   }catch(e){failN++;}}
+  if(okN){logAct("Documente adăugate: "+okN+(fold?(" · dosar "+fold):""));save();}
+  window._scrF=null;if(tab==="arh")renderArh();
+  if(okN&&!failN)okSplash(okN===1?"Document încărcat":okN+" documente încărcate",(fold?("dosar „"+fold+"” · "):"")+"vizibile pentru toți administratorii");
+  else if(okN)toast(okN+" încărcate, "+failN+" au eșuat",7000);
+  else toast("Nu am putut încărca documentele",7000);
+ }catch(e){window._scrF=null;toast("Nu am putut încărca: "+((e&&e.message)||"eroare"),7000);}}
 async function scrOpen(id){var m=filesAll().find(function(x){return x.id===id;});if(!m)return;toast("Aduc „"+m.n+"”…");
  /* fereastra se deschide SINCRON (în gestul de click), altfel popup blocker-ul o blochează după await */
  var isView=(m.ext==="pdf"||/^(jpe?g|png|gif|webp)$/.test(m.ext));
@@ -3066,14 +3103,28 @@ function anListHtml(){var A=anAll().slice().sort(function(a,b){return (b.u||b.t)
 
 function arhScrHtml(){ensureGrpCSS();ensureAnCSS();var fs=filesAll().slice().sort(function(a,b){return b.ym.localeCompare(a.ym)||b.t-a.t;});
  var h=anListHtml()+'<div class="edsec">Documente</div>'
-  +'<div class="ebar2"><button class="miniact" style="flex:1;justify-content:center" onclick="scrAdd()">'+IC.plus+' Adaugă document</button></div>';
+  +'<div class="ebar2"><button class="miniact" style="flex:1;justify-content:center" onclick="scrAdd()">'+IC.plus+' Adaugă documente</button></div>';
  h+='<div class="muted" style="margin:0 2px 12px;font-size:11.5px">Scrisori, PDF-uri și documente Word — vizibile doar administratorilor (bătrâni). Maxim 4 MB/fișier. Apasă documentul ca să-l deschizi.</div>';
  if(!fs.length)return h+'<div class="empty" style="padding:22px 8px">Niciun document încă.<br><span class="muted">Apasă „Adaugă document" — alegi fișierul și luna la care aparține.</span></div>';
  var years={};fs.forEach(function(f){var y=(f.ym||"").slice(0,4)||"—";(years[y]=years[y]||[]).push(f);});
  Object.keys(years).sort().reverse().forEach(function(y,yi){
    var byM={};years[y].forEach(function(f){(byM[f.ym]=byM[f.ym]||[]).push(f);});
    var inner="";Object.keys(byM).sort().reverse().forEach(function(k){
-     inner+='<div class="a-hd" style="margin:10px 2px 6px">'+esc(monthName(k))+' · '+byM[k].length+'</div>'+byM[k].map(_scrRow).join("");});
+     /* luna e pliată, închisă implicit; înăuntru documentele se strâng pe dosare (ex. „Transfer") */
+     var mk="scrm|"+k,mo=grpOpen(mk);
+     var byF={};byM[k].forEach(function(f){(byF[f.fold||""]=byF[f.fold||""]||[]).push(f);});
+     var folds=Object.keys(byF).sort(function(a,b){return a===""?1:(b===""?-1:a.localeCompare(b,"ro"));});
+     var body=folds.map(function(fd){
+       var rows=byF[fd].map(_scrRow).join("");
+       if(!fd)return rows;
+       var fk=mk+"|"+fd,fo=grpOpen(fk);
+       return '<div class="scrfold"><button class="scrfh" onclick="toggleGrp(\''+esc(fk).replace(/'/g,"")+'\')">'
+        +'<span class="mchev '+(fo?"op":"")+'">'+IC.chev+'</span>'+IC.box
+        +'<span class="scrfn">'+esc(fd)+'</span><span class="gcnt">'+byF[fd].length+'</span></button>'
+        +'<div id="g_'+esc(fk).replace(/'/g,"")+'" style="display:'+(fo?"block":"none")+';padding-left:6px">'+rows+'</div></div>';}).join("");
+     inner+='<div class="scrm"><button class="scrmh" onclick="toggleGrp(\''+mk+'\')">'
+      +'<span class="mchev '+(mo?"op":"")+'">'+IC.chev+'</span><span class="scrmn">'+esc(monthName(k))+'</span><span class="gcnt">'+byM[k].length+'</span></button>'
+      +'<div id="g_'+mk+'" style="display:'+(mo?"block":"none")+'">'+body+'</div></div>';});
    h+='<details class="gcard"'+(yi===0?" open":"")+'><summary><span class="gav" style="font-size:12px">'+esc(y)+'</span><span class="ginfo"><span class="gnm">Anul '+esc(y)+'<span class="gcnt">'+years[y].length+'</span></span></span></summary><div class="gbody">'+inner+'</div></details>';});
  return h;}
 
@@ -4635,6 +4686,7 @@ function matchBro(name){var n=arhNorm(name);if(!n)return null;var best=null;
   return best;}
 
 /* ---- fișiere / Excel ---- */
+function arhPickFiles(accept){return new Promise(function(res){var i=document.createElement("input");i.type="file";i.multiple=true;i.accept=accept;i.style.display="none";i.onchange=function(){res([].slice.call(i.files||[]));};document.body.appendChild(i);i.click();setTimeout(function(){try{i.remove();}catch(e){}},60000);});}
 function arhPickFile(accept){return new Promise(function(res){var i=document.createElement("input");i.type="file";i.accept=accept;i.style.display="none";i.onchange=function(){res(i.files&&i.files[0]||null);};document.body.appendChild(i);i.click();setTimeout(function(){if(i.parentNode)i.parentNode.removeChild(i);},300000);});}
 function xlsxLoad(){return window.XLSX?Promise.resolve():loadScript("https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js");}
 function _wbSheets(wb){return wb.SheetNames.map(function(n){return {name:n,rows:XLSX.utils.sheet_to_json(wb.Sheets[n],{header:1,raw:true,defval:null})};});}
@@ -4875,7 +4927,7 @@ function arhCatList(c){var ids;var title;
 
 /* ---------- RAPOARTE ---------- */
 function arhRapRow(b,c){var start=theoStartOf(arhYM);var r=repOf(b.id,arhYM);var done=!!r;
-  var meta=r?(((catHasHours(c)&&r.h!=null)?r.h+'h ':'')+(r.st?'· '+r.st+' studii ':'')+(r.aux?'· aux ':'')+(r.cr?'· Cr'+r.cr:'')).trim():'fără raport';
+  var meta=r?(((catHasHours(c)&&r.h!=null)?r.h+'h ':'')+(r.st?'· '+r.st+' studii ':'')+(r.aux?'· aux ':'')+(r.cr?'· Cr'+r.cr:'')).trim():'de completat';
   return '<div class="a-rrow"><button class="a-rmain" onclick="arhEditReport(\''+b.id+'\',\''+arhYM+'\')"><span class="a-rck '+(done?'on':'')+'">'+(done?IC.check:'')+'</span><span class="a-rinfo"><span class="nm">'+esc(b.name)+'</span><span class="mt">'+esc(meta||"fără raport")+'</span></span></button><button class="a-rs21" onclick="pdfS21(\''+b.id+'\','+start+')" title="Generează fișa S-21">S-21</button></div>';}
 var arhGrpF="";
 function arhRapHtml(){ensureGrpCSS();var h=arhMonthPicker();
