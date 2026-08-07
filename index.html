@@ -495,7 +495,7 @@ Object.assign(IC,{
  book:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg>',
  mark:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15.5 4.5l4 4-9.5 9.5H6v-4z"/><path d="M12.5 7.5l4 4M5 21h14"/></svg>'
 });
-const VERSION="2.67.0";
+const VERSION="2.68.0";
 const SEED_WEEKS=[];
 const SEED_WEEKS_PRE=[];
 const SEED_WEEKS_POST=[];
@@ -1236,11 +1236,166 @@ function showPersonDetail(id){const b=S.bros.find(x=>x.id===id);if(!b||!pickCtx)
  H+=`<button class="btn pri" style="margin-top:18px" onclick="setPick('${id}')">Alege pe ${esc(broDisp(id))}</button>`;
  const bk=$("#sheetBack");if(bk){bk.style.display="";bk.onclick=()=>openPick(pickCtx.role,pickCtx.key);}
  $("#sheetHd").textContent=broDisp(id);$("#sheetBody").innerHTML=H;$("#ov").classList.add("show");}
+/* ============================================================================
+   REFERINȚE — broșurile la care trimite caietul
+   ----------------------------------------------------------------------------
+   Caietul scrie, lângă fiecare temă pentru cursanți, lecția la care se lucrează:
+   „(lmd lecția 4, punctul 3)", „(th lecția 11)", „(lff lecția 20, punctul 4)".
+   Importul din .epub reține acum atât scenariul temei, cât și aceste trimiteri, așa că
+   butonul „i" arată la ce lucrează cursantul chiar și fără nicio broșură încărcată.
+   Dacă administratorul încarcă broșura (Setări → Referințe), se adaugă și titlul lecției
+   și textul punctului. Broșurile se țin în gistul comun (ca pozele din caiet), ca să nu
+   îngreuneze sincronizarea; fiecare dispozitiv le aduce o singură dată. */
+var REF_NAMES={th:"Dedică-te citirii și predării",lmd:"Iubește-i pe oameni, fă discipoli",
+ lff:"Bucură-te pentru totdeauna de viață!",ijwbq:"Întrebări frecvente",bt:"Mărturie completă",
+ bhs:"Ce ne învață Biblia?",jy:"Isus – calea",cf:"Imită-le credința",od:"Organizați"};
+function refName(code){var R=(S.settings&&S.settings.refs)||{};return (R[code]&&R[code].n)||REF_NAMES[code]||code;}
+/* trimiterile dintr-un text de caiet: „lmd lecția 4, punctul 3", „th lecția 11", „lmd apendice A, punctul 20" */
+function refParse(txt){var out=[];if(!txt)return out;
+ var re=/\b(th|lmd|lff|ijwbq|bt|bhs|jy|cf|od)\s*(lec[\u021bt]ia|apendice(?:le)?)\s*([A-Za-z0-9]+)(?:\s*,\s*punctul\s*(\d+))?/gi,m;
+ while((m=re.exec(txt))){out.push({b:m[1].toLowerCase(),k:/apendice/i.test(m[2])?"ap":"l",l:m[3],pt:m[4]?+m[4]:null});
+  if(out.length>4)break;}
+ return out;}
+function refLabel(r){return refName(r.b)+" \u2014 "+(r.k==="ap"?("apendicele "+String(r.l).toUpperCase()):("lec\u021bia "+r.l))+(r.pt?(", punctul "+r.pt):"");}
+/* ---- depozitul de bro\u0219uri (indice \u00een stare, textul \u00een gistul comun) ---- */
+function refIdx(){S.settings.refs=S.settings.refs||{};return S.settings.refs;}
+function _refFile(code){return "ref_"+String(code).toLowerCase()+".json";}
+var _refCache={};
+function refLoaded(code){return !!_refCache[code];}
+function refGetLesson(code,r){var d=_refCache[code];if(!d||!d.lessons)return null;
+ var key=(r.k==="ap"?"ap:":"l:")+String(r.l).toUpperCase();
+ var L=d.lessons[key];if(!L)return null;
+ var out={t:L.t||"",txt:""};
+ if(r.pt&&L.pts&&L.pts[String(r.pt)])out.txt=L.pts[String(r.pt)];
+ else if(L.sum)out.txt=L.sum;
+ return out;}
+var _refBusy=false;
+async function refFetch(){if(_refBusy)return 0;var idx=S.settings&&S.settings.refs;if(!idx)return 0;
+ var gid=_ciGistId();if(!gid)return 0;
+ var want=Object.keys(idx).filter(function(c){return idx[c]&&idx[c].t&&!_refCache[c];});
+ if(!want.length)return 0;
+ _refBusy=true;var got=0;
+ try{
+  var loc=await _refDbGet();
+  want=want.filter(function(c){var d=loc&&loc[c];if(d&&d.t===idx[c].t){_refCache[c]=d;got++;return false;}return true;});
+  if(want.length){
+   var own=(S.settings&&S.settings.imgOwner)||"";
+   if(!own){var r0=await _gfetch("https://api.github.com/gists/"+gid,{headers:{Accept:"application/vnd.github+json"}},0);
+    if(r0.ok){var d0=await r0.json();own=(d0.owner&&d0.owner.login)||"";if(own)S.settings.imgOwner=own;}}
+   if(own)for(var i=0;i<want.length;i++){var c=want[i];
+    try{var r=await _gfetch("https://gist.githubusercontent.com/"+own+"/"+gid+"/raw/"+_refFile(c),{},0);
+     if(!r.ok)continue;var d=JSON.parse(await r.text());
+     if(d&&d.lessons){_refCache[c]=d;got++;}}catch(e){}}
+   if(got)_refDbSet(_refCache);}
+ }catch(e){}finally{_refBusy=false;}
+ return got;}
+function _refDbGet(){return _bkOpen().then(function(db){if(!db)return null;return new Promise(function(res){
+ try{var rq=db.transaction("kv").objectStore("kv").get("refs");rq.onsuccess=function(){res(rq.result||null);};rq.onerror=function(){res(null);};}catch(e){res(null);}});});}
+function _refDbSet(m){return _bkOpen().then(function(db){if(!db)return false;return new Promise(function(res){
+ try{var tx=db.transaction("kv","readwrite");tx.objectStore("kv").put(m,"refs");tx.oncomplete=function(){res(true);};tx.onerror=function(){res(false);};}catch(e){res(false);}});});}
+function refHydrate(){return _refDbGet().then(function(m){if(m)Object.keys(m).forEach(function(c){if(!_refCache[c])_refCache[c]=m[c];});}).catch(function(){});}
+/* ---- citirea unei broșuri (.epub) în lecții ---- */
+async function refParseEpub(file){
+ if(!window.JSZip)await loadScript("https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js");
+ var zip=await JSZip.loadAsync(file),lessons={},n=0;
+ var names=Object.keys(zip.files).filter(function(x){return /\.xhtml?$/i.test(x)&&!/-extracted/.test(x)&&!/(pagenav|toc|cover)/i.test(x);}).sort();
+ for(var i=0;i<names.length;i++){
+  var raw=await zip.files[names[i]].async("string");
+  var body=raw.slice(Math.max(0,raw.indexOf("<body")));
+  var h1=(body.match(/<h1[^>]*>([\s\S]*?)<\/h1>/)||[])[1];
+  var title=txt(h1||"").replace(/\s+/g," ").trim();
+  if(!title)continue;
+  /* numărul lecției: din marcajul „LECȚIA n" sau din numele fișierului */
+  var lm=body.match(/LEC[ȚT]IA\s*(\d+)/i)||raw.match(/LEC[ȚT]IA\s*(\d+)/i);
+  var ap=body.match(/APENDICE(?:LE)?\s*([A-Z])/i);
+  var key=lm?("l:"+lm[1]):(ap?("ap:"+ap[1].toUpperCase()):null);
+  if(!key)continue;
+  /* punctele numerotate ale lecției */
+  var pts={},pn=0;
+  var re=/<p[^>]*>([\s\S]*?)<\/p>/g,m2;
+  while((m2=re.exec(body))){
+   var t=txt(m2[1]).replace(/\s+/g," ").trim();if(!t||t.length<12)continue;
+   var num=t.match(/^(\d{1,2})[.)]\s+/);
+   if(num){pn=+num[1];pts[String(pn)]=t.replace(/^\d{1,2}[.)]\s+/,"").slice(0,600);}
+   else if(pn&&pts[String(pn)]&&pts[String(pn)].length<400)pts[String(pn)]+=" "+t.slice(0,300);}
+  var sum="";var firstP=body.match(/<p[^>]*>([\s\S]*?)<\/p>/);
+  if(firstP)sum=txt(firstP[1]).replace(/\s+/g," ").trim().slice(0,300);
+  lessons[key]={t:title,pts:pts,sum:sum};n++;}
+ return {lessons:lessons,n:n};}
+/* ---- Setări → Referințe ---- */
+function refSheet(){if(!_isAdmin()){toast("Doar administratorul");return;}
+ var idx=refIdx(),codes=Object.keys(idx);
+ var rows=codes.map(function(c){var d=idx[c];
+  return '<div class="a-rrow"><button class="a-rmain" onclick="refInfo(\''+c+'\')"><span class="gtag" style="min-width:40px;text-align:center;margin:0">'+esc(c)+'</span>'
+   +'<span class="a-rinfo"><span class="nm">'+esc(d.n||refName(c))+'</span>'
+   +'<span class="mt">'+(d.lessons||0)+' lecții'+(d.by?(' · '+esc(d.by)):'')+' · '+fmtDT(d.t)+'</span></span></button>'
+   +'<button class="a-rs21 del" onclick="refDel(\''+c+'\')" title="Șterge">'+IC.trash+'</button></div>';}).join("");
+ sheet("Referințe","Referințe",
+  '<div class="muted" style="margin:0 2px 12px">Broșurile la care trimite caietul. Când apeși <b>„i"</b> la o temă pentru cursanți vezi lecția la care lucrează — iar dacă broșura e încărcată aici, vezi și titlul lecției și textul punctului. Le încarcă doar administratorul; ajung singure la toți.</div>'
+  +(rows||'<div class="muted" style="margin:0 2px 12px">Nicio broșură încărcată încă.</div>')
+  +'<button class="btn pri" style="width:100%;margin-top:12px" onclick="refAdd()">'+IC.plus+' Încarcă o broșură (.epub)</button>'
+  +'<div class="hint" style="margin-top:10px">Formatul <b>.epub</b> din JW Library dă cel mai bun rezultat: titlul lecției și textul fiecărui punct. Un <b>.pdf</b> nu poate fi citit corect (diacriticele se pierd la extragere), iar în <b>.jwpub</b> conținutul e criptat de editor — nu îl deschidem.</div>');}
+function refInfo(code){var d=refIdx()[code];if(!d)return;
+ var ex=_refCache[code];var keys=ex&&ex.lessons?Object.keys(ex.lessons):[];
+ var list=keys.slice(0,40).map(function(k){var L=ex.lessons[k];
+  return '<div style="padding:7px 2px;border-bottom:1px solid var(--bd)"><b>'+esc(k.replace("l:","Lecția ").replace("ap:","Apendicele "))+'</b> — '+esc(L.t||"")+'</div>';}).join("");
+ sheet("",d.n||refName(code),
+  '<div class="muted" style="margin:0 2px 12px">Cod <b>'+esc(code)+'</b> · '+(d.lessons||0)+' lecții · încărcată '+fmtDT(d.t)+(d.by?(' de '+esc(d.by)):'')+'</div>'
+  +(list?('<div class="grpttl">Lecții</div>'+list):'<div class="muted">Textul nu e încă adus pe acest dispozitiv — se aduce singur la următoarea sincronizare.</div>')
+  +'<button class="btn ghost sm" style="width:100%;margin-top:14px" onclick="refSheet()">Înapoi</button>');}
+function refAdd(){if(!_isAdmin())return;
+ arhPickFile(".epub,.jwpub").then(function(f){if(!f)return;refUpload(f);});}
+async function refUpload(f){
+ if(!(S.settings.gh&&S.settings.gh.token)){toast("Ai nevoie de tokenul GitHub (Setări → Sincronizare) ca broșura să ajungă la toți",7000);return;}
+ var nm=(f.name||"").toLowerCase();
+ var code=(nm.split(/[_.\-]/)[0]||"").replace(/[^a-z0-9]/g,"").slice(0,8);
+ if(/\.jwpub$/i.test(nm)){
+  toast("În .jwpub conținutul e criptat de editor — încarcă varianta .epub din JW Library",8000);return;}
+ if(!/\.epub$/i.test(nm)){toast("Încarcă un fișier .epub",6000);return;}
+ toast("Citesc broșura…");
+ var parsed;try{parsed=await refParseEpub(f);}catch(e){toast("Nu am putut citi broșura: "+((e&&e.message)||"eroare"),7000);return;}
+ if(!parsed.n){toast("Nu am găsit lecții în acest fișier",6000);return;}
+ var nume=await uiPrompt("Numele broșurii",refName(code),{msg:"Codul folosit de caiet este <b>"+esc(code)+"</b>.",yes:"Încarcă"});
+ if(nume==null)return;
+ toast("Trimit broșura…");
+ try{var gid=await _ciGistEnsure();
+  var files={};files[_refFile(code)]={content:JSON.stringify(parsed)};
+  var r=await _gfetch("https://api.github.com/gists/"+gid,{method:"PATCH",headers:_scrHdr(),body:JSON.stringify({files:files})},0);
+  if(!r.ok)throw new Error("GitHub "+r.status);
+  refIdx()[code]={n:(nume||"").trim()||refName(code),t:Date.now(),lessons:parsed.n,by:(_curUser()&&_curUser().n)||""};
+  _refCache[code]=parsed;_refDbSet(_refCache);
+  logAct("Broșură încărcată: "+code);save();try{roFlush(true);}catch(e){}
+  refSheet();okSplash("Broșura a fost încărcată",parsed.n+" lecții · ajunge la toți la sincronizare");
+ }catch(e){toast("Nu am putut încărca: "+((e&&e.message)||"eroare"),7000);}}
+async function refDel(code){if(!_isAdmin())return;var d=refIdx()[code];if(!d)return;
+ if(!(await uiConfirm("Ștergi broșura „"+(d.n||code)+"”? Trimiterile din caiet rămân, dar fără titlul lecției.",{title:"Ștergi broșura?",yes:"Șterge",danger:true})))return;
+ try{var gid=_ciGistId();if(gid){var files={};files[_refFile(code)]=null;
+  await _gfetch("https://api.github.com/gists/"+gid,{method:"PATCH",headers:_scrHdr(),body:JSON.stringify({files:files})},0);}}catch(e){}
+ delete S.settings.refs[code];delete _refCache[code];_refDbSet(_refCache);
+ logAct("Broșură ștearsă: "+code);save();refSheet();}
 function showPartInfo(wi,pid){const w=S.weeks[wi];ensureIds(w);const p=(w.parts||[]).find(x=>x.id===pid);if(!p)return;
  const inf=infoFor(w,p);const sec={Comori:"Comori din Cuvântul lui Dumnezeu",Predicare:"Să fim mai eficienți în predicare",Viata:"Viața de creștin"}[p.sec]||"";
- let H=`<div class="pikead"><div class="pikt">${esc((p.num?p.num+". ":"")+(p.title||""))}</div><div class="piks">${esc(sec)}${p.min?" · "+p.min+" min.":""}</div></div>`;
+ let H=`<div class="pikead"><div class="pikt">${esc((p.num?p.num+". ":"")+(p.title||""))}</div><div class="piks">${esc(sec)}${p.min?" · "+p.min+" min.":""}${(function(){var f=fmtLabel(partFmt(p));return f?" · "+f:"";})()}</div></div>`;
+ /* tema pentru cursanți: scenariul din caiet și lecția la care lucrează */
+ if(p.d)H+='<div class="pikbody"><div class="pikl">'+esc(p.d)+'</div></div>';
+ var _refs=(p.ref&&p.ref.length)?p.ref:refParse((p.d||"")+" "+(p.title||""));
+ if(_refs.length){H+='<div class="grpttl">La ce lucrează</div>';
+  _refs.forEach(function(r){
+   var L=refGetLesson(r.b,r);
+   H+='<div class="pcard" style="display:block;padding:11px 13px;margin-bottom:8px">'
+    +'<div style="font-weight:700;font-size:13.5px">'+esc(refLabel(r))+'</div>'
+    +(L&&L.t?('<div style="font-size:13px;margin-top:3px">'+esc(L.t)+'</div>'):'')
+    +(L&&L.txt?('<div class="muted" style="font-size:12.5px;margin-top:5px;line-height:1.5">'+esc(L.txt)+'</div>'):'')
+    +((!L&&_isAdmin())?('<div class="muted" style="font-size:11.5px;margin-top:5px">Încarcă broșura din <b>Setări → Referințe</b> ca să vezi și titlul lecției.</div>'):'')
+    +'</div>';});}
  if(inf){
-   if(inf.info){const lines=inf.info.split(/\n/).map(s=>s.trim()).filter(Boolean);H+='<div class="pikbody">'+lines.map(s=>'<div class="pikl">'+esc(s)+'</div>').join('')+'</div>';}
+   if(inf.info){
+     /* la temele din „Predicare" scenariul e deja afișat sus (p.d) — nu-l repetăm */
+     const _norm=x=>String(x||"").replace(/\([^()]*\)/g," ").replace(/\s+/g," ").trim().toLowerCase();
+     const _d=_norm(p.d);
+     const lines=inf.info.split(/\n/).map(s=>s.trim()).filter(Boolean)
+       .filter(s=>{const n=_norm(s);return !(_d&&n&&(_d.indexOf(n)>=0||n.indexOf(_d)>=0));});
+     if(lines.length)H+='<div class="pikbody">'+lines.map(s=>'<div class="pikl">'+esc(s)+'</div>').join('')+'</div>';}
    if(inf.img&&inf.img.length){H+='<div class="grpttl">Imagini</div>'+inf.img.map((d,k)=>'<figure class="pikfig"><img loading="lazy" src="'+d+'"><figcaption>'+esc((inf.caps&&inf.caps[k])||'')+'</figcaption></figure>').join('');}else if(inf.caps&&inf.caps.length){H+='<div class="grpttl">Imagini în caiet</div>'+inf.caps.map(c=>'<div class="pikcap">🖼 '+esc(c)+'</div>').join('')+'<div class="muted" style="margin-top:8px">Imaginile complete sunt în caiet (JW Library).</div>';}
  } else {
    H+=`<div class="phnote">Nu există detalii pentru această temă.<br><br>Importă caietul lunii din <b>Setări → Import caiet</b> (fișier .epub din JW Library) și detaliile (schiță, versete, lecție, imagini) vor apărea aici.</div>`;
@@ -2747,6 +2902,12 @@ function renderSet(){if(!_isAdmin()){renderSetLimited();return;}$("#fab").style.
     return L.length+" tipuri"+(used?(' · <span class="on">'+used+(used===1?" săptămână marcată":" săptămâni marcate")+'</span>'):' · <span class="off">nicio săptămână marcată</span>');})(),
    `<div class="muted" style="margin:0 0 8px">Vizita supraveghetorului, congresele și Comemorarea — conform Instrucțiunilor S-38. La vizită programul se ține normal, dar Studiul Bibliei e înlocuit cu cuvântarea de serviciu (30 min.); în săptămâna de congres sau de Comemorare nu se ține întrunirea, deci nu se face nici planificarea de Sarcini.</div>
     <button class="btn pri sm" style="width:100%" onclick="evSheet()">Gestionează evenimentele</button>`)
+ +_setCard(IC.book||IC.gem,"Referințe (broșuri)",
+   (function(){var R=(st.refs&&Object.keys(st.refs))||[];
+    return R.length?('<span class="on">'+R.length+(R.length===1?" broșură":" broșuri")+'</span> · lecțiile apar la butonul „i"')
+                   :'<span class="off">niciuna</span> — trimiterile din caiet apar oricum, fără titlul lecției';})(),
+   `<div class="muted" style="margin:0 0 8px">Caietul trimite la lecția la care lucrează cursantul („lmd lecția 4, punctul 3"). Încarcă aici broșura (.epub din JW Library) și la butonul <b>„i"</b> apar și titlul lecției, și textul punctului. O încarci o dată, ajunge la toți.</div>
+    <button class="btn pri sm" style="width:100%" onclick="refSheet()">Gestionează referințele</button>`)
  +_setCard(IC.ppl,"Utilizatori și distribuire",
    nUsers?`<span class="on">${nUsers} conturi</span> · trimiți aplicația fiecăruia cu „Trimite"`:`<span class="off">niciun cont</span> — generează conturi cu PIN`,
    `<div class="muted" style="margin:0 0 8px">Conturi cu PIN pentru fiecare vestitor (bătrânii = administratori). Din listă îi trimiți fiecăruia aplicația cu „Trimite" — un singur fișier, cu datele incluse.</div>
@@ -3117,6 +3278,7 @@ function _noteHttp(r){try{
 }catch(e){}try{updateSyncInfo();}catch(e){}}
 function startSyncTimer(){if(_syncStarted)return;_syncStarted=true;_syncEvents();_syncT=setInterval(function(){if(document.hidden||_busy||_offline())return;
  try{caietImgFetch();}catch(e){}
+ try{refFetch();}catch(e){}
  if(Date.now()<_rlUntil)return;/* limită API — pauză */
  if(autoOn()){if(_ghAuthBad){updateSyncInfo();return;}ghSync(true);roFlush();try{boxTake();}catch(e){}}
  else if(typeof roOn==="function"&&roOn()){if(Date.now()-_roLast>45000)roSync(true);try{boxFlush();}catch(e){}}},12000);}
@@ -3496,6 +3658,7 @@ function _userSet(n){try{if(n)localStorage.setItem(KEY+"_user",n);}catch(e){}}
 function startApp(){_dirty=(S._rev||0)>pushedRev();applyTheme();try{bkpMigrate();}catch(e){}try{archSweep();}catch(e){}try{usersLinkBros();_sessRefresh();_sessSave();}catch(e){}go("weeks");updateSyncInfo();autoPullLoad();startSyncTimer();try{if(_upgNeeded())setTimeout(function(){if(!sheetOpen())upgSheet();},1500);}catch(e){}try{setTimeout(odAuto,4000);setInterval(odAuto,60000);}catch(e){}
  try{setTimeout(notifCheck,3000);setInterval(notifCheck,120000);}catch(e){}
  try{setTimeout(usersUpgradePins,2500);}catch(e){}
+ try{refHydrate().then(function(){setTimeout(function(){refFetch();},4200);});}catch(e){}
  try{caietImgHydrate().then(function(){setTimeout(function(){
    /* pozele importate ÎNAINTE de această versiune stau doar pe acest dispozitiv — dacă e
       dispozitivul unui admin, le urcăm o dată, ca să ajungă și la ceilalți */
@@ -3839,7 +4002,13 @@ function parseWeek(raw){const body=raw.slice(raw.indexOf("<body"));
  const parts=[];
  for(const m of body.matchAll(/<h3([^>]*?)id="p\d+"[^>]*>([\s\S]*?)<\/h3>/g)){
   if(m[1].includes("dc-icon--music"))continue;const title=txt(m[2]);if(!title)continue;
-  const after=body.slice(m.index+m[0].length,m.index+m[0].length+400);
+  /* textul temei ține până la titlul temei următoare (sau până la icoana secțiunii următoare):
+     altfel se amestecau trimiterile de la temele de mai jos */
+  const _s0=m.index+m[0].length;
+  let _e0=_s0+3000;
+  {const _r1=/<h3[^>]*?id="p\d+"/g;_r1.lastIndex=_s0;const _m1=_r1.exec(body);if(_m1&&_m1.index<_e0)_e0=_m1.index;
+   const _r2=/dc-icon--(gem|wheat|sheep)/g;_r2.lastIndex=_s0;const _m2=_r2.exec(body);if(_m2&&_m2.index<_e0)_e0=_m2.index;}
+  const after=body.slice(_s0,_e0);
   const dm=after.match(/\((\d+)\s*min/),num=title.match(/^(\d+)\.\s*/);if(!num&&!dm)continue;
   /* caietul scrie forma imediat după durată: „Discuție." / „Demonstrație." / „Cuvântare." —
      de ea depind cine poate ține tema și dacă are partener (S-38) */
@@ -3849,7 +4018,20 @@ function parseWeek(raw){const body=raw.slice(raw.indexOf("<body"));
   const head=txt(after.slice(0,220)).toLowerCase().replace(/\s+/g," ");
   const fm=head.match(/(?:^|\))\s*(demonstra[țt]ie|discu[țt]ie|cuv[âa]ntare)\s*\./);
   let fmt="";if(fm)fmt=/demonstra/.test(fm[1])?"demo":(/discu/.test(fm[1])?"disc":"talk");
-  parts.push({sec:secAt(m.index),num:num?+num[1]:null,title:title.replace(/^\d+\.\s*/,""),min:dm?+dm[1]:null,fmt:fmt});}
+  /* scenariul temei („DIN CASĂ ÎN CASĂ. Persoana este…") și lecția la care se lucrează —
+     apar tot aici, după durată, și sunt exact ce vrea să vadă cursantul la butonul „i" */
+  const full=txt(after).replace(/\s+/g," ").trim();
+  let d=full.replace(/^\(\s*\d+\s*min[^)]*\)\s*/i,"").trim();
+  d=d.replace(/^(demonstra[țt]ie|discu[țt]ie|cuv[âa]ntare)\s*\.\s*/i,"");/* forma se afișează separat */
+  const refs=refParse(d);
+  /* păstrăm doar scenariul temei: tăiem la trimiterea în paranteză și la titlul temei următoare */
+  d=d.replace(/\([^()]*\b(?:th|lmd|lff|ijwbq|bt|bhs|jy|cf|od|w\d|it|km)\b[^()]*\)/gi," ")
+     .replace(/\s*\d{1,2}\.\s+[A-ZĂÂÎȘȚ][\s\S]*$/,"")
+     .replace(/\s{2,}/g," ").trim();
+  const P={sec:secAt(m.index),num:num?+num[1]:null,title:title.replace(/^\d+\.\s*/,""),min:dm?+dm[1]:null,fmt:fmt};
+  if(d)P.d=d.slice(0,320);
+  if(refs.length)P.ref=refs;
+  parts.push(P);}
  return {date:h1,bible:h2,songs,parts};}
 
 /* PDF */
