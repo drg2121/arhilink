@@ -495,7 +495,7 @@ Object.assign(IC,{
  book:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg>',
  mark:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15.5 4.5l4 4-9.5 9.5H6v-4z"/><path d="M12.5 7.5l4 4M5 21h14"/></svg>'
 });
-const VERSION="2.69.1";
+const VERSION="2.70.0";
 const SEED_WEEKS=[];
 const SEED_WEEKS_PRE=[];
 const SEED_WEEKS_POST=[];
@@ -903,10 +903,25 @@ function wkArch(){S.settings.wkArch=S.settings.wkArch||{};return S.settings.wkAr
 function wkArchIs(k){return !!wkArch()[k];}
 function wkArchShow(){return !!(S.ui&&S.ui.showArch);}
 function wkArchToggleShow(){S.ui=S.ui||{};S.ui.showArch=!S.ui.showArch;save();renderWeeks();}
-function wkArchSet(k,v){if(!_canEditVcp()){toast("Doar administratorii/editorii VCP");return;}
- var A=wkArch();if(v)A[k]=1;else delete A[k];
- logAct((v?"Lună arhivată: ":"Lună scoasă din arhivă: ")+k);save();renderWeeks();
- toast(v?"Luna a fost arhivată — o revezi din „Arată lunile arhivate”":"Luna a revenit în listă");}
+function _wkArchLbl(k){var p=String(k||"").split("|");return (p[1]?(p[1].charAt(0).toUpperCase()+p[1].slice(1)):"")+" "+(p[0]||"");}
+function wkArchDo(k,v){var A=wkArch();if(v)A[k]=1;else delete A[k];
+ logAct((v?"Lună arhivată: ":"Lună scoasă din arhivă: ")+k);save();
+ try{renderWeeks();}catch(e){}try{if(tab==="arh")renderArhRoute();}catch(e){}
+ toast(v?"Luna a fost arhivată":"Luna a revenit în listă");}
+async function wkArchSet(k,v){if(!_canEditVcp()){toast("Doar administratorii/editorii VCP");return;}
+ if(v&&!(await uiConfirm("„"+_wkArchLbl(k)+"” nu va mai apărea în Programări, în Sarcini și în lista de descărcări.\n\nNimic nu se șterge — datele rămân întregi, iar luna se aduce înapoi oricând din Setări → Luni arhivate.",
+   {title:"Arhivezi luna?",yes:"Arhivează",no:"Renunț"})))return;
+ wkArchDo(k,v);}
+/* Setări → Luni arhivate: de aici se aduc înapoi */
+function wkArchSheet(){var A=wkArch(),ks=Object.keys(A);
+ var rows=ks.sort().map(function(k){
+  return '<div style="display:flex;align-items:center;gap:8px;margin-bottom:7px">'
+   +'<span class="pmrow" style="flex:1;margin:0;cursor:default"><b>'+esc(_wkArchLbl(k))+'</b></span>'
+   +'<button class="btn ghost sm" style="width:auto;flex:0 0 auto" onclick="wkArchBack(\''+k+'\')">Adu înapoi</button></div>';}).join("");
+ sheet("Arhivă","Luni arhivate",
+  '<div class="muted" style="margin:0 2px 12px">Lunile date deoparte nu apar în Programări, în Sarcini și nici în lista de descărcări. Datele lor rămân întregi — de aici le aduci înapoi.</div>'
+  +(rows||'<div class="muted" style="margin:0 2px">Nicio lună arhivată.</div>'));}
+function wkArchBack(k){wkArchDo(k,0);wkArchSheet();}
 function renderWeeks(){
  $("#fab").style.display="none";const b=$("#body");
  let h=`<div class="ebar" style="margin-bottom:10px"><div class="lead" style="margin:0">Caiet · ${S.weeks.length} săptămâni</div><div class="spacer"></div><button class="miniact" onclick="openExportPick()">${IC.pdf} Descarcă PDF</button></div>`;
@@ -916,9 +931,7 @@ function renderWeeks(){
   const Y=years[ym[year]];const mk=monthKey(w.date);
   if(!(mk in Y.mm)){Y.mm[mk]=Y.ms.length;Y.ms.push({mk,items:[]});}
   Y.ms[Y.mm[mk]].items.push(i);});
- const _showA=wkArchShow();let _nA=0;
- years.forEach(Y=>{Y.ms.forEach(M=>{if(wkArchIs(Y.y+"|"+M.mk))_nA++;});});
- if(_nA)h+=`<button class="btn ghost sm" style="width:100%;margin-bottom:10px" onclick="wkArchToggleShow()">${_showA?"Ascunde":"Arată"} lunile arhivate (${_nA})</button>`;
+ const _showA=wkArchShow();
  years.forEach(Y=>{const yk="y"+Y.y;const yo=grpOpen(yk);
   const _vis=Y.ms.filter(M=>_showA||!wkArchIs(Y.y+"|"+M.mk));if(!_vis.length)return;
   h+=`<div class="ygroup"><button class="yhead" onclick="toggleGrp('${yk}')"><span class="mchev ${yo?'op':''}">${IC.chev}</span><span class="yttl">${Y.y}</span></button><div class="ybody" id="g_${yk}" style="display:${yo?'block':'none'}">`;
@@ -1265,22 +1278,27 @@ function showPersonDetail(id){const b=S.bros.find(x=>x.id===id);if(!b||!pickCtx)
    îngreuneze sincronizarea; fiecare dispozitiv le aduce o singură dată. */
 var REF_NAMES={th:"Dedică-te citirii și predării",lmd:"Iubește-i pe oameni, fă discipoli",
  lff:"Bucură-te pentru totdeauna de viață!",ijwbq:"Întrebări frecvente",bt:"Mărturie completă",
- bhs:"Ce ne învață Biblia?",jy:"Isus – calea",cf:"Imită-le credința",od:"Organizați"};
+ bhs:"Ce ne învață Biblia?",jy:"Isus – calea",cf:"Imită-le credința",od:"Organizați",
+ wcg:"Curaj — Să umblăm cu Dumnezeu plini de curaj"};
 function refName(code){var R=(S.settings&&S.settings.refs)||{};return (R[code]&&R[code].n)||REF_NAMES[code]||code;}
 /* trimiterile dintr-un text de caiet: „lmd lecția 4, punctul 3", „th lecția 11", „lmd apendice A, punctul 20" */
 function refParse(txt){var out=[];if(!txt)return out;
- var re=/\b(th|lmd|lff|ijwbq|bt|bhs|jy|cf|od)\s*(lec[\u021bt]ia|apendice(?:le)?)\s*([A-Za-z0-9]+)(?:\s*,\s*punctul\s*(\d+))?/gi,m;
- while((m=re.exec(txt))){out.push({b:m[1].toLowerCase(),k:/apendice/i.test(m[2])?"ap":"l",l:m[3],pt:m[4]?+m[4]:null});
+ /* „lmd lecția 4, punctul 3", „th lecția 11", „lmd apendice A", „wcg cap. 15" */
+ var re=/\b(th|lmd|lff|ijwbq|bt|bhs|jy|cf|od|wcg)\s*(lec[\u021bt]ia|apendice(?:le)?|cap(?:itolul)?\.?)\s*([A-Za-z0-9]+)(?:\s*,\s*(?:punctul|paragraful)\s*(\d+))?/gi,m;
+ while((m=re.exec(txt))){
+  var k=/apendice/i.test(m[2])?"ap":(/cap/i.test(m[2])?"c":"l");
+  out.push({b:m[1].toLowerCase(),k:k,l:m[3],pt:m[4]?+m[4]:null});
   if(out.length>4)break;}
  return out;}
-function refLabel(r){return refName(r.b)+" \u2014 "+(r.k==="ap"?("apendicele "+String(r.l).toUpperCase()):("lec\u021bia "+r.l))+(r.pt?(", punctul "+r.pt):"");}
+function refLabel(r){var w=(r.k==="ap")?("apendicele "+String(r.l).toUpperCase()):((r.k==="c")?("capitolul "+r.l):("lec\u021bia "+r.l));
+ return refName(r.b)+" \u2014 "+w+(r.pt?(", "+(r.k==="c"?"paragraful ":"punctul ")+r.pt):"");}
 /* ---- depozitul de bro\u0219uri (indice \u00een stare, textul \u00een gistul comun) ---- */
 function refIdx(){S.settings.refs=S.settings.refs||{};return S.settings.refs;}
 function _refFile(code){return "ref_"+String(code).toLowerCase()+".json";}
 var _refCache={};
 function refLoaded(code){return !!_refCache[code];}
 function refGetLesson(code,r){var d=_refCache[code];if(!d||!d.lessons)return null;
- var key=(r.k==="ap"?"ap:":"l:")+String(r.l).toUpperCase();
+ var key=(r.k==="ap"?"ap:":(r.k==="c"?"c:":"l:"))+String(r.l).toUpperCase();
  var L=d.lessons[key];if(!L)return null;
  var out={t:L.t||"",txt:""};
  if(r.pt&&L.pts&&L.pts[String(r.pt)])out.txt=L.pts[String(r.pt)];
@@ -1324,12 +1342,14 @@ async function refParseEpub(file){
   if(!title)continue;
   var lm=body.match(/LEC[ȚT]IA\s*(\d+)/i);
   var ap=body.match(/APENDICE(?:LE)?\s*([A-Z])\b/i);
-  var key=lm?("l:"+lm[1]):(ap?("ap:"+ap[1].toUpperCase()):null);
+  var cp=body.match(/CAPITOLUL\s*(\d+)/i)
+       ||body.match(/class="[^"]*contextTtl[^"]*"[^>]*>[\s\S]{0,200}?<strong>\s*(\d{1,3})\s*<\/strong>/i);
+  var key=lm?("l:"+lm[1]):(ap?("ap:"+ap[1].toUpperCase()):(cp?("c:"+cp[1]):null));
   if(!key)continue;
   /* Punctele lecției: EXACT paragraful care începe cu „N." — nimic din ce urmează după el.
      Textele biblice citate la final (extScrpCiteTxt), marcajul „LECȚIA n" și lista „VEZI ȘI"
      nu fac parte din lecție și se lasă deoparte. */
-  var pts={},sum="",obj="";
+  var pts={},sum="",obj="",last=null,inList=false;
   var re=/<p([^>]*)>([\s\S]*?)<\/p>/g,m2;
   while((m2=re.exec(body))){
    var cls=(m2[1]||"");
@@ -1339,9 +1359,12 @@ async function refParseEpub(file){
    if(/^lec[țt]ia\s*\d+$/i.test(t))continue;
    if(/^(vezi [șs]i|principiu\s*:)/i.test(t)&&!sum){if(/^principiu/i.test(t))sum=t.slice(0,300);continue;}
    if(/^obiectiv\s*:/i.test(t)){obj=t.slice(0,300);continue;}
-   var num=t.match(/^(\d{1,2})[.)]\s+(.+)$/);
-   if(num&&+num[1]>=1&&+num[1]<=20)pts[num[1]]=num[2].slice(0,600);
-   else if(!sum&&t.length>25&&t.length<300&&!/^[A-ZĂÂÎȘȚ ]{6,}$/.test(t))sum=t;}
+   var num=t.match(/^(\d{1,3})[.)]\s+(.+)$/);
+   if(num&&+num[1]>=1&&+num[1]<=150){last=num[1];pts[last]=num[2].slice(0,600);inList=/:\s*$/.test(pts[last]);continue;}
+   /* un punct care se termină cu „:" are o listă dedesubt — o adăugăm toată la el (ex. cele DOUĂ
+      întrebări de la lecția 9, punctul 4), până la punctul următor */
+   if(last&&inList&&t.length<300){pts[last]+="\n• "+t;continue;}
+   if(!sum&&t.length>25&&t.length<300&&!/^[A-ZĂÂÎȘȚ ]{6,}$/.test(t))sum=t;}
   lessons[key]={t:title,pts:pts,sum:obj||sum};n++;}
  return {lessons:lessons,n:n};}
 /* ---- Setări → Referințe ---- */
@@ -2983,6 +3006,12 @@ function renderSet(){if(!_isAdmin()){renderSetLimited();return;}$("#fab").style.
                    :'<span class="off">niciuna</span> — trimiterile din caiet apar oricum, fără titlul lecției';})(),
    `<div class="muted" style="margin:0 0 8px">Caietul trimite la lecția la care lucrează cursantul („lmd lecția 4, punctul 3"). Încarcă aici broșura (.epub din JW Library) și la butonul <b>„i"</b> apar și titlul lecției, și textul punctului. O încarci o dată, ajunge la toți.</div>
     <button class="btn pri sm" style="width:100%" onclick="refSheet()">Gestionează referințele</button>`)
+ +_setCard(IC.box||IC.trash,"Luni arhivate",
+   (function(){var n=Object.keys((st.wkArch)||{}).length;
+    return n?('<span class="on">'+n+(n===1?" lună dată deoparte":" luni date deoparte")+'</span> · de aici le aduci înapoi')
+            :'<span class="off">niciuna</span> — lunile încheiate se pot da deoparte din Programări';})(),
+   `<div class="muted" style="margin:0 0 8px">O lună arhivată nu mai apare în Programări, în Sarcini și nici în lista de descărcări, dar datele ei rămân întregi. O arhivezi din butonul de pe capul lunii, în Programări.</div>
+    <button class="btn pri sm" style="width:100%" onclick="wkArchSheet()">Vezi lunile arhivate</button>`)
  +_setCard(IC.ppl,"Utilizatori și distribuire",
    nUsers?`<span class="on">${nUsers} conturi</span> · trimiți aplicația fiecăruia cu „Trimite"`:`<span class="off">niciun cont</span> — generează conturi cu PIN`,
    `<div class="muted" style="margin:0 0 8px">Conturi cu PIN pentru fiecare vestitor (bătrânii = administratori). Din listă îi trimiți fiecăruia aplicația cu „Trimite" — un singur fișier, cu datele incluse.</div>
@@ -3798,7 +3827,8 @@ function _firstTab(){var o=_allowedTabs();return o.weeks?"weeks":(o.meu?"meu":(o
 function _applyNavVis(){var o=_allowedTabs();var nb=document.querySelectorAll(".nb");for(var i=0;i<nb.length;i++){nb[i].style.display=o[nb[i].dataset.tab]?"":"none";}}
 /* cine vede Arhiva completă și cine doar pagina de Prezență (drept de prezență fără modulul Arhivă) */
 function _arhFull(){var r=_role();if(_isAdmin()||r==="guest")return true;if(r==="editor"||r==="viewer")return _modsOf().arh;return false;}
-function renderArhRoute(){if(_arhFull()){renderArh();return;}renderArhLite();}
+function renderArhRoute(){if(_arhFull())renderArh();else renderArhLite();
+ try{setTimeout(_hscrollBind,0);}catch(e){}}
 function arhRerender(){if(tab==="meu"){renderMeu();return;}renderArhRoute();}
 function renderMeu(){$("#fab").style.display="none";$("#body").innerHTML='<div style="height:6px"></div>'+_pushNudge()+arhMeuHtml();}
 /* toate atribuirile unui vestitor, pe săptămâni (pt. rolul „vestitor") */
@@ -4277,11 +4307,16 @@ function s89Show(slips){_s89slips=slips||[];if(!_s89slips.length){toast("Nicio t
 function s89Save(){if(!_s89slips.length){toast("Nicio fi\u0219\u0103");return;}var fn=s89Fname(_s89slips)+".pdf";var css=".s89wrap{display:grid;grid-template-columns:1fr 1fr;gap:6mm;background:#fff;color:#111;font-family:-apple-system,Segoe UI,Arial,sans-serif}.s89wrap.one{grid-template-columns:1fr;max-width:128mm}.s89wrap .s89{border:1.6px solid #111;border-radius:3mm;padding:5mm 5mm 4mm;page-break-inside:avoid;break-inside:avoid;display:flex;flex-direction:column;min-height:64mm}.s89wrap .s89hd{margin-bottom:3.5mm;text-align:center}.s89wrap .s89t1{font-weight:700;font-size:9.5pt;letter-spacing:.2px}.s89wrap .s89t2{font-weight:800;font-size:11.5pt;letter-spacing:.2px;margin-top:.4mm}.s89wrap .s89r{font-size:11pt;margin:1.4mm 0;display:flex;gap:6px;align-items:baseline}.s89wrap .s89r span:first-child{color:#333;min-width:22mm}.s89wrap .s89det{font-size:10pt;font-weight:600;margin:.6mm 0 0 22mm;color:#111;overflow-wrap:break-word}.s89wrap .s89hh{font-size:10pt;color:#333;margin-top:3mm;margin-bottom:1mm}.s89wrap .s89c{font-size:11pt;margin:1mm 0}.s89wrap .s89n{font-size:8pt;color:#444;margin-top:auto;padding-top:3mm;line-height:1.35}.s89wrap .s89foot{font-size:8pt;color:#666;margin-top:2mm}#s89wrapper{position:fixed;left:0;top:0;width:0;height:0;overflow:hidden;z-index:-1;background:#fff}#s89stage{width:192mm;background:#fff;padding:0}@media print{@page{size:A4;margin:9mm}body.s89-printing>*:not(#s89wrapper){display:none !important}body.s89-printing #s89wrapper{position:static !important;left:auto !important;top:auto !important;width:auto !important;height:auto !important;overflow:visible !important;z-index:auto !important}}"+".s89pg{width:210mm;min-height:297mm;padding:9mm;background:#fff;box-sizing:border-box}.s89pg .s89wrap{width:100%}";var slips=_s89slips,one=(slips.length<=1),pages="",PER=4;for(var k=0;k<slips.length;k+=PER){var grp=slips.slice(k,k+PER);pages+='<div class="s89pg"><div class="s89wrap'+(one?' one':'')+'">'+grp.map(s89Card).join("")+'</div></div>';}var html='<!doctype html><html lang="ro"><head><meta charset="utf-8"><title>'+esc(fn)+'</title><style>'+"@font-face{font-family:'Carlito';font-style:normal;font-weight:400;src:url(data:font/woff2;base64,"+CARLITO_R+") format('woff2')}"+"@font-face{font-family:'Carlito';font-style:normal;font-weight:700;src:url(data:font/woff2;base64,"+CARLITO_B+") format('woff2')}"+"html,body{margin:0;background:#fff}"+css+'</style></head><body>'+pages+'</body></html>';arhRenderPDF(html,fn,".s89pg");}
 function s89PrintNow(){if(!_s89slips.length){toast("Nicio fi\u0219\u0103");return;}s89BuildStage();document.body.classList.add("s89-printing");var done=function(){document.body.classList.remove("s89-printing");s89StageRemove();window.removeEventListener("afterprint",done);};window.addEventListener("afterprint",done);setTimeout(function(){try{window.print();}catch(e){done();}},180);setTimeout(function(){if(document.body.classList.contains("s89-printing"))done();},60000);}
 /* ===== Descarcă programul (PDF) — organizat pe luni ===== */
+/* Lunile pentru descărcare: aceeași cheie „an|lună" ca în Programări (înainte anul se lua din
+   weekISO și, când data nu se putea citi, cădea pe anul de bază — de aceea apărea o lună razleață
+   la începutul listei). Lunile arhivate nu mai apar deloc. */
 function _exGroups(){var groups=[],map={};
- S.weeks.forEach(function(w,i){var iso=weekISO(w.date)||"";var y=iso?iso.slice(0,4):String(S.settings.baseYear||2026);var mk=monthKey(w.date),key=y+"|"+mk;
-  if(!map[key]){map[key]={key:key,y:y,mi:monthIdx(w.date),label:monthLabel(mk),items:[]};groups.push(map[key]);}
+ S.weeks.forEach(function(w,i){var key=_wkMonthKey(i);if(!key)return;
+  if(wkArchIs(key))return;
+  if(!map[key]){var y=key.split("|")[0];
+   map[key]={key:key,y:+y,mi:monthIdx(w.date),label:monthLabel(monthKey(w.date)),items:[]};groups.push(map[key]);}
   map[key].items.push(i);});
- groups.sort(function(a,b){return a.y===b.y?(a.mi-b.mi):(a.y<b.y?-1:1);});return groups;}
+ groups.sort(function(a,b){return a.y===b.y?(a.mi-b.mi):(a.y-b.y);});return groups;}
 var _exGrps=[];
 function openExportPick(){_exGrps=_exGroups();
  var MN=["ianuarie","februarie","martie","aprilie","mai","iunie","iulie","august","septembrie","octombrie","noiembrie","decembrie"];
@@ -4351,6 +4386,19 @@ function go(t){if(_wkDraft&&!_wkGuard()){_wkAsk(function(){go(t);});return;}/* n
  var R={vcp:renderVcp,weeks:renderWeeks,meu:renderMeu,bros:renderBros,arh:renderArhRoute,set:renderSet};
  if(_isVestitor()){R.weeks=renderWeeksVestitor;}
  (R[t]||renderWeeks)();window.scrollTo(0,0);var _ap=document.querySelector(".app");if(_ap)_ap.classList.remove("headhide");if(window._headReset)window._headReset();var _bd=document.getElementById("body");if(_bd)_bd.scrollTop=0;}
+/* Bara de subtaburi din Arhivă se derulează pe orizontală. Pe telefon o tragi cu degetul, dar pe
+   calculator rotița dă doar derulare verticală, iar bara nu se mișca. Traducem rotirea verticală în
+   derulare laterală (dacă mouse-ul dă și deltaX — trackpad, mouse cu roată laterală — îl folosim pe acela). */
+function _hscrollBind(){try{
+ document.querySelectorAll(".ptabs-arh").forEach(function(el){
+  if(el._hsb)return;el._hsb=1;
+  el.addEventListener("wheel",function(e){
+   var d=Math.abs(e.deltaX)>Math.abs(e.deltaY)?e.deltaX:e.deltaY;
+   if(!d)return;
+   var max=el.scrollWidth-el.clientWidth;if(max<=1)return;
+   var nx=Math.max(0,Math.min(max,el.scrollLeft+d));
+   if(nx!==el.scrollLeft){el.scrollLeft=nx;e.preventDefault();}
+  },{passive:false});});}catch(e){}}
 function sheet(_x,title,html){const bk=$("#sheetBack");if(bk)bk.style.display="none";$("#sheetHd").textContent=title;$("#sheetBody").innerHTML=html;$("#ov").classList.add("show");}
 function closeSheet(){$("#ov").classList.remove("show");}
 
@@ -5700,13 +5748,17 @@ function dutyListHtml(){var D=dutyD(),ed=_canEditDuty();
   Y.ms[Y.mm[mk]].items.push(i);});
  var np=dutyPosts().length;
  years.forEach(function(Y){var yk="dy"+Y.y;var yo=grpOpen(yk);
+  var _vis=Y.ms.filter(function(M){return !wkArchIs(Y.y+"|"+M.mk);});if(!_vis.length)return;
   h+='<div class="ygroup"><button class="yhead" onclick="toggleGrp(\''+yk+'\')"><span class="mchev '+(yo?"op":"")+'">'+IC.chev+'</span><span class="yttl">'+Y.y+'</span></button><div class="ybody" id="g_'+yk+'" style="display:'+(yo?"block":"none")+'">';
-  Y.ms.forEach(function(M){var mk2=yk+"|"+M.mk;
+  _vis.forEach(function(M){var mk2=yk+"|"+M.mk;var _ak=Y.y+"|"+M.mk;
    var so=(S.ui&&S.ui.open&&S.ui.open[mk2]!==undefined)?S.ui.open[mk2]:(M.items.indexOf(cw)>=0);
    /* săptămânile fără întrunire (congres, Comemorare) nu intră în socoteală și nu se programează */
    var nPl=M.items.filter(function(i){return !evNoMeet(S.weeks[i]);}).length;
    var nAs=M.items.reduce(function(a,i){return a+(evNoMeet(S.weeks[i])?0:dutyFilled(i));},0);
-   h+='<div class="mgroup"><button class="mhead" onclick="toggleGrp(\''+mk2+'\')"><span class="mchev '+(so?"op":"")+'">'+IC.chev+'</span><span class="mttl">'+monthLabel(M.mk)+'</span><span class="mcount">'+nAs+'/'+(nPl*np)+'</span></button><div class="mbody" id="g_'+mk2+'" style="display:'+(so?"block":"none")+'">';
+   h+='<div class="mgroup"><div class="mhead" style="display:flex;align-items:center">'
+    +'<button class="mhead" style="flex:1;border:0;background:none;padding:0" onclick="toggleGrp(\''+mk2+'\')"><span class="mchev '+(so?"op":"")+'">'+IC.chev+'</span><span class="mttl">'+monthLabel(M.mk)+'</span><span class="mcount">'+nAs+'/'+(nPl*np)+'</span></button>'
+    +(ed?('<button class="pico" title="Arhivează luna" style="flex:0 0 auto;margin-left:6px" onclick="event.stopPropagation();wkArchSet(\''+_ak+'\',1)">'+(IC.box||IC.trash)+'</button>'):'')
+    +'</div><div class="mbody" id="g_'+mk2+'" style="display:'+(so?"block":"none")+'">';
    M.items.forEach(function(i){var w=S.weeks[i];
     if(evNoMeet(w)){h+='<div class="dwrow" style="opacity:.75;cursor:default"><span class="dwn" style="background:transparent;color:var(--ink3)">—</span>'
       +'<span class="dwi"><span class="dwt">'+esc(tc(w.date))+'</span><span class="dws">'+esc(evLabel(w))+' · fără întrunire, nu se programează</span></span></div>';return;}
