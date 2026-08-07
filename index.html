@@ -152,6 +152,9 @@ body:has(.app.light){background:#e8eaf2}
 /* fields */
 .fld,select.fld{font-family:inherit;font-size:16px;background:var(--bg);color:var(--ink);
  border:1px solid var(--bd);border-radius:11px;padding:11px 13px;width:100%;outline:none;-webkit-appearance:none}
+.autobar{position:fixed;left:0;right:0;bottom:0;z-index:150;display:flex;align-items:center;gap:9px;padding:11px 14px calc(11px + env(safe-area-inset-bottom));background:var(--surf);border-top:1px solid var(--bd);box-shadow:0 -8px 26px rgba(0,0,0,.16)}
+.autobt{flex:1;min-width:0;font-size:12.5px;line-height:1.35;color:var(--ink2)}
+.autobar .btn{width:auto;margin:0;flex:0 0 auto}
 .foldbtn{display:flex;align-items:center;gap:8px;text-align:left;cursor:pointer}
 .foldbtn>span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .foldbtn svg{width:14px;height:14px;flex:0 0 auto;color:var(--ink3)}
@@ -524,7 +527,7 @@ Object.assign(IC,{
  box:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h18v13H3z"/><path d="M3 7l2-4h14l2 4"/><path d="M10 11h4"/></svg>',
  mark:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15.5 4.5l4 4-9.5 9.5H6v-4z"/><path d="M12.5 7.5l4 4M5 21h14"/></svg>'
 });
-const VERSION="2.75.2";
+const VERSION="2.76.0";
 const SEED_WEEKS=[];
 const SEED_WEEKS_PRE=[];
 const SEED_WEEKS_POST=[];
@@ -1247,6 +1250,15 @@ function lastAnyWi(id){var H=histIdx();return H.any[id]!=null?H.any[id]:-1;}
 function usedInWi(id,wi){var H=histIdx();return !!(H.wk[wi]&&H.wk[wi][id]);}
 /* la câte săptămâni distanță e cea mai apropiată parte a lui, față de săptămâna wi.
    Fără nimic în jur = 99. Se folosește ca să nu iasă cineva două săptămâni la rând. */
+function histInvalidate(){_histIdx=null;_histIdxRev=-1;}
+/* după fiecare atribuire ținem indexul la zi, altfel următoarea săptămână ar fi judecată
+   ca și cum atribuirea asta nu s-ar fi făcut (de aici veneau aceleași nume peste tot) */
+function histTouch(id,role,wi){if(!id||wi==null||wi<0)return;var H=_histIdx;if(!H)return;
+ if(role){H.role[role]=H.role[role]||{};if(H.role[role][id]==null||H.role[role][id]<wi)H.role[role][id]=wi;}
+ if(H.any[id]==null||H.any[id]<wi)H.any[id]=wi;
+ (H.wk[wi]=H.wk[wi]||{})[id]=1;
+ if(role!=="Rugăciune"){var L=H.all[id]=H.all[id]||[];
+  if(L.indexOf(wi)<0){L.push(wi);L.sort(function(a,b){return a-b;});}}}
 function nearGap(id,wi){if(wi<0)return 99;var H=histIdx(),L=H.all[id];if(!L||!L.length)return 99;
  var best=99;for(var i=0;i<L.length;i++){if(L[i]===wi)continue;var d=Math.abs(L[i]-wi);if(d<best)best=d;if(best===1)break;}
  return best;}
@@ -1275,6 +1287,10 @@ function autoRun(){
  if(!selW.length||!Object.keys(selC).length){toast("Alege cel puțin o săptămână și o categorie.");return;}
  const selRoles={};AUTO_CATS.forEach(c=>{if(selC[c[0]])c[2].forEach(r=>{selRoles[r]=true;});});
  selW.sort((a,b)=>a-b);
+ histInvalidate();histIdx();/* pornim de la situația reală și o ținem la zi pe parcurs */
+ /* copie de siguranță: rezultatul se vede întâi și se salvează sau se anulează în bloc */
+ if(!_autoSnap){_autoSnap={};}
+ selW.forEach(function(wi){if(!(wi in _autoSnap))_autoSnap[wi]=JSON.stringify(S.plans[wi]||null);});
  let nA=0,nS=0;
  selW.forEach(wi=>{
   const w=S.weeks[wi];ensureIds(w);
@@ -1301,17 +1317,46 @@ function autoRun(){
     const famOk=partnerFamOk(s.role);
     const pool=S.bros.filter(b=>b.active!==false&&!isArchNow(b)&&b.canPartner!==false&&b.id!==mid&&!used[b.id]&&(b.gen===main.gen||(famOk&&((main.famIds&&main.famIds.indexOf(b.id)>=0)||(b.famIds&&b.famIds.indexOf(mid)>=0))))&&recent.indexOf(b.id)<0);
     const rk=autoRank(pool,s.role,true,wi,main);
-    if(rk.length){pl.a[s.key]=rk[0].b.id;used[rk[0].b.id]=true;nA++;}else nS++;
+    if(rk.length){pl.a[s.key]=rk[0].b.id;used[rk[0].b.id]=true;histTouch(rk[0].b.id,s.role,wi);nA++;}else nS++;
    }else{
     const pool=eligible(s.role).filter(b=>meetsS38(b,s.role,s.part)&&!used[b.id]);
     const rk=autoRank(pool,s.role,false,wi,null);
-    if(rk.length){pl.a[s.key]=rk[0].b.id;used[rk[0].b.id]=true;nA++;}else nS++;
+    if(rk.length){pl.a[s.key]=rk[0].b.id;used[rk[0].b.id]=true;histTouch(rk[0].b.id,s.role,wi);nA++;}else nS++;
    }
   });
  });
- save();closeSheet();openWeek(curW);
- logAct("Auto-atribuire: "+nA+" puse"+(nS?(", "+nS+" fără candidat"):""));save();toast("Auto-atribuire: "+nA+" puse"+(nS?(" · "+nS+" fără candidat"):""));
+ _autoInfo={n:nA,s:nS,w:selW.length};
+ closeSheet();openWeek(curW);autoBar();
+ toast("Auto-atribuire: "+nA+" puse"+(nS?(" · "+nS+" fără candidat"):"")+" — verifică și salvează",5000);
 }
+/* ---- rezultatul auto-atribuirii: se vede întâi, se salvează sau se anulează în bloc ----
+   Înainte se scria direct peste tot, fără cale de întoarcere dacă nu-ți convenea. */
+var _autoSnap=null,_autoInfo=null;
+function autoBar(){var el=document.getElementById("autoBar");
+ if(!_autoSnap||!_autoInfo){if(el)el.remove();return;}
+ if(!el){el=document.createElement("div");el.id="autoBar";el.className="autobar";
+  (document.querySelector(".app")||document.body).appendChild(el);}
+ var w=Object.keys(_autoSnap).length;
+ el.innerHTML='<div class="autobt"><b>Auto-atribuire</b> · '+_autoInfo.n+' puse în '+w+(w===1?' săptămână':' săptămâni')
+  +(_autoInfo.s?(' · '+_autoInfo.s+' fără candidat'):'')+'</div>'
+  +'<button class="btn ghost sm" onclick="autoUndo()">Anulează</button>'
+  +'<button class="btn pri sm" onclick="autoKeep()">Salvează</button>';}
+function autoKeep(){if(!_autoSnap)return;
+ var w=Object.keys(_autoSnap).length,n=(_autoInfo&&_autoInfo.n)||0;
+ _autoSnap=null;_autoInfo=null;autoBar();
+ _wkDraft=null;/* rezultatul e comis pentru toate săptămânile, nu doar cea deschisă */
+ logAct("Auto-atribuire salvată: "+n+" puse în "+w+" săptămâni");
+ save();try{if(typeof ghSync==="function")ghSync(true);}catch(e){}
+ openWeek(curW);okSplash("Salvat",n+" atribuiri în "+w+(w===1?" săptămână":" săptămâni"));}
+async function autoUndo(){if(!_autoSnap)return;
+ var w=Object.keys(_autoSnap).length;
+ if(!(await uiConfirm("Se șterg atribuirile puse acum de auto-atribuire în "+w+(w===1?" săptămână":" săptămâni")+". Ce ai pus manual înainte rămâne.",
+  {title:"Anulezi auto-atribuirea?",yes:"Anulează tot",no:"Înapoi",danger:true})))return;
+ Object.keys(_autoSnap).forEach(function(wi){
+  var v=_autoSnap[wi];
+  if(v==="null"||v==null)delete S.plans[wi];else S.plans[wi]=JSON.parse(v);});
+ _autoSnap=null;_autoInfo=null;autoBar();histInvalidate();
+ openWeek(curW);toast("Auto-atribuirea a fost anulată");}
 function toggleFam(id){const pl=S.plans[curW];pl.fam=pl.fam||{};if(pl.fam[id])delete pl.fam[id];else pl.fam[id]=true;save();openWeek(curW);}
 function setA(k,v){S.plans[curW].a[k]=v;save();}
 let pickCtx=null;
