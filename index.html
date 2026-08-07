@@ -527,7 +527,7 @@ Object.assign(IC,{
  box:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h18v13H3z"/><path d="M3 7l2-4h14l2 4"/><path d="M10 11h4"/></svg>',
  mark:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15.5 4.5l4 4-9.5 9.5H6v-4z"/><path d="M12.5 7.5l4 4M5 21h14"/></svg>'
 });
-const VERSION="2.78.0";
+const VERSION="2.79.0";
 const SEED_WEEKS=[];
 const SEED_WEEKS_PRE=[];
 const SEED_WEEKS_POST=[];
@@ -890,14 +890,52 @@ var ROLE_ALSO={"Ce ai putea spune?":["Predicare (cuvântare)"]};
 function eligible(role){var extra=ROLE_ALSO[role]||[];
  return S.bros.filter(b=>b.active!==false&&!isArchNow(b)&&((b.roles||[]).includes(role)||extra.some(function(r){return (b.roles||[]).includes(r);})));}
 function broName(id){const b=S.bros.find(x=>x.id===id);return b?b.name:"";}
-function shortName(n){const parts=(n||"").replace(/[.,]/g," ").replace(/-/g," ").trim().split(/\s+/).filter(Boolean);
- if(parts.length<2)return n||"";let gi="";for(let j=1;j<parts.length;j++){if(/[A-Za-zĂÂÎȘȚăâîșț]/.test(parts[j])){gi=parts[j][0];break;}}
- return parts[0]+(gi?(" "+gi.toUpperCase()+"."):"");}
-function broDisp(id){const b=S.bros.find(x=>x.id===id);if(!b)return"";return b.disp||b.name;}
+/* ============================================================================
+   CUM SE SCRIU NUMELE — o singură regulă, peste tot (ecran, PDF, fișe, e-mail)
+   ----------------------------------------------------------------------------
+   • Surori: NUMELE DE FAMILIE cu majuscule + inițiala prenumelui  → „PASĂRE D."
+   • Frați:  NUMELE DE FAMILIE cu majuscule + prenumele întreg     → „DRĂGHICI Cosmin"
+     …dar la temele cu partener (cursant/partener) și frații se scurtează → „DRĂGHICI C."
+   Se ia doar PRIMUL prenume. Numele compuse rămân întregi („AMBROZINSKI-SZABO Monika"):
+   se despart numai la spațiu, iar dacă e virgulă, ea separă familia de prenume.
+   Înainte fiecare persoană putea avea o formă scrisă de mână, așa că în aceeași listă
+   apăreau și „PASĂRE Daniela", și „NEDELEA I." */
+function _nmParts(n){n=String(n||"").replace(/\s+/g," ").trim();
+ if(!n)return null;
+ var sur,giv;
+ var ci=n.indexOf(",");
+ if(ci>0){sur=n.slice(0,ci).trim();giv=n.slice(ci+1).trim();}
+ else{var t=n.split(" ").filter(Boolean);if(t.length<2)return {sur:n,giv:""};
+  sur=t[0];giv=t.slice(1).join(" ");}
+ giv=(giv.split(" ").filter(Boolean)[0]||"");/* doar primul prenume */
+ return {sur:sur,giv:giv};}
+function _capWord(w){w=String(w||"");if(!w)return "";
+ return w.charAt(0).toLocaleUpperCase("ro")+w.slice(1).toLocaleLowerCase("ro");}
+/* forma scurtă: FAMILIA I. */
+function shortName(n){var p=_nmParts(n);if(!p)return "";
+ return p.sur.toLocaleUpperCase("ro")+(p.giv?(" "+p.giv.charAt(0).toLocaleUpperCase("ro")+"."):"");}
+/* forma întreagă: FAMILIA Prenume */
+function fullName(n){var p=_nmParts(n);if(!p)return "";
+ return p.sur.toLocaleUpperCase("ro")+(p.giv?(" "+_capWord(p.giv)):"");}
+/* numele unei persoane după regula de mai sus. pair=true → tema cu partener, se scurtează și frații */
+/* „Cum apare" din fișă era completat automat cu forma scurtă veche, așa că aproape toți aveau
+   ceva scris acolo și regula unitară ar fi fost ocolită — de aici numele amestecate în aceeași
+   listă. Îl luăm în seamă doar dacă e chiar scris de mână, adică diferă de formele calculate. */
+function _normNm(x){return String(x||"").toLocaleLowerCase("ro").replace(/[.,]/g,"").replace(/\s+/g," ").trim();}
+function _dispManual(b){if(!b||!b.disp)return "";
+ var d=_normNm(b.disp);
+ if(d===_normNm(shortName(b.name))||d===_normNm(fullName(b.name))||d===_normNm(b.name))return "";
+ return b.disp;}
+function nameOf(id,pair){var b=(S.bros||[]).find(function(x){return x.id===id;});if(!b)return "";
+ var m=_dispManual(b);if(m)return m;
+ return (pair||b.gen==="F")?shortName(b.name):fullName(b.name);}
+function broDisp(id){return nameOf(id,false);}
+function broDispP(id){return nameOf(id,true);}
 /* în fișă: actualizează live „cum apare" pe măsură ce editezi numele, cât timp nu a fost scris manual */
 function bdAuto(nm){var bd=document.getElementById("bd");if(!bd||bd.dataset.custom==="1")return;bd.value=shortName(nm);}
-function expName(id){const b=S.bros.find(x=>x.id===id);if(!b)return"";return (b.dispExp!==false)?(b.disp||shortName(b.name)):b.name;}
-function expNameS(id){const b=S.bros.find(x=>x.id===id);if(!b)return"";return b.disp||shortName(b.name);}
+function expName(id){return nameOf(id,false);}
+function expNameP(id){return nameOf(id,true);}
+function expNameS(id){return nameOf(id,true);}
 
 /* parts/ids + history helpers */
 function ensureIds(w){(w.parts||[]).forEach((p,i)=>{if(p.id==null)p.id="p"+i;});}
@@ -905,7 +943,7 @@ function secName(sec){return {Comori:"Comori din Cuvântul lui Dumnezeu",Predica
 function secOfRole(role){if(role==="Nestemate"||role==="Citirea Bibliei"||role.indexOf("Comori")>=0)return"Comori";if(role.indexOf("Predicare")>=0||["Începe o conversație","Fă vizite ulterioare","Fă discipoli","Explică-ți convingerile"].indexOf(role)>=0)return"Predicare";if(role.indexOf("studiu")>=0||role.indexOf("Viața")>=0||role.indexOf("Necesit")>=0)return"Viata";return null;}
 function assignOfPart(wi,p){const pl=S.plans[wi];const a=(pl&&pl.a)||{};const k=p.id;const study=(p.title||"").toLowerCase().includes("studiul");const role=partRole(p);
  if(study)return{ids:[a.cond,a.cit].filter(Boolean),main:broDisp(a.cond||""),aux:broDisp(a.cit||""),mlbl:"Conducător",albl:"Cititor",type:"Studiul Bibliei"};
- if(hasPartner(p,role))return{ids:[a[k+"_a"],a[k+"_b"]].filter(Boolean),main:broDisp(a[k+"_a"]||""),aux:broDisp(a[k+"_b"]||""),mlbl:"",albl:"partener",type:role};
+ if(hasPartner(p,role))return{ids:[a[k+"_a"],a[k+"_b"]].filter(Boolean),main:broDispP(a[k+"_a"]||""),aux:broDispP(a[k+"_b"]||""),mlbl:"",albl:"partener",type:role};
  var _one=asgOf(a,p);return{ids:[_one].filter(Boolean),main:broDisp(_one||""),aux:"",mlbl:"",albl:"",type:role};}
 function lastSectionInfo(id,sec){for(let wi=S.weeks.length-1;wi>=0;wi--){const w=S.weeks[wi];ensureIds(w);if(!S.plans[wi]||!S.plans[wi].a)continue;
   for(let pi=w.parts.length-1;pi>=0;pi--){const p=w.parts[pi];if(p.sec!==sec)continue;if(assignOfPart(wi,p).ids.includes(id))return{wi,p};}}return null;}
@@ -1111,7 +1149,7 @@ function asgWarn(role,key,pl){
   var fam=(main.famIds&&main.famIds.indexOf(b.id)>=0)||(b.famIds&&b.famIds.indexOf(main.id)>=0);
   if(!(partnerFamOk(role)&&fam))return partnerFamOk(role)?"Partenerul trebuie să fie de același sex sau din familie (S-38)":"Partenerul trebuie să fie de același sex (S-38)";}
  return "";}
-function dd(role,key,pl,label){const cur=pl.a[key]||"";const nm=cur?broDisp(cur):"";
+function dd(role,key,pl,label){const cur=pl.a[key]||"";const _pair=/_(a|b)$/.test(key);const nm=cur?nameOf(cur,_pair):"";
  const warn=asgWarn(role,key,pl);const conflict=!!warn;const done=!!(pl.done&&pl.done[key]);
  const lb=label?`<div class="asglb">${label}</div>`:"";
  const x=cur?`<button class="clrx" title="Scoate" onclick="clearA('${key}')">×</button>`:"";
@@ -1576,6 +1614,31 @@ async function refParseEpub(file){
   lessons[key]={t:title,pts:pts,sum:obj||sum};n++;}
  return {lessons:lessons,n:n};}
 /* ---- Setări → Referințe ---- */
+/* Lista de nume pentru listele de selectare din Microsoft Forms. Scrisă cu ACEEAȘI regulă ca
+   în aplicație și în PDF, ca răspunsurile din Forms să se potrivească la import fără ambiguități. */
+function formsNames(){
+ return (S.bros||[]).filter(function(b){return isPublisher(b)&&b.active!==false&&!isArchNow(b);})
+  .map(function(b){return {id:b.id,gen:b.gen,n:nameOf(b.id,false),raw:b.name};})
+  .sort(function(a,b){return a.n.localeCompare(b.n,"ro");});}
+function formsSheet(){if(!_isAdmin()){toast("Doar administratorul");return;}
+ var L=formsNames();
+ if(!L.length){toast("Niciun vestitor activ");return;}
+ var txt=L.map(function(x){return x.n;}).join("\n");
+ window._formsTxt=txt;
+ var f=L.filter(function(x){return x.gen==="F";}).length;
+ sheet("Forms","Lista de nume pentru Forms",
+  '<div class="muted" style="margin:0 2px 12px"><b>'+L.length+' vestitori activi</b> ('+f+' surori, '+(L.length-f)+' frați), scriși exact ca în aplicație și în PDF. Copiază lista și lipește-o în întrebarea de tip „alegere" din Microsoft Forms — așa răspunsurile se potrivesc automat la import.</div>'
+  +'<textarea id="formsTxt" class="fld" readonly style="height:44vh;font-family:ui-monospace,Menlo,monospace;font-size:12.5px;line-height:1.6">'+esc(txt)+'</textarea>'
+  +'<div class="rowflex" style="gap:9px;margin-top:12px">'
+   +'<button class="btn pri sm" style="width:auto;flex:1" onclick="formsCopy()">Copiază lista</button>'
+   +'<button class="btn ghost sm" style="width:auto;flex:1" onclick="formsDl()">Descarcă (.txt)</button></div>'
+  +'<div class="hint" style="margin-top:10px">Surorile apar cu inițiala prenumelui, frații cu prenumele întreg — la fel ca pe foaia tipărită. Dacă schimbi un nume în fișa vestitorului, regenerează lista de aici.</div>');}
+function formsCopy(){var t=document.getElementById("formsTxt");if(!t)return;
+ t.focus();t.select();try{t.setSelectionRange(0,99999);}catch(e){}
+ try{document.execCommand("copy");}catch(e){}
+ if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(t.value).catch(function(){});
+ toast("Lista a fost copiată ✓");}
+function formsDl(){dl("Nume_vestitori_"+(S.settings.cong||"congregatie").replace(/[^A-Za-z0-9]+/g,"_")+".txt",window._formsTxt||"","text/plain");}
 function refSheet(){if(!_isAdmin()){toast("Doar administratorul");return;}
  try{arhEnsureCSS();}catch(e){}
  var idx=refIdx(),codes=Object.keys(idx);
@@ -3353,7 +3416,7 @@ function renderSet(){if(!_isAdmin()){renderSetLimited();return;}$("#fab").style.
     <div class="two" style="margin-top:12px"><button class="btn ghost sm" onclick="odPullRap()">${IC.dl} Adu rapoartele</button><button class="btn ghost sm" onclick="odPullPrez()">${IC.dl} Adu prezența</button></div>
     <button class="btn ghost sm" style="width:100%;margin-top:8px" onclick="odCheckClear()">Verifică dacă poți goli Forms</button>
     <label class="aow" style="margin-top:12px"><input type="checkbox" ${(st.od&&st.od.auto===false)?"":"checked"} onchange="_od().auto=this.checked;save()"><span><b>Adu automat</b> — la deschidere și la fiecare <input type="number" min="10" value="${Math.max(10,(st.od&&+st.od.every)||60)}" class="fld" style="width:64px;display:inline-block;padding:4px 6px;margin:0 3px" onchange="_od().every=Math.max(10,(+this.value)||60);this.value=_od().every;save()"> minute</span></label>
-    ${(st.od&&(st.od.tRap||st.od.tPrez))?`<div class="muted" style="margin-top:9px;font-size:11.5px">${st.od.clr?`Se numără doar răspunsurile de după golirea Forms (${fmtDT(st.od.clr)}) · limita: 200/formular.`:`Numerele arată rândurile din fișier (includ și ce ai șters din Forms — contorul real de 200 îl vezi în Forms).`}</div>`:''}`)
+    ${(st.od&&(st.od.tRap||st.od.tPrez))?`<div class="muted" style="margin-top:9px;font-size:11.5px">${st.od.clr?`Se numără doar răspunsurile de după golirea Forms (${fmtDT(st.od.clr)}) · limita: 200/formular.`:`Numerele arată rândurile din fișier (includ și ce ai șters din Forms — contorul real de 200 îl vezi în Forms).`}</div>`:''}`+`<button class="btn ghost sm" style="width:100%;margin-top:8px" onclick="formsSheet()">Lista de nume pentru Forms</button>`)
  +_setCard(IC.sync,"Sincronizare GitHub",
    ghOn?`<span class="on">conectat</span> · automat ${st.autoSync!==false?"pornit":"oprit"} · gist ${st.gh.gist?"✓":"— la prima salvare"}`:`<span class="off">neconectat</span> — pune tokenul ca să sincronizezi între dispozitive`,
    `<div class="muted" style="margin:0 0 8px">Gist privat. Pune același token + gist pe telefon și laptop.</div>
@@ -4491,7 +4554,8 @@ function weekISO(d){if(!d)return null;const M={ianuarie:1,februarie:2,martie:3,a
  const dt=new Date(+(S.settings.baseYear||2026),M[mon]-1,+dm[0]);dt.setDate(dt.getDate()+2);const p=n=>String(n).padStart(2,"0");
  return dt.getFullYear()+"."+p(dt.getMonth()+1)+"."+p(dt.getDate());}
 function weekBlock(i){const w=S.weeks[i];ensureIds(w);const pl=S.plans[i]||{a:{},songs:{}},a=pl.a;const isVisit=isVisitEv(w);
- const dn=pl.done||{};const nm=k=>{const v=expName(a[k]||"");return v&&dn[k]?'<span class="hl">'+v+'</span>':v;};let t=S.settings.start,rows=[];
+ const dn=pl.done||{};const nm=k=>{const v=expName(a[k]||"");return v&&dn[k]?'<span class="hl">'+v+'</span>':v;};
+ const nmP=k=>{const v=expNameP(a[k]||"");return v&&dn[k]?'<span class="hl">'+v+'</span>':v;};let t=S.settings.start,rows=[];
  const SEC={Comori:["Comori din Cuvântul lui Dumnezeu","#117a8b",IC.gem],Predicare:["Să fim mai eficienți în predicare","#b8740a",IC.wheat],Viata:["Viața de creștin","#c0392b",IC.sheep]};
  const R=(time,label,role,right,col,dl)=>`<tr><td class="ptm">${time}</td><td class="plb"><span style="color:${col||'#333'}">•</span>&nbsp;${dl?'<span class="hl">'+esc(label)+'</span>':esc(label)}</td><td>${role?'<b>'+role+'</b> ':''}${right||''}</td></tr>`;
  let body;
@@ -4507,7 +4571,7 @@ function weekBlock(i){const w=S.weeks[i];ensureIds(w);const pl=S.plans[i]||{a:{}
    let right="";const role=partRole(p);
    if(study&&isVisit){core="Cuvântare de serviciu"+(w.coTalk?" — "+w.coTalk:"");mn=30;right=`<b>Supraveghetor</b> ${esc(S.settings.co||"")}`;}
    else if(study)right=`<b>Conducător</b> ${nm("cond")}<br><b>Cititor</b> ${nm("cit")}`;
-   else if(hasPartner(p,role))right=[nm(k+"_a"),nm(k+"_b")].filter(Boolean).join(" & ");
+   else if(hasPartner(p,role))right=[nmP(k+"_a"),nmP(k+"_b")].filter(Boolean).join(" & ");
    else right=nm(k);
    let title=(p.num?p.num+". ":"")+core+(mn?` (${mn} min.)`:"");
    rows.push(R(t,title,"",right,secCol,dn[k+"_t"]));t=addMin(t,mn);if((p.title||"").toLowerCase().includes("citirea")||p.sec==="Predicare")t=addMin(t,1);});
@@ -4617,12 +4681,12 @@ function s89FilterUI(){return '<div class="muted" style="margin:0 2px 8px;font-s
 function s89FT(which){var el=document.getElementById("s89f-"+which);if(!el)return;var open=el.style.display==="none";el.style.display=open?"flex":"none";var a=document.getElementById("s89fa-"+which);if(a)a.textContent=open?"\u25b4":"\u25be";}
 function s89SetF(which,val){s89F[which]=(s89F[which]===val?"":val);var box=document.getElementById("s89f-"+which);if(box){[].forEach.call(box.querySelectorAll(".fchip"),function(b){if(b.getAttribute("data-v")===s89F[which])b.classList.add("on");else b.classList.remove("on");});}var lab=document.getElementById("s89fl-"+which);if(lab)lab.textContent=s89Flabel(which);}
 function s89BroA(id){var b=S.bros.find(function(x){return x.id===id;});return {gen:b?(b.gen||""):"",pio:b?(b.pio||""):""};}
-function s89Collect(idxs){var out=[];idxs.forEach(function(wi){var w=S.weeks[wi];if(!w)return;ensureIds(w);if(evNoMeet(w))return;var a=(S.plans[wi]||{a:{}}).a||{};(w.parts||[]).forEach(function(p){var role=partRole(p);if(!isStudentPart(p,role))return;var pair=hasPartner(p,role);var key=pair?(p.id+"_a"):p.id;var id=pair?a[key]:asgOf(a,p);var br=s89BroA(id);out.push({date:weekDateLabel(wi),mon:tc(w.date),num:p.num||"",name:expName(id||""),partner:pair?expName(a[p.id+"_b"]||""):"",detail:s89Detail(w,p),gen:br.gen,pio:br.pio});});});return out;}
-function s89One(wi,pid){var w=S.weeks[wi];if(!w)return;var a=(S.plans[wi]||{a:{}}).a||{};var p=(w.parts||[]).find(function(x){return x.id===pid;});if(!p)return;var role=partRole(p);var pair=hasPartner(p,role);s89Show([{date:weekDateLabel(wi),mon:tc(w.date),num:p.num||"",name:pair?expName(a[pid+"_a"]||""):expName(asgOf(a,p)||""),partner:pair?expName(a[pid+"_b"]||""):"",detail:s89Detail(w,p)}]);}
+function s89Collect(idxs){var out=[];idxs.forEach(function(wi){var w=S.weeks[wi];if(!w)return;ensureIds(w);if(evNoMeet(w))return;var a=(S.plans[wi]||{a:{}}).a||{};(w.parts||[]).forEach(function(p){var role=partRole(p);if(!isStudentPart(p,role))return;var pair=hasPartner(p,role);var key=pair?(p.id+"_a"):p.id;var id=pair?a[key]:asgOf(a,p);var br=s89BroA(id);out.push({date:weekDateLabel(wi),mon:tc(w.date),num:p.num||"",name:nameOf(id||"",pair),partner:pair?nameOf(a[p.id+"_b"]||"",true):"",detail:s89Detail(w,p),gen:br.gen,pio:br.pio});});});return out;}
+function s89One(wi,pid){var w=S.weeks[wi];if(!w)return;var a=(S.plans[wi]||{a:{}}).a||{};var p=(w.parts||[]).find(function(x){return x.id===pid;});if(!p)return;var role=partRole(p);var pair=hasPartner(p,role);s89Show([{date:weekDateLabel(wi),mon:tc(w.date),num:p.num||"",name:nameOf(pair?(a[pid+"_a"]||""):(asgOf(a,p)||""),pair),partner:pair?nameOf(a[pid+"_b"]||"",true):"",detail:s89Detail(w,p)}]);}
 function s89Week(wi){var sl=s89Collect([wi]);if(!sl.length){toast("Nicio tem\u0103 de cursant");return;}s89Show(sl);}
 function s89ckAll(v){document.querySelectorAll(".s89wk").forEach(function(c){c.checked=!!v;});}
 function s89Multi(){var idx=[];document.querySelectorAll(".s89wk:checked").forEach(function(c){idx.push(+c.value);});if(!idx.length){toast("Bifeaz\u0103 cel pu\u021bin o s\u0103pt\u0103m\u00e2n\u0103");return;}idx.sort(function(a,b){return a-b;});var sl=s89Collect(idx);sl=sl.filter(function(s){if(s89F.sex&&s.gen!==s89F.sex)return false;if(s89F.pio&&(s.pio||"")!==s89F.pio)return false;return true;});if(!sl.length){toast("Nicio tem\u0103 pentru filtrul selectat");return;}s89Show(sl);}
-function s89Sheet(){var w=S.weeks[curW];if(!w){toast("Deschide o s\u0103pt\u0103m\u00e2n\u0103");return;}ensureIds(w);var a=(S.plans[curW]||{a:{}}).a||{};var rows=[];(w.parts||[]).forEach(function(p){var role=partRole(p);if(!isStudentPart(p,role))return;var pair=hasPartner(p,role);var nm=(pair?expName(a[p.id+"_a"]||""):expName(asgOf(a,p)||""))||"\u2014";var label=(p.num?p.num+". ":"")+(p.title||"");rows.push('<div style="display:flex;align-items:center;gap:10px;padding:8px 2px;border-bottom:1px solid var(--bd)"><div style="flex:1;min-width:0"><b>'+esc(label)+'</b><div class="muted" style="font-size:12px">'+esc(nm)+'</div></div><button class="btn ghost sm" style="width:auto" onclick="closeSheet();s89One('+curW+',\''+p.id+'\')">Fi\u015f\u0103</button></div>');});var wkChecks=S.weeks.map(function(ww,i){return '<label class="ckrow"><input type="checkbox" class="s89wk" value="'+i+'"><span>'+esc(tc(ww.date))+'</span></label>';}).join("");var H='<div class="muted" style="margin:2px 2px 12px">Fi\u015fe pentru Citirea Bibliei \u015fi demonstra\u021biile din \u201ePredicare\u201d. Numele, partenerul, data \u015fi nr. temei se completeaz\u0103 automat; sala o bifezi la tip\u0103rire.</div><div class="grpttl">S\u0103pt\u0103m\u00e2na aceasta</div>'+(rows.length?rows.join(""):'<div class="muted">Nicio tem\u0103 de cursant aici.</div>')+'<button class="btn ghost sm" style="width:100%;margin-top:10px" onclick="closeSheet();s89Week('+curW+')">Toate din aceast\u0103 s\u0103pt\u0103m\u00e2n\u0103</button><div class="grpttl" style="margin-top:18px">Mai multe s\u0103pt\u0103m\u00e2ni (4 fi\u015fe/pagin\u0103)</div>'+s89FilterUI()+'<div class="rowflex" style="gap:8px;margin-bottom:8px"><button class="btn ghost sm" style="width:auto" onclick="s89ckAll(1)">Toate</button><button class="btn ghost sm" style="width:auto" onclick="s89ckAll(0)">Niciuna</button></div><div style="max-height:34vh;overflow:auto">'+wkChecks+'</div><button class="btn pri" style="width:100%;margin-top:12px" onclick="s89Multi()">Genereaz\u0103 fi\u015fe</button>';sheet("S-89","Fi\u015fe tem\u0103 (S-89)",H);}
+function s89Sheet(){var w=S.weeks[curW];if(!w){toast("Deschide o s\u0103pt\u0103m\u00e2n\u0103");return;}ensureIds(w);var a=(S.plans[curW]||{a:{}}).a||{};var rows=[];(w.parts||[]).forEach(function(p){var role=partRole(p);if(!isStudentPart(p,role))return;var pair=hasPartner(p,role);var nm=(pair?nameOf(a[p.id+"_a"]||"",true):nameOf(asgOf(a,p)||"",false))||"\u2014";var label=(p.num?p.num+". ":"")+(p.title||"");rows.push('<div style="display:flex;align-items:center;gap:10px;padding:8px 2px;border-bottom:1px solid var(--bd)"><div style="flex:1;min-width:0"><b>'+esc(label)+'</b><div class="muted" style="font-size:12px">'+esc(nm)+'</div></div><button class="btn ghost sm" style="width:auto" onclick="closeSheet();s89One('+curW+',\''+p.id+'\')">Fi\u015f\u0103</button></div>');});var wkChecks=S.weeks.map(function(ww,i){return '<label class="ckrow"><input type="checkbox" class="s89wk" value="'+i+'"><span>'+esc(tc(ww.date))+'</span></label>';}).join("");var H='<div class="muted" style="margin:2px 2px 12px">Fi\u015fe pentru Citirea Bibliei \u015fi demonstra\u021biile din \u201ePredicare\u201d. Numele, partenerul, data \u015fi nr. temei se completeaz\u0103 automat; sala o bifezi la tip\u0103rire.</div><div class="grpttl">S\u0103pt\u0103m\u00e2na aceasta</div>'+(rows.length?rows.join(""):'<div class="muted">Nicio tem\u0103 de cursant aici.</div>')+'<button class="btn ghost sm" style="width:100%;margin-top:10px" onclick="closeSheet();s89Week('+curW+')">Toate din aceast\u0103 s\u0103pt\u0103m\u00e2n\u0103</button><div class="grpttl" style="margin-top:18px">Mai multe s\u0103pt\u0103m\u00e2ni (4 fi\u015fe/pagin\u0103)</div>'+s89FilterUI()+'<div class="rowflex" style="gap:8px;margin-bottom:8px"><button class="btn ghost sm" style="width:auto" onclick="s89ckAll(1)">Toate</button><button class="btn ghost sm" style="width:auto" onclick="s89ckAll(0)">Niciuna</button></div><div style="max-height:34vh;overflow:auto">'+wkChecks+'</div><button class="btn pri" style="width:100%;margin-top:12px" onclick="s89Multi()">Genereaz\u0103 fi\u015fe</button>';sheet("S-89","Fi\u015fe tem\u0103 (S-89)",H);}
 function s89Fname(slips){var MN=["ianuarie","februarie","martie","aprilie","mai","iunie","iulie","august","septembrie","octombrie","noiembrie","decembrie"];var found=[];slips.forEach(function(s){var d=(s.mon||s.date||"").toLowerCase();MN.forEach(function(m){if(d.indexOf(m)>=0&&found.indexOf(m)<0)found.push(m);});});found.sort(function(a,b){return MN.indexOf(a)-MN.indexOf(b);});var cap=function(x){return x?x.charAt(0).toUpperCase()+x.slice(1):x;};var per=found.length?found.map(cap).join("-"):"";if(slips.length<=1){var nm=(slips[0]&&slips[0].name)?String(slips[0].name):"";nm=nm.replace(/[\/\\:*?"<>|]/g,"").replace(/[.\s]+$/,"").replace(/\s+/g," ").trim();return ("Tema VCP"+(per?(" "+per):"")+(nm?(" - "+nm):"")).trim();}return ("Teme VCP"+(per?(" "+per):"")).trim();}
 function s89Card(s){var det=s.detail?'<div class="s89det">'+esc(s.detail)+'</div>':'';return '<div class="s89"><div class="s89hd"><div class="s89t1">TEM\u0102 LA \u00ceNTRUNIREA</div><div class="s89t2">\u201eVIA\u021aA CRE\u0218TIN\u0102 \u0218I PREDICAREA\u201d</div></div><div class="s89r"><span>Nume:</span><b>'+esc(s.name||"")+'</b></div><div class="s89r"><span>Partener:</span><span>'+esc(s.partner||"")+'</span></div><div class="s89r"><span>Data:</span><span>'+esc(s.date||"")+'</span></div><div class="s89r"><span>Tema nr.:</span><b>'+esc(String(s.num||""))+'</b></div>'+det+'<div class="s89hh">Se va \u021bine \u00een:</div><div class="s89c">&#9744; Sala principal\u0103</div><div class="s89c">&#9744; Prima sal\u0103 secundar\u0103</div><div class="s89c">&#9744; A doua sal\u0103 secundar\u0103</div><div class="s89n"><b>Not\u0103 pentru cursant:</b> Preg\u0103te\u0219te tema folosind Caietul \u00eentrunirii \u0219i \u021bin\u00e2nd cont de instruc\u021biunile S-38.</div><div class="s89foot">S-89-M 11/23</div></div>';}
 function s89CSS(){return ".s89wrap{display:grid;grid-template-columns:1fr 1fr;gap:6mm;background:#fff;color:#111;font-family:-apple-system,Segoe UI,Arial,sans-serif}.s89wrap.one{grid-template-columns:1fr;max-width:128mm}.s89wrap .s89{border:1.6px solid #111;border-radius:3mm;padding:5mm 5mm 4mm;page-break-inside:avoid;break-inside:avoid;display:flex;flex-direction:column;min-height:64mm}.s89wrap .s89hd{margin-bottom:3.5mm;text-align:center}.s89wrap .s89t1{font-weight:700;font-size:9.5pt;letter-spacing:.2px}.s89wrap .s89t2{font-weight:800;font-size:11.5pt;letter-spacing:.2px;margin-top:.4mm}.s89wrap .s89r{font-size:11pt;margin:1.4mm 0;display:flex;gap:6px;align-items:baseline}.s89wrap .s89r span:first-child{color:#333;min-width:22mm}.s89wrap .s89det{font-size:10pt;font-weight:600;margin:.6mm 0 0 22mm;color:#111;overflow-wrap:break-word}.s89wrap .s89hh{font-size:10pt;color:#333;margin-top:3mm;margin-bottom:1mm}.s89wrap .s89c{font-size:11pt;margin:1mm 0}.s89wrap .s89n{font-size:8pt;color:#444;margin-top:auto;padding-top:3mm;line-height:1.35}.s89wrap .s89foot{font-size:8pt;color:#666;margin-top:2mm}";}
