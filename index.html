@@ -481,7 +481,7 @@ Object.assign(IC,{
  book:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg>',
  mark:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15.5 4.5l4 4-9.5 9.5H6v-4z"/><path d="M12.5 7.5l4 4M5 21h14"/></svg>'
 });
-const VERSION="2.63.1";
+const VERSION="2.64.0";
 const SEED_WEEKS=[];
 const SEED_WEEKS_PRE=[];
 const SEED_WEEKS_POST=[];
@@ -561,7 +561,30 @@ function _wkGuard(){if(!_wkDraft)return true;
 function wkCommit(){if(!_wkDraft)return;var i=_wkDraft.i;_wkDraft=null;
  save();toast("Planificarea a fost salvată — se trimite tuturor ✓",4000);
  try{if(typeof ghSync==="function")ghSync(true);}catch(e){}
- openWeek(i);}
+ openWeek(i);
+ /* Salvarea trimite planificarea pe toate dispozitivele, dar NU anunță pe nimeni: până acum
+    notificarea pleca doar dacă intrai separat în „E-mail teme". Aici întrebăm o singură dată,
+    imediat după salvare, și doar dacă chiar sunt oameni de anunțat. */
+ try{setTimeout(function(){wkNotifyAsk(i);},900);}catch(e){}}
+/* câți au teme noi sau modificate față de ultima trimitere (aceeași socoteală ca în „E-mail teme") */
+function _wkPend(i){var out=[];try{(S.bros||[]).forEach(function(b){
+  var as=myAssignments(b.id).filter(function(e){return e.wi===i;});if(!as.length)return;
+  var txt=as.map(function(it){return it.label+(it.partner?" cu "+it.partner:"");}).join("; ");
+  var sent=(S.mailLog||{})[i+"|"+b.id];
+  if(!sent||sent.h!==_hash(txt))out.push(b.name);});}catch(e){}
+ return out;}
+function wkNotifyAsk(i){if(!_canEditVcp()||editBusy())return;
+ var w=S.weeks[i];if(!w)return;var pend=_wkPend(i);if(!pend.length)return;
+ var canPush=(typeof pushReady==="function"&&pushReady()&&typeof pushOn==="function"&&pushOn("t"));
+ var canMail=!!((S.settings.mailHook||"").trim());
+ if(!canPush&&!canMail)return;/* n-avem prin ce anunța — nu deranjăm */
+ var lst=pend.slice(0,6).map(esc).join(", ")+(pend.length>6?(" și încă "+(pend.length-6)):"");
+ sheet("","Îi anunți pe cei repartizați?",
+  '<div class="muted" style="margin:0 2px 12px">Planificarea pentru <b>'+esc(tc(w.date))+'</b> e salvată și a plecat pe toate dispozitivele. '
+  +'<b>'+pend.length+'</b> '+(pend.length===1?"persoană are o temă nouă sau modificată":"persoane au teme noi sau modificate")+' față de ultima anunțare:</div>'
+  +'<div style="margin:0 2px 14px;font-size:13.5px;line-height:1.6">'+lst+'</div>'
+  +'<button class="btn pri" style="width:100%" onclick="closeSheet();mailWeekSheet('+i+')">Deschide „E-mail teme" — aleg eu cine primește</button>'
+  +'<button class="btn ghost sm" style="width:100%;margin-top:8px" onclick="closeSheet()">Mai târziu</button>');}
 function wkCancel(){if(!_wkDraft)return;var i=_wkDraft.i;if(_wkDraft.dirty&&!confirm("Anulezi modificările din această săptămână?"))return;_wkRestore();toast("Modificările au fost anulate");openWeek(i);}
 /* avertizează dacă închizi/reîncarci pagina cu o săptămână nesalvată */
 try{window.addEventListener("beforeunload",function(e){if((_wkDraft&&_wkDraft.dirty)||(typeof _secDraft!=="undefined"&&_secDraft&&_secDraft.dirty)){e.preventDefault();e.returnValue="";}});}catch(e){}
@@ -619,9 +642,78 @@ function meetsS38(b,role,part){const M=b.gen!=="F";const em=(b.rol==="Bătrân"|
   default: return true;}}
 function normBible(s){return (s||"").replace(/\s+/g," ").trim();}
 function infoFor(w,p){if(p==null||p.num==null)return null;const k=normBible(w.bible)+"|"+p.num;const u=(S.info&&S.info[k])||{},s=SEED_INFO[k]||{};const li=caietImgGet()[k]||[];if(!u.t&&!u.info&&!(u.img&&u.img.length)&&!li.length&&!s.t&&!s.info&&!(s.img&&s.img.length))return null;return {t:u.t||s.t||"",info:u.info||s.info||"",caps:(u.caps&&u.caps.length)?u.caps:(s.caps||[]),img:li.length?li:((u.img&&u.img.length)?u.img:(s.img||[]))};}
+/* ===== POZELE DIN CAIET (VCP → „detalii temă") =====
+   Până acum, ilustrațiile importate din caiet (.epub) rămâneau DOAR pe dispozitivul care făcuse
+   importul: se scriau în localStorage și nu plecau nicăieri. Ceilalți vedeau textul temei, dar fără
+   poze. Acum stau într-un gist separat, numai pentru poze (nu sunt date confidențiale), câte un
+   fișier per temă; în starea aplicației se sincronizează doar un indice mic (S.caietImg: câte poze
+   are fiecare temă și în ce fișier). Fiecare dispozitiv își aduce în fundal doar pozele care îi
+   lipsesc, direct de pe adresa „raw" a gistului — deci fără să consume din limita de API GitHub.
+   Cache-ul local s-a mutat din localStorage (≈5 MB, se umplea) în IndexedDB. */
 var _ciCache=null;
 function caietImgGet(){if(_ciCache)return _ciCache;try{_ciCache=JSON.parse(localStorage.getItem(KEY+"_img")||"{}");}catch(e){_ciCache={};}return _ciCache;}
-function caietImgSave(m){_ciCache=m;try{localStorage.setItem(KEY+"_img",JSON.stringify(m));return true;}catch(e){toast("Imagini prea multe pentru memorie");return false;}}
+function caietImgSave(m){_ciCache=m;
+ _ciDbSet(m).then(function(ok){if(ok){try{localStorage.removeItem(KEY+"_img");}catch(e){}return;}
+  try{localStorage.setItem(KEY+"_img",JSON.stringify(m));}catch(e){toast("Imagini prea multe pentru memorie");}});
+ return true;}
+function _ciDbGet(){return _bkOpen().then(function(db){if(!db)return null;return new Promise(function(res){
+ try{var rq=db.transaction("kv").objectStore("kv").get("img");rq.onsuccess=function(){res(rq.result||null);};rq.onerror=function(){res(null);};}catch(e){res(null);}});});}
+function _ciDbSet(m){return _bkOpen().then(function(db){if(!db)return false;return new Promise(function(res){
+ try{var tx=db.transaction("kv","readwrite");tx.objectStore("kv").put(m,"img");tx.oncomplete=function(){res(true);};tx.onerror=function(){res(false);};}catch(e){res(false);}});});}
+/* la pornire: aducem cache-ul din IndexedDB și mutăm acolo ce era în localStorage */
+function caietImgHydrate(){try{return _ciDbGet().then(function(m){
+ if(m&&typeof m==="object"){_ciCache=Object.assign({},m,_ciCache||{});return;}
+ var raw=null;try{raw=localStorage.getItem(KEY+"_img");}catch(e){}
+ if(!raw)return;try{_ciCache=JSON.parse(raw)||{};}catch(e){return;}
+ return _ciDbSet(_ciCache).then(function(ok){if(ok)try{localStorage.removeItem(KEY+"_img");}catch(e){}});
+}).catch(function(){});}catch(e){return Promise.resolve();}}
+function caietIdx(){S.caietImg=S.caietImg||{};return S.caietImg;}
+function _ciFile(k){return "img_"+_hash(String(k))+".json";}
+function _ciGistId(){var g=(S.settings&&S.settings.gh)||{};return g.gist4||(S.settings&&S.settings.imgGist)||"";}
+async function _ciGistEnsure(){var g=S.settings.gh;if(!g||!g.token)throw new Error("fără token");
+ var have=g.gist4||S.settings.imgGist;if(have){g.gist4=have;S.settings.imgGist=have;return have;}
+ var r=await _gfetch("https://api.github.com/gists",{method:"POST",headers:_scrHdr(),body:JSON.stringify({description:"ArhiLink — poze din caiet (VCP)",public:false,files:{"_arhilink.txt":{content:"Ilustrațiile din caietul pentru întrunire."}}})},0);
+ if(!r.ok)throw new Error("GitHub "+r.status);var d=await r.json();
+ g.gist4=d.id;S.settings.imgGist=d.id;if(d.owner&&d.owner.login)S.settings.imgOwner=d.owner.login;save();return d.id;}
+/* urcă pozele temelor date, în tranșe mici (un PATCH cu tot caietul ar fi prea mare) */
+async function caietImgPush(keys){var n=0;
+ try{if(!_isAdmin()||!(S.settings.gh&&S.settings.gh.token))return 0;
+  var ci=caietImgGet(),idx=caietIdx(),todo=[];
+  (keys||[]).forEach(function(k){var arr=ci[k];if(!arr||!arr.length)return;
+   var body=JSON.stringify(arr);if(body.length>3.5e6)return;/* prea mare pentru un fișier de gist */
+   todo.push({k:k,gf:_ciFile(k),body:body,n:arr.length});});
+  if(!todo.length)return 0;
+  var gid=await _ciGistEnsure();
+  for(var i=0;i<todo.length;i+=4){var batch=todo.slice(i,i+4),files={};
+   batch.forEach(function(t){files[t.gf]={content:t.body};});
+   var r=await _gfetch("https://api.github.com/gists/"+gid,{method:"PATCH",headers:_scrHdr(),body:JSON.stringify({files:files})},0);
+   if(!r.ok)break;
+   batch.forEach(function(t){idx[t.k]={t:Date.now(),n:t.n,gf:t.gf};n++;});}
+  if(n){save();try{roFlush(true);}catch(e){}}
+ }catch(e){}
+ return n;}
+/* aduce pozele care lipsesc pe acest dispozitiv — fișier cu fișier, de pe adresa „raw" */
+var _ciBusy=false,_ciLast=0;
+async function caietImgFetch(force){
+ if(_ciBusy)return 0;var idx=S.caietImg;if(!idx)return 0;
+ var gid=_ciGistId();if(!gid)return 0;
+ if(!force&&Date.now()-_ciLast<60000)return 0;
+ var ci=caietImgGet();
+ var want=Object.keys(idx).filter(function(k){var d=idx[k];if(!d||!d.n)return false;var a=ci[k];return !a||a.length<d.n;});
+ if(!want.length)return 0;
+ _ciBusy=true;_ciLast=Date.now();var got=0;
+ try{var own=(S.settings&&S.settings.imgOwner)||"";
+  if(!own){var r0=await _gfetch("https://api.github.com/gists/"+gid,{headers:{Accept:"application/vnd.github+json"}},0);
+   if(r0.ok){var d0=await r0.json();own=(d0.owner&&d0.owner.login)||"";
+    if(own){S.settings.imgOwner=own;try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){}}}}
+  if(!own)return 0;
+  for(var i=0;i<want.length&&i<8;i++){var k=want[i],gf=(idx[k]&&idx[k].gf)||_ciFile(k);
+   try{var r=await _gfetch("https://gist.githubusercontent.com/"+own+"/"+gid+"/raw/"+gf,{},0);
+    if(!r.ok)continue;var arr=JSON.parse(await r.text());
+    if(Array.isArray(arr)&&arr.length){ci[k]=arr;got++;}}catch(e){}}
+  if(got){caietImgSave(ci);if(!editBusy()&&(tab==="weeks"||tab==="vcp"))try{go(tab);}catch(e){}}
+ }catch(e){}finally{_ciBusy=false;}
+ return got;}
 function shrinkImg(b64,mime,maxW){return new Promise(function(res){try{var img=new Image();img.onload=function(){try{var w=img.naturalWidth||img.width,h=img.naturalHeight||img.height,sc=Math.min(1,maxW/(w||maxW));var cw=Math.max(1,Math.round(w*sc)),ch=Math.max(1,Math.round(h*sc));var c=document.createElement("canvas");c.width=cw;c.height=ch;var ctx=c.getContext("2d");if(!ctx){res("data:"+mime+";base64,"+b64);return;}ctx.drawImage(img,0,0,cw,ch);res(c.toDataURL("image/jpeg",0.72));}catch(e){res("data:"+mime+";base64,"+b64);}};img.onerror=function(){res("data:"+mime+";base64,"+b64);};img.src="data:"+mime+";base64,"+b64;}catch(e){res("data:"+mime+";base64,"+b64);}});}
 /* ===== ARHIVA VESTITORILOR — „mutat" / „altele" =====
    Cine e arhivat dispare din listele congregației ÎNCEPÂND CU LUNA aleasă (b.arch.k) — nu retroactiv:
@@ -1756,9 +1848,13 @@ function notifCheck(){try{
  var d=new Date(),pk=_prevK(),day=d.getDate(),my=_myBro();
  /* 1) de pe 1 ale lunii: vestitorii (oricine are vestitor asociat) fără raport pe luna trecută */
  if(my&&!repHas(my,pk)){
-  if(_nflag("rep_"+pk)!=="1"){_nset("rep_"+pk,"1");
-   _notifShow("Raportul de activitate","Completează raportul pentru "+monthName(pk)+" — Arhivă → Ale mele.","alk-rep");
-   toast("🔔 Nu uita raportul pentru "+monthName(pk)+" — Arhivă → Ale mele",6000);}
+  /* reamintirea revine pe 1, pe 5 și pe 10 cât timp raportul lipsește — înainte se arăta o singură
+     dată pe lună, în ziua în care deschideai prima oară aplicația, și dacă o ratai nu mai venea nimic */
+  var _st=(day>=10)?"10":((day>=5)?"5":"1");
+  if(_nflag("rep_"+pk+"_"+_st)!=="1"){_nset("rep_"+pk+"_"+_st,"1");
+   var _again=(_st!=="1")?" (încă nu l-am primit)":"";
+   _notifShow("Raportul de activitate","Completează raportul pentru "+monthName(pk)+_again+" — Arhivă → Ale mele.","alk-rep");
+   toast("🔔 Nu uita raportul pentru "+monthName(pk)+_again+" — Arhivă → Ale mele",6000);}
   /* 2) reamintirea manuală trimisă de supraveghetor (vine prin sincronizare) */
   var N=S.notif;if(N&&N.k===pk&&N.t&&_nflag("man")!==String(N.t)){_nset("man",String(N.t));
    _notifShow("Reamintire raport",(N.by?N.by+" îți reamintește":"Reamintire")+": raportul pentru "+monthName(pk)+".","alk-rep2");
@@ -2524,7 +2620,7 @@ function _shareFilter(u){var full=JSON.parse(JSON.stringify(S));
  if(!u||u.r==="admin"||u.r==="editor")return full;
  var mods=(u.mods&&u.mods.length)?u.mods:["vcp","arh"];var canArh=(u.r==="guest")||((u.r==="viewer")&&mods.indexOf("arh")>=0);
  var out=full;out.log=[];out.files=[];out.anunt=[];
- out.settings.users=(S.settings.users||[]).filter(function(x){return x.n===u.n;});
+ out.settings.users=(S.settings.users||[]).filter(function(x){return x.n===u.n;}).map(function(x){var y=Object.assign({},x);delete y.pin;return y;});/* fără PIN-ul în clar în fișierul trimis */
  delete out.settings.od;out.settings.passHash="";out.settings.gh=out.settings.gh||{};delete out.settings.gh.gist3;
  out.settings.gh={token:"",gist:""};out.settings.roGist=(S.settings.gh&&S.settings.gh.gist2)||"";
  if(!canArh){var own=(u.r==="vestitor"&&u.bro)?full.reports[u.bro]:null;
@@ -2538,23 +2634,34 @@ function _shareFilter(u){var full=JSON.parse(JSON.stringify(S));
    if(mine&&pub){["phone","email","addr","ecn","ecp","ec2n","ec2p","ec3n","ec3p"].forEach(function(f){pub[f]=mine[f]||"";});pub.cT=mine.cT||0;}}}
  return out;}
 /* canalul doar-citire: un al doilea gist secret, împins automat de admin, citit anonim (fără token) */
-function _roPayload(){var out=JSON.parse(JSON.stringify(S));out.log=[];out.files=[];out.anunt=[];out.repFlags=_repFlagsOf();
- /* rapoartele merg în canalul doar-citire ca fiecare să-și VADĂ raportul (trimis în Forms și importat)
-    fără să-l reintroducă; interfața arată fiecăruia doar raportul lui */
+var PRIV_CF=["phone","email","addr","ecn","ecp","ec2n","ec2p","ec3n","ec3p"];
+/* Canalul doar-citire e citit FĂRĂ token de oricine are linkul, deci NU mai poate conține în clar
+   rapoartele și datele de contact. Rămân doar steagurile de lună (S.repFlags), din care se vede
+   „✓ raport trimis" fără nicio cifră. Felia personală a fiecăruia (raportul lui + contactele lui)
+   pleacă criptată, în out.priv, cu o cheie derivată din PIN-ul lui. Vezi blocul de la _hash. */
+async function _roPayload(){var out=JSON.parse(JSON.stringify(S));out.log=[];out.files=[];out.anunt=[];out.repFlags=_repFlagsOf();
+ out.reports={};out.repDel={};
  delete out.settings.od;out.settings.passHash="";out.settings.gh={token:"",gist:""};
- out.settings.users=(S.settings.users||[]).map(function(u){return {n:u.n,r:u.r,p:u.p,mods:u.mods||null,bro:u.bro||null,attV:u.attV||0,attE:u.attE||0,curE:u.curE||0,sarE:u.sarE||0};});
+ out.settings.users=(S.settings.users||[]).map(function(u){
+  var o={n:u.n,r:u.r,mods:u.mods||null,bro:u.bro||null,attV:u.attV||0,attE:u.attE||0,curE:u.curE||0,sarE:u.sarE||0};
+  /* PIN-ul: doar forma PBKDF2. Hash-ul vechi pleacă numai dacă încă nu s-a putut calcula cea nouă
+     (dispozitiv fără WebCrypto) — altfel s-ar putea sparge în câteva sutimi de secundă. */
+  if(u.p2&&u.p2.h&&u.p2.s)o.p2=u.p2;else if(u.p)o.p=u.p;
+  return o;});
  out.bros=(S.bros||[]).map(_broPublic);
- /* fiecare vestitor cu CONT își vede propriile date de contact în aplicație: pentru persoanele
-    legate de un utilizator, datele de contact intră în canalul doar-citire (interfața arată
-    fiecăruia doar datele LUI, prin „Datele mele de contact") */
- (function(){var lb={};(S.settings.users||[]).forEach(function(u){if(u.bro)lb[u.bro]=1;});
-  out.bros.forEach(function(p){if(!lb[p.id])return;var b=(S.bros||[]).find(function(x){return x.id===p.id;});if(!b)return;
-   ["phone","email","addr","ecn","ecp","ec2n","ec2p","ec3n","ec3p"].forEach(function(f){p[f]=b[f]||"";});p.cT=b.cT||0;});})();
+ out.priv={};
+ if(_cw()){var us=S.settings.users||[];
+  for(var i=0;i<us.length;i++){var u=us[i];
+   if(!u.bro||!u.pin||!(u.p2&&u.p2.s))continue;
+   var b=(S.bros||[]).find(function(x){return x.id===u.bro;});
+   var plain={rep:(S.reports||{})[u.bro]||{}};
+   if(b){plain.c={cT:b.cT||0};PRIV_CF.forEach(function(f){plain.c[f]=b[f]||"";});}
+   try{var k=await _uKeyFor(u);if(!k)continue;var box=await _encJSON(k,plain);if(box)out.priv[u.n]=box;}catch(e){}}}
  out._ro=1;return out;}
 let _roPushBusy=false,_roLast=0,_roPushT=0,_roetag="";
 async function roPush(){if(_roPushBusy)return;var g=S.settings.gh;if(!g||!g.token)return;
  var us=S.settings.users||[];if(!us.some(function(u){return u.r==="vestitor"||u.r==="viewer"||u.r==="guest";}))return;_roPushBusy=true;var pv=S._rev||0;
- try{var body={description:"ArhiLink — date publice congregație (doar citire)",public:false,files:{"plan_public.json":{content:JSON.stringify(_roPayload())}}};
+ try{var body={description:"ArhiLink — date publice congregație (doar citire)",public:false,files:{"plan_public.json":{content:JSON.stringify(await _roPayload())}}};
   var url=g.gist2?("https://api.github.com/gists/"+g.gist2):"https://api.github.com/gists";
   var r=await _gfetch(url,{method:g.gist2?"PATCH":"POST",headers:{Authorization:"token "+g.token,Accept:"application/vnd.github+json"},body:JSON.stringify(body)},0);
   if(r.ok){_roPushT=Date.now();try{localStorage.setItem(KEY+"_roPushedRev",String(pv));}catch(e){}if(!g.gist2){var d=await r.json();S.settings.gh.gist2=d.id;save();}}}catch(e){}finally{_roPushBusy=false;}}
@@ -2592,7 +2699,7 @@ async function roSync(silent){if(!roOn()||_offline()||_busy)return;_roLast=Date.
   var cuN=_curUser()&&_curUser().n;var myUOld=cuN?(S.settings.users||[]).find(function(x){return x.n===cuN;}):null;
   var keep={theme:S.settings.theme,roGist:S.settings.roGist,myRep:S.reports,users:S.settings.users,myTomb:S.repDel||null,
    myAtt:((S.att&&S.att.recs)||[]).filter(function(r){return r&&r.src==="me";}),
-   myU:myUOld?{p:myUOld.p,pin:myUOld.pin,pt:myUOld.pt||0}:null,
+   myU:myUOld?{p:myUOld.p,p2:myUOld.p2,pin:myUOld.pin,pt:myUOld.pt||0}:null,
    myC:myOld?{t:myOld.cT||0,phone:myOld.phone,email:myOld.email,addr:myOld.addr,ecn:myOld.ecn,ecp:myOld.ecp,ec2n:myOld.ec2n,ec2p:myOld.ec2p,ec3n:myOld.ec3n,ec3p:myOld.ec3p}:null};
   _applying=true;S=Object.assign(blank(),R);
   S.settings.theme=keep.theme;S.settings.roGist=keep.roGist;S.settings.gh={token:"",gist:""};
@@ -2614,7 +2721,13 @@ async function roSync(silent){if(!roOn()||_offline()||_busy)return;_roLast=Date.
    if(myB&&S.reports[myB]){var _in=S.reports[myB];Object.keys(_in).forEach(function(k){if(repIsTomb(myB,k,_repSig(_in[k]||{})))delete _in[k];});}})();
   /* PIN-ul schimbat local rămâne dacă e mai nou decât cel din cloud */
   if(keep.myU&&cuN){var inc=(S.settings.users||[]).find(function(x){return x.n===cuN;});
-   if(inc&&(keep.myU.pt||0)>(inc.pt||0)){inc.p=keep.myU.p;inc.pin=keep.myU.pin;inc.pt=keep.myU.pt;}}
+   if(inc&&(keep.myU.pt||0)>(inc.pt||0)){inc.p=keep.myU.p;inc.p2=keep.myU.p2;inc.pin=keep.myU.pin;inc.pt=keep.myU.pt;}}
+  /* Canalul nu mai trimite hash-ul vechi al PIN-ului (se spargea în câteva sutimi de secundă).
+     Un dispozitiv care îl avea deja îl PĂSTREAZĂ, ca să nu rămână blocat la autentificare dacă
+     browserul lui nu are WebCrypto (ex. fișierul aplicației deschis direct de pe disc). */
+  (function(){try{var old={};(keep.users||[]).forEach(function(u){if(u&&u.n)old[u.n]=u;});
+   (S.settings.users||[]).forEach(function(u){var o=old[u.n];if(!o)return;
+    if(!u.p&&o.p)u.p=o.p;if(!u.p2&&o.p2)u.p2=o.p2;});}catch(e){}})();
   /* datele mele de contact: câștigă versiunea mai nouă (cT) — editarea mea locală nu se pierde
      până n-o preia adminul, iar datele actualizate central ajung la mine */
   if(keep.myC&&myB){var nb=(S.bros||[]).find(function(b){return b.id===myB;});
@@ -2628,6 +2741,22 @@ async function roSync(silent){if(!roOn()||_offline()||_busy)return;_roLast=Date.
     var xi=-1;for(var q=0;q<recs.length;q++){if(recs[q].d===m.d&&recs[q].k===m.k){xi=q;break;}}
     if(xi<0)recs.push(m);else if((m.t||0)>(recs[xi].t||0))recs[xi]=m;});
    S.att.recs=recs;}catch(e){}})();
+  /* felia mea privată din canal (raportul meu + datele mele de contact), criptată cu PIN-ul meu:
+     o descifrez cu cheia păstrată pe acest dispozitiv de la autentificare. Dacă lipsește cheia
+     (nu m-am mai autentificat de la actualizare) sau descifrarea eșuează, nu se strică nimic —
+     rămâne doar „✓ raport trimis" din steagurile de lună. */
+  try{var _pk=_privKeyGet();
+   if(_pk&&cuN&&_pk.n===cuN&&R.priv&&R.priv[cuN]){
+    var _k=await _impKey(_pk.k),_pv=_k?await _decJSON(_k,R.priv[cuN]):null;
+    if(_pv){
+     if(_pv.rep&&myB){S.reports=S.reports||{};var _mine=S.reports[myB]||{};
+      Object.keys(_pv.rep).forEach(function(k){var inc=_pv.rep[k];if(!inc)return;
+       if(repIsTomb(myB,k,_repSig(inc)))return;/* lună ștearsă de mine — nu revine */
+       var loc=_mine[k];if(!loc||(loc.src!=="me"&&(inc.t||0)>=(loc.t||0)))_mine[k]=inc;});
+      S.reports[myB]=_mine;}
+     if(_pv.c&&myB){var _nb=(S.bros||[]).find(function(b){return b.id===myB;});
+      if(_nb&&(_pv.c.cT||0)>(_nb.cT||0)){PRIV_CF.forEach(function(f){_nb[f]=_pv.c[f]||"";});_nb.cT=_pv.c.cT||0;}}}}
+  }catch(e){}
   /* sesiunea primește pe loc rolul/funcțiile actualizate de admin (ex. devii administrator sau primești drept de prezență) */
   try{_sessRefresh();_sessSave();}catch(e){}
   localStorage.setItem(KEY,JSON.stringify(S));_applying=false;
@@ -2747,6 +2876,7 @@ function _noteHttp(r){try{
   if(rem==="0"&&rst)_rlUntil=rst*1000+2000;else if(ra)_rlUntil=Date.now()+ra*1000;else _rlUntil=Date.now()+300000;}
 }catch(e){}try{updateSyncInfo();}catch(e){}}
 function startSyncTimer(){if(_syncStarted)return;_syncStarted=true;_syncEvents();_syncT=setInterval(function(){if(document.hidden||_busy||_offline())return;
+ try{caietImgFetch();}catch(e){}
  if(Date.now()<_rlUntil)return;/* limită API — pauză */
  if(autoOn()){if(_ghAuthBad){updateSyncInfo();return;}ghSync(true);roFlush();try{boxTake();}catch(e){}}
  else if(typeof roOn==="function"&&roOn()){if(Date.now()-_roLast>45000)roSync(true);try{boxFlush();}catch(e){}}},12000);}
@@ -2814,7 +2944,7 @@ async function ghSync(silent){const g=S.settings.gh;if(!g.token||!g.gist){if(!si
    if(!_lod||(!_lod.rap&&!_lod.prez)){S.settings.od=JSON.parse(JSON.stringify(_rod));if(!doApply){localStorage.setItem(KEY,JSON.stringify(S));if(tab==="arh"&&!editBusy())try{arhRerender();}catch(_e){}}}}}catch(e){}
   if(doApply){bkpPush();var _g=S.settings.gh;_applying=true;S=Object.assign(blank(),R);
    /* păstrăm tokenul + gistul principal ale acestui dispozitiv, dar ADOPTĂM canalele partajate gist2 (vestitori) și gist3 (documente) din cloud — altfel un dispozitiv care doar primește nu află niciodată gist3 și nu poate deschide documentele */
-   var _rg=(R.settings&&R.settings.gh)||{};if(S.settings)S.settings.gh={token:_g.token||"",gist:_g.gist||"",gist2:_g.gist2||_rg.gist2||"",gist3:_g.gist3||_rg.gist3||""};
+   var _rg=(R.settings&&R.settings.gh)||{};if(S.settings)S.settings.gh={token:_g.token||"",gist:_g.gist||"",gist2:_g.gist2||_rg.gist2||"",gist3:_g.gist3||_rg.gist3||"",gist4:_g.gist4||_rg.gist4||""};
    try{_fixCursanti(S.bros);}catch(_e){}
    try{_sessRefresh();_sessSave();}catch(_e){}/* rolul/funcțiile schimbate de alt admin se aplică pe loc și aici */
    try{_baseSet(R);}catch(_e){}/* de acum baza comună cu cloudul e chiar ce tocmai am preluat */
@@ -3032,6 +3162,84 @@ async function upgGo(){var tok=($("#upgTok")?$("#upgTok").value:"").trim();if(!t
   logAct("Sincronizare completă activată pe un dispozitiv nou");toast("Gata — dispozitivul are acum sincronizare completă (token + Forms)");
  }catch(e){toast("Eroare: "+_errMsg(e));}}
 function _hash(s){var h=5381;for(var i=0;i<s.length;i++){h=((h<<5)+h+s.charCodeAt(i))>>>0;}return "h"+h.toString(36);}
+/* ============================================================================
+   PIN-URI ȘI DATE PERSONALE ÎN CANALUL VESTITORILOR — v2.64
+   ----------------------------------------------------------------------------
+   Canalul „doar-citire" (gistul vestitorilor) se citește FĂRĂ token, de oricine are linkul
+   aplicației. Până acum el conținea, în clar: rapoartele TUTUROR (ore, studii, plasări, notițe),
+   datele de contact ale celor cu cont, și hash-urile PIN-urilor tuturor — inclusiv ale
+   administratorilor. Hash-ul vechi (_hash, djb2 pe 32 de biți) se sparge încercând cele 10.000 de
+   PIN-uri în câteva sutimi de secundă, deci orice vestitor putea intra ca administrator.
+
+   Acum:
+   • PIN-urile se verifică prin PBKDF2-SHA256, cu sare per utilizator și 310.000 de iterații
+     (recomandarea OWASP). Hash-ul vechi rămâne valabil ca rezervă LOCALĂ, dar nu mai pleacă în
+     canalul vestitorilor odată ce există varianta nouă.
+   • Rapoartele și datele de contact nu mai pleacă în clar: fiecare primește în canal doar felia
+     LUI, criptată AES-GCM cu o cheie derivată din PIN-ul lui. Ceilalți văd doar „✓ raport trimis"
+     (steagurile de lună, S.repFlags), fără cifre.
+
+   Rezerve, ca nimeni să nu rămână blocat:
+   • verificarea acceptă și hash-ul vechi dacă e prezent în datele dispozitivului;
+   • la sincronizare, un dispozitiv păstrează hash-urile pe care le avea deja (roSync), deci nu
+     pierde posibilitatea de autentificare;
+   • fără WebCrypto (ex. fișierul aplicației deschis de pe disc, unde browserul nu dă crypto.subtle)
+     se revine automat la comportamentul de dinainte, iar felia privată lipsește pur și simplu. */
+var PBK_ITER=310000;
+function _cw(){try{return (window.crypto&&window.crypto.subtle&&window.crypto.subtle.deriveBits&&window.crypto.getRandomValues)?window.crypto:null;}catch(e){return null;}}
+function _b2h(b){var u=new Uint8Array(b),s="",i;for(i=0;i<u.length;i++)s+=("0"+u[i].toString(16)).slice(-2);return s;}
+function _h2b(h){h=String(h||"");var n=h.length>>1,u=new Uint8Array(n),i;for(i=0;i<n;i++)u[i]=parseInt(h.substr(i*2,2),16);return u;}
+function _rndHex(n){var c=_cw();if(!c)return "";var u=new Uint8Array(n);c.getRandomValues(u);return _b2h(u);}
+function _b64e(u8){var s="",i;for(i=0;i<u8.length;i++)s+=String.fromCharCode(u8[i]);return btoa(s);}
+function _b64d(s){var b=atob(String(s||"")),u=new Uint8Array(b.length),i;for(i=0;i<b.length;i++)u[i]=b.charCodeAt(i);return u;}
+async function _pbk(pin,saltHex,tag){var c=_cw();if(!c||!saltHex)return "";
+ var km=await c.subtle.importKey("raw",new TextEncoder().encode(tag+"|"+String(pin==null?"":pin)),{name:"PBKDF2"},false,["deriveBits"]);
+ return _b2h(await c.subtle.deriveBits({name:"PBKDF2",salt:_h2b(saltHex),iterations:PBK_ITER,hash:"SHA-256"},km,256));}
+function pinHash2(pin,saltHex){return _pbk(pin,saltHex,"alk-verify");}/* pentru verificare */
+function pinKeyRaw(pin,saltHex){return _pbk(pin,saltHex,"alk-key");}/* pentru criptare — sare/etichetă diferite */
+function _impKey(rawHex){var c=_cw();if(!c||!rawHex)return Promise.resolve(null);
+ return c.subtle.importKey("raw",_h2b(rawHex),{name:"AES-GCM"},false,["encrypt","decrypt"]).catch(function(){return null;});}
+async function _encJSON(key,obj){var c=_cw();if(!c||!key)return null;
+ try{var iv=new Uint8Array(12);c.getRandomValues(iv);
+  var ct=await c.subtle.encrypt({name:"AES-GCM",iv:iv},key,new TextEncoder().encode(JSON.stringify(obj)));
+  return {i:_b2h(iv),c:_b64e(new Uint8Array(ct))};}catch(e){return null;}}
+async function _decJSON(key,box){var c=_cw();if(!c||!key||!box||!box.i||!box.c)return null;
+ try{var pt=await c.subtle.decrypt({name:"AES-GCM",iv:_h2b(box.i)},key,_b64d(box.c));
+  return JSON.parse(new TextDecoder().decode(pt));}catch(e){return null;}}
+/* are utilizatorul PIN? (oricare dintre cele două forme) */
+function _uHasPin(u){return !!(u&&(u.p||(u.p2&&u.p2.h&&u.p2.s)));}
+/* verificarea PIN-ului: întâi PBKDF2, apoi hash-ul vechi ca rezervă */
+async function pinCheck(u,pw){if(!u)return true;
+ var has2=!!(u.p2&&u.p2.h&&u.p2.s),has1=!!u.p;
+ if(!has2&&!has1)return true;/* utilizator fără PIN */
+ if(has2&&_cw()){try{if((await pinHash2(pw,u.p2.s))===u.p2.h)return true;}catch(e){}}
+ if(has1)return _hash(pw)===u.p;
+ return false;}
+/* cheia feliei private a utilizatorului conectat, ținută pe dispozitiv (nu pleacă nicăieri) */
+function _privKeySave(n,rawHex){try{localStorage.setItem(KEY+"_pk",JSON.stringify({n:n,k:rawHex}));}catch(e){}}
+function _privKeyClear(){try{localStorage.removeItem(KEY+"_pk");}catch(e){}}
+function _privKeyGet(){try{var o=JSON.parse(localStorage.getItem(KEY+"_pk")||"null");return (o&&o.n&&o.k)?o:null;}catch(e){return null;}}
+async function _privKeyFrom(u,pw){if(!u||!_cw()||!(u.p2&&u.p2.s))return;
+ try{var raw=await pinKeyRaw(pw,u.p2.s);if(raw)_privKeySave(u.n,raw);}catch(e){}}
+/* pe dispozitivul adminului (singurul care are PIN-urile în clar) cheile se calculează o dată și
+   se rețin — altfel fiecare trimitere spre canalul vestitorilor ar însemna 310.000 de iterații × N */
+var _uKeyC=null;
+function _uKeys(){if(_uKeyC)return _uKeyC;try{_uKeyC=JSON.parse(localStorage.getItem(KEY+"_ukeys")||"{}");}catch(e){_uKeyC={};}return _uKeyC;}
+async function _uKeyFor(u){if(!_cw()||!u||!u.pin||!(u.p2&&u.p2.s))return null;
+ var m=_uKeys(),id=u.n+"|"+u.p2.s+"|"+_hash(u.pin);
+ if(!m[id]){var raw=await pinKeyRaw(u.pin,u.p2.s);if(!raw)return null;m[id]=raw;
+  try{localStorage.setItem(KEY+"_ukeys",JSON.stringify(m));}catch(e){}}
+ return _impKey(m[id]);}
+/* completează forma nouă (PBKDF2) pentru toți utilizatorii cu PIN — rulează doar pe dispozitivul
+   adminului, o singură dată, în fundal (crypto.subtle nu blochează interfața) */
+async function usersUpgradePins(){try{
+ if(!_cw()||typeof _isAdmin!=="function"||!_isAdmin())return;
+ var us=(S.settings&&S.settings.users)||[],ch=0;
+ for(var i=0;i<us.length;i++){var u=us[i];
+  if(!u.pin||(u.p2&&u.p2.h&&u.p2.s))continue;
+  var s=_rndHex(16);if(!s)return;
+  u.p2={s:s,h:await pinHash2(u.pin,s),n:PBK_ITER};ch++;}
+ if(ch){save();try{roFlush(true);}catch(e){}}}catch(e){}}
 /* Parola de instalare (pagina goală de pe GitHub). O schimbi înlocuind valoarea APP_GATE
    cu codul generat din Setări → Congregație → „Generează cod pentru altă parolă". */
 var APP_GATE="h1dptfx0";/* = BucurestiiNoi2026 */
@@ -3043,6 +3251,8 @@ function _userGet(){try{return localStorage.getItem(KEY+"_user")||"";}catch(e){r
 function _userSet(n){try{if(n)localStorage.setItem(KEY+"_user",n);}catch(e){}}
 function startApp(){_dirty=(S._rev||0)>pushedRev();applyTheme();try{bkpMigrate();}catch(e){}try{archSweep();}catch(e){}try{usersLinkBros();_sessRefresh();_sessSave();}catch(e){}go("weeks");updateSyncInfo();autoPullLoad();startSyncTimer();try{if(_upgNeeded())setTimeout(function(){if(!sheetOpen())upgSheet();},1500);}catch(e){}try{setTimeout(odAuto,4000);setInterval(odAuto,60000);}catch(e){}
  try{setTimeout(notifCheck,3000);setInterval(notifCheck,120000);}catch(e){}
+ try{setTimeout(usersUpgradePins,2500);}catch(e){}
+ try{caietImgHydrate().then(function(){setTimeout(function(){caietImgFetch(true);},3500);});}catch(e){}
  try{setTimeout(pushInit,2500);}catch(e){}
  try{setTimeout(function(){if(typeof autoOn==="function"&&autoOn())boxTake(true);else boxFlush(true);},6000);}catch(e){}}
 function bootGate(){applyTheme();_sessHydrate();_offGuard();if(_curUser()){_gateClose();startApp();return;}var us=_users();var lg=_logo();
@@ -3206,12 +3416,16 @@ async function linkShare(){if(!_isAdmin())return;toast("Pregătesc linkul…");
  try{await navigator.clipboard.writeText(link);toast("Link copiat ✓ — oricine îl deschide primește aplicația cu datele ei",6000);}
  catch(e){prompt("Copiază linkul:",link);}}
 var _ulSel=null;
-function ulSelPick(v){_ulSel=(v===""||v==null)?null:(_users()[+v]||null);var p=document.getElementById("ulPass"),b=document.getElementById("ulBtn");if(!_ulSel){if(p)p.style.display="none";if(b)b.style.display="none";return;}if(_ulSel.p){if(p){p.style.display="block";p.value="";p.focus();}}else if(p){p.style.display="none";p.value="";}if(b)b.style.display="block";}
-function ulPick(btn,i){_ulSel=_users()[i]||null;var g=document.getElementById("gate");if(g){[].forEach.call(g.querySelectorAll(".ulrow"),function(b){b.classList.remove("on");});}btn.classList.add("on");var p=document.getElementById("ulPass"),b=document.getElementById("ulBtn");if(_ulSel&&_ulSel.p){if(p){p.style.display="block";p.value="";p.focus();}if(b)b.style.display="block";}else{if(p)p.style.display="none";if(b)b.style.display="block";}}
-function ulGo(){if(!_ulSel){toast("Alege un utilizator");return;}var p=document.getElementById("ulPass");var pw=p?p.value:"";if(_ulSel.p&&_hash(pw)!==_ulSel.p){toast("Parolă greșită");if(p){p.value="";p.focus();}return;}sessionStorage.setItem("alkUser",JSON.stringify({n:_ulSel.n,r:_ulSel.r,mods:_ulSel.mods||null,bro:_ulSel.bro||null,attV:_ulSel.attV||0,attE:_ulSel.attE||0,curE:_ulSel.curE||0,sarE:_ulSel.sarE||0}));_userSet(_ulSel.n);sessionStorage.setItem("alkUnlocked","1");
+function ulSelPick(v){_ulSel=(v===""||v==null)?null:(_users()[+v]||null);var p=document.getElementById("ulPass"),b=document.getElementById("ulBtn");if(!_ulSel){if(p)p.style.display="none";if(b)b.style.display="none";return;}if(_uHasPin(_ulSel)){if(p){p.style.display="block";p.value="";p.focus();}}else if(p){p.style.display="none";p.value="";}if(b)b.style.display="block";}
+function ulPick(btn,i){_ulSel=_users()[i]||null;var g=document.getElementById("gate");if(g){[].forEach.call(g.querySelectorAll(".ulrow"),function(b){b.classList.remove("on");});}btn.classList.add("on");var p=document.getElementById("ulPass"),b=document.getElementById("ulBtn");if(_ulSel&&_uHasPin(_ulSel)){if(p){p.style.display="block";p.value="";p.focus();}if(b)b.style.display="block";}else{if(p)p.style.display="none";if(b)b.style.display="block";}}
+async function ulGo(){if(!_ulSel){toast("Alege un utilizator");return;}var p=document.getElementById("ulPass");var pw=p?p.value:"";
+ if(_uHasPin(_ulSel)&&!(await pinCheck(_ulSel,pw))){toast("Parolă greșită");if(p){p.value="";p.focus();}return;}
+ /* PIN-ul corect deschide și felia privată din canalul vestitorilor (raportul și contactele mele) */
+ try{await _privKeyFrom(_ulSel,pw);}catch(e){}
+ sessionStorage.setItem("alkUser",JSON.stringify({n:_ulSel.n,r:_ulSel.r,mods:_ulSel.mods||null,bro:_ulSel.bro||null,attV:_ulSel.attV||0,attE:_ulSel.attE||0,curE:_ulSel.curE||0,sarE:_ulSel.sarE||0}));_userSet(_ulSel.n);sessionStorage.setItem("alkUnlocked","1");
  try{if(typeof Notification!=="undefined"&&Notification.permission==="default")Notification.requestPermission().then(function(p){if(p==="granted"){try{fcmRegister(true);}catch(e){}}});}catch(e){}
  _gateClose();startApp();}
-function userLogout(){try{sessionStorage.removeItem("alkUser");sessionStorage.removeItem("alkUnlocked");localStorage.removeItem(KEY+"_sessUser");localStorage.removeItem(KEY+"_unlocked");}catch(e){}try{pushUnregister();}catch(e){}location.reload();}
+function userLogout(){try{sessionStorage.removeItem("alkUser");sessionStorage.removeItem("alkUnlocked");localStorage.removeItem(KEY+"_sessUser");localStorage.removeItem(KEY+"_unlocked");}catch(e){}try{_privKeyClear();}catch(e){}try{pushUnregister();}catch(e){}location.reload();}
 /* leagă automat conturile de vestitori (după nume) — pentru „Ale mele" */
 function usersLinkBros(){if(!_isAdmin())return;var us=_users();if(!us.length)return;var ch=0;
  us.forEach(function(u){if(u.bro&&(S.bros||[]).some(function(b){return b.id===u.bro;}))return;
@@ -3273,7 +3487,7 @@ function ueRole(btn){var box=$("#sheetBody");if(box){[].forEach.call(box.querySe
  if(av){av.disabled=ad;if(ad)av.checked=true;}if(ae){ae.disabled=ad;if(ad)ae.checked=true;}if(an)an.style.display=ad?"":"none";
  var ce=document.getElementById("ueCurE"),se=document.getElementById("ueSarE"),sn=document.getElementById("ueSecNote");
  if(ce){ce.disabled=ad;if(ad)ce.checked=true;}if(se){se.disabled=ad;if(ad)se.checked=true;}if(sn)sn.style.display=ad?"":"none";}
-function userSave(i){if(!_isAdmin()){toast("Doar administratorul");return;}var nm=($("#ueName")?$("#ueName").value:"").trim();if(!nm){toast("Pune un nume");return;}var pw=($("#uePass")?$("#uePass").value:"");var sel=$("#sheetBody")?$("#sheetBody").querySelector(".urole.on"):null;var r=sel?sel.getAttribute("data-r"):"editor";
+async function userSave(i){if(!_isAdmin()){toast("Doar administratorul");return;}var nm=($("#ueName")?$("#ueName").value:"").trim();if(!nm){toast("Pune un nume");return;}var pw=($("#uePass")?$("#uePass").value:"");var sel=$("#sheetBody")?$("#sheetBody").querySelector(".urole.on"):null;var r=sel?sel.getAttribute("data-r"):"editor";
  var mods=null,bro="";
  if(r==="editor"||r==="viewer"){mods=[];if($("#ueMvcp")&&$("#ueMvcp").checked)mods.push("vcp");if($("#ueMarh")&&$("#ueMarh").checked)mods.push("arh");if(!mods.length){toast("Alege cel puțin un modul (VCP sau Arhivă)");return;}}
  bro=($("#ueBroSel")?$("#ueBroSel").value:"");
@@ -3282,12 +3496,17 @@ function userSave(i){if(!_isAdmin()){toast("Doar administratorul");return;}var n
  var curE=($("#ueCurE")&&$("#ueCurE").checked)?1:0;var sarE=($("#ueSarE")&&$("#ueSarE").checked)?1:0;
  if(r==="admin"){attV=1;attE=1;curE=1;sarE=1;}/* adminii au prezența și secțiunile implicit */
  if(!S.settings.users)S.settings.users=[];var us=S.settings.users;for(var j=0;j<us.length;j++){if(j!==i&&us[j].n===nm){toast("Există deja un utilizator cu acest nume");return;}}
- if(i>=0){us[i].n=nm;us[i].r=r;if(pw!==(us[i].pin||"")){us[i].p=pw?_hash(pw):"";us[i].pin=pw;us[i].pt=Date.now();}us[i].mods=(r==="editor"||r==="viewer")?mods:null;us[i].bro=bro||null;us[i].attV=attV;us[i].attE=attE;us[i].curE=curE;us[i].sarE=sarE;}else{us.push({n:nm,r:r,p:pw?_hash(pw):"",pin:pw||"",pt:Date.now(),mods:(r==="editor"||r==="viewer")?mods:null,bro:bro||null,attV:attV,attE:attE,curE:curE,sarE:sarE});}
+ var _chgPin=(i<0)||(pw!==(us[i].pin||""));
+ if(i>=0){us[i].n=nm;us[i].r=r;if(_chgPin){us[i].p=pw?_hash(pw):"";us[i].pin=pw;us[i].pt=Date.now();}us[i].mods=(r==="editor"||r==="viewer")?mods:null;us[i].bro=bro||null;us[i].attV=attV;us[i].attE=attE;us[i].curE=curE;us[i].sarE=sarE;}else{us.push({n:nm,r:r,p:pw?_hash(pw):"",pin:pw||"",pt:Date.now(),mods:(r==="editor"||r==="viewer")?mods:null,bro:bro||null,attV:attV,attE:attE,curE:curE,sarE:sarE});}
+ /* PIN nou → și forma PBKDF2, singura care pleacă în canalul vestitorilor */
+ if(_chgPin){var _u=us[i>=0?i:us.length-1];if(pw&&_cw()){var _s=_rndHex(16);try{_u.p2={s:_s,h:await pinHash2(pw,_s),n:PBK_ITER};}catch(e){delete _u.p2;}}else delete _u.p2;}
  if(!us.some(function(u){return u.r==="admin";})){toast("Trebuie cel puțin un Administrator");if(i<0)us.pop();else us[i].r="admin";return;}if(!_curUser()&&r==="admin"){sessionStorage.setItem("alkUser",JSON.stringify({n:nm,r:"admin"}));_userSet(nm);sessionStorage.setItem("alkUnlocked","1");}save();_sessRefresh();usersSheet();toast("Salvat");}
 function userDel(i){if(!_isAdmin()){toast("Doar administratorul");return;}var us=_users();var u=us[i];if(!u)return;if(!confirm("Ștergi utilizatorul „"+u.n+"\u201D?"))return;var rest=us.slice(0,i).concat(us.slice(i+1));if(rest.length&&!rest.some(function(x){return x.r==="admin";})){toast("Nu poți șterge ultimul Administrator");return;}S.settings.users=rest;var cu=_curUser();if(cu&&cu.n===u.n){save();userLogout();return;}save();usersSheet();toast("Șters");}
 
 /* ===== CONTURI AUTOMATE (PIN prestabilit; bătrânii = administratori) ===== */
-function _genPin(used){var p;do{p=String(1000+Math.floor(Math.random()*9000));}while(used[p]);used[p]=1;return p;}
+/* PIN generat pe 6 cifre: spațiul de căutare crește de 100 de ori. Contează, fiindcă hash-ul
+   PBKDF2 al PIN-ului ajunge (prin canalul vestitorilor) pe dispozitivele tuturor. */
+function _genPin(used){var p;do{p=String(100000+Math.floor(Math.random()*900000));}while(used[p]);used[p]=1;return p;}
 function _usedPins(){var used={};_users().forEach(function(u){if(u.pin)used[u.pin]=1;});return used;}
 function _isElder(b){return (b&&b.rol)==="Bătrân";}
 function usersGenerate(){if(!_isAdmin()){toast("Doar administratorul");return;}if(!S.settings.users)S.settings.users=[];var us=S.settings.users;
@@ -3334,13 +3553,15 @@ function clearHistory(){if(!confirm("Golești istoricul de activitate?"))return;
 /* epub */
 async function importEpub(inp){const f=inp.files[0];if(!f)return;toast("Se citește caietul…");
  try{if(!window.JSZip)await loadScript("https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js");
-  const zip=await JSZip.loadAsync(f);S.info=S.info||{};const _ci=caietImgGet();let n=0,addedW=0,ni=0;
+  const zip=await JSZip.loadAsync(f);S.info=S.info||{};const _ci=caietImgGet();let n=0,addedW=0,ni=0;const _ciNew=[];
   for(const name of Object.keys(zip.files).filter(x=>/\d+\.xhtml$/.test(x)&&!/-extracted/.test(x))){
    const raw=await zip.files[name].async("string");if(!raw.includes("dc-icon--gem"))continue;
-   const dir=name.replace(/[^/]*$/,"");const got=parseWeekInfo(raw);for(const k in got){const srcs=got[k].imgsrc||[];delete got[k].imgsrc;S.info[k]=got[k];n++;if(srcs.length){const imgs=[];for(const s of srcs){const fe=zip.files[s]||zip.files[dir+s.replace(/^\.?\//,"")]||zip.files["OEBPS/"+s.replace(/^\.?\//,"")];if(fe){try{const b64=await fe.async("base64");const ext=(s.split(".").pop()||"jpg").toLowerCase();const mime=ext==="png"?"image/png":(ext==="gif"?"image/gif":"image/jpeg");imgs.push(await shrinkImg(b64,mime,820));}catch(e){}}}if(imgs.length){_ci[k]=imgs;ni+=imgs.length;}}}
+   const dir=name.replace(/[^/]*$/,"");const got=parseWeekInfo(raw);for(const k in got){const srcs=got[k].imgsrc||[];delete got[k].imgsrc;S.info[k]=got[k];n++;if(srcs.length){const imgs=[];for(const s of srcs){const fe=zip.files[s]||zip.files[dir+s.replace(/^\.?\//,"")]||zip.files["OEBPS/"+s.replace(/^\.?\//,"")];if(fe){try{const b64=await fe.async("base64");const ext=(s.split(".").pop()||"jpg").toLowerCase();const mime=ext==="png"?"image/png":(ext==="gif"?"image/gif":"image/jpeg");imgs.push(await shrinkImg(b64,mime,820));}catch(e){}}}if(imgs.length){_ci[k]=imgs;_ciNew.push(k);ni+=imgs.length;}}}
    const wk=parseWeek(raw);if(wk&&wk.parts&&wk.parts.length){const nb=normBible(wk.bible);if(nb&&!S.weeks.some(w=>normBible(w.bible)===nb)){S.weeks.push(wk);addedW++;}}}
   if(!n&&!addedW){toast("Niciun program găsit în fișier");return;}
-  caietImgSave(_ci);save();toast((ni?ni+" imagini · ":"")+n+" teme cu detalii"+(addedW?" · "+addedW+" săptămâni noi":""));if(tab==="weeks")go("weeks");}
+  caietImgSave(_ci);save();toast((ni?ni+" imagini · ":"")+n+" teme cu detalii"+(addedW?" · "+addedW+" săptămâni noi":""));if(tab==="weeks")go("weeks");
+  /* pozele pleacă spre ceilalți: gistul de poze + indicele din starea aplicației */
+  if(_ciNew.length)caietImgPush(_ciNew).then(function(k){if(k)toast("Pozele din caiet s-au trimis tuturor ✓ ("+k+" teme)",5000);});}
  catch(e){toast("Eroare la import");}}
 function pwiDec(s){return (s||"").replace(/&nbsp;/g," ").replace(/&amp;/g,"&").replace(/&lt;/g,"<").replace(/&gt;/g,">").replace(/&quot;/g,String.fromCharCode(34)).replace(/&#39;|&apos;/g,String.fromCharCode(39)).replace(/&#x([0-9a-fA-F]+);/g,function(m,n){return String.fromCodePoint(parseInt(n,16));}).replace(/&#(\d+);/g,function(m,n){return String.fromCodePoint(+n);});}
 function pwiStrip(x){return pwiDec((x||"").replace(/<[^>]+>/g," ")).replace(/\s+/g," ").trim();}
@@ -4396,12 +4617,13 @@ function mePinSheet(){var cu=_curUser();if(!cu){toast("Nu ești logat");return;}
  +'<label class="fl" style="margin-top:8px">Repetă PIN-ul nou</label><input id="mp2" class="fld" type="password" inputmode="numeric" autocomplete="off">'
  +'<div class="muted" style="margin-top:8px;font-size:11.5px">Cu el intri în aplicație pe dispozitivele tale. Administratorul îl poate reseta oricând dacă îl uiți.</div>'
  +'<div class="rowflex" style="gap:9px;margin-top:16px"><div class="spacer"></div><button class="btn ghost sm" style="width:auto" onclick="closeSheet()">Anulează</button><button class="btn pri sm" style="width:auto" onclick="mePinSave()">Salvează</button></div>');}
-function mePinSave(){var cu=_curUser();if(!cu)return;var u=_users().find(function(x){return x.n===cu.n;});if(!u)return;
- if(u.p&&_hash((($("#mp0")&&$("#mp0").value)||"").trim())!==u.p){toast("PIN-ul actual e greșit");return;}
+async function mePinSave(){var cu=_curUser();if(!cu)return;var u=_users().find(function(x){return x.n===cu.n;});if(!u)return;
+ if(_uHasPin(u)&&!(await pinCheck(u,(($("#mp0")&&$("#mp0").value)||"").trim()))){toast("PIN-ul actual e greșit");return;}
  var p1=(($("#mp1")&&$("#mp1").value)||"").trim(),p2=(($("#mp2")&&$("#mp2").value)||"").trim();
  if(p1.length<4){toast("PIN-ul nou trebuie să aibă cel puțin 4 caractere");return;}
  if(p1!==p2){toast("PIN-urile nu coincid");return;}
  u.p=_hash(p1);u.pin=p1;u.pt=Date.now();
+ if(_cw()){var _s=_rndHex(16);try{u.p2={s:_s,h:await pinHash2(p1,_s),n:PBK_ITER};await _privKeyFrom(u,p1);}catch(e){delete u.p2;}}else delete u.p2;
  logAct("PIN schimbat: "+u.n);save();closeSheet();toast("PIN schimbat ✓");}
 
 /* ---------- ALE MELE (raportul + sarcinile utilizatorului legat de un vestitor) ---------- */
