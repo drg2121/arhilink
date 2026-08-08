@@ -527,7 +527,7 @@ Object.assign(IC,{
  box:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h18v13H3z"/><path d="M3 7l2-4h14l2 4"/><path d="M10 11h4"/></svg>',
  mark:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15.5 4.5l4 4-9.5 9.5H6v-4z"/><path d="M12.5 7.5l4 4M5 21h14"/></svg>'
 });
-const VERSION="2.80.0";
+const VERSION="2.80.1";
 const SEED_WEEKS=[];
 const SEED_WEEKS_PRE=[];
 const SEED_WEEKS_POST=[];
@@ -2643,9 +2643,9 @@ function pushDiag(){
 function _setLimNotif(){var h='<div class="group gp"><h2>Notificări</h2>';
  if(!pushReady())return h+'<div class="muted">Notificările push nu sunt configurate încă de administrator. Reamintirile locale apar la deschiderea aplicației.</div></div>';
  var em=myPushEmail();
- if(notifPerm()==="granted"){h+='<div class="muted">Notificările push sunt <b>active</b> pe acest dispozitiv'+(em?' pentru <b>'+esc(em)+'</b>':'')+' — teme noi, reamintirea din ajun și raportul vin direct pe telefon, chiar și cu aplicația închisă.</div><button class="btn ghost sm" style="width:100%;margin-top:10px" onclick="pushTestBtn()">Trimite un test</button>';}
+ if(notifPerm()==="granted"){h+='<div class="muted">Notificările push sunt <b>active</b> pe acest dispozitiv'+(em?' pentru <b>'+esc(em)+'</b>':'')+' — teme noi, reamintirea din ajun, curățenia grupei și raportul vin direct pe telefon, chiar și cu aplicația închisă.</div><button class="btn ghost sm" style="width:100%;margin-top:10px" onclick="pushTestBtn()">Trimite un test</button>';}
  else if(_pushNeedsInstall()){h+='<div class="muted">Pe iPhone, notificările merg din aplicația <b>instalată pe ecranul principal</b> — durează 30 de secunde.</div><button class="btn pri sm" style="width:100%;margin-top:10px" onclick="pushIosHelp()">Cum le activez pe iPhone</button>';}
- else{h+='<div class="muted">Primești teme noi, reamintiri în ajunul întrunirii și reamintirea raportului direct pe telefon — chiar și cu aplicația închisă.</div>';
+ else{h+='<div class="muted">Primești teme noi, reamintiri în ajunul întrunirii, anunțul când e rândul grupei tale la curățenie și reamintirea raportului direct pe telefon — chiar și cu aplicația închisă.</div>';
   h+=(notifPerm()==="denied")?'<div class="gatetip" style="margin-top:10px">Ai blocat notificările din browser — reactivează-le din setările paginii (lacătul de lângă adresă), apoi revino aici.</div>':'<button class="btn pri sm" style="width:100%;margin-top:10px" onclick="notifAsk()">Activează notificările pe acest dispozitiv</button>';}
  if(!em)h+='<div class="gatetip" style="margin-top:10px;cursor:pointer" onclick="meContact()">Nu ai e-mail în fișă — <b>apasă aici</b> și completează-l în „Datele mele de contact" (e-mailul e cheia notificărilor).</div>';
  h+='<button class="btn ghost sm" style="width:100%;margin-top:8px" onclick="pushDiag()">De ce nu primesc notificări?</button>';
