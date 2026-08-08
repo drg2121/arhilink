@@ -527,7 +527,7 @@ Object.assign(IC,{
  box:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h18v13H3z"/><path d="M3 7l2-4h14l2 4"/><path d="M10 11h4"/></svg>',
  mark:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15.5 4.5l4 4-9.5 9.5H6v-4z"/><path d="M12.5 7.5l4 4M5 21h14"/></svg>'
 });
-const VERSION="2.80.1";
+const VERSION="2.80.2";
 const SEED_WEEKS=[];
 const SEED_WEEKS_PRE=[];
 const SEED_WEEKS_POST=[];
@@ -2578,7 +2578,7 @@ function pushCleanMaintain(){try{
   if(at<now+3e5||at>now+45*864e5)return;/* doar săptămânile care urmează, până la ~6 săptămâni */
   var to=_cleanPushTo(gid);if(!to.length)return;
   items.push({key:"alk_cln_"+wi,at:at,to:to,title:"Curățenia sălii — grupa ta",
-   body:"Săptămâna aceasta ("+tc(w.date)+") e rândul "+cleanGrpLbl(gid).replace(/^Grupa /,"grupei ")+". Se face pe toată durata săptămânii."});
+   body:"Săptămâna aceasta ("+tc(w.date)+") curățenia o face "+cleanGrpLbl(gid)+". Se face pe toată durata săptămânii."});
   sig.push(wi+":"+to.slice().sort().join(","));});
  if(!items.length&&_nflag("clnp")==null)return;/* nimic de programat și nimic programat înainte */
  var s=sig.join("|");
@@ -6217,7 +6217,7 @@ function dutySetVal(wi,k,v){var D=dutyD(),key=String(wi);var o=D.a[key]||(D.a[ke
 function dutyCommit(msg){dutyD();_secBegin("sarc");_secTouch(msg);}
 /* numărul grupei de serviciu, cum apare pe foaie („Grupă (curățenie) 2") */
 function dutyGrpNum(gid){var i=grpsAll().findIndex(function(g){return g.id===gid;});return i<0?"":String(i+1);}
-function dutyGrpTxt(o){if(!o)return "";if(o.grp){var n=dutyGrpNum(o.grp);var nm=grpName(o.grp);return n?(n+(nm?(" — "+nm):"")):nm;}return o.grpT||"";}
+function dutyGrpTxt(o){if(!o)return "";if(o.grp)return grpLblNum(o.grp)||grpName(o.grp);return o.grpT||"";}
 function dutyGrpShort(o){if(!o)return "";if(o.grp){var n=dutyGrpNum(o.grp);if(n)return n;return grpName(o.grp);}return o.grpT||"";}
 function dutyFilled(wi){var o=dutyOf(wi);return dutyPosts().filter(function(p){return o[p.id];}).length;}
 /* cine poate fi pus la un post: DOAR cei bifați în fișă la categoria respectivă.
@@ -6282,8 +6282,13 @@ function myCleanWeeks(broId){var out=[],gid=myCleanGrp(broId);if(!gid)return out
  Object.keys(D.a).forEach(function(k){var wi=+k;var w=S.weeks[wi];if(!w||evNoMeet(w))return;
   if(_cleanIsMine(D.a[k],gid))out.push({wi:wi,date:w.date,event:w.event||"",st:cleanWkState(wi).st});});
  return out.sort(function(a,b){return a.wi-b.wi;});}
-/* eticheta grupei, așa cum apare pe foaie („2 — Grupa Nord") */
-function cleanGrpLbl(gid){var n=dutyGrpNum(gid),nm=grpName(gid)||"";return (n?("Grupa "+n+(nm?(" — "+nm):"")):nm)||"grupa ta";}
+/* eticheta grupei, cu numărul ei de pe foaie („Grupa 2 — Nord") */
+function grpLblNum(gid){var n=dutyGrpNum(gid),nm=String(grpName(gid)||"").trim();
+ if(!nm)return n?("Grupa "+n):"";
+ /* multe grupe se cheamă chiar „Grupa 3 — Sala Regatului": numărul e deja în nume, nu-l repetăm */
+ if(!n||new RegExp("^\\s*(grupa\\s*)?"+n+"(\\D|$)","i").test(nm))return nm;
+ return "Grupa "+n+" — "+nm;}
+function cleanGrpLbl(gid){return grpLblNum(gid)||"grupa ta";}
 
 var dutyW=-1;
 function arhDutyHtml(){ensureDutyCSS();
