@@ -527,7 +527,7 @@ Object.assign(IC,{
  box:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h18v13H3z"/><path d="M3 7l2-4h14l2 4"/><path d="M10 11h4"/></svg>',
  mark:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15.5 4.5l4 4-9.5 9.5H6v-4z"/><path d="M12.5 7.5l4 4M5 21h14"/></svg>'
 });
-const VERSION="2.79.1";
+const VERSION="2.80.0";
 const SEED_WEEKS=[];
 const SEED_WEEKS_PRE=[];
 const SEED_WEEKS_POST=[];
@@ -1830,6 +1830,21 @@ function evOf(w){if(!w||!w.event)return null;var L=evTypes(),t=null;
 function evNoMeet(w){var t=evOf(w);return !!(t&&t.k==="none");}
 function evVisit(w){var t=evOf(w);return !!(t&&t.k==="visit");}
 function evLabel(w){var t=evOf(w);return (t&&t.n)||(w&&w.event)||"";}
+/* ce se întâmplă în acea săptămână, pe scurt — pentru „Profilul meu" */
+function evShortWhat(w){var t=evOf(w);if(!t)return "";
+ if(t.k==="none")return "Nu se țin întruniri în această săptămână";
+ if(t.k==="visit")return "Program normal · Studiul Bibliei e înlocuit de cuvântarea de serviciu (30 min.)";
+ return "Program normal · săptămâna e doar însemnată";}
+/* evenimentele care urmează, cu data lor din caiet: doar cele puse pe o săptămână (vizită, congres,
+   Comemorare…) și doar cât timp săptămâna nu a trecut. Cele din trecut nu se mai arată nimănui. */
+function upcomingEvents(){var out=[],t=new Date();t.setHours(0,0,0,0);
+ (S.weeks||[]).forEach(function(w,i){if(!w||!w.event)return;
+  var d=_weekStartDate(i);if(!d)return;/* fără dată în caiet nu e „programat" */
+  var e=new Date(d.getFullYear(),d.getMonth(),d.getDate()+6,23,59,59,0);
+  if(e<t)return;
+  out.push({wi:i,d:d,date:w.date,name:evLabel(w),theme:(w.eventName||"").trim(),
+   talk:(w.coTalk||"").trim(),kind:(evOf(w)||{}).k||"",what:evShortWhat(w)});});
+ return out.sort(function(a,b){return a.d-b.d;});}
 /* ---- Setări → Evenimente: lista editabilă ---- */
 var _evShowOld=false;
 function evShowOld(id,v){_evShowOld=!!v;evEdit(id);}
@@ -2548,6 +2563,37 @@ function pushRepMaintain(){try{
  if(_nflag("rp1_"+ym)===sig)return;_nset("rp1_"+ym,sig);
  pushQueue({action:"schedule",groups:[{prefix:"alk_rep1_"+ym,items:[{key:"alk_rep1_"+ym,at:nm.getTime(),to:to,title:"Raportul de activitate",body:"Completează raportul pentru "+monthName(ym)+" — Arhivă → Ale mele."}]}]});
 }catch(e){}}
+/* --- curățenia grupei de serviciu: push în lunea în care începe săptămâna lor (programat pe server).
+       Curățenia nu are oră, ține toată săptămâna, deci anunțul pleacă luni dimineața la 9. --- */
+function _cleanPushTo(gid){var to=[];if(!gid)return to;
+ grpMembers(gid,true).forEach(function(b){var e=_pubEmail(b);if(e&&to.indexOf(e)<0)to.push(e);});
+ return to;}
+function pushCleanMaintain(){try{
+ if(!_canEditDuty()||!pushReady()||!pushOn("c"))return;
+ var D=dutyD(),now=Date.now(),items=[],sig=[];
+ Object.keys(D.a).forEach(function(k){var wi=+k,w=S.weeks[wi];if(!w||evNoMeet(w))return;
+  var gid=(D.a[k]||{}).grp;if(!gid)return;
+  var d=_weekStartDate(wi);if(!d)return;
+  var at=new Date(d.getFullYear(),d.getMonth(),d.getDate(),9,0,0,0).getTime();
+  if(at<now+3e5||at>now+45*864e5)return;/* doar săptămânile care urmează, până la ~6 săptămâni */
+  var to=_cleanPushTo(gid);if(!to.length)return;
+  items.push({key:"alk_cln_"+wi,at:at,to:to,title:"Curățenia sălii — grupa ta",
+   body:"Săptămâna aceasta ("+tc(w.date)+") e rândul "+cleanGrpLbl(gid).replace(/^Grupa /,"grupei ")+". Se face pe toată durata săptămânii."});
+  sig.push(wi+":"+to.slice().sort().join(","));});
+ if(!items.length&&_nflag("clnp")==null)return;/* nimic de programat și nimic programat înainte */
+ var s=sig.join("|");
+ if(_nflag("clnp")===s)return;_nset("clnp",s);
+ pushQueue({action:"schedule",groups:[{prefix:"alk_cln_",items:items}]});
+}catch(e){}}
+/* anunțul pe loc, când cineva tocmai a pus grupa pe o săptămână care încă n-a trecut */
+function _pushCleanNow(wi,gid){try{
+ if(!pushReady()||!pushOn("c")||!gid)return 0;
+ var w=S.weeks[wi];if(!w||evNoMeet(w))return 0;
+ if(cleanWkState(wi).st==="past")return 0;
+ var to=_cleanPushTo(gid);if(!to.length)return 0;
+ pushQueue({action:"send",to:to,title:"Curățenia sălii — grupa ta",
+  body:cleanGrpLbl(gid)+" are curățenia în săptămâna "+tc(w.date)+" — toată săptămâna."});
+ return to.length;}catch(e){return 0;}}
 /* --- iPhone: notificările merg doar din aplicația instalată pe ecranul principal --- */
 function _isIOS(){try{return /iPhone|iPad|iPod/i.test(navigator.userAgent)||(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1);}catch(e){return false;}}
 function _isInstalled(){try{return (window.navigator.standalone===true)||(window.matchMedia&&window.matchMedia("(display-mode: standalone)").matches);}catch(e){return false;}}
@@ -2667,6 +2713,25 @@ function notifCheck(){try{
     _notifShow("Mâine ai temă la întrunire",what,"alk-eve");
     toast("🔔 Mâine la întrunire ai: "+what,9000);}});
  }catch(e){}}
+ /* 2c) curățenie: grupa mea e programată — o dată la aflarea programării și încă o dată
+        când chiar începe săptămâna. Nu e o oră anume: curățenia ține toată săptămâna. */
+ if(my){try{
+  var upC=myCleanWeeks(my).filter(function(g){return g.st!=="past";});
+  var ckeys=upC.map(function(g){return String(g.wi);});
+  var rawC=_nflag("cln");
+  if(rawC==null){_nset("cln",JSON.stringify(ckeys));}
+  else{var seenC=[];try{seenC=JSON.parse(rawC)||[];}catch(_){}
+   var freshC=upC.filter(function(g){return seenC.indexOf(String(g.wi))<0;});
+   if(freshC.length){_nset("cln",JSON.stringify(ckeys));
+    var c0=freshC[0],cLbl=cleanGrpLbl(myCleanGrp(my));
+    _notifShow("Curățenia sălii — grupa ta",cLbl+" · săptămâna "+tc(c0.date)+(freshC.length>1?(" (+"+(freshC.length-1)+" săptămâni)"):"")+" — toată săptămâna.","alk-cln");
+    toast("🔔 "+cLbl+" are curățenia în săptămâna "+tc(c0.date),8000);}
+   else if(JSON.stringify(ckeys)!==rawC)_nset("cln",JSON.stringify(ckeys));}
+  upC.forEach(function(g){if(g.st!=="now"||_nflag("clnw_"+g.wi)==="1")return;_nset("clnw_"+g.wi,"1");
+   var lbl=cleanGrpLbl(myCleanGrp(my));
+   _notifShow("Săptămâna aceasta e rândul grupei tale",lbl+" · curățenia sălii, de luni până duminică ("+tc(g.date)+").","alk-clnw");
+   toast("🔔 Săptămâna aceasta ("+tc(g.date)+") "+lbl+" are curățenia",9000);});
+ }catch(e){}}
  /* 3) administratorii: de pe 10, dacă S-1 pe luna trecută nu e marcat trimis la filială */
  if(_isAdmin()&&day>=10){S.s1sent=S.s1sent||{};
   if(!S.s1sent[pk]&&_nflag("s1_"+pk)!=="1"){_nset("s1_"+pk,"1");
@@ -2682,6 +2747,7 @@ function notifCheck(){try{
   var _rt=0;try{_rt=+(localStorage.getItem(KEY+"_fcmRegT")||0);}catch(e){}
   if(!_rs||_pp[1]!==(myPushEmail()||"")||_pp[2]!==((PUSH().url||"").trim())||Date.now()-_rt>216e5)fcmRegister(false);}}catch(e){}
  try{pushRepMaintain();}catch(e){}
+ try{pushCleanMaintain();}catch(e){}
 }catch(e){}}
 async function notifRemindAll(){if(!_needEdit())return;var pk=_prevK();
  var n=(S.bros||[]).filter(function(b){return isActivePub(b,pk)&&!repOf(b.id,pk);}).length;
@@ -3456,6 +3522,7 @@ function renderSet(){if(!_isAdmin()){renderSetLimited();return;}$("#fab").style.
     · <b>teme noi</b> — la trimiterea temelor, fiecare vestitor primește push cu temele lui (pe lângă e-mail);<br>
     · <b>în ajun</b> — în seara dinaintea întrunirii, serverul reamintește automat temele de mâine;<br>
     · <b>raportul</b> — push automat pe 1 ale lunii celor fără raport + „Reamintește-le tuturor" instant;<br>
+    · <b>curățenia</b> — grupa de serviciu află pe loc când e programată și primește reamintirea luni, la începutul săptămânii;<br>
     · <b>administratorii</b> — află pe loc când sosesc rapoarte/prezențe trimise din aplicație.<br>
     Cheia fiecărui cont e <b>e-mailul din fișa vestitorului asociat</b>. E-mailurile cu teme rămân neschimbate.</div>
     <label class="fl">URL funcție push (Cloud Functions — se termină în /api)</label><input class="fld" value="${esc((st.push&&st.push.url)||"")}" placeholder="https://europe-west1-famlink-push.cloudfunctions.net/api" onchange="S.settings.push=Object.assign({},PUSH(),{url:this.value.trim()});save();try{fcmRegister(true)}catch(e){};renderSet()">
@@ -3468,6 +3535,7 @@ function renderSet(){if(!_isAdmin()){renderSetLimited();return;}$("#fab").style.
     <label class="famrow"><input type="checkbox" ${pushOn("t")?"checked":""} onchange="_pushTog('t',this.checked)"><span>Teme noi, la „E-mail teme" / „Doar push"</span></label>
     <label class="famrow"><input type="checkbox" ${pushOn("e")?"checked":""} onchange="_pushTog('e',this.checked)"><span>Reamintire în ajunul întrunirii, la ora <select class="fld" style="width:auto;display:inline-block;padding:4px 8px" onclick="event.stopPropagation()" onchange="S.settings.push=Object.assign({},PUSH(),{eveH:+this.value});save()">${[17,18,19,20].map(function(h){return '<option value="'+h+'"'+(((+((st.push||{}).eveH))||18)===h?' selected':'')+'>'+h+':00</option>';}).join("")}</select></span></label>
     <label class="famrow"><input type="checkbox" ${pushOn("r")?"checked":""} onchange="_pushTog('r',this.checked)"><span>Raport: automat pe 1 ale lunii + „Reamintește-le tuturor"</span></label>
+    <label class="famrow"><input type="checkbox" ${pushOn("c")?"checked":""} onchange="_pushTog('c',this.checked)"><span>Curățenie: anunț grupei când e programată + reamintire luni dimineața</span></label>
     <label class="famrow"><input type="checkbox" ${pushOn("a")?"checked":""} onchange="_pushTog('a',this.checked)"><span>Push la administratori când sosesc rapoarte/prezențe din aplicație</span></label>`:`<div class="hint" style="margin-top:8px">Folosești serverul deja instalat pentru FamLink: pune aici același <b>URL /api</b> și același <b>secret</b>, apoi dă o dată <b>firebase deploy --only functions</b> cu backendul actualizat (v2, cu ArhiLink). Ghid complet: <b>PUSH-SETUP-ARHILINK.md</b>.</div>`}
     <div class="muted" style="margin-top:10px;font-size:11.5px">Reamintirile locale de până acum rămân ca rezervă (apar la deschiderea aplicației). Setările de aici se sincronizează la toți; permisiunea se dă pe fiecare dispozitiv.</div>`)
  +_setCard(IC.fwd,"E-mail congregație (Gmail)",
@@ -4403,7 +4471,7 @@ function userEdit(i){if(!_isAdmin()){toast("Doar administratorul");return;}_uSty
   +'<div class="muted" id="ueAttNote" style="font-size:11.5px;margin-top:4px'+(_uad?'':';display:none')+'">Administratorii au prezența activă implicit.</div></div>';
  /* dreptul de a EDITA cele două secțiuni din Arhivă; toți le văd oricum */
  var secBox='<div style="margin-top:12px"><label class="fl">Secțiuni din Arhivă</label>'
-  +'<div class="muted" style="font-size:11.5px;margin:0 2px 6px">Toți utilizatorii VĂD „Curățenie" și „Sarcini". Bifează cui îi dai și dreptul să le modifice.</div>'
+  +'<div class="muted" style="font-size:11.5px;margin:0 2px 6px">Toți utilizatorii VĂD „Curățenie generală" și „Sarcini". Bifează cui îi dai și dreptul să le modifice.</div>'
   +'<label class="ckrow2"><input type="checkbox" id="ueCurE" '+((_uad||u.curE)?"checked":"")+(_uad?" disabled":"")+'> Poate edita <b>Curățenia generală</b></label>'
   +'<label class="ckrow2"><input type="checkbox" id="ueSarE" '+((_uad||u.sarE)?"checked":"")+(_uad?" disabled":"")+'> Poate edita <b>Sarcinile</b> (ordine, audio/video, grupe)</label>'
   +'<div class="muted" id="ueSecNote" style="font-size:11.5px;margin-top:4px'+(_uad?'':';display:none')+'">Administratorii le pot edita implicit.</div></div>';
@@ -5070,7 +5138,7 @@ function renderArh(){arhInitSel();arhEnsureCSS();$("#fab").style.display="none";
   var bEl=$("#body");var same=(_arhLastSub===arhSub);
   var sb=same&&bEl?bEl.scrollTop:0;var wy=same?(window.pageYOffset||0):0;
   var open=same&&bEl?[].map.call(bEl.querySelectorAll("details"),function(d){return d.open;}):null;
-  var tabs=[["sumar","Sumar S-1"],["rap","Rapoarte"],["pio600","Pionieri"],["prez","Prezență"],["grp","Grupe"],["resp","Responsab."],["cur","Curățenie"],["sarc","Sarcini"],["arhv","Arhivați"],["exp","Export"]];
+  var tabs=[["sumar","Sumar S-1"],["rap","Rapoarte"],["pio600","Pionieri"],["prez","Prezență"],["grp","Grupe"],["resp","Responsab."],["cur","Curățenie generală"],["sarc","Sarcini"],["arhv","Arhivați"],["exp","Export"]];
   if(_isAdmin())tabs.splice(8,0,["scr","Scrisori"]);
   if(arhSub==="scr"&&!_isAdmin())arhSub="sumar";
   if(arhSub==="meu")arhSub="sumar";/* „Profilul meu" e acum tab principal */
@@ -5629,8 +5697,47 @@ function _wkFuture(g,todayISO){var d=_isoDate(weekISO(g.date));
 function _meuInfo(r,b,k){if(!r)return repHas(b.id,k)?'<span style="color:var(--tealtx,var(--teal));font-weight:700">✓ raport trimis</span>':'<span class="muted">neraportat</span>';
   var c=broCat(b,k);var hasH=catHasHours(c)||c==="pub";
   return (r.p?"✓ predicare":"—")+(r.st?(" · "+r.st+" studii"):"")+((hasH&&r.h!=null)?(" · "+r.h+" ore"):"")+(r.cr?(" · credit "+r.cr):"")+((r.o||"").trim()?(" · „"+esc(r.o)+"”"):"");}
+/* din „Profilul meu" direct la săptămâna de curățenie din Sarcini */
+function meuGoClean(wi){if(!_tabAllowed("arh")){toast("Sarcinile nu-ți sunt disponibile");return;}
+ dutyW=wi;if(_arhFull())arhSub="sarc";else arhLiteSub="sarc";_arhLastSub=null;go("arh");}
+/* --- „Curățenia grupei mele": când e programată grupa din care fac parte ---
+   Curățenia nu se dă pe persoane, ci pe grupă, și ține toată săptămâna — de aceea aici nu apare
+   o oră, ci săptămâna întreagă, iar săptămâna în curs rămâne afișată până duminică. */
+function _meuCleanHtml(my){var gid=myCleanGrp(my);
+  if(!gid)return '<details class="gcard"><summary><span class="gav">'+IC.check+'</span><span class="ginfo"><span class="gnm">Curățenia grupei mele</span><span class="gsa">nu ești trecut în nicio grupă de serviciu</span></span></summary>'
+   +'<div class="gbody"><div class="muted" style="padding:12px 4px">Ca să vezi când e rândul grupei tale, cere-i unui bătrân să te treacă într-o grupă de serviciu (Arhivă → Grupe).</div></div></details>';
+  var all=myCleanWeeks(my),up=all.filter(function(g){return g.st!=="past";});
+  var canJump=_tabAllowed("arh");
+  var h='<details class="gcard" open><summary><span class="gav">'+IC.check+'</span><span class="ginfo"><span class="gnm">Curățenia grupei mele<span class="gcnt">'+up.length+'</span></span>'
+   +'<span class="gsa">'+esc(cleanGrpLbl(gid))+' · se face toată săptămâna</span></span></summary><div class="gbody">';
+  var iFut=-1;for(var q=0;q<up.length;q++){if(up[q].st==="fut"){iFut=q;break;}}
+  h+=up.length?up.map(function(g,gi){var now=(g.st==="now");
+     return '<'+(canJump?'button':'div')+' class="item" style="border-bottom:1px solid var(--bd);width:100%;text-align:left'+(canJump?';cursor:pointer':'')+'"'+(canJump?(' onclick="meuGoClean('+g.wi+')"'):'')+'>'
+      +'<div class="av"'+(now?' style="background:var(--acc);color:#fff"':'')+'>'+(gi+1)+'</div>'
+      +'<div class="spacer"><div class="nm" style="font-size:13.5px">'+esc(tc(g.date))+(now?' <span class="gtag">săptămâna aceasta</span>':(gi===iFut?' <span class="gtag t2">următoarea</span>':''))+'</div>'
+      +'<div class="mt" style="white-space:normal;line-height:1.45">Curățenia sălii — de luni până duminică'+(g.event?(' <span class="muted">· '+esc(g.event)+'</span>'):'')+'</div></div>'
+      +(canJump?('<span class="chev">'+IC.chev+'</span>'):'')+'</'+(canJump?'button':'div')+'>';}).join("")
+   :'<div class="muted" style="padding:12px 4px">Grupa ta nu e programată la curățenie în perioada următoare.</div>';
+  h+='<div class="muted" style="font-size:11.5px;padding:10px 4px 2px">Programarea se face din <b>Arhivă → Sarcini</b>, la „Grupă (curățenie)". Primești și notificare când e rândul grupei tale.</div>';
+  return h+'</div></details>';}
+/* --- „Evenimente care urmează": doar cele puse pe o săptămână din caiet, niciunul din trecut --- */
+function _meuEvHtml(){var ev=upcomingEvents();
+  var canJump=_tabAllowed("weeks")||_tabAllowed("vcp");
+  var h='<details class="gcard"'+(ev.length?' open':'')+'><summary><span class="gav">'+IC.star+'</span><span class="ginfo"><span class="gnm">Evenimente care urmează<span class="gcnt">'+ev.length+'</span></span>'
+   +'<span class="gsa">vizita supraveghetorului, congrese, Comemorarea — cu data lor</span></span></summary><div class="gbody">';
+  h+=ev.length?ev.map(function(e,i){
+     var sub=[e.what];if(e.theme)sub.unshift("„"+esc(e.theme)+"”");if(e.talk)sub.push("Cuvântarea: „"+esc(e.talk)+"”");
+     return '<'+(canJump?'button':'div')+' class="item" style="border-bottom:1px solid var(--bd);width:100%;text-align:left'+(canJump?';cursor:pointer':'')+'"'+(canJump?(' onclick="meuGoWeek('+e.wi+')"'):'')+'>'
+      +'<div class="av"'+(i===0?' style="background:var(--acc);color:#fff"':'')+'>'+(i+1)+'</div>'
+      +'<div class="spacer"><div class="nm" style="font-size:13.5px">'+esc(e.name)+(i===0?' <span class="gtag">următorul</span>':'')+'</div>'
+      +'<div class="mt" style="white-space:normal;line-height:1.45">'+esc(tc(e.date))+' · '+sub.join(" · ")+'</div></div>'
+      +(canJump?('<span class="chev">'+IC.chev+'</span>'):'')+'</'+(canJump?'button':'div')+'>';}).join("")
+   :'<div class="muted" style="padding:12px 4px">Niciun eveniment programat în perioada următoare.</div>';
+  h+='<div class="muted" style="font-size:11.5px;padding:10px 4px 2px">Apar doar evenimentele puse pe o săptămână din caiet. Cele trecute nu se mai arată.</div>';
+  return h+'</div></details>';}
 function arhMeuHtml(){ensureGrpCSS();var my=_myBro();var b=S.bros.find(function(x){return x.id===my;});
-  if(!my||!b)return '<div class="empty" style="padding:26px 8px">Contul tău nu e legat de un vestitor.<br><span class="muted">Setări → Utilizatori → Editează → „Vestitorul asociat".</span></div>';
+  if(!my||!b)return '<div class="empty" style="padding:26px 8px">Contul tău nu e legat de un vestitor.<br><span class="muted">Setări → Utilizatori → Editează → „Vestitorul asociat".</span></div>'
+   +_meuEvHtml();/* evenimentele nu depind de fișa vestitorului — le vede oricine */
   var start=(arhTheo!=null?arhTheo:curTheoStart());var months=theoMonths(start);
   var now=new Date();var repD=new Date(now.getFullYear(),now.getMonth()-1,1);var repK=ymOf(repD.getFullYear(),repD.getMonth());
   var av=theoYearsAvail();var yopt=av.slice().sort(function(a,b){return b-a;}).map(function(y){return '<option value="'+y+'" '+(y===start?"selected":"")+'>An '+theoLabel(y)+'</option>';}).join("");
@@ -5678,6 +5785,8 @@ function arhMeuHtml(){ensureGrpCSS();var my=_myBro();var b=S.bros.find(function(
        +(canJump?('<span class="chev">'+IC.chev+'</span>'):'')+'</'+(canJump?'button':'div')+'>';}).join("")
     :'<div class="muted" style="padding:12px 4px">Nicio parte atribuită în perioada următoare.</div>')
    +'</div></details>';
+  h+=_meuCleanHtml(my);
+  h+=_meuEvHtml();
   return h;}
 /* meniul profilului: fișă, contact, PIN */
 function meuMenu(){var my=_myBro();if(!my){toast("Contul nu e legat de un vestitor");return;}
@@ -5829,7 +5938,7 @@ function _secTouch(msg){if(!_secDraft)return;if(msg)_secDraft.logs.push(msg);_se
 function _secRestore(d){try{var o=JSON.parse(d.snap);
  if(d.sub==="cur"){if(o)S.clean=o;else delete S.clean;}
  else{if(o)S.duty=o;else delete S.duty;}}catch(e){}}
-function _secLbl(sub){return sub==="cur"?"Curățenie":"Sarcini";}
+function _secLbl(sub){return sub==="cur"?"Curățenie generală":"Sarcini";}
 function _secBarBtns(){return '<button class="btn pri sm" style="width:auto" onclick="secSave()">Salvează</button>'
  +'<button class="btn ghost sm" style="width:auto" onclick="secCancel()">Anulează</button>';}
 function _secBar(sub){return '<div class="wksavebar" id="secSaveSlot">'+((_secDraft&&_secDraft.sub===sub&&_secDraft.dirty)?_secBarBtns():'')+'</div>';}
@@ -6151,6 +6260,30 @@ function myDuties(broId){var out=[];if(!broId)return out;var D=dutyD(),posts=dut
  Object.keys(D.a).forEach(function(k){var wi=+k;var w=S.weeks[wi];if(!w)return;var o=D.a[k]||{};
   posts.forEach(function(p){if(o[p.id]===broId)out.push({wi:wi,date:w.date,event:w.event||"",label:p.n,partner:null,duty:1});});});
  return out.sort(function(a,b){return a.wi-b.wi;});}
+/* ---- curățenia grupei mele ----
+   Grupa de serviciu se pune pe săptămâni întregi (Sarcini → „Grupă (curățenie)"), deci nu are
+   o oră ca temele de la întrunire: ține de luni până duminică. Folosim asta și în „Profilul meu",
+   și la notificări, ca fiecare să știe din timp când e rândul grupei lui. */
+function myCleanGrp(broId){var b=(S.bros||[]).find(function(x){return x.id===broId;});return b?grpOf(b):"";}
+/* grupa se poate pune și liber („2"), nu doar aleasă din listă — acceptăm și numărul, și numele */
+function _cleanIsMine(o,gid){if(!o||!gid)return false;
+ if(o.grp)return o.grp===gid;
+ var t=String(o.grpT||"").trim();if(!t)return false;
+ var n=dutyGrpNum(gid),nm=String(grpName(gid)||"");
+ return t===n||(!!nm&&t.toLowerCase()===nm.toLowerCase());}
+/* unde suntem față de săptămâna de curățenie: încă n-a venit / e chiar acum / a trecut */
+function cleanWkState(wi){var d=_weekStartDate(wi);if(!d)return {st:"fut"};
+ var s=new Date(d.getFullYear(),d.getMonth(),d.getDate());
+ var e=new Date(s);e.setDate(e.getDate()+6);
+ var t=new Date();t.setHours(0,0,0,0);
+ return {start:s,end:e,st:(t<s?"fut":(t<=e?"now":"past"))};}
+function myCleanWeeks(broId){var out=[],gid=myCleanGrp(broId);if(!gid)return out;
+ var D=dutyD();
+ Object.keys(D.a).forEach(function(k){var wi=+k;var w=S.weeks[wi];if(!w||evNoMeet(w))return;
+  if(_cleanIsMine(D.a[k],gid))out.push({wi:wi,date:w.date,event:w.event||"",st:cleanWkState(wi).st});});
+ return out.sort(function(a,b){return a.wi-b.wi;});}
+/* eticheta grupei, așa cum apare pe foaie („2 — Grupa Nord") */
+function cleanGrpLbl(gid){var n=dutyGrpNum(gid),nm=grpName(gid)||"";return (n?("Grupa "+n+(nm?(" — "+nm):"")):nm)||"grupa ta";}
 
 var dutyW=-1;
 function arhDutyHtml(){ensureDutyCSS();
@@ -6229,7 +6362,9 @@ function dutyClear(wi,pid){if(!_needDuty())return;var o=dutyOf(wi);var id=o[pid]
  dutyCommit("Sarcini: scos "+broDisp(id)+" de la „"+((dutyPost(pid)||{}).n||pid)+"” ("+tc(S.weeks[wi].date)+")");
  renderArhRoute();}
 function dutyGrpClear(wi){if(!_needDuty())return;dutySetVal(wi,"grp","");dutySetVal(wi,"grpT","");
- dutyCommit("Sarcini: grupa de curățenie scoasă ("+tc(S.weeks[wi].date)+")");renderArhRoute();}
+ dutyCommit("Sarcini: grupa de curățenie scoasă ("+tc(S.weeks[wi].date)+")");
+ try{_nset("clnp","");pushCleanMaintain();}catch(e){}
+ renderArhRoute();}
 function dutyGrpPick(wi){if(!_needDuty())return;var o=dutyOf(wi);var gs=grpsAll();
  var H='<div class="muted" style="margin:0 2px 10px">Săptămâna '+esc(tc(S.weeks[wi].date))+'</div>';
  H+='<button class="pmrow" onclick="dutyGrpSet('+wi+',\'\')"><span><b>— fără grupă —</b></span></button>';
@@ -6239,10 +6374,15 @@ function dutyGrpPick(wi){if(!_needDuty())return;var o=dutyOf(wi);var gs=grpsAll(
  sheet("","Grupă (curățenie)",H);}
 function dutyGrpSet(wi,gid){if(!_needDuty())return;dutySetVal(wi,"grp",gid);if(gid)dutySetVal(wi,"grpT","");
  dutyCommit("Sarcini: grupa de curățenie "+(gid?("→ "+grpName(gid)):"scoasă")+" ("+tc(S.weeks[wi].date)+")");
+ /* grupa află pe loc, iar reamintirea de luni se (re)programează pe server */
+ var _n=gid?_pushCleanNow(wi,gid):0;
+ try{_nset("clnp","");pushCleanMaintain();}catch(e){}
+ if(_n)toast("🔔 Anunț trimis către "+_n+(_n===1?" membru al grupei":" membri ai grupei"),5000);
  closeSheet();renderArhRoute();}
 function dutyGrpTxtSave(wi){if(!_needDuty())return;var v=($("#dgT")?$("#dgT").value:"").trim();
  dutySetVal(wi,"grpT",v);if(v)dutySetVal(wi,"grp","");
  dutyCommit("Sarcini: grupa de curățenie → "+(v||"scoasă")+" ("+tc(S.weeks[wi].date)+")");
+ try{_nset("clnp","");pushCleanMaintain();}catch(e){}
  closeSheet();renderArhRoute();}
 
 /* --- alegerea persoanei pentru un post --- */
@@ -6426,7 +6566,7 @@ var arhLiteSub=null;
 function _arhLiteTabs(){var t=[];
  if(_myBro())t.push(["meu","Raportul meu"]);
  if(_attV())t.push(["prez","Prezență"]);
- t.push(["cur","Curățenie"]);t.push(["sarc","Sarcini"]);
+ t.push(["cur","Curățenie generală"]);t.push(["sarc","Sarcini"]);
  return t;}
 function renderArhLite(){ensureDutyCSS();try{ensureGrpCSS();arhEnsureCSS();}catch(e){}
  var tabs=_arhLiteTabs();
