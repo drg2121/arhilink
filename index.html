@@ -527,7 +527,7 @@ Object.assign(IC,{
  box:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h18v13H3z"/><path d="M3 7l2-4h14l2 4"/><path d="M10 11h4"/></svg>',
  mark:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15.5 4.5l4 4-9.5 9.5H6v-4z"/><path d="M12.5 7.5l4 4M5 21h14"/></svg>'
 });
-const VERSION="2.90.4";
+const VERSION="2.90.5";
 const SEED_WEEKS=[];
 const SEED_WEEKS_PRE=[];
 const SEED_WEEKS_POST=[];
@@ -4297,7 +4297,7 @@ function startApp(){_dirty=(S._rev||0)>pushedRev();applyTheme();try{bkpMigrate()
    `v` = cheia de „văzut deja"; `label` = versiunea afișată.
    ============================================================================ */
 var NEWS=[
- {v:"2.90.4",label:"2.90",d:"13.08.2026",t:"Mărturia publică, întrunirea de sfârșit de săptămână și foaia completă de printat",items:[
+ {v:"2.90.5",label:"2.90",d:"13.08.2026",t:"Mărturia publică, întrunirea de sfârșit de săptămână și foaia completă de printat",items:[
   ["ppl","Mărturia publică — foaie nouă","Arhivă → <b>Mărturia publică</b>. Locațiile, turele pe zile și ore, cu câte trei nume pe tură. Toată congregația o vede; o modifică administratorii și cei cărora le dai dreptul."],
   ["book","Întrunirea de la sfârșit de săptămână","Arhivă → <b>Întrunirea publică</b>. Vorbitorul (din congregație sau venit din alta), titlul cuvântării, președintele, cititorul, rugăciunea și grupa de ospitalitate."],
   ["mark","Cine poate fi pus la ce","Vestitori → fișa lui → <b>Întrunirea publică</b> și <b>Mărturia publică</b>. Fără bifă acolo, nimeni nu apare în lista de alegere — la fel ca la Sarcini."],
@@ -4730,6 +4730,13 @@ function weekISO(d){if(!d)return null;const M={ianuarie:1,februarie:2,martie:3,a
  const dl=d.toLowerCase();const mon=Object.keys(M).find(mn=>dl.indexOf(mn)>=0);const dm=dl.match(/\d+/);if(!mon||!dm)return null;
  const dt=new Date(+(S.settings.baseYear||2026),M[mon]-1,+dm[0]);dt.setDate(dt.getDate()+2);const p=n=>String(n).padStart(2,"0");
  return dt.getFullYear()+"."+p(dt.getMonth()+1)+"."+p(dt.getDate());}
+/* Capul foii. Pe foaia obișnuită scrie ce e: planificarea întrunirii din timpul
+   săptămânii. Pe foaia completă, unde sub program vin și întrunirea de la sfârșit de
+   săptămână și sarcinile, titlul acela ar minți — de aceea se schimbă acolo. */
+var WK_HDR="Planificarea întrunirii din timpul săptămânii";
+/* Pe foaia completă, programul de aici e doar una din cele trei părți, așa că își poartă
+   și el numele, ca celelalte două. Pe foaia obișnuită rămâne gol: titlul de sus spune tot. */
+var WK_SUB="";
 function weekBlock(i){const w=S.weeks[i];ensureIds(w);const pl=S.plans[i]||{a:{},songs:{}},a=pl.a;const isVisit=isVisitEv(w);
  const dn=pl.done||{};const nm=k=>{const v=expName(a[k]||"");return v&&dn[k]?'<span class="hl">'+v+'</span>':v;};
  const nmP=k=>{const v=expNameP(a[k]||"");return v&&dn[k]?'<span class="hl">'+v+'</span>':v;};let t=S.settings.start,rows=[];
@@ -4756,8 +4763,8 @@ function weekBlock(i){const w=S.weeks[i];ensureIds(w);const pl=S.plans[i]||{a:{}
   rows.push(R(t,songLine(pl.songs?.close??w.songs[2])+(isVisit?" — aleasă de supraveghetor":""),"Rugăciune",nm("close_pr"),null,dn["s_close"]));
   var evb=w.event?('<div class="pevbar">'+esc(evLabel(w))+(w.eventName?' — '+esc(w.eventName):'')+'</div>'):"";
   body=evb+`<table class="ptbl">${rows.join("")}</table>`;}
- return `<div class="pdfpage"><div class="phd"><span>Planificarea întrunirii din timpul săptămânii</span><span>${esc(S.settings.cong)}</span></div>`
-  +`<div class="prl"></div><div class="pwk">${w.event?tc(w.date):(weekISO(w.date)||tc(w.date))}${(w.bible&&!w.event)?" | "+esc(w.bible):""}</div>`
+ return `<div class="pdfpage"><div class="phd"><span>${esc(WK_HDR)}</span><span>${esc(S.settings.cong)}</span></div>`
+  +`<div class="prl"></div>${WK_SUB}<div class="pwk">${w.event?tc(w.date):(weekISO(w.date)||tc(w.date))}${(w.bible&&!w.event)?" | "+esc(w.bible):""}</div>`
   +`${body}<div class="pft">Tipărit ${new Date().toISOString().slice(0,10).replace(/-/g,"/")}</div></div>`;}
 function exportWeeksPDF(idx,fname,opts){if(!idx||!idx.length){toast("Selectează o săptămână");return;}
  opts=opts||{};
@@ -7550,13 +7557,25 @@ var ALL_C_WM="#117a8b",ALL_C_DUTY="#b8740a";
 function _icBox(st){return '<span class="icb" style="'+st+'"></span>';}
 /* microfon: capsula, arcul suportului, tija și talpa. Se citește fără echivoc la 24 px,
    spre deosebire de un pupitru desenat din bare, care ieșea ca litera „T". */
-var ALL_IC_WM=_icBox("left:40%;top:8%;width:20%;height:42%;border-radius:999px")
- +_icBox("left:27%;top:37%;width:46%;height:29%;background:transparent;border:2.3px solid #fff;border-top:0;border-radius:0 0 999px 999px")
- +_icBox("left:46.5%;top:64%;width:7%;height:17%")
- +_icBox("left:30%;top:80%;width:40%;height:8%;border-radius:1px");
-var ALL_IC_DUTY=_icBox("left:34%;top:12%;width:32%;height:32%;border-radius:50%")     /* capul */
- +_icBox("left:18%;top:57%;width:64%;height:31%;border-radius:50% 50% 2px 2px");      /* umerii */
+/* desenele stau într-un pătrat de 24 px, dar nu până la muchii: le lăsăm o margine de
+   jur împrejur, ca iconurile programului, altfel par înghesuite în chenar */
+var ALL_IC_WM=_icBox("left:42%;top:16%;width:16%;height:33%;border-radius:999px")     /* capsula */
+ +_icBox("left:32%;top:39%;width:36%;height:23%;background:transparent;border:1.9px solid #fff;border-top:0;border-radius:0 0 999px 999px") /* arcul */
+ +_icBox("left:47.5%;top:60%;width:5%;height:14%")                                    /* tija */
+ +_icBox("left:35%;top:73%;width:30%;height:6%;border-radius:1px");                   /* talpa */
+var ALL_IC_DUTY=_icBox("left:37%;top:19%;width:26%;height:26%;border-radius:50%")     /* capul */
+ +_icBox("left:24%;top:55%;width:52%;height:26%;border-radius:50% 50% 2px 2px");      /* umerii */
+/* calendar pentru întrunirea din timpul săptămânii */
+var ALL_C_MID="#2b3240";
+var ALL_IC_MID=_icBox("left:31%;top:14%;width:6%;height:12%;border-radius:1px")       /* inelul stâng */
+ +_icBox("left:63%;top:14%;width:6%;height:12%;border-radius:1px")                    /* inelul drept */
+ +_icBox("left:16%;top:23%;width:68%;height:57%;background:transparent;border:1.9px solid #fff;border-radius:2px")
+ +_icBox("left:16%;top:23%;width:68%;height:16%");                                    /* antetul calendarului */
 var ALL_TINT={"#117a8b":"#f2f8f9","#b8740a":"#fcf8f1"};
+/* capul de secțiune — același desen, folosit și în afara tabelului (deasupra programului) */
+function _allSecHd(col,ic,title){
+ return '<div class="psec allhd" style="color:'+col+'">'
+  +'<span class="allsq" style="background:'+col+'">'+ic+'</span>'+esc(title)+'</div>';}
 function _allSec(col,ic,title,rows){
  /* coloanele se dau explicit: primul rând e capul de secțiune (un singur td cu colspan),
     iar `table-layout:fixed` n-ar avea de unde să afle lățimile — textul ajungea împins la
@@ -7625,13 +7644,17 @@ function _fitScript(){return '<scr'+'ipt>(function(){'
  +'try{if(document.fonts&&document.fonts.ready)document.fonts.ready.then(run);}catch(e){}'
  +'setTimeout(run,700);'
  +'})();</scr'+'ipt>';}
+var _WK_HDR_DEF="Planificarea întrunirii din timpul săptămânii";
 function pdfWeekAll(list){
  list=(list||[]).filter(function(i){return S.weeks[i];});
  if(!list.length){toast("Selectează o săptămână");return;}
+ WK_HDR="Programul săptămânii";/* foaia are trei părți, nu doar programul din timpul săptămânii */
+ WK_SUB=_allSecHd(ALL_C_MID,ALL_IC_MID,"Întrunirea din timpul săptămânii");
  var inner=list.map(function(wi){
   return '<div class="page allpg" data-fit><div class="fitin"><div class="fitsc">'+weekBlock(wi)
    +_allWmBox(wi)+_allDutyBox(wi)+'</div></div>'
    +'<div class="ftt2">'+esc(S.settings.cong||"")+' · printat '+fmtDMY(new Date())+'</div></div>';}).join("")+_fitScript();
+ WK_HDR=_WK_HDR_DEF;WK_SUB="";
  var fn=(list.length===1?(tc(S.weeks[list[0]].date)+" — foaia completă")
         :("Foile complete — "+tc(S.weeks[list[0]].date)+" … "+tc(S.weeks[list[list.length-1]].date)));
  arhPdfWindow(fn.replace(/[\\/:*?"<>|]/g,"-")+".pdf",inner,pdfCSS()+_allPdfCSS());}
@@ -7655,7 +7678,7 @@ function _allPdfCSS(){return ""
  +".allt{margin-top:5mm;border-radius:0 1.8mm 1.8mm 0;overflow:hidden}"
  +".allt+.allt{margin-top:3.5mm}"
  +".allt .c1{width:44px}.allt .c2{width:58%}"
- +".allt .psec{padding-top:8px;padding-bottom:5px;padding-left:11px}"
+ +".allt .psec{padding-top:8px;padding-bottom:5px;padding-left:11px}"+".allpg .allhd{padding-top:2px;padding-bottom:7px;padding-left:0}"
  +".allt td{padding-top:2.6px;padding-bottom:2.6px;border-bottom:1px dotted #cfd6dc}"
  +".allt tr:first-child td{border-bottom:0}"
  +".allt tr:last-child td{border-bottom:0;padding-bottom:8px}"
