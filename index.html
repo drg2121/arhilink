@@ -589,7 +589,7 @@ Object.assign(IC,{
  box:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h18v13H3z"/><path d="M3 7l2-4h14l2 4"/><path d="M10 11h4"/></svg>',
  mark:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15.5 4.5l4 4-9.5 9.5H6v-4z"/><path d="M12.5 7.5l4 4M5 21h14"/></svg>'
 });
-const VERSION="2.93.1";
+const VERSION="2.93.2";
 const SEED_WEEKS=[];
 const SEED_WEEKS_PRE=[];
 const SEED_WEEKS_POST=[];
@@ -1612,9 +1612,7 @@ function renderPick(){const role=pickCtx.role;const mate=pickMate();
  const srch=`<div class="brosrch"><span class="brosrch-ic">${IC.search}</span><input id="pickq" class="brosrch-in" type="search" autocomplete="off" enterkeyhint="search" placeholder="Caută vestitor…" value="${esc(pickSearch)}" oninput="pickSearchUpd(this.value)"><button class="brosrch-x" tabindex="-1" title="Șterge căutarea" onclick="pickClear()">×</button></div>`;
  let H=`<div class="muted" style="padding:2px 4px 9px">Apasă pe rând ca să-i vezi istoricul · <b>Alege</b> îl pune la temă${mate?(' · trebuie <b>'+(partnerFamOk(role)?'același sex sau din familie':'același sex')+'</b>'):''}</div>`;
  /* cheia numărului din dreapta: fără ea, cifra nu spune nimic din prima */
- H+=`<div class="pklg"><span><b>Graficul</b>: ultimele ${SPK_N} de săptămâni · <span class="spk lg"><i class="o"></i></span> a avut ceva · <span class="spk lg"><i class="t"></i></span> chiar tema asta</span>`
-  +`<span><b>Numărul</b>: săptămâni de la ultima lui temă ·`
-  +` <span class="r">sub 4</span> · <span class="a">4–7</span> · 8–12 · <span class="g">13+</span> · „—" niciodată</span></div>`;
+ H+=`<div class="pklg"><span><b>Graficul</b>: ultimele ${SPK_N} de săptămâni <span class="spk lg"><i class="o"></i><i class="t"></i><i class=""></i></span> — portocaliu = chiar tema asta · <b>numărul</b>: săptămâni de la ultima lui temă</span></div>`;
  H+=srch;
  H+=`<div class="pfbar2">${pickFGroup("sex","Gen")}${pickFGroup("pio","Tip")}</div>`;
  H+=`<div class="pcard"><button class="psel" onclick="setPick('')"><span class="pava" style="background:var(--surf2);color:var(--ink3)">—</span><span class="pinfo"><span class="pnm" style="color:var(--ink3)">— niciunul —</span><span class="psub">scoate atribuirea</span></span></button></div>`;
@@ -1640,8 +1638,12 @@ function renderPickList(){const wrap=document.getElementById("pickList");if(!wra
   list.sort((x,y)=>cmp(x.b,y.b));}
  let h="";
  if(!list.length&&(pickFilter.sex||pickFilter.pio||q))h+=`<div class="empty" style="padding:26px 8px">Niciun vestitor pentru filtrele alese.<br><span class="muted">Schimbă filtrele sau căutarea.</span></div>`;else if(!list.length)h+=`<div class="empty" style="padding:30px 8px">Niciun vestitor cu privilegiul „${esc(roleLabel(role))}".<br><span class="muted">Adaugă-l din tabul Vestitori.</span></div>`;
- const pairM=mate?pairLastMap(mate.id,curW):null,mateNm=mate?broDisp(mate.id):"";
- const anyM=lastAnyMap(curW),spkM=spkMaps(role,curW);
+ /* Istoricul se socotește STRICT înaintea săptămânii care se planifică: ce se pune acum e
+    starea de față, nu trecut. Altfel omul deja pus își vedea propria atribuire întoarsă
+    împotriva lui — „la această temă: chiar săptămâna asta", cu roșu, ca o greșeală. */
+ const hb=curW-1;
+ const pairM=mate?pairLastMap(mate.id,hb):null,mateNm=mate?broDisp(mate.id):"";
+ const anyM=lastAnyMap(hb),spkM=spkMaps(role,curW);
  list.forEach(({b})=>{const here=used[b.id]&&pl.a[pickCtx.key]!==b.id;const cur=pl.a[pickCtx.key]===b.id;
    /* Numărul mare răspunde la întrebarea dintâi: de când n-a mai avut OMUL ĂSTA vreo temă.
       Înainte era socotit doar pe tema deschisă, așa că mai toți ieșeau „niciodată" și
@@ -1653,15 +1655,15 @@ function renderPickList(){const wrap=document.getElementById("pickList");if(!wra
    if(la)l1='ultima temă: <b>'+esc(tc((S.weeks[la.wi]||{}).date||''))+'</b> · '+esc(la.label)
      +(la.partner?(' · cu <span class="pcu">'+esc(la.partner)+'</span>'):'');
    else l1='nicio temă până acum';
-   /* al doilea rând: tema deschisă acum, perechea, și ce mai are în jur */
+   /* al doilea rând: tema deschisă acum, perechea, și ce mai are în jur. Culoarea o poartă
+      pastila din dreapta; aici rămâne text liniștit, ca roșul să însemne doar ciocnire. */
    const rw=lastRoleWi(b.id,role),rn=_wksAgo(rw);
-   const l2=['<span class="'+_freshCls(rn)+'">la această temă: <b>'
-     +(rn==null?'niciodată':_agoTxt(rn))+'</b></span>'];
+   const l2=['la această temă: <b>'+((rw===curW)?'e pus acum':(rn==null?'niciodată':_agoTxt(rn)))+'</b>'];
    if(mate){const pw=pairM[b.id],pa=_wksAgo(pw);
      if(pw==null)l2.push('<span class="ok">cu '+esc(mateNm)+': <b>niciodată</b></span>');
-     else l2.push('<span class="'+(pa!=null&&pa<13?'warn':'')+'">cu '+esc(mateNm)+': <b>'
+     else l2.push('<span class="'+(pa!=null&&pa<13?'pcu':'')+'">cu '+esc(mateNm)+': <b>'
        +(pa!=null?_agoTxt(pa):esc(tc(S.weeks[pw].date)))+'</b></span>');}
-   if(nearGap(b.id,curW)<=1)l2.push('<span class="warn">are ceva în săptămâna vecină</span>');
+   if(!cur&&nearGap(b.id,curW)<=1)l2.push('<span class="warn">are ceva în săptămâna vecină</span>');
    const meta='<span class="pkm"><span class="pkl">'+l1+'</span>'
      +'<span class="pkl">'+l2.join(" · ")+'</span></span>';
    h+=`<div class="pcard ${here?'hl':''} ${cur?'cur':''}">`
@@ -1680,23 +1682,14 @@ function pickHistToggle(id){var box=document.getElementById("ph-"+id);if(!box)re
   var b=card.querySelector(".psel");if(b)b.setAttribute("aria-expanded",open?"true":"false");}
  if(open&&!box.getAttribute("data-f")){box.setAttribute("data-f","1");box.innerHTML=pickHistHtml(id);}}
 function pickHistHtml(id){
- var rows=myAssignments(id).filter(function(e){return e.wi<=curW;}).sort(function(a,b){return b.wi-a.wi;}).slice(0,8);
+ var all=myAssignments(id).filter(function(e){return e.wi<curW;}).sort(function(a,b){return b.wi-a.wi;});
+ var rows=all.slice(0,8);
  if(!rows.length)return '<div class="phnote">Nicio temă până acum.</div>';
  return rows.map(function(e){var ag=_wksAgo(e.wi);
    return '<div class="phrow"><div class="phw">'+esc(tc(e.date))+'</div><div class="phb"><b>'+esc(e.label)+'</b>'
     +(e.partner?(' · <span class="pcu">cu '+esc(e.partner)+'</span>'):'')
     +(ag!=null?(' <span class="phag">· '+_agoTxt(ag)+'</span>'):'')+'</div></div>';}).join("")
-  +'<div class="pactrow"><button class="miniact" onclick="showPersonDetail(\''+id+'\')">Toată fișa lui</button></div>';}
-function showPersonDetail(id){const b=S.bros.find(x=>x.id===id);if(!b||!pickCtx)return;const role=pickCtx.role,sec=secOfRole(role);
- const _from=histFromWi(typeof curW!=="undefined"?curW:-1);
- const ph=personHistAny(id,role,sec,60,_from);
- let H=`<div class="pdhead"><span class="pava big">${initials(b.name)||'·'}</span><div><div class="pdnm">${esc(broDisp(id))}</div><div class="psub">${b.gen==="F"?"soră":"frate"}${(b.rol&&b.rol!=="Vestitor")?" · "+rolLabel(b.rol):""}</div></div></div>`;
- H+=`<div class="grpttl">Ultimele ${HIST_MONTHS} luni · ${esc(secName(sec)||roleLabel(role))}</div>`;
- if(ph.length)H+=ph.map(e=>{const ttl=e.p?((e.p.num?e.p.num+". ":"")+(e.p.title||roleLabel(partRole(e.p)))):(e.role||roleLabel(role));const pn=e.partner?('<span class="pcu">cu '+esc(e.partner)+'</span>'):'<span class="muted">—</span>';return `<div class="pdrow"><div class="pdw">${tc(S.weeks[e.wi].date)}</div><div class="pdb"><div class="pdt">${esc(ttl)}</div><div class="pdp">${pn}</div></div></div>`;}).join("");
- else H+=`<div class="phnote">Nicio atribuire în ultimele ${HIST_MONTHS} luni la „${esc(roleLabel(role))}".</div>`;
- H+=`<button class="btn pri" style="margin-top:18px" onclick="setPick('${id}')">Alege pe ${esc(broDisp(id))}</button>`;
- const bk=$("#sheetBack");if(bk){bk.style.display="";bk.onclick=()=>openPick(pickCtx.role,pickCtx.key);}
- $("#sheetHd").textContent=broDisp(id);$("#sheetBody").innerHTML=H;$("#ov").classList.add("show");}
+  +(all.length>rows.length?('<div class="phnote">…și încă '+(all.length-rows.length)+'</div>'):'');}
 /* ============================================================================
    REFERINȚE — broșurile la care trimite caietul
    ----------------------------------------------------------------------------
@@ -4509,14 +4502,14 @@ function startApp(){_dirty=(S._rev||0)>pushedRev();applyTheme();try{bkpMigrate()
    `v` = cheia de „văzut deja"; `label` = versiunea afișată.
    ============================================================================ */
 var NEWS=[
- {v:"2.93.1",label:"2.93",d:"13.08.2026",t:"Alegi mai ușor cine ține tema",items:[
+ {v:"2.93.2",label:"2.93",d:"13.08.2026",t:"Alegi mai ușor cine ține tema",items:[
   ["edit","Un grafic la fiecare nume","Ultimele 26 de săptămâni, bară cu bară: unde a avut ceva și unde a avut chiar tema care se atribuie acum."],
   ["star","Numărul din dreapta","Câte săptămâni au trecut de la ultima lui temă, oricare a fost ea. Roșu = recent, verde = demult, „—” = niciodată."],
   ["ppl","Cu cine a mai fost","Când unul din pereche e pus, ceilalți arată de când n-au mai fost cu el."],
   ["arch","Istoricul, în listă","Apeși pe rând și se deschid ultimele lui teme, cu partea și cu cine a fost la fiecare."],
   ["edit","Rândul arată, butonul alege","Apăsarea pe rând nu mai atribuie pe loc. Îl pui la temă doar cu butonul „Alege”."],
   ["ppl","Vestitorii, o singură listă","Toți, alfabetic. Grupa, genul, tipul și privilegiul au devenit filtre."],
-  ["cal","Reparate","Meniul din Programări nu mai dispare la schimbarea săptămânii, iar în Arhivă a rămas o singură săgeată de întoarcere."]
+  ["cal","Reparate","Meniul din Programări nu mai dispare la schimbarea săptămânii. În Arhivă a rămas o singură săgeată de întoarcere, iar în Programări niciuna — foaia e chiar ecranul."]
  ]},
  {v:"2.91.2",label:"2.91",d:"13.08.2026",t:"Ordine nouă: se citește într-un loc, se scrie în altul",items:[
   ["cal","„Programări” — ecranul comun","Bara de jos are acum <b>Profilul meu · Programări · Vestitori · Arhivă</b>. În Programări se uită toată congregația: programul săptămânii, întrunirea publică și sarcinile. Nimeni nu modifică nimic de acolo, deci arată la fel pentru toți."],
@@ -6829,9 +6822,15 @@ function dutyListHtml(){var D=dutyD(),ed=_canEditDuty();
    h+='</div></div>';});
   h+='</div></div>';});
  return h;}
+/* În „Programări" nu există listă de săptămâni din care ai venit: foaia ESTE ecranul, iar
+   secțiunea o spune selectorul de sus. Butonul „înapoi" de aici n-avea unde să ducă. */
+function _wkBack(label,fn){return (tab==="prog")?'<span class="wkspace"></span>'
+ :('<button class="bk" onclick="'+fn+'">'+IC.back+' '+label+'</button>');}
+/* fără butonul din stânga, bara se ține centrată ca la „Viața creștină" — aceleași reguli */
+function _wkBarCls(){return "wkbar"+(tab==="prog"?" vcpbar":"");}
 function dutyWeekHtml(wi){var w=S.weeks[wi],o=dutyOf(wi),ed=_canEditDuty(),posts=dutyPosts();
  var np=function(i){return (i>=0&&i<S.weeks.length);};
- var h=_secBar("sarc")+'<div class="wkbar"><button class="bk" onclick="dutyBack()">'+IC.back+' Sarcini</button>'
+ var h=_secBar("sarc")+'<div class="'+_wkBarCls()+'">'+_wkBack("Sarcini","dutyBack()")
   +'<div class="wknavc"><button class="wkb" onclick="dutyGo('+(wi-1)+')" '+(np(wi-1)?"":"disabled")+' title="Săptămâna anterioară">'+IC.back+'</button>'
   +'<span class="wkpos">'+esc(tc(w.date))+'</span>'
   +'<button class="wkb" onclick="dutyGo('+(wi+1)+')" '+(np(wi+1)?"":"disabled")+' title="Săptămâna următoare">'+IC.fwd+'</button>'+_progEditBtn()+'</div><span class="wkspace"></span></div>';
@@ -7245,7 +7244,7 @@ function _wkYearGroups(){var base=+(S.settings.baseYear||2026),year=base,prev=-1
  return years;}
 function mpWeekHtml(wi){var w=S.weeks[wi],ed=_canEditMp();
  var np=function(i){return (i>=0&&i<S.weeks.length);};
- var h=_secBar("mp")+'<div class="wkbar"><button class="bk" onclick="mpBack()">'+IC.back+' Mărturia publică</button>'
+ var h=_secBar("mp")+'<div class="'+_wkBarCls()+'">'+_wkBack("Mărturia publică","mpBack()")
   +'<div class="wknavc"><button class="wkb" onclick="mpGo('+(wi-1)+')" '+(np(wi-1)?"":"disabled")+' title="Săptămâna anterioară">'+IC.back+'</button>'
   +'<span class="wkpos">'+esc(tc(w.date))+'</span>'
   +'<button class="wkb" onclick="mpGo('+(wi+1)+')" '+(np(wi+1)?"":"disabled")+' title="Săptămâna următoare">'+IC.fwd+'</button></div><span class="wkspace"></span></div>';
@@ -7532,7 +7531,7 @@ function wmListHtml(){var D=wmD(),ed=_canEditWm();
 function wmWeekHtml(wi){var w=S.weeks[wi],o=wmOf(wi),ed=_canEditWm(),posts=wmPosts();
  var np=function(i){return (i>=0&&i<S.weeks.length);};
  var dt=wmDateOf(wi);
- var h=_secBar("wm")+'<div class="wkbar"><button class="bk" onclick="wmBack()">'+IC.back+' Întrunirea publică</button>'
+ var h=_secBar("wm")+'<div class="'+_wkBarCls()+'">'+_wkBack("Întrunirea publică","wmBack()")
   +'<div class="wknavc"><button class="wkb" onclick="wmGo('+(wi-1)+')" '+(np(wi-1)?"":"disabled")+' title="Săptămâna anterioară">'+IC.back+'</button>'
   +'<span class="wkpos">'+esc(tc(w.date))+'</span>'
   +'<button class="wkb" onclick="wmGo('+(wi+1)+')" '+(np(wi+1)?"":"disabled")+' title="Săptămâna următoare">'+IC.fwd+'</button>'+_progEditBtn()+'</div><span class="wkspace"></span></div>';
