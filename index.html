@@ -527,7 +527,7 @@ Object.assign(IC,{
  box:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h18v13H3z"/><path d="M3 7l2-4h14l2 4"/><path d="M10 11h4"/></svg>',
  mark:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15.5 4.5l4 4-9.5 9.5H6v-4z"/><path d="M12.5 7.5l4 4M5 21h14"/></svg>'
 });
-const VERSION="2.90.2";
+const VERSION="2.90.3";
 const SEED_WEEKS=[];
 const SEED_WEEKS_PRE=[];
 const SEED_WEEKS_POST=[];
@@ -4297,7 +4297,7 @@ function startApp(){_dirty=(S._rev||0)>pushedRev();applyTheme();try{bkpMigrate()
    `v` = cheia de „văzut deja"; `label` = versiunea afișată.
    ============================================================================ */
 var NEWS=[
- {v:"2.90.2",label:"2.90",d:"13.08.2026",t:"Mărturia publică, întrunirea de sfârșit de săptămână și foaia completă de printat",items:[
+ {v:"2.90.3",label:"2.90",d:"13.08.2026",t:"Mărturia publică, întrunirea de sfârșit de săptămână și foaia completă de printat",items:[
   ["ppl","Mărturia publică — foaie nouă","Arhivă → <b>Mărturia publică</b>. Locațiile, turele pe zile și ore, cu câte trei nume pe tură. Toată congregația o vede; o modifică administratorii și cei cărora le dai dreptul."],
   ["book","Întrunirea de la sfârșit de săptămână","Arhivă → <b>Întrunirea publică</b>. Vorbitorul (din congregație sau venit din alta), titlul cuvântării, președintele, cititorul, rugăciunea și grupa de ospitalitate."],
   ["mark","Cine poate fi pus la ce","Vestitori → fișa lui → <b>Întrunirea publică</b> și <b>Mărturia publică</b>. Fără bifă acolo, nimeni nu apare în lista de alegere — la fel ca la Sarcini."],
@@ -7541,13 +7541,19 @@ function _allRow(col,label,value){
 var ALL_C_WM="#117a8b",ALL_C_DUTY="#b8740a";
 /* pupitrul = cuvântarea publică; omul = cine deservește sala. Desenate în linie, ca
    iconurile din interfață, nu importate de nicăieri. */
-var ALL_IC_WM='<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4.2 5.6l15.6-2.1v3.2L4.2 8.8z"/><path d="M12 8.4V19"/><path d="M7.6 20.6h8.8"/></svg>';
-var ALL_IC_DUTY='<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.4"/><path d="M5.4 20.4a6.6 6.6 0 0 1 13.2 0"/></svg>';
+/* width/height PE ELEMENT, nu doar din CSS: motorul care desenează PDF-ul
+   (html2canvas) sare peste un <svg> fără dimensiuni proprii — de aceea pătrățelele
+   ieșeau goale pe foaia tipărită, deși pe ecran se vedeau. */
+var ALL_IC_WM='<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4.2 5.6l15.6-2.1v3.2L4.2 8.8z"/><path d="M12 8.4V19"/><path d="M7.6 20.6h8.8"/></svg>';
+var ALL_IC_DUTY='<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.4"/><path d="M5.4 20.4a6.6 6.6 0 0 1 13.2 0"/></svg>';
+/* fondul discret al fiecărei secțiuni adăugate — o încadrează fără s-o rupă de program */
+var ALL_TINT={"#117a8b":"#f1f7f9","#b8740a":"#fbf6ef"};
 function _allSec(col,ic,title,rows){
  /* coloanele se dau explicit: primul rând e capul de secțiune (un singur td cu colspan),
     iar `table-layout:fixed` n-ar avea de unde să afle lățimile — textul ajungea împins la
     dreapta, nealiniat cu părțile din program */
- return '<table class="ptbl allt"><colgroup><col class="c1"><col class="c2"><col></colgroup><tbody>'
+ return '<table class="ptbl allt" style="background:'+(ALL_TINT[col]||"#f6f7f9")+';border-top:2.4px solid '+col+'">'
+  +'<colgroup><col class="c1"><col class="c2"><col></colgroup><tbody>'
   +'<tr><td colspan="3" class="psec" style="color:'+col+'">'
    +'<span class="allsq" style="background:'+col+'">'+ic+'</span>'+esc(title)+'</td></tr>'
   +rows+'</tbody></table>';}
@@ -7578,34 +7584,66 @@ function _allDutyBox(wi){var posts=dutyPosts(),o=dutyOf(wi),w=S.weeks[wi];
  return _allSec(ALL_C_DUTY,ALL_IC_DUTY,hd,rows);}
 /* pe foaie, „2" singur nu spune nimic — scriem „Grupa 2" */
 function _grpCell(t){t=String(t||"").trim();return /^\d+$/.test(t)?("Grupa "+t):t;}
+/* Încadrarea automată: o săptămână foarte încărcată (multe teme, posturi în plus, notă)
+   depășește coala. În loc să tăiem rânduri la schimbarea de foaie, micșorăm proporțional
+   TOT conținutul paginii exact cât trebuie ca să intre. Scriptul rulează în documentul de
+   tipărire, înainte ca motorul PDF să deseneze, fiindcă abia atunci se știu înălțimile reale. */
+function _fitScript(){return '<scr'+'ipt>(function(){'
+ +'function fit(box){var inn=box.querySelector(".fitin");if(!inn)return;'
+ +'var cs=getComputedStyle(box);'
+ +'var av=box.clientHeight-parseFloat(cs.paddingTop||0)-parseFloat(cs.paddingBottom||0);'
+ +'if(!av)return;var k=1;'
+ /* micșorarea lățește conținutul, deci înălțimea se schimbă la fiecare pas —
+    de aceea măsurăm din nou după fiecare încercare, până intră */
+ +'for(var i=0;i<5;i++){'
+ +'inn.style.transformOrigin="top left";'
+ +'inn.style.width=(k<1?(100/k)+"%":"");'
+ +'inn.style.transform=(k<1?"scale("+k+")":"");'
+ +'var h=inn.scrollHeight*k;'
+ +'if(h<=av)break;'
+ +'k=Math.max(0.62,k*(av/h)*0.995);}'
+ +'}'
+ /* o dată acum și o dată după ce fontul încorporat s-a așezat: măsurat cu fontul de
+    rezervă, înălțimile ies altfel. Funcția pornește de fiecare dată de la scara 1, deci
+    a doua rulare doar corectează, nu se adună peste prima. */
+ +'function run(){[].forEach.call(document.querySelectorAll("[data-fit]"),fit);}'
+ +'run();'
+ +'try{if(document.fonts&&document.fonts.ready)document.fonts.ready.then(run);}catch(e){}'
+ +'setTimeout(run,700);'
+ +'})();</scr'+'ipt>';}
 function pdfWeekAll(list){
  list=(list||[]).filter(function(i){return S.weeks[i];});
  if(!list.length){toast("Selectează o săptămână");return;}
  var inner=list.map(function(wi){
-  return '<div class="page allpg">'+weekBlock(wi)
-   +_allWmBox(wi)+_allDutyBox(wi)
-   +'<div class="ftt2">'+esc(S.settings.cong||"")+' · printat '+fmtDMY(new Date())+'</div></div>';}).join("");
+  return '<div class="page allpg" data-fit><div class="fitin">'+weekBlock(wi)
+   +_allWmBox(wi)+_allDutyBox(wi)+'</div>'
+   +'<div class="ftt2">'+esc(S.settings.cong||"")+' · printat '+fmtDMY(new Date())+'</div></div>';}).join("")+_fitScript();
  var fn=(list.length===1?(tc(S.weeks[list[0]].date)+" — foaia completă")
         :("Foile complete — "+tc(S.weeks[list[0]].date)+" … "+tc(S.weeks[list[list.length-1]].date)));
  arhPdfWindow(fn.replace(/[\\/:*?"<>|]/g,"-")+".pdf",inner,pdfCSS()+_allPdfCSS());}
 function _allPdfCSS(){return ""
- +".allpg{padding:11mm 11mm 13mm;position:relative}"
+ +".allpg{padding:11mm 11mm 13mm;position:relative;height:297mm;overflow:hidden}"+".allpg .fitin{transform-origin:top left}"
  +".allpg .pdfpage{padding:0;font-size:14.5px;width:auto}"
  +".allpg .pdfpage+.pdfpage{page-break-before:auto;break-before:auto}"
  +".allpg .pft{display:none}"
  +".allpg .phd{font-size:17px}.allpg .prl{margin:6px 0 11px}"
  +".allpg .pwk{font-size:18px;margin-bottom:7px}"
- +".allpg .ptbl td{padding:3.4px 3px;font-size:13.4px;line-height:1.22}"
+ +".allpg .ptbl td{padding:3px 3px;font-size:13.4px;line-height:1.22}"
  +".allpg .ptm{width:44px;font-size:12.6px}"
  +".allpg .psec{font-size:16px;padding-top:11px;padding-bottom:5px}"
  +".allpg .psq{width:23px;height:23px;margin-right:8px}"
  +".allpg .pev{padding:44px 10px}.allpg .pevt{font-size:28px}.allpg .pevs{font-size:14px}"
  /* secțiunile adăugate se lipesc de program: aceleași coloane, doar un pic mai strânse pe
     verticală, ca toată săptămâna să încapă pe o coală */
- +".allt{margin-top:2px}"
+ /* fiecare secțiune adăugată e un panou: linie groasă sus în culoarea ei, fond foarte
+    palid dedesubt și un pas de aer între ele — se văd ca blocuri separate, dar coloanele
+    rămân exact peste cele ale programului */
+ +".allt{margin-top:5mm;border-radius:0 0 2mm 2mm;overflow:hidden}"
+ +".allt+.allt{margin-top:3.5mm}"
  +".allt .c1{width:44px}.allt .c2{width:58%}"
- +".allt .psec{padding-top:12px;padding-bottom:5px}"
- +".allt td{padding-top:2.6px;padding-bottom:2.6px}"
+ +".allt .psec{padding-top:7px;padding-bottom:4px}"
+ +".allt td{padding-top:2.2px;padding-bottom:2.2px}"
+ +".allt tr:last-child td{padding-bottom:7px}"
  +".allsq{display:inline-block;width:23px;height:23px;border-radius:6px;padding:3px;box-sizing:border-box;margin-right:8px;vertical-align:middle}"
  +".allsq svg{width:100%;height:100%;display:block}"
  +".ftt2{position:absolute;bottom:5mm;right:11mm;font-size:7.5pt;color:#8a929c;letter-spacing:.3px}";}
