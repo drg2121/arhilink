@@ -341,22 +341,22 @@ label.fl{display:block;font-size:11.5px;color:var(--ink2);margin:12px 0 5px;font
 .pnm{display:block;font-size:15px;font-weight:700}
 .psub{display:block;font-size:11.5px;color:var(--ink3);margin-top:1px}
 /* Ce caută cel care planifică: de când n-a mai avut tema asta și cu cine a fost data trecută.
-   Erau trei rânduri de text mărunt, de citit cuvânt cu cuvânt. Acum: un număr mare la dreapta
-   (câte săptămâni de la ultima dată la ACEASTĂ temă, colorat) și etichete scurte sub nume. */
-.pmeta{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px}
-.pchip{font-size:11px;font-weight:600;color:var(--ink2);background:var(--surf2);border:1px solid var(--bd);border-radius:999px;padding:3px 9px;line-height:1.5;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.pchip b{font-weight:800;color:var(--ink)}
-.pchip.pcu,.pchip.pcu b{color:var(--acc)}.pchip.pcu{border-color:var(--acc)}
-.pchip.dim{color:var(--ink3)}
-.pchip.warn,.pchip.warn b{color:var(--maroon)}.pchip.warn{border-color:var(--maroon)}
-.pchip.ok,.pchip.ok b{color:var(--tealtx,var(--teal))}.pchip.ok{border-color:var(--teal)}
-.pfr{flex:0 0 auto;align-self:center;width:54px;margin-left:8px;padding:6px 4px;display:flex;flex-direction:column;align-items:center;gap:1px;border:1px solid var(--bd);border-radius:12px;background:var(--surf2);color:var(--ink2)}
-.pfr b{font-size:16px;font-weight:800;line-height:1;font-variant-numeric:tabular-nums}
-.pfr i{font-style:normal;font-size:8.5px;font-weight:700;letter-spacing:.3px;text-transform:uppercase;color:var(--ink3)}
+   Numărul de săptămâni stă în dreapta rândului, restul rămâne text curgător pe cel mult două
+   rânduri. Prima oară fusese pus în pastile: fiecare pastilă ieșea pe rândul ei și-și tăia
+   textul cu „…" — patru rânduri de butoane false în loc de o propoziție care se citește. */
+.pmeta{display:block;font-size:11.5px;color:var(--ink3);margin-top:4px;line-height:1.5}
+.pmeta .ml{display:block}
+.pmeta b{color:var(--ink);font-weight:700}
+.pmeta .pcu{color:var(--acc);font-weight:700}
+.pmeta .ok{color:var(--tealtx,var(--teal))}
+.pmeta .warn{color:var(--maroon);font-weight:700}
+.pmeta .ok b,.pmeta .warn b{color:inherit}
+.pfr{flex:0 0 auto;align-self:center;width:44px;margin-left:8px;padding:5px 3px;display:flex;flex-direction:column;align-items:center;gap:1px;border:1px solid var(--bd);border-radius:11px;background:var(--surf2);color:var(--ink2)}
+.pfr b{font-size:14.5px;font-weight:800;line-height:1;font-variant-numeric:tabular-nums}
+.pfr i{font-style:normal;font-size:8px;font-weight:700;letter-spacing:.2px;text-transform:uppercase;color:var(--ink3)}
 .pfr.r{border-color:var(--maroon);color:var(--maroon)}
 .pfr.a{border-color:var(--acc);color:var(--acc)}
 .pfr.g,.pfr.nv{border-color:var(--teal);color:var(--tealtx,var(--teal))}
-.pfr.nv b{font-size:13px}
 .pklg{display:flex;flex-wrap:wrap;gap:6px 12px;font-size:11px;color:var(--ink3);padding:0 2px 10px}
 .pklg span{display:flex;align-items:center;gap:5px}
 .pklg i{width:10px;height:10px;border-radius:4px;border:1.5px solid currentColor;display:block}
@@ -564,7 +564,7 @@ Object.assign(IC,{
  box:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h18v13H3z"/><path d="M3 7l2-4h14l2 4"/><path d="M10 11h4"/></svg>',
  mark:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15.5 4.5l4 4-9.5 9.5H6v-4z"/><path d="M12.5 7.5l4 4M5 21h14"/></svg>'
 });
-const VERSION="2.92.0";
+const VERSION="2.92.1";
 const SEED_WEEKS=[];
 const SEED_WEEKS_PRE=[];
 const SEED_WEEKS_POST=[];
@@ -1069,7 +1069,9 @@ function openWeek(i){if(_wkDraft&&_wkDraft.i!==i&&!_wkGuard())return;wkOpen=true
  if(_canEditVcp()&&(!_wkDraft||_wkDraft.i!==i))_wkDraft={i:i,plans:JSON.stringify(S.plans[i]||null),week:JSON.stringify(S.weeks[i]||null),dirty:false};
  const np=`<button class="wkb" onclick="openWeek(${i-1})" ${i<=0?"disabled":""} title="Săptămâna anterioară">${IC.back}</button>`;
  const nn=`<button class="wkb" onclick="openWeek(${i+1})" ${i>=S.weeks.length-1?"disabled":""} title="Săptămâna următoare">${IC.fwd}</button>`;
- const bar=`<div class="wkbar"><button class="bk" onclick="wkBackList()">${IC.back} Săptămâni</button>`
+ /* întoarcerea la lista de săptămâni stă în bara Arhivei, de sus; aici era a doua săgeată
+    „înapoi", pe rândul următor, arătând spre altundeva decât prima */
+ const bar=`<div class="wkbar"><span class="wkspace"></span>`
   +`<div class="wknavc">${np}<span class="wkpos">${esc(tc(w.date))}</span>${nn}</div>`
   +`<span class="wkspace"></span></div>`
   +`<div class="wksavebar" id="wkSaveSlot">${(_wkDraft&&_wkDraft.dirty)?'<button class="btn pri sm" onclick="wkCommit()">Salvează</button><button class="btn ghost sm" onclick="wkCancel()">Anulează</button>':''}</div>`
@@ -1532,7 +1534,7 @@ function _wkWord(n){return n===1?"săptămână":"săptămâni";}
 /* pastila cu numărul mare din dreapta rândului — aceeași în toate listele de alegere */
 function _freshBadge(n,never){return '<span class="pfr '+_freshCls(n)+'" title="'
  +(n==null?esc(never||"Niciodată"):("Ultima dată acum "+n+" "+_wkWord(n)))+'">'
- +(n==null?'<b>—</b><i>niciodată</i>':'<b>'+n+'</b><i>săpt.</i>')+'</span>';}
+ +(n==null?'<b>—</b>':'<b>'+n+'</b><i>săpt.</i>')+'</span>';}
 function openPick(role,key){if(!_needEdit())return;pickCtx={role,key};renderPick();}
 function pickF(t,v){pickFilter[t]=(pickFilter[t]===v?"":v);renderPick();}
 function pickFlabel(which){var v=pickFilter[which];if(!v)return "Toți";var arr=which==="sex"?BRO_SEX:BRO_TIP;for(var i=0;i<arr.length;i++)if(arr[i][0]===v)return arr[i][1];return v;}
@@ -1549,7 +1551,7 @@ function renderPick(){const role=pickCtx.role;const mate=pickMate();
  let H=`<div class="muted" style="padding:2px 4px 9px">Apasă pe nume ca să alegi · „i" pentru detalii${mate?(' · <b>'+(partnerFamOk(role)?'același sex sau din familie':'același sex')+'</b>'):''}</div>`;
  /* cheia numărului din dreapta: fără ea, cifra nu spune nimic din prima */
  H+=`<div class="pklg"><span>Numărul din dreapta: săptămâni de la ultima dată la <b>această temă</b></span>`
-  +`<span class="r"><i></i>sub 4</span><span class="a"><i></i>4–7</span><span><i></i>8–12</span><span class="g"><i></i>13+ sau niciodată</span></div>`;
+  +`<span class="r"><i></i>sub 4</span><span class="a"><i></i>4–7</span><span><i></i>8–12</span><span class="g"><i></i>13+ · „—" niciodată</span></div>`;
  H+=srch;
  H+=`<div class="pfbar2">${pickFGroup("sex","Gen")}${pickFGroup("pio","Tip")}</div>`;
  H+=`<div class="pcard"><button class="psel" onclick="setPick('')"><span class="pava" style="background:var(--surf2);color:var(--ink3)">—</span><span class="pinfo"><span class="pnm" style="color:var(--ink3)">— niciunul —</span><span class="psub">scoate atribuirea</span></span></button></div>`;
@@ -1577,20 +1579,23 @@ function renderPickList(){const wrap=document.getElementById("pickList");if(!wra
  list.forEach(({b,last})=>{const here=used[b.id]&&pl.a[pickCtx.key]!==b.id;const cur=pl.a[pickCtx.key]===b.id;
    /* numărul mare: de câte săptămâni n-a mai avut TEMA ASTA */
    const fresh=_freshBadge(_wksAgo(lastRoleWi(b.id,role)),"Niciodată la această temă");
-   /* etichetele de sub nume: când a fost ultima dată în secțiune, cu cine, și la ce temă */
-   let chips="";
-   if(last){chips+='<span class="pchip">ultima: <b>'+esc(tc(S.weeks[last.wi].date))+'</b></span>';
-     if(last.partner)chips+='<span class="pchip pcu">cu <b>'+esc(last.partner)+'</b></span>';
-     if(last.p)chips+='<span class="pchip dim">'+esc((last.p.num?last.p.num+". ":"")+(last.p.title||roleLabel(partRole(last.p))))+'</span>';}
-   else chips+='<span class="pchip dim">neatribuit</span>';
-   /* când se alege perechea: de când n-au mai fost împreună cei doi */
+   /* primul rând: când a fost ultima dată în secțiune, cu cine și la ce temă */
+   let l1;
+   if(last)l1='ultima: <b>'+esc(tc(S.weeks[last.wi].date))+'</b>'
+     +(last.partner?(' · cu <span class="pcu">'+esc(last.partner)+'</span>'):'')
+     +(last.p?(' · '+esc((last.p.num?last.p.num+". ":"")+(last.p.title||roleLabel(partRole(last.p))))):'');
+   else l1='neatribuit';
+   /* al doilea rând: perechea și ce mai are în jur */
+   const l2=[];
    if(mate){const pw=pairM[b.id],pa=_wksAgo(pw);
-     if(pw==null)chips+='<span class="pchip ok">cu '+esc(mateNm)+': <b>niciodată</b></span>';
-     else chips+='<span class="pchip '+(pa!=null&&pa<13?'warn':'')+'">cu '+esc(mateNm)+': <b>'
-       +(pa!=null?('acum '+pa+' '+_wkWord(pa)):esc(tc(S.weeks[pw].date)))+'</b></span>';}
-   if(nearGap(b.id,curW)<=1)chips+='<span class="pchip warn">are ceva în săptămâna vecină</span>';
+     if(pw==null)l2.push('<span class="ok">cu '+esc(mateNm)+': <b>niciodată</b></span>');
+     else l2.push('<span class="'+(pa!=null&&pa<13?'warn':'')+'">cu '+esc(mateNm)+': <b>'
+       +(pa!=null?('acum '+pa+' '+_wkWord(pa)):esc(tc(S.weeks[pw].date)))+'</b></span>');}
+   if(nearGap(b.id,curW)<=1)l2.push('<span class="warn">are ceva în săptămâna vecină</span>');
+   const meta='<span class="pmeta"><span class="ml">'+l1+'</span>'
+     +(l2.length?('<span class="ml">'+l2.join(" · ")+'</span>'):'')+'</span>';
    h+=`<div class="pcard ${here?'hl':''} ${cur?'cur':''}">`
-     +`<button class="psel" onclick="setPick('${b.id}')"><span class="pava">${initials(b.name)||'·'}</span><span class="pinfo"><span class="pnm">${esc(broDisp(b.id))}${cur?' <span class="selbadge">✓ selectat</span>':''}${here?' <span class="ybadge">deja</span>':''}</span><span class="psub">${b.gen==="F"?"soră":"frate"}${(b.rol&&b.rol!=="Vestitor")?" · "+rolLabel(b.rol):""}</span><span class="pmeta">${chips}</span></span>${fresh}</button>`
+     +`<button class="psel" onclick="setPick('${b.id}')"><span class="pava">${initials(b.name)||'·'}</span><span class="pinfo"><span class="pnm">${esc(broDisp(b.id))}${cur?' <span class="selbadge">✓ selectat</span>':''}${here?' <span class="ybadge">deja</span>':''}</span><span class="psub">${b.gen==="F"?"soră":"frate"}${(b.rol&&b.rol!=="Vestitor")?" · "+rolLabel(b.rol):""}</span>${meta}</span>${fresh}</button>`
      +`<button class="iinfo" onclick="showPersonDetail('${b.id}')" aria-label="Detalii">${IC.info}</button>`
      +`</div>`;});
  wrap.innerHTML=h;}
@@ -5471,7 +5476,11 @@ function _arhNavHtml(){var g=_arhGrpOf(arhGrp);if(!g)return "";
     „înapoi" se vedea nestilizat și se suprapunea peste titlu */
  ensureArhHomeCSS();
  var sec=_arhSecOf(g,arhSub);
- return '<div class="arhnav"><button class="arhback" onclick="arhGrpBack()">'+IC.back+' '+esc(g.n)+'</button>'
+ /* cu o săptămână deschisă, întoarcerea firească e la lista de săptămâni, nu la grupul de
+    secțiuni — altfel ies două butoane „înapoi" unul sub altul, arătând în locuri diferite */
+ var wk=(arhSub==="vcped"&&wkOpen);
+ return '<div class="arhnav"><button class="arhback" onclick="'+(wk?'wkBackList()':'arhGrpBack()')+'">'
+  +IC.back+' '+esc(wk?"Săptămâni":g.n)+'</button>'
   +'<span class="ahtt2">'+esc(sec?sec[1]:"")+'</span></div>';}
 /* Subtabul VCP e chiar editorul de săptămâni, care își scrie singur ecranul. După el
    punem bara la loc, ca să nu se piardă la deschiderea unei săptămâni. */
@@ -7590,10 +7599,10 @@ function wmPickList(){var wrap=document.getElementById("wpkList");if(!wrap||!_wp
   var fr=_freshBadge(_wksBetween(wi,o.last?o.last.wi:null),"Nu a mai avut "+wmCatLbl(p.c).toLowerCase());
   /* la Turnul de veghe contează și perechea: de când n-a mai fost cu celălalt */
   var cu="";if(mate){var pw=pairM[b.id],pa=_wksBetween(wi,pw);
-   cu=(pw==null)?'<span class="pchip ok">cu '+esc(mateNm)+': <b>niciodată</b></span>'
-    :'<span class="pchip '+(pa!=null&&pa<13?'warn':'')+'">cu '+esc(mateNm)+': <b>'
+   cu=(pw==null)?'<span class="ok">cu '+esc(mateNm)+': <b>niciodată</b></span>'
+    :'<span class="'+(pa!=null&&pa<13?'warn':'')+'">cu '+esc(mateNm)+': <b>'
       +(pa!=null?('acum '+pa+' '+_wkWord(pa)):esc(tc(S.weeks[pw].date)))+'</b></span>';
-   cu='<span class="pmeta">'+cu+'</span>';}
+   cu='<span class="pmeta"><span class="ml">'+cu+'</span></span>';}
   return '<div class="dcand '+(cur===b.id?"cur ":"")+(o.busy.length?"busy":"")+'">'
    +'<button class="dcb" onclick="wmSet(\''+b.id+'\')"><span class="dca">'+(initials(b.name)||"·")+'</span>'
    +'<span class="dci"><span class="dcn">'+esc(broDisp(b.id))+(cur===b.id?' <span class="dtag g">ales</span>':'')+'</span>'
