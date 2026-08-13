@@ -527,7 +527,7 @@ Object.assign(IC,{
  box:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h18v13H3z"/><path d="M3 7l2-4h14l2 4"/><path d="M10 11h4"/></svg>',
  mark:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15.5 4.5l4 4-9.5 9.5H6v-4z"/><path d="M12.5 7.5l4 4M5 21h14"/></svg>'
 });
-const VERSION="2.90.0";
+const VERSION="2.90.1";
 const SEED_WEEKS=[];
 const SEED_WEEKS_PRE=[];
 const SEED_WEEKS_POST=[];
@@ -4297,7 +4297,7 @@ function startApp(){_dirty=(S._rev||0)>pushedRev();applyTheme();try{bkpMigrate()
    `v` = cheia de „văzut deja"; `label` = versiunea afișată.
    ============================================================================ */
 var NEWS=[
- {v:"2.90.0",label:"2.90",d:"12.08.2026",t:"Mărturia publică, întrunirea de sfârșit de săptămână și foaia completă de printat",items:[
+ {v:"2.90.1",label:"2.90",d:"13.08.2026",t:"Mărturia publică, întrunirea de sfârșit de săptămână și foaia completă de printat",items:[
   ["ppl","Mărturia publică — foaie nouă","Arhivă → <b>Mărturia publică</b>. Locațiile, turele pe zile și ore, cu câte trei nume pe tură. Toată congregația o vede; o modifică administratorii și cei cărora le dai dreptul."],
   ["book","Întrunirea de la sfârșit de săptămână","Arhivă → <b>Întrunirea publică</b>. Vorbitorul (din congregație sau venit din alta), titlul cuvântării, președintele, cititorul, rugăciunea și grupa de ospitalitate."],
   ["mark","Cine poate fi pus la ce","Vestitori → fișa lui → <b>Întrunirea publică</b> și <b>Mărturia publică</b>. Fără bifă acolo, nimeni nu apare în lista de alegere — la fel ca la Sarcini."],
@@ -7523,23 +7523,36 @@ function arhFabWm(){var ed=_canEditWm();
    întrunirea de la sfârșit de săptămână. Asta se pune pe avizier, nu trei foi.
    Cele două casete de jos stau una lângă alta ca să rămână loc de program.
    ============================================================================ */
-function _allDutyBox(wi){var posts=dutyPosts(),o=dutyOf(wi);
+/* Cele două secțiuni de jos folosesc aceeași gramatică vizuală ca programul VCP de
+   deasupra: titlu de secțiune colorat, cu pătrățelul lui, rânduri fără chenar și numele
+   îngroșat la dreapta. Altfel foaia arăta ca două documente lipite. */
+var ALL_C_DUTY="#b8740a",ALL_C_WM="#117a8b";
+function _allSec(col,title,body){
+ return '<div class="allbox"><div class="allh" style="color:'+col+'">'
+  +'<span class="allsq" style="background:'+col+'"></span>'+esc(title)+'</div>'+body+'</div>';}
+function _allRow(col,label,value){
+ return '<tr><td class="al"><span class="albu" style="color:'+col+'">•</span>'+esc(label)+'</td>'
+  +'<td class="av">'+esc(value||"")+'</td></tr>';}
+function _allDutyBox(wi){var posts=dutyPosts(),o=dutyOf(wi),w=S.weeks[wi];
+ /* fără întrunire nu se repartizează sarcini — foaia n-are voie să arate atribuiri rămase */
+ if(evNoMeet(w))return _allSec(ALL_C_DUTY,dutyD().title||"Sarcini",
+  '<div class="allev" style="color:'+ALL_C_DUTY+'">'+esc(String(evLabel(w)).toUpperCase())+'</div>');
  var rows=posts.map(function(p){
-   return '<tr><td class="al">'+esc(p.n)+'</td><td class="av">'+esc(o[p.id]?(expNameS(o[p.id])||broDisp(o[p.id])):"")+'</td></tr>';}).join("");
- rows+='<tr><td class="al">Grupă (curățenie)</td><td class="av">'+esc(_grpCell(dutyGrpShort(o)))+'</td></tr>';
- return '<div class="allbox"><h3>'+esc(dutyD().title||"Sarcini")+'</h3><table class="alltb"><tbody>'+rows+'</tbody></table></div>';}
+   return _allRow(ALL_C_DUTY,p.n,o[p.id]?(expNameS(o[p.id])||broDisp(o[p.id])):"");}).join("");
+ rows+=_allRow(ALL_C_DUTY,"Grupă (curățenie)",_grpCell(dutyGrpShort(o)));
+ return _allSec(ALL_C_DUTY,dutyD().title||"Sarcini",'<table class="alltb"><tbody>'+rows+'</tbody></table>');}
 /* pe foaie, „2" singur nu spune nimic — scriem „Grupa 2" */
 function _grpCell(t){t=String(t||"").trim();return /^\d+$/.test(t)?("Grupa "+t):t;}
 function _allWmBox(wi){var o=wmOf(wi),dt=wmDateOf(wi),w=S.weeks[wi];
  var hd=(wmD().title||"Întrunirea Publică")+(dt?(" — "+_fmtDayShort(dt)):"");
- if(evNoMeet(w))return '<div class="allbox"><h3>'+esc(hd)+'</h3><div class="allev">'+esc(String(evLabel(w)).toUpperCase())+'</div></div>';
- var rows='<tr><td class="al">Vorbitor</td><td class="av">'+esc(wmSpeakerExp(o))+'</td></tr>'
-  +'<tr><td class="al">Congregația</td><td class="av">'+esc(wmCong(o))+'</td></tr>'
-  +'<tr><td class="al">Titlu</td><td class="av">'+esc(o.tt||"")+'</td></tr>';
- wmPosts().forEach(function(p){rows+='<tr><td class="al">'+esc(p.n)+'</td><td class="av">'+esc(o[p.id]?(expNameS(o[p.id])||broDisp(o[p.id])):"")+'</td></tr>';});
- rows+='<tr><td class="al">Ospitalitate</td><td class="av">'+esc(_grpCell(wmGrpShort(o)))+'</td></tr>';
- if((o.note||"").trim())rows+='<tr><td class="al">Notă</td><td class="av">'+esc(o.note)+'</td></tr>';
- return '<div class="allbox"><h3>'+esc(hd)+'</h3><table class="alltb"><tbody>'+rows+'</tbody></table></div>';}
+ if(evNoMeet(w))return _allSec(ALL_C_WM,hd,'<div class="allev" style="color:'+ALL_C_WM+'">'+esc(String(evLabel(w)).toUpperCase())+'</div>');
+ var rows=_allRow(ALL_C_WM,"Vorbitor",wmSpeakerExp(o))
+  +_allRow(ALL_C_WM,"Congregația",wmCong(o))
+  +_allRow(ALL_C_WM,"Titlu",o.tt||"");
+ wmPosts().forEach(function(p){rows+=_allRow(ALL_C_WM,p.n,o[p.id]?(expNameS(o[p.id])||broDisp(o[p.id])):"");});
+ rows+=_allRow(ALL_C_WM,"Ospitalitate",_grpCell(wmGrpShort(o)));
+ if((o.note||"").trim())rows+=_allRow(ALL_C_WM,"Notă",o.note);
+ return _allSec(ALL_C_WM,hd,'<table class="alltb"><tbody>'+rows+'</tbody></table>');}
 function pdfWeekAll(list){
  list=(list||[]).filter(function(i){return S.weeks[i];});
  if(!list.length){toast("Selectează o săptămână");return;}
@@ -7562,15 +7575,18 @@ function _allPdfCSS(){return ""
  +".allpg .psec{font-size:16px;padding-top:11px;padding-bottom:5px}"
  +".allpg .psq{width:23px;height:23px;margin-right:8px}"
  +".allpg .pev{padding:44px 10px}.allpg .pevt{font-size:28px}.allpg .pevs{font-size:14px}"
- +".allgrid{display:flex;gap:6mm;margin-top:8mm;align-items:flex-start}"
- +".allbox{flex:1;min-width:0;border:1.6px solid #C77F1A;border-radius:1.8mm;overflow:hidden;page-break-inside:avoid;break-inside:avoid}"
- +".allbox h3{margin:0;background:#f3e6cd;color:#5d3d06;font-size:11.5pt;font-weight:700;text-align:center;padding:2.6mm 2mm;border-bottom:1.4px solid #C77F1A;letter-spacing:.3px}"
+ +".allgrid{display:flex;gap:9mm;margin-top:9mm;align-items:flex-start}"
+ +".allbox{flex:1;min-width:0;page-break-inside:avoid;break-inside:avoid}"
+ +".allh{display:flex;align-items:center;gap:8px;font-weight:700;font-size:15.5px;line-height:1.25;"
+ +"padding-bottom:6px;margin-bottom:2px;border-bottom:1.6px solid currentColor}"
+ +".allsq{display:inline-block;width:19px;height:19px;border-radius:5px;flex:0 0 auto}"
  +".alltb{width:100%;border-collapse:collapse;table-layout:fixed}"
- +".alltb td{border-top:1px solid #ecdcbc;padding:2.2mm 2.4mm;font-size:10.2pt;line-height:1.25;overflow:hidden;color:#14171c}"
- +".alltb tr:first-child td{border-top:0}"
- +".alltb .al{width:42%;font-weight:700;color:#5d3d06;background:#fbf5e9;font-size:8.8pt}"
+ +".alltb td{padding:4.6px 2px;font-size:12.8px;line-height:1.22;vertical-align:top;color:#14171c;border-bottom:1px solid #e9ebee}"
+ +".alltb tr:last-child td{border-bottom:0}"
+ +".alltb .al{width:46%;color:#3a4048}"
+ +".alltb .albu{margin-right:5px}"
  +".alltb .av{font-weight:700;letter-spacing:.15px}"
- +".allev{padding:6mm 3mm;text-align:center;color:#5d3d06;font-weight:700;font-size:11pt;letter-spacing:.4px}"
+ +".allev{padding:14px 2px;font-weight:700;font-size:13px;letter-spacing:.4px}"
  +".ftt2{position:absolute;bottom:5mm;right:11mm;font-size:7.5pt;color:#8a929c;letter-spacing:.3px}";}
 
 /* ---- versiunea „ușoară" a Arhivei: pentru cine nu are modulul complet ----
