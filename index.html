@@ -589,7 +589,7 @@ Object.assign(IC,{
  box:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h18v13H3z"/><path d="M3 7l2-4h14l2 4"/><path d="M10 11h4"/></svg>',
  mark:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15.5 4.5l4 4-9.5 9.5H6v-4z"/><path d="M12.5 7.5l4 4M5 21h14"/></svg>'
 });
-const VERSION="2.94.0";
+const VERSION="2.95.0";
 const SEED_WEEKS=[];
 const SEED_WEEKS_PRE=[];
 const SEED_WEEKS_POST=[];
@@ -4502,8 +4502,9 @@ function startApp(){_dirty=(S._rev||0)>pushedRev();applyTheme();try{bkpMigrate()
    `v` = cheia de „văzut deja"; `label` = versiunea afișată.
    ============================================================================ */
 var NEWS=[
- {v:"2.94.0",label:"2.94",d:"13.08.2026",t:"Alegi mai ușor cine ține tema",items:[
+ {v:"2.95.0",label:"2.95",d:"13.08.2026",t:"Alegi mai ușor cine ține tema",items:[
   ["edit","Import plan dintr-un text","Foaia făcută în Word intră dintr-o dată: lipești textul, aplicația potrivește numele cu vestitorii, umple întrunirea publică, locațiile și turele mărturiei publice și bifează privilegiile. Butonul rotund din secțiune → „Import plan”."],
+  ["star","Nume din altă congregație","Vorbitorul venit la noi ține de multe ori și rugăciunea. Acum numele lui se poate scrie de mână la oricare post al întrunirii publice, ca la vorbitor, și apare așa pe foaie și în PDF."],
   ["edit","Un grafic la fiecare nume","Ultimele 26 de săptămâni, bară cu bară: unde a avut ceva și unde a avut chiar tema care se atribuie acum."],
   ["star","Numărul din dreapta","Câte săptămâni au trecut de la ultima lui temă, oricare a fost ea. Roșu = recent, verde = demult, „—” = niciodată."],
   ["ppl","Cu cine a mai fost","Când unul din pereche e pus, ceilalți arată de când n-au mai fost cu el."],
@@ -7115,7 +7116,11 @@ function _piBro(name){var q=_piNorm(name);if(!q)return {err:"gol"};
   return qt.every(function(t){return bt.indexOf(t)>=0;});});
  if(hits.length===1)return {b:hits[0]};
  if(hits.length>1)return {err:"mai mulți: "+hits.map(function(b){return b.name;}).join(", ")};
- return {err:"negăsit"};}
+ /* de cele mai multe ori e o mică nepotrivire de nume („Vali" în loc de „Valentina"):
+    arătăm cine are numele de familie, ca să se vadă imediat ce trebuie schimbat */
+ var near=brosLive().filter(function(b2){var bt=_piNorm(b2.name).split(" ");
+  return qt.some(function(t){return bt.indexOf(t)>=0;});}).slice(0,4);
+ return {err:"negăsit"+(near.length?(" (poate: "+near.map(function(b2){return b2.name;}).join(", ")+")"):"")};}
 function _piDate(s){var m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(String(s||"").trim());
  if(!m)return null;var d=new Date(+m[1],+m[2]-1,+m[3]);d.setHours(12,0,0,0);return d;}
 function _piWeek(d){if(!d)return -1;
@@ -7123,10 +7128,11 @@ function _piWeek(d){if(!d)return -1;
   var en=new Date(st);en.setDate(en.getDate()+6);en.setHours(23,59,59,0);
   if(d>=st&&d<=en)return i;}
  return -1;}
+var _piPend={};/* la „Verifică" locațiile nu se creează, dar liniile de după ele trebuie să le găsească */
 function _piLocId(nm,make,out){var q=_piNorm(nm);if(!q)return null;
  var L=mpLocs(),f=L.find(function(l){return _piNorm(l.n)===q;});
  if(f)return f.id;
- if(!make)return null;
+ if(!make)return _piPend[q]||null;
  var id="ml"+Date.now().toString(36)+L.length;L.push({id:id,n:String(nm).trim()});
  if(out)out.push("locație nouă: "+String(nm).trim());
  return id;}
@@ -7135,6 +7141,7 @@ function _piAddPriv(b,field,vals,out){var L=b[field]||(b[field]=[]),add=[];
  if(add.length&&out)out.push(broDisp(b.id)+": +"+add.length+(field==="wm"?" bifă întrunirea publică":" locație"));
  return add.length;}
 function planImportSheet(){
+ ensureEdCSS();/* stilul secțiunilor pliate stă în foaia fișei vestitorului */
  var H='<div class="muted" style="margin:0 2px 10px">Lipește textul planificării. Se verifică întâi și se spune ce nu s-a potrivit; nimic nu intră până nu apeși <b>Aplică</b>.</div>'
   +'<textarea id="piTxt" class="fld" style="min-height:190px;font-family:ui-monospace,Menlo,monospace;font-size:12px;line-height:1.5" placeholder="IP|2026-08-01|Cristian Dumitru|București Crângași|Titlul cuvântării|Silviu Tătar|Beniamin Simion|Cristian Dumitru|1"></textarea>'
   +'<div class="pactrow" style="margin-top:10px"><button class="miniact" style="flex:1;justify-content:center" onclick="planImportRun(false)">Verifică</button>'
@@ -7153,6 +7160,7 @@ function planImportSheet(){
 function planImportRun(apply){
  var el=document.getElementById("piTxt"),out=document.getElementById("piOut");if(!el||!out)return;
  if(apply&&!_canEditWm()&&!_canEditMp()){toast("Nu ai dreptul de editare");return;}
+ _piPend={};
  var lines=String(el.value||"").split(/\r?\n/),ok=[],err=[],wmTouched=false,mpTouched=false,broTouched=false;
  var wmPost=function(c){return wmPosts().find(function(p){return p.c===c;});};
  var privWm={},privMp={};/* id → listă, strânse la final ca să nu bifăm de zece ori */
@@ -7178,23 +7186,31 @@ function planImportRun(apply){
     var nm=f[t[0]];if(!nm)return;var p=wmPost(t[1]);
     if(!p){err.push(no+"nu există postul „"+t[2]+"”");return;}
     var rr=_piBro(nm);
-    if(!rr.b){err.push(no+t[2]+" „"+nm+"” — "+rr.err);return;}
-    if(apply)wmSetVal(wi,p.id,rr.b.id);
-    (privWm[rr.b.id]=privWm[rr.b.id]||[]).push(t[1]);o.push(t[2]+" "+broDisp(rr.b.id));});
+    if(rr.b){if(apply){wmSetVal(wi,p.id,rr.b.id);wmSetVal(wi,p.id+"N","");}
+     (privWm[rr.b.id]=privWm[rr.b.id]||[]).push(t[1]);o.push(t[2]+" "+broDisp(rr.b.id));return;}
+    /* Rugăciunea o ține de multe ori vorbitorul venit din altă congregație: nu e vestitor
+       la noi, dar numele lui trebuie să apară pe foaie — se scrie ca text. Președintele și
+       cititorul sunt însă din congregație, deci acolo un nume negăsit rămâne greșeală. */
+    if(t[1]==="pray"){if(apply){wmSetVal(wi,p.id,"");wmSetVal(wi,p.id+"N",nm);}
+     o.push(t[2]+" "+nm+(nm===sp?" (vorbitorul)":" (din altă congregație)"));return;}
+    err.push(no+t[2]+" „"+nm+"” — "+rr.err);});
    var g=f[8];
    if(g){var gs=grpsAll(),gi=/^\d+$/.test(g)?(+g-1):gs.findIndex(function(x){return _piNorm(x.name)===_piNorm(g);});
     if(gs[gi]){if(apply){wmSetVal(wi,"grp",gs[gi].id);wmSetVal(wi,"grpT","");}o.push("ospitalitate "+(gi+1));}
     else{if(apply){wmSetVal(wi,"grp","");wmSetVal(wi,"grpT",g);}o.push("ospitalitate „"+g+"”");}}
    wmTouched=true;ok.push("<b>"+esc(tc((S.weeks[wi]||{}).date||f[1]))+"</b> — "+esc(o.join(" · ")));return;}
-  if(kind==="LOC"){var msg=[];if(apply)mpD();var id=_piLocId(f[1],apply,msg);
-   if(!f[1]){err.push(no+"locație fără nume");return;}
+  if(kind==="LOC"){var msg=[];if(!f[1]){err.push(no+"locație fără nume");return;}
+   if(apply)mpD();
+   var id=_piLocId(f[1],apply,msg);
    if(apply){mpTouched=true;ok.push(msg.length?esc(msg[0]):("locație: "+esc(f[1])+" — există deja"));}
-   else ok.push("locație: "+esc(f[1])+(id?" — există deja":" — se va crea"));
+   else{if(!id){_piPend[_piNorm(f[1])]="(nou)";ok.push("locație: "+esc(f[1])+" — se va crea");}
+    else ok.push("locație: "+esc(f[1])+" — există deja");}
    return;}
   if(kind==="TURA"){
    if(apply)mpD();
    var lid=_piLocId(f[1],apply,null);
    if(!lid){err.push(no+"locația „"+f[1]+"” nu există (pune o linie LOC înaintea ei)");return;}
+   if(lid==="(nou)"){ok.push("tură la „"+esc(f[1])+"” — se pune după ce se creează locația");return;}
    var dz=+f[2];if(!(dz>=1&&dz<=7)){err.push(no+"ziua „"+f[2]+"” — se scrie 1 (luni) … 7 (duminică)");return;}
    var jd=(dz===7)?0:dz,nm2=f[3]||"Tura 1",h=f[4]||"",cap=Math.max(1,Math.min(6,+f[5]||3));
    var ex=mpShifts().find(function(x){return x.loc===lid&&(+x.d)===jd&&_piNorm(x.h)===_piNorm(h);});
@@ -7208,9 +7224,9 @@ function planImportRun(apply){
    var vals=[];
    if(String(f[2]||"").trim()==="*")vals=["*"];
    else String(f[2]||"").split(",").forEach(function(nn){nn=nn.trim();if(!nn)return;
-    var li=_piLocId(nn,false,null);
+    var li=_piLocId(nn,apply,null);
     if(!li){err.push(no+"locația „"+nn+"” nu există");return;}
-    vals.push(li);});
+    if(li!=="(nou)")vals.push(li);});
    if(vals.length){(privMp[rb.b.id]=privMp[rb.b.id]||[]).push.apply(privMp[rb.b.id],vals);
     ok.push("mărturie publică: "+esc(broDisp(rb.b.id))+" · "+esc(f[2]));}
    return;}
@@ -7726,9 +7742,9 @@ function wmWeekHtml(wi){var w=S.weeks[wi],o=wmOf(wi),ed=_canEditWm(),posts=wmPos
   +'<span class="mpx" style="white-space:normal">'+((o.note||"").trim()?esc(o.note):"—")+'</span>'+(ed?('<span class="dpc">'+IC.chev+'</span>'):'')+'</button></div></div></div>';
  if(ed)h+='<div class="muted" style="margin:2px 2px 0;font-size:11.5px">În listele de alegere apar doar cei bifați în fișă la partea respectivă (Vestitori → fișă → „Întrunirea publică”).</div>';
  return h;}
-function wmClear(wi,pid){if(!_needWm())return;var o=wmOf(wi);var id=o[pid];if(!id)return;
- wmSetVal(wi,pid,"");
- wmCommit("Întrunirea publică: scos "+broDisp(id)+" de la „"+((wmPost(pid)||{}).n||pid)+"” ("+tc(S.weeks[wi].date)+")");
+function wmClear(wi,pid){if(!_needWm())return;var o=wmOf(wi),nm=wmPName(o,pid);if(!nm)return;
+ wmSetVal(wi,pid,"");wmSetVal(wi,pid+"N","");
+ wmCommit("Întrunirea publică: scos "+nm+" de la „"+((wmPost(pid)||{}).n||pid)+"” ("+tc(S.weeks[wi].date)+")");
  renderArhRoute();}
 function wmSpeakerClear(wi){if(!_needWm())return;
  wmSetVal(wi,"sp","");wmSetVal(wi,"spN","");wmSetVal(wi,"cong","");
@@ -7812,13 +7828,15 @@ function wmPickRender(){if(!_wpk)return;var p=wmPost(_wpk.pid);if(!p)return;
  H+='<div class="brosrch"><span class="brosrch-ic">'+IC.search+'</span><input id="wpq" class="brosrch-in" type="search" autocomplete="off" placeholder="Caută vestitor…" value="'+esc(_wpk.q||"")+'" oninput="wmPickQ(this.value)"></div>';
  H+='<div class="pcard"><button class="psel" onclick="wmSet(\'\')"><span class="pava" style="background:var(--surf2);color:var(--ink3)">—</span><span class="pinfo"><span class="pnm" style="color:var(--ink3)">— niciunul —</span><span class="psub">scoate atribuirea</span></span></button></div>';
  H+='<div id="wpkList"></div>';
+ H+='<div style="margin-top:16px">'+_wmExtBlock(_wpk.wi,_wpk.pid)+'</div>';
  sheet("Alege",p.n,H);wmPickList();}
 function wmPickEmpty(p){
  sheet("Alege",p.n,
   '<div class="empty" style="padding:24px 8px 18px">Niciun vestitor bifat la „'+esc(wmCatLbl(p.c))+'”.<br>'
  +'<span class="muted">Aici apar doar cei trecuți anume la partea asta, ca nimeni să nu ajungă din greșeală la ea.</span></div>'
  +'<div class="hint" style="margin:0 0 14px">Deschide <b>Vestitori</b> → fișa lui → <b>Întrunirea publică</b> și bifează „'+esc(wmCatLbl(p.c))+'”. Pe urmă revino aici.</div>'
- +'<button class="btn pri" style="width:100%" onclick="wmGoBros()">Deschide lista de vestitori</button>');}
+ +'<button class="btn pri" style="width:100%" onclick="wmGoBros()">Deschide lista de vestitori</button>'
+ +'<div style="margin-top:18px">'+_wmExtBlock(_wpk.wi,_wpk.pid)+'</div>');}
 function wmPickList(){var wrap=document.getElementById("wpkList");if(!wrap||!_wpk)return;
  var p=wmPost(_wpk.pid);if(!p)return;var wi=_wpk.wi;var cur=wmOf(wi)[p.id]||"";
  var pool=wmPool(p.c);
@@ -7859,7 +7877,7 @@ function wmPickList(){var wrap=document.getElementById("wpkList");if(!wrap||!_wp
 function wmSet(id){if(!_wpk)return;if(!_needWm())return;var wi=_wpk.wi,pid=_wpk.pid;var p=wmPost(pid);
  var old=wmOf(wi)[pid]||"";
  var busy=id?wmBusyAll(wi,id,pid):[];
- wmSetVal(wi,pid,id);
+ wmSetVal(wi,pid,id);wmSetVal(wi,pid+"N","");
  wmCommit("Întrunirea publică "+tc(S.weeks[wi].date)+" · "+((p||{}).n||pid)+": "+(id?broDisp(id):"scos")+(old&&id?(" (în locul lui "+broDisp(old)+")"):"")
   +(busy.length?(" [are deja: "+dutyBusyTxt(busy)+"]"):""));
  closeSheet();_wpk=null;renderArhRoute();
