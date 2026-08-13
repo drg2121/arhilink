@@ -481,8 +481,7 @@ label.fl{display:block;font-size:11.5px;color:var(--ink2);margin:12px 0 5px;font
  <main class="body" id="body"></main>
  <nav class="nav">
   <button class="nb" data-tab="meu"></button>
-  <button class="nb" data-tab="vcp"></button>
-  <button class="nb on" data-tab="weeks"></button>
+  <button class="nb on" data-tab="prog"></button>
   <button class="nb" data-tab="bros"></button>
   <button class="nb" data-tab="arh"></button>
  </nav>
@@ -527,7 +526,7 @@ Object.assign(IC,{
  box:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h18v13H3z"/><path d="M3 7l2-4h14l2 4"/><path d="M10 11h4"/></svg>',
  mark:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15.5 4.5l4 4-9.5 9.5H6v-4z"/><path d="M12.5 7.5l4 4M5 21h14"/></svg>'
 });
-const VERSION="2.90.5";
+const VERSION="2.91.0";
 const SEED_WEEKS=[];
 const SEED_WEEKS_PRE=[];
 const SEED_WEEKS_POST=[];
@@ -639,7 +638,7 @@ function broPrivN(b){var ALL={};GROUPS.forEach(function(g){g[1].forEach(function
  return ((b&&b.roles)||[]).filter(function(r){return ALL[r];}).length;}
 /* ciornă în Programări: modificările săptămânii NU pleacă spre nimeni până nu apeși „Salvează" */
 var _wkDraft=null;
-function _wkDraftActive(){return !!(_wkDraft&&tab==="weeks"&&typeof curW!=="undefined"&&curW===_wkDraft.i&&_canEditVcp());}
+function _wkDraftActive(){return !!(_wkDraft&&tab==="arh"&&arhSub==="vcped"&&typeof curW!=="undefined"&&curW===_wkDraft.i&&_canEditVcp());}
 function save(){
  if(_wkDraftActive()&&!_applying){/* cât timp editezi o săptămână NU scriem în localStorage — modificarea trăiește doar în memorie; la refresh/închidere fără „Salvează" se pierde, iar „Salvează"/„Anulează" o comit sau o revin */
   if(!_wkDraft.dirty){_wkDraft.dirty=true;}_wkDirtyBtn();return;}
@@ -853,7 +852,7 @@ async function caietImgFetch(force){
    try{var r=await _gfetch("https://gist.githubusercontent.com/"+own+"/"+gid+"/raw/"+gf,{},0);
     if(!r.ok)continue;var arr=JSON.parse(await r.text());
     if(Array.isArray(arr)&&arr.length){ci[k]=arr;got++;}}catch(e){}}
-  if(got){caietImgSave(ci);if(!editBusy()&&(tab==="weeks"||tab==="vcp"))try{go(tab);}catch(e){}}
+  if(got){caietImgSave(ci);if(!editBusy()&&(tab==="prog"||(tab==="arh"&&arhSub==="vcped")))try{go(tab);}catch(e){}}
  }catch(e){}finally{_ciBusy=false;}
  return got;}
 function shrinkImg(b64,mime,maxW){return new Promise(function(res){try{var img=new Image();img.onload=function(){try{var w=img.naturalWidth||img.width,h=img.naturalHeight||img.height,sc=Math.min(1,maxW/(w||maxW));var cw=Math.max(1,Math.round(w*sc)),ch=Math.max(1,Math.round(h*sc));var c=document.createElement("canvas");c.width=cw;c.height=ch;var ctx=c.getContext("2d");if(!ctx){res("data:"+mime+";base64,"+b64);return;}ctx.drawImage(img,0,0,cw,ch);res(c.toDataURL("image/jpeg",0.72));}catch(e){res("data:"+mime+";base64,"+b64);}};img.onerror=function(){res("data:"+mime+";base64,"+b64);};img.src="data:"+mime+";base64,"+b64;}catch(e){res("data:"+mime+";base64,"+b64);}});}
@@ -974,14 +973,14 @@ function grpOpen(key){S.ui=S.ui||{};S.ui.open=S.ui.open||{};return (S.ui.open[ke
 function wkArch(){S.settings.wkArch=S.settings.wkArch||{};return S.settings.wkArch;}
 function wkArchIs(k){return !!wkArch()[k];}
 function wkArchShow(){return !!(S.ui&&S.ui.showArch);}
-function wkArchToggleShow(){S.ui=S.ui||{};S.ui.showArch=!S.ui.showArch;save();renderWeeks();}
+function wkArchToggleShow(){S.ui=S.ui||{};S.ui.showArch=!S.ui.showArch;save();renderWeeks();_arhNavPrepend();}
 function _wkArchLbl(k){var p=String(k||"").split("|");return (p[1]?(p[1].charAt(0).toUpperCase()+p[1].slice(1)):"")+" "+(p[0]||"");}
 function wkArchDo(k,v){var A=wkArch();if(v)A[k]=1;else delete A[k];
  logAct((v?"Lună arhivată: ":"Lună scoasă din arhivă: ")+k);save();
- try{renderWeeks();}catch(e){}try{if(tab==="arh")renderArhRoute();}catch(e){}
+ try{if(tab==="arh")renderArhRoute();else if(tab==="prog")renderProg();}catch(e){}
  toast(v?"Luna a fost arhivată":"Luna a revenit în listă");}
 async function wkArchSet(k,v){if(!_canEditVcp()){toast("Doar administratorii/editorii VCP");return;}
- if(v&&!(await uiConfirm("„"+_wkArchLbl(k)+"” nu va mai apărea în Programări, în Sarcini și în lista de descărcări.\n\nNimic nu se șterge — datele rămân întregi, iar luna se aduce înapoi oricând din Setări → Luni arhivate.",
+ if(v&&!(await uiConfirm("„"+_wkArchLbl(k)+"” nu va mai apărea în Programări, în foile de planificat și în lista de descărcări.\n\nNimic nu se șterge — datele rămân întregi, iar luna se aduce înapoi oricând din Setări → Luni arhivate.",
    {title:"Arhivezi luna?",yes:"Arhivează",no:"Renunț"})))return;
  wkArchDo(k,v);}
 /* Setări → Luni arhivate: de aici se aduc înapoi */
@@ -995,7 +994,7 @@ function wkArchSheet(){var A=wkArch(),ks=Object.keys(A);
   +(rows||'<div class="muted" style="margin:0 2px">Nicio lună arhivată.</div>'));}
 function wkArchBack(k){wkArchDo(k,0);wkArchSheet();}
 function renderWeeks(){
- $("#fab").style.display="none";const b=$("#body");
+ wkOpen=false;$("#fab").style.display="none";const b=$("#body");
  let h=`<div class="ebar" style="margin-bottom:10px"><div class="lead" style="margin:0">Caiet · ${S.weeks.length} săptămâni</div><div class="spacer"></div><button class="miniact" onclick="openExportPick()">${IC.pdf} Descarcă PDF</button></div>`;
  const base=+(S.settings.baseYear||2026);let year=base,prev=-1;const years=[],ym={};
  S.weeks.forEach((w,i)=>{const mi=monthIdx(w.date);if(prev>=0&&mi>=0&&mi<prev)year++;if(mi>=0)prev=mi;
@@ -1015,22 +1014,24 @@ function renderWeeks(){
     h+=`<div class="group"><button class="item" onclick="openWeek(${i})"><div class="av">${w.event?IC.star:IC.cal}</div><div class="spacer" style="text-align:left"><div class="nm">${tc(w.date)}</div><div class="mt">${sub}</div></div>${pill}<span class="chev">${IC.chev}</span></button></div>`;});
    h+=`</div></div>`;});
   h+=`</div></div>`;});
- b.innerHTML=h;
+ b.innerHTML=h;_arhNavPrepend();
 }
 function toggleGrp(key){S.ui=S.ui||{};S.ui.open=S.ui.open||{};const cur=grpOpen(key);S.ui.open[key]=!cur;save();
  const el=document.getElementById("g_"+key);if(el)el.style.display=S.ui.open[key]?"block":"none";
  const hd=el?el.previousElementSibling:null;if(hd){const cv=hd.querySelector(".mchev");if(cv)cv.classList.toggle("op",S.ui.open[key]);}}
 let curW=-1;
+/* dacă e deschisă o săptămână anume sau lista de săptămâni (subtabul VCP din Arhivă) */
+var wkOpen=false;
 function _keepScroll(keep,sb,wy){/* nu mai ascundem #fab aici — săptămâna deschisă are butonul de descărcare/opțiuni */if(keep){var b=$("#body");if(b&&sb)b.scrollTop=sb;if(wy)window.scrollTo(0,wy);}else{var b2=$("#body");if(b2)b2.scrollTop=0;window.scrollTo(0,0);}}
 function _bindWkSwipe(){const b=$("#body");if(!b||b._swBound)return;b._swBound=1;let sx=0,sy=0,st=0;
  b.addEventListener("touchstart",e=>{if(!e.touches||e.touches.length!==1)return;const t=e.touches[0];sx=t.clientX;sy=t.clientY;st=Date.now();},{passive:true});
  b.addEventListener("touchend",e=>{if(curW<0||!document.querySelector(".wkbar"))return;const t=e.changedTouches&&e.changedTouches[0];if(!t)return;const dx=t.clientX-sx,dy=t.clientY-sy,dt=Date.now()-st;if(dt>700)return;if(Math.abs(dx)<55||Math.abs(dx)<Math.abs(dy)*1.6)return;if(dx<0){if(curW<S.weeks.length-1)openWeek(curW+1);}else if(curW>0){openWeek(curW-1);}},{passive:true});}
-function openWeek(i){if(_wkDraft&&_wkDraft.i!==i&&!_wkGuard())return;
+function openWeek(i){if(_wkDraft&&_wkDraft.i!==i&&!_wkGuard())return;wkOpen=true;
  const _keep=(curW===i),_sb=(_keep&&$("#body"))?$("#body").scrollTop:0,_wy=_keep?(window.pageYOffset||0):0;curW=i;_bindWkSwipe();_fabDl(function(){wkFabSheet(curW);});const w=S.weeks[i];ensureIds(w);const pl=S.plans[i]=S.plans[i]||{a:{},songs:{}};pl.a=pl.a||{};
  if(_canEditVcp()&&(!_wkDraft||_wkDraft.i!==i))_wkDraft={i:i,plans:JSON.stringify(S.plans[i]||null),week:JSON.stringify(S.weeks[i]||null),dirty:false};
  const np=`<button class="wkb" onclick="openWeek(${i-1})" ${i<=0?"disabled":""} title="Săptămâna anterioară">${IC.back}</button>`;
  const nn=`<button class="wkb" onclick="openWeek(${i+1})" ${i>=S.weeks.length-1?"disabled":""} title="Săptămâna următoare">${IC.fwd}</button>`;
- const bar=`<div class="wkbar"><button class="bk" onclick="go('weeks')">${IC.back} Programări</button>`
+ const bar=`<div class="wkbar"><button class="bk" onclick="wkBackList()">${IC.back} Săptămâni</button>`
   +`<div class="wknavc">${np}<span class="wkpos">${esc(tc(w.date))}</span>${nn}</div>`
   +`<span class="wkspace"></span></div>`
   +`<div class="wksavebar" id="wkSaveSlot">${(_wkDraft&&_wkDraft.dirty)?'<button class="btn pri sm" onclick="wkCommit()">Salvează</button><button class="btn ghost sm" onclick="wkCancel()">Anulează</button>':''}</div>`
@@ -1043,7 +1044,7 @@ function openWeek(i){if(_wkDraft&&_wkDraft.i!==i&&!_wkGuard())return;
  if(evNoMeet(w)){$("#body").innerHTML=bar+head
    +`<div class="evb"><div class="et">${esc(evLabel(w))}</div>${w.eventName?'<div class="ed" style="color:var(--ink);font-weight:700;font-size:15px">'+esc(w.eventName)+'</div>':''}<div class="ed">În această săptămână nu se ține întrunirea, deci nu se face nicio planificare (S-38).</div></div>`
    +`<button class="btn ghost" style="margin-bottom:10px" onclick="clearEvent(${i})">Folosește program normal</button>`;
-  _keepScroll(_keep,_sb,_wy);return;}
+  _arhNavPrepend();_keepScroll(_keep,_sb,_wy);return;}
  const meta={Comori:["Comori din Cuvântul lui Dumnezeu","C",IC.gem],Predicare:["Să fim mai eficienți în predicare","P",IC.wheat],Viata:["Viața de creștin","V",IC.sheep]};
  const prow=(time,inner)=>`<div class="prow"><div class="tm">${time}</div><div class="pt">${inner}</div></div>`;
  let t=S.settings.start;const Z={open:[],Comori:[],Predicare:[],Viata:[],close:[]};
@@ -1072,7 +1073,7 @@ function openWeek(i){if(_wkDraft&&_wkDraft.i!==i&&!_wkGuard())return;
  h+=`<div class="group">${Z.open.join("")}</div>`+card("Comori")+card("Predicare")+card("Viata")+`<div class="group">${Z.close.join("")}</div>`;
  {const eT=addMin(t,5);const sp=S.settings.start.split(":").map(Number),ep=eT.split(":").map(Number);let dur=(ep[0]*60+ep[1])-(sp[0]*60+sp[1]);if(dur<0)dur+=1440;const over=dur>110;
  h+=`<div class="durbar ${over?'over':''}">Durată ≈ ${Math.floor(dur/60)}h ${String(dur%60).padStart(2,'0')}m · se încheie ~${eT} <span class="muted">(țintă 1h 45m)</span></div>`;}
- $("#body").innerHTML=h;_keepScroll(_keep,_sb,_wy);}
+ $("#body").innerHTML=h;_arhNavPrepend();_keepScroll(_keep,_sb,_wy);}
 
 /* ===== VCP — Viața creștină și predicarea (doar vizualizare) ===== */
 let vcpW=-1;
@@ -1087,7 +1088,14 @@ function vcpCurWeek(){const today=new Date();today.setHours(0,0,0,0);let up=-1;
 function _bindVcpSwipe(){const b=$("#body");if(!b||b._swVcp)return;b._swVcp=1;let sx=0,sy=0,st=0;
  b.addEventListener("touchstart",e=>{if(!e.touches||e.touches.length!==1)return;const t=e.touches[0];sx=t.clientX;sy=t.clientY;st=Date.now();},{passive:true});
  b.addEventListener("touchend",e=>{if(tab!=="vcp"||!document.querySelector(".vcpbar"))return;const t=e.changedTouches&&e.changedTouches[0];if(!t)return;const dx=t.clientX-sx,dy=t.clientY-sy,dt=Date.now()-st;if(dt>700)return;if(Math.abs(dx)<55||Math.abs(dx)<Math.abs(dy)*1.6)return;if(dx<0){if(vcpW<S.weeks.length-1)renderVcp(vcpW+1);}else if(vcpW>0){renderVcp(vcpW-1);}},{passive:true});}
-function vcpEdit(){if(!_canEditVcp()){toast("Doar vizualizare — nu poți modifica");return;}const i=vcpW;go('weeks');if(i>=0)openWeek(i);}
+/* din vizualizare direct la locul de modificare: Arhivă → Planificări → VCP, săptămâna aceea */
+function vcpEdit(){if(!_canEditVcp()){toast("Doar vizualizare — nu poți modifica");return;}goVcpEdit(vcpW);}
+function goVcpEdit(i){if(!_tabAllowed("arh")){toast("Nu ai acces la Arhivă");return;}
+ arhGrp="plan";arhSub="vcped";_arhLastSub=null;wkOpen=(i>=0);if(i>=0)curW=i;
+ go("arh");}
+/* înapoi la lista de săptămâni, rămânând în Arhivă */
+function wkBackList(){wkOpen=false;_arhLastSub=null;
+ if(tab==="arh")renderArhRoute();else{arhGrp="plan";arhSub="vcped";go("arh");}}
 function _vcpStyle(){if(document.getElementById("vcpstyle"))return;const s=document.createElement("style");s.id="vcpstyle";s.textContent='.vro{display:flex;align-items:baseline;gap:8px;font-size:13.5px;margin-top:3px}.vro .vrol{color:var(--ink3);font-size:12px;flex:0 0 auto}.vro b{font-weight:700}'
  +'.vln{display:flex;align-items:flex-start;gap:12px}'
  +'.vln .vnm{flex:0 0 auto;max-width:48%;display:flex;flex-direction:column;align-items:flex-end;gap:1px}'
@@ -1103,7 +1111,7 @@ function renderVcp(i){_fabDl(vcpDlSheet);_vcpStyle();
  const w=S.weeks[vcpW];ensureIds(w);const pl=S.plans[vcpW]||{a:{},songs:{}};const a=pl.a||{};const dn=pl.done||{};
  const np=`<button class="wkb" onclick="renderVcp(${vcpW-1})" ${vcpW<=0?"disabled":""} title="Săptămâna anterioară">${IC.back}</button>`;
  const nn=`<button class="wkb" onclick="renderVcp(${vcpW+1})" ${vcpW>=S.weeks.length-1?"disabled":""} title="Săptămâna următoare">${IC.fwd}</button>`;
- const gear=_canEditVcp()?`<button class="wkb" title="Editează în Programări" onclick="vcpEdit()">${IC.gear}</button>`:`<span class="wkspace"></span>`;
+ const gear=`<span class="wkspace"></span>`;/* modificarea se face din butonul de sus, nu din bară */
  const bar=`<div class="wkbar vcpbar"><span class="wkspace"></span><div class="wknavc">${np}<span class="wkpos">${esc(tc(w.date))}</span>${nn}</div>${gear}</div>`;
  const head=`<div class="group gp" style="padding:15px 16px 11px"><div class="nm" style="font-size:17px;font-weight:800">${tc(w.date)}</div><div class="mt" style="font-size:13px;margin-top:3px">${w.event?'<span style="color:var(--acc);font-weight:700">'+esc(w.event)+(w.eventName?' — '+esc(w.eventName):'')+'</span>':esc(w.bible||'')}</div></div>`;
  const isVisit=isVisitEv(w);
@@ -1862,7 +1870,7 @@ function evSheet(){if(!_isAdmin()){toast("Doar administratorul");return;}
    +'<span style="min-width:0"><b>'+esc(t.n)+'</b>'
    +'<div class="muted" style="font-size:11.5px;margin-top:2px">'+esc(evKindLbl(t.k))+(used?(' · folosit în '+used+(used===1?' săptămână':' săptămâni')):'')+'</div></span></button>';}).join("");
  sheet("Evenimente","Evenimente",
-  '<div class="muted" style="margin:0 2px 12px">Săptămânile speciale din Instrucțiunile S-38, plus ale tale. Poți avea oricâte congrese, fiecare cu numele lui. Le atribui unei săptămâni din <b>Programări → săptămâna → Detalii</b>.</div>'
+  '<div class="muted" style="margin:0 2px 12px">Săptămânile speciale din Instrucțiunile S-38, plus ale tale. Poți avea oricâte congrese, fiecare cu numele lui. Le atribui unei săptămâni din <b>Arhivă → Planificări → VCP → săptămâna → Detalii</b>.</div>'
   +(rows||'<div class="muted">Niciun eveniment.</div>')
   +'<button class="pmrow" onclick="_evShowOld=false;evEdit(\'\')">'+IC.plus+'<span><b>Adaugă un eveniment</b></span></button>');}
 function evEdit(id){if(!_isAdmin())return;
@@ -1971,7 +1979,7 @@ function saveWeekMeta(i){const w=S.weeks[i];w.date=$("#wd").value.trim();w.bible
 function clearEvent(i){delete S.weeks[i].event;save();openWeek(i);}
 async function delWeek(i){const w=S.weeks[i];if(!(await uiConfirm("Ștergi „"+tc(w.date)+"” și toate alocările ei? Acțiunea nu poate fi anulată.")))return;
  logAct("Săptămână ștearsă: "+tc(w.date));S.weeks.splice(i,1);const np={};Object.keys(S.plans).forEach(k=>{const j=+k;if(j<i)np[j]=S.plans[k];else if(j>i)np[j-1]=S.plans[k];});S.plans=np;
- save();closeSheet();go("weeks");}
+ save();closeSheet();wkBackList();}
 function addWeek(){const w={date:"Săptămână nouă",bible:"",songs:[0,0,0],parts:[]};S.weeks.push(w);S.plans[S.weeks.length-1]={a:{},songs:{}};logAct("Săptămână adăugată");save();openWeek(S.weeks.length-1);editWeekMeta(S.weeks.length-1);}
 
 /* BROS */
@@ -3515,7 +3523,7 @@ function renderSet(){if(!_isAdmin()){renderSetLimited();return;}$("#fab").style.
    (function(){var n=Object.keys((st.wkArch)||{}).length;
     return n?('<span class="on">'+n+(n===1?" lună dată deoparte":" luni date deoparte")+'</span> · de aici le aduci înapoi')
             :'<span class="off">niciuna</span> — lunile încheiate se pot da deoparte din Programări';})(),
-   `<div class="muted" style="margin:0 0 8px">O lună arhivată nu mai apare în Programări, în Sarcini și nici în lista de descărcări, dar datele ei rămân întregi. O arhivezi din butonul de pe capul lunii, în Programări.</div>
+   `<div class="muted" style="margin:0 0 8px">O lună arhivată nu mai apare în Programări, în foile de planificat și nici în lista de descărcări, dar datele ei rămân întregi. O arhivezi din butonul de pe capul lunii, în Arhivă → Planificări.</div>
     <button class="btn pri sm" style="width:100%" onclick="wkArchSheet()">Vezi lunile arhivate</button>`)
  +_setCard(IC.ppl,"Utilizatori și distribuire",
    nUsers?`<span class="on">${nUsers} conturi</span> · trimiți aplicația fiecăruia cu „Trimite"`:`<span class="off">niciun cont</span> — generează conturi cu PIN`,
@@ -4270,7 +4278,7 @@ function masterGo(){var p=(($("#gMk")&&$("#gMk").value)||"").trim();
 function _logo(){var im=document.querySelector(".logoimg");return im?im.src:"";}
 function _userGet(){try{return localStorage.getItem(KEY+"_user")||"";}catch(e){return "";}}
 function _userSet(n){try{if(n)localStorage.setItem(KEY+"_user",n);}catch(e){}}
-function startApp(){_dirty=(S._rev||0)>pushedRev();applyTheme();try{bkpMigrate();}catch(e){}try{archSweep();}catch(e){}try{usersLinkBros();_sessRefresh();_sessSave();}catch(e){}go("weeks");updateSyncInfo();autoPullLoad();startSyncTimer();try{if(_upgNeeded())setTimeout(function(){if(!sheetOpen())upgSheet();},1500);}catch(e){}try{setTimeout(odAuto,4000);setInterval(odAuto,60000);}catch(e){}
+function startApp(){_dirty=(S._rev||0)>pushedRev();applyTheme();try{bkpMigrate();}catch(e){}try{archSweep();}catch(e){}try{usersLinkBros();_sessRefresh();_sessSave();}catch(e){}go(_firstTab());updateSyncInfo();autoPullLoad();startSyncTimer();try{if(_upgNeeded())setTimeout(function(){if(!sheetOpen())upgSheet();},1500);}catch(e){}try{setTimeout(odAuto,4000);setInterval(odAuto,60000);}catch(e){}
  try{setTimeout(notifCheck,3000);setInterval(notifCheck,120000);}catch(e){}
  try{setTimeout(usersUpgradePins,2500);}catch(e){}
  try{refHydrate().then(function(){setTimeout(function(){refFetch();},4200);});}catch(e){}
@@ -4297,14 +4305,14 @@ function startApp(){_dirty=(S._rev||0)>pushedRev();applyTheme();try{bkpMigrate()
    `v` = cheia de „văzut deja"; `label` = versiunea afișată.
    ============================================================================ */
 var NEWS=[
- {v:"2.90.5",label:"2.90",d:"13.08.2026",t:"Mărturia publică, întrunirea de sfârșit de săptămână și foaia completă de printat",items:[
-  ["ppl","Mărturia publică — foaie nouă","Arhivă → <b>Mărturia publică</b>. Locațiile, turele pe zile și ore, cu câte trei nume pe tură. Toată congregația o vede; o modifică administratorii și cei cărora le dai dreptul."],
-  ["book","Întrunirea de la sfârșit de săptămână","Arhivă → <b>Întrunirea publică</b>. Vorbitorul (din congregație sau venit din alta), titlul cuvântării, președintele, cititorul, rugăciunea și grupa de ospitalitate."],
-  ["mark","Cine poate fi pus la ce","Vestitori → fișa lui → <b>Întrunirea publică</b> și <b>Mărturia publică</b>. Fără bifă acolo, nimeni nu apare în lista de alegere — la fel ca la Sarcini."],
-  ["cal","Totul în „Profilul meu”","Fiecare își vede turele și părțile lui, laolaltă cu cele de la VCP și Sarcini, plus când e rândul grupei lui la ospitalitate."],
-  ["print","Foaia completă a săptămânii","Un singur PDF cu programul VCP, sarcinile și întrunirea de sfârșit de săptămână, toate pe aceeași coală — exact ce se pune pe avizier."],
-  ["pdf","Programul, două săptămâni pe o coală","La descărcare alegi „2 pe pagină”: aceeași planificare, dar pe jumătate de A4 fiecare."],
-  ["info","Ce e nou","Panoul acesta. Apare o dată după fiecare actualizare și îl redeschizi oricând din Setări."]
+ {v:"2.91.0",label:"2.91",d:"13.08.2026",t:"Ordine nouă: se citește într-un loc, se scrie în altul",items:[
+  ["cal","„Programări” — ecranul comun","Bara de jos are acum <b>Profilul meu · Programări · Vestitori · Arhivă</b>. În Programări se uită toată congregația: programul săptămânii, întrunirea publică și sarcinile. Nimeni nu modifică nimic de acolo, deci arată la fel pentru toți."],
+  ["edit","Modificările, toate în Arhivă","Cine are dreptul primește în Programări butonul <b>Modifică</b>, care îl duce exact la săptămâna pe care o privea. Planificarea VCP s-a mutat și ea acolo."],
+  ["arch","Arhiva se deschide cu două uși","<b>Planificări</b> (VCP, întrunirea publică, mărturia publică, sarcini, curățenie) și <b>Rapoarte și evidențe</b> (S-1, S-21, prezența, pionierii, grupele). Bara de subtaburi ajunsese la paisprezece intrări și nu se mai găsea nimic."],
+  ["print","Foaia completă a săptămânii","Un PDF cu tot ce ține de o săptămână: programul, întrunirea de sfârșit de săptămână și sarcinile, fiecare cu numele și iconul ei. Se strânge singură dacă săptămâna e încărcată, ca să încapă pe o coală."],
+  ["ppl","Mărturia publică","Locațiile, turele pe zile și ore, cu câte trei nume pe tură. Cine poate merge unde se bifează în fișa vestitorului."],
+  ["book","Întrunirea de la sfârșit de săptămână","Vorbitorul (din congregație sau venit din alta), titlul cuvântării, președintele, cititorul, rugăciunea și grupa de ospitalitate."],
+  ["star","Ce e nou","Panoul acesta. Apare o dată după fiecare actualizare și îl redeschizi oricând din Setări."]
  ]}
 ];
 function _newsKey(){var u=_curUser();var who=(u&&u.n)||_userGet()||"anon";return KEY+"_nou_"+String(who).toLowerCase();}
@@ -4381,13 +4389,18 @@ function _canEditArh(){if(_isAdmin())return true;if(_role()==="editor")return _m
 function _canEditReport(id){if(id&&id===_myBro())return true;/* oricine își poate completa propriul raport */
  if(_isVestitor())return false;return _canEditArh();}
 /* tabul Arhivă îl primesc toți: chiar și fără modulul complet, oricine VEDE „Curățenie" și „Sarcini" */
-function _allowedTabs(){if(!_users().length||_isAdmin())return {vcp:1,weeks:1,meu:1,bros:1,arh:1,set:1};if(_role()==="guest")return {vcp:1,weeks:1,meu:1,bros:1,arh:1,set:1};/* invitat: vede tot, doar citire */if(_isVestitor())return {vcp:1,meu:1,arh:1,set:1};var m=_modsOf();var o={vcp:1,meu:1,arh:1,set:1};if(m.vcp){o.weeks=1;o.bros=1;}if(m.arh)o.bros=1;return o;}
+/* „Programări" e ecranul comun de vizualizare (VCP + întrunirea publică + sarcini): îl are
+   toată lumea. Modificările se fac în Arhivă, unde intri doar cu drepturile potrivite. */
+function _allowedTabs(){if(!_users().length||_isAdmin())return {prog:1,meu:1,bros:1,arh:1,set:1};if(_role()==="guest")return {prog:1,meu:1,bros:1,arh:1,set:1};/* invitat: vede tot, doar citire */if(_isVestitor())return {prog:1,meu:1,arh:1,set:1};var m=_modsOf();var o={prog:1,meu:1,arh:1,set:1};if(m.vcp||m.arh)o.bros=1;return o;}
 function _tabAllowed(t){return !!_allowedTabs()[t];}
-function _firstTab(){var o=_allowedTabs();return o.weeks?"weeks":(o.meu?"meu":(o.vcp?"vcp":(o.arh?"arh":(o.bros?"bros":"set"))));}
+function _firstTab(){var o=_allowedTabs();return o.prog?"prog":(o.meu?"meu":(o.arh?"arh":(o.bros?"bros":"set")));}
 function _applyNavVis(){var o=_allowedTabs();var nb=document.querySelectorAll(".nb");for(var i=0;i<nb.length;i++){nb[i].style.display=o[nb[i].dataset.tab]?"":"none";}}
 /* cine vede Arhiva completă și cine doar pagina de Prezență (drept de prezență fără modulul Arhivă) */
-function _arhFull(){var r=_role();if(_isAdmin()||r==="guest")return true;if(r==="editor"||r==="viewer")return _modsOf().arh;return false;}
-function renderArhRoute(){if(_arhFull())renderArh();else renderArhLite();
+function _arhFull(){var r=_role();if(_isAdmin()||r==="guest")return true;if(r==="editor"||r==="viewer")return _modsOf().arh||_modsOf().vcp;return false;}
+/* cine vede grupul de rapoarte din Arhivă (cine are doar VCP vede numai Planificările) */
+function _arhReports(){var r=_role();if(_isAdmin()||r==="guest")return true;if(r==="editor"||r==="viewer")return !!_modsOf().arh;return false;}
+function renderArhRoute(){if(tab==="prog"){renderProg();return;}
+ if(_arhFull())renderArh();else renderArhLite();
  try{setTimeout(_hscrollBind,0);}catch(e){}}
 function arhRerender(){if(tab==="meu"){renderMeu();return;}renderArhRoute();}
 function renderMeu(){$("#fab").style.display="none";$("#body").innerHTML='<div style="height:6px"></div>'+_pushNudge()+arhMeuHtml();}
@@ -4404,17 +4417,6 @@ function myAssignments(broId){var out=[];if(!broId)return out;
    else continue;
    out.push({wi:wi,date:w.date,event:w.event||"",label:label,partner:partner});}}
  return out;}
-function renderWeeksVestitor(){$("#fab").style.display="none";var my=_myBro();var b=S.bros.find(function(x){return x.id===my;});var name=b?broDisp(my):"—";
- var d=new Date();var todayISO=d.getFullYear()+"-"+_pad2(d.getMonth()+1)+"-"+_pad2(d.getDate());
- var all=myAssignments(my).concat(myDuties(my)).concat(myWm(my)).concat(myMp(my));var byWeek={};all.forEach(function(e){(byWeek[e.wi]=byWeek[e.wi]||{wi:e.wi,date:e.date,event:e.event,items:[]}).items.push(e);});
- var weeks=Object.keys(byWeek).map(function(k){return byWeek[k];}).sort(function(a,b){return a.wi-b.wi;});
- var up=[],pa=[];weeks.forEach(function(g){var i=weekISO(g.date)||"";if(i&&i<todayISO)pa.push(g);else up.push(g);});
- function card(g){var when=(g.event?esc(g.event)+" · ":"")+esc(tc(g.date));var rows=g.items.map(function(it){return '<div class="phrow"><div class="phb"><b>'+esc(it.label)+'</b>'+(it.duty?' <span class="gtag t2">sarcină</span>':'')+(it.wm?' <span class="gtag t2">întrunirea publică</span>':'')+(it.mp?' <span class="gtag t2">mărturie</span>':'')+(it.partner?' <span class="pcu">cu '+esc(it.partner)+'</span>':'')+'</div></div>';}).join("");return '<div class="pcard" style="display:block;padding:12px 14px;margin-bottom:10px"><div class="lead" style="margin:0 0 6px">'+when+'</div>'+rows+'</div>';}
- var H='<div class="ebar" style="margin-bottom:10px"><div class="lead" style="margin:0">Sarcinile mele</div><div class="spacer"></div><span class="muted">'+esc(name)+'</span></div>';
- H+='<div class="muted" style="margin:0 2px 12px">Doar părțile atribuite ție. Doar vizualizare.</div>';
- if(!weeks.length)H+='<div class="phnote" style="padding:16px 4px">Nu ai nicio parte atribuită momentan.</div>';
- else{if(up.length)H+='<div class="grpttl">Următoarele</div>'+up.map(card).join("");if(pa.length)H+='<div class="grpttl" style="margin-top:14px">Anterioare</div>'+pa.reverse().map(card).join("");}
- $("#body").innerHTML=H;}
 function renderArhVestitor(){$("#fab").style.display="none";$("#body").innerHTML=_arhVestitorHtml();}
 function _arhVestitorHtml(){var my=_myBro();var b=S.bros.find(function(x){return x.id===my;});var name=b?broDisp(my):"—";
   if(!my||!b)return '<div class="empty" style="padding:26px 8px">Contul tău nu e legat de un vestitor.<br><span class="muted">Setări → Utilizatori → Editează → „Vestitorul asociat".</span></div>';
@@ -4645,7 +4647,7 @@ async function importEpub(inp){const f=inp.files[0];if(!f)return;toast("Se cite�
    const dir=name.replace(/[^/]*$/,"");const got=parseWeekInfo(raw);for(const k in got){const srcs=got[k].imgsrc||[];delete got[k].imgsrc;S.info[k]=got[k];n++;if(srcs.length){const imgs=[];for(const s of srcs){const fe=zip.files[s]||zip.files[dir+s.replace(/^\.?\//,"")]||zip.files["OEBPS/"+s.replace(/^\.?\//,"")];if(fe){try{const b64=await fe.async("base64");const ext=(s.split(".").pop()||"jpg").toLowerCase();const mime=ext==="png"?"image/png":(ext==="gif"?"image/gif":"image/jpeg");imgs.push(await shrinkImg(b64,mime,820));}catch(e){}}}if(imgs.length){_ci[k]=imgs;_ciNew.push(k);ni+=imgs.length;}}}
    const wk=parseWeek(raw);if(wk&&wk.parts&&wk.parts.length){const nb=normBible(wk.bible);if(nb&&!S.weeks.some(w=>normBible(w.bible)===nb)){S.weeks.push(wk);addedW++;}}}
   if(!n&&!addedW){toast("Niciun program găsit în fișier");return;}
-  caietImgSave(_ci);save();toast((ni?ni+" imagini · ":"")+n+" teme cu detalii"+(addedW?" · "+addedW+" săptămâni noi":""));if(tab==="weeks")go("weeks");
+  caietImgSave(_ci);save();toast((ni?ni+" imagini · ":"")+n+" teme cu detalii"+(addedW?" · "+addedW+" săptămâni noi":""));if(tab==="arh"&&arhSub==="vcped")go("arh");
   /* pozele pleacă spre ceilalți: gistul de poze + indicele din starea aplicației */
   if(_ciNew.length)caietImgPush(_ciNew).then(function(k){if(k)toast("Pozele din caiet s-au trimis tuturor ✓ ("+k+" teme)",5000);});}
  catch(e){toast("Eroare la import");}}
@@ -4942,11 +4944,10 @@ function esc(s){return (s+"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace
 let tab="weeks";
 function go(t){if(_wkDraft&&!_wkGuard()){_wkAsk(function(){go(t);});return;}/* nu părăsim săptămâna cu modificări nesalvate fără confirmare */
  if(t!==tab&&typeof _secGuard==="function"&&!_secGuard()){_secAsk(function(){go(t);});return;}/* la fel pentru Curățenie / Sarcini */
- if(!_tabAllowed(t))t=_firstTab();if(t==="vcp"&&tab!=="vcp")vcpW=-1;tab=t;document.querySelectorAll(".nb").forEach(b=>b.classList.toggle("on",b.dataset.tab===t));
+ if(!_tabAllowed(t))t=_firstTab();tab=t;document.querySelectorAll(".nb").forEach(b=>b.classList.toggle("on",b.dataset.tab===t));
  _applyNavVis();
- var R={vcp:renderVcp,weeks:renderWeeks,meu:renderMeu,bros:renderBros,arh:renderArhRoute,set:renderSet};
- if(_isVestitor()){R.weeks=renderWeeksVestitor;}
- (R[t]||renderWeeks)();window.scrollTo(0,0);var _ap=document.querySelector(".app");if(_ap)_ap.classList.remove("headhide");if(window._headReset)window._headReset();var _bd=document.getElementById("body");if(_bd)_bd.scrollTop=0;}
+ var R={prog:renderProg,meu:renderMeu,bros:renderBros,arh:renderArhRoute,set:renderSet};
+ (R[t]||renderProg)();window.scrollTo(0,0);var _ap=document.querySelector(".app");if(_ap)_ap.classList.remove("headhide");if(window._headReset)window._headReset();var _bd=document.getElementById("body");if(_bd)_bd.scrollTop=0;}
 /* Bara de subtaburi din Arhivă se derulează pe orizontală. Pe telefon o tragi cu degetul, dar pe
    calculator rotița dă doar derulare verticală, iar bara nu se mișca. Traducem rotirea verticală în
    derulare laterală (dacă mouse-ul dă și deltaX — trackpad, mouse cu roată laterală — îl folosim pe acela). */
@@ -5175,6 +5176,9 @@ function parseAttRows(rows){if(!rows||!rows.length)return [];var hdr=rows[0];
 
 /* ============================ UI ============================ */
 var arhSub="sumar", arhYM=null, arhTheo=null;
+/* Arhiva se deschide cu două carduri: foile de planificat și evidențele. `arhGrp` ține
+   grupul în care ai intrat; gol = ecranul de pornire. */
+var arhGrp="";
 function arhEnsureCSS(){if(document.getElementById("arhcss"))return;var st=document.createElement("style");st.id="arhcss";st.textContent=
  ".a-hd{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--ink3);margin:14px 2px 9px}"
 +".a-stat{background:linear-gradient(135deg,var(--accsoft),transparent);border:1px solid var(--bd);border-radius:16px;padding:14px 16px;margin-bottom:10px;display:block;width:100%;text-align:left;color:var(--ink)}"
@@ -5211,19 +5215,128 @@ function arhInitSel(){if(arhTheo==null)arhTheo=curTheoStart();
     avail.sort();arhYM=avail.length?avail[avail.length-1]:ymOf(new Date().getMonth()>=8?new Date().getFullYear():new Date().getFullYear(),new Date().getMonth());
     if(!avail.length){var d=new Date();arhYM=ymOf(d.getFullYear(),d.getMonth());}}}
 var _arhLastSub=null;
+
+/* ============================================================================
+   PROGRAMĂRI — ecranul comun, doar vizualizare
+   ----------------------------------------------------------------------------
+   Aici se uită toată congregația: programul întrunirii din timpul săptămânii,
+   întrunirea de la sfârșit de săptămână și sarcinile. Nimeni nu modifică nimic
+   de aici, indiferent de drepturi — cine are dreptul primește un buton care îl
+   duce exact la locul de modificare din Arhivă, la săptămâna pe care o privea.
+   Așa e la fel pentru toți: se citește într-un loc, se scrie în altul.
+   ============================================================================ */
+var progSub="vcp";
+function _progTabs(){return [["vcp","Programul săptămânii"],["wm","Întrunirea publică"],["sarc","Sarcini"]];}
+function progGo(s){if(s===progSub)return;progSub=s;
+ if(s!=="sarc")dutyW=-1;if(s!=="wm")wmW=-1;
+ renderProg();try{$("#body").scrollTop=0;window.scrollTo(0,0);}catch(e){}}
+function renderProg(){
+ var tabs=_progTabs();
+ if(!tabs.some(function(t){return t[0]===progSub;}))progSub=tabs[0][0];
+ if(progSub==="vcp"){renderVcp();}
+ else if(progSub==="wm"){ensureDutyCSS();ensureMpCSS();
+  if(wmW<0)wmW=vcpCurWeek();
+  $("#body").innerHTML=arhWmHtml();$("#fab").style.display="none";}
+ else{ensureDutyCSS();
+  if(dutyW<0)dutyW=vcpCurWeek();
+  $("#body").innerHTML=arhDutyHtml();$("#fab").style.display="none";}
+ var nav='<div class="ptabs ptabs-arh">'+tabs.map(function(t){
+   return '<button class="ptab '+(progSub===t[0]?"on":"")+'" onclick="progGo(\''+t[0]+'\')">'+t[1]+'</button>';}).join("")+'</div>';
+ var b=$("#body");if(b){b.insertAdjacentHTML("afterbegin",nav+_progEditBtn());}
+ try{var _pt=b.querySelector(".ptabs-arh"),_on=_pt&&_pt.querySelector(".ptab.on");
+  if(_pt&&_on)_pt.scrollLeft=Math.max(0,_on.offsetLeft-(_pt.clientWidth-_on.offsetWidth)/2);}catch(e){}
+ try{setTimeout(_hscrollBind,0);}catch(e){}}
+/* butonul apare doar celor care chiar pot modifica foaia deschisă */
+function _progEditBtn(){
+ var may=(progSub==="vcp")?_canEditVcp():(progSub==="wm")?_mayEditWm():_mayEditDuty();
+ if(!may||!_tabAllowed("arh"))return "";
+ var wi=(progSub==="vcp")?vcpW:(progSub==="wm")?wmW:dutyW;
+ return '<button class="btn ghost sm progedit" style="width:100%;margin:0 0 10px" onclick="progEdit()">'
+  +IC.edit+' Modifică'+((wi>=0&&S.weeks[wi])?(' — '+esc(tc(S.weeks[wi].date))):'')+'</button>';}
+function progEdit(){
+ if(progSub==="vcp"){vcpEdit();return;}
+ if(!_tabAllowed("arh")){toast("Nu ai acces la Arhivă");return;}
+ arhGrp="plan";arhSub=(progSub==="wm")?"wm":"sarc";_arhLastSub=null;go("arh");}
+
+/* ============================================================================
+   ARHIVA — ecran de pornire cu două grupuri
+   ----------------------------------------------------------------------------
+   Cu foile de planificat adăugate, bara de subtaburi ajunsese la paisprezece
+   intrări și nu se mai găsea nimic în ea. Acum Arhiva se deschide cu două
+   carduri: ce se planifică și ce se ține în evidență. Intri într-unul și ai
+   doar subtaburile lui, plus întoarcerea la ecranul de pornire.
+   ============================================================================ */
+function _arhGroups(){var g=[];
+ g.push({k:"plan",n:"Planificări",ic:IC.cal,
+  sub:"programul întrunirilor, mărturia publică, sarcinile și curățenia",
+  tabs:[["vcped","VCP"],["wm","Întrunirea publică"],["mp","Mărturia publică"],["sarc","Sarcini"],["cur","Curățenie generală"]]});
+ if(_arhReports()){var t=[["sumar","Sumar S-1"],["rap","Rapoarte"],["pio600","Pionieri"],["prez","Prezență"],["grp","Grupe"],["resp","Responsab."],["arhv","Arhivați"]];
+  if(_isAdmin())t.push(["scr","Scrisori"]);
+  t.push(["exp","Export"]);
+  g.push({k:"rap",n:"Rapoarte și evidențe",ic:IC.arch,
+   sub:"S-1, fișele S-21, prezența, pionierii, grupele și responsabilitățile",tabs:t});}
+ return g;}
+function _arhGrpOf(k){return _arhGroups().find(function(g){return g.k===k;})||null;}
+function ensureArhHomeCSS(){if(document.getElementById("ahcss"))return;var st=document.createElement("style");st.id="ahcss";st.textContent=
+ ".ahome{display:flex;flex-direction:column;gap:11px;padding:4px 0 2px}"
++".ahcard{display:flex;align-items:center;gap:13px;width:100%;text-align:left;background:var(--surf);border:1px solid var(--bd);border-radius:16px;padding:17px 16px;color:var(--ink);cursor:pointer}"
++".ahcard:hover{border-color:var(--acc)}"
++".ahic{flex:0 0 auto;width:46px;height:46px;border-radius:13px;background:var(--accsoft);color:var(--acc);display:grid;place-items:center}"
++".ahic svg{width:23px;height:23px}"
++".ahtx{flex:1;min-width:0;display:block}"
++".ahtt{display:block;font-size:16.5px;font-weight:800;line-height:1.25}"
++".ahsb{display:block;font-size:12px;color:var(--ink3);margin-top:5px;line-height:1.45}"
++".ahn{display:block;font-size:10.5px;font-weight:700;letter-spacing:.3px;text-transform:uppercase;color:var(--acc);margin-top:8px}"
++".arhback{display:flex;align-items:center;gap:7px;flex:0 0 auto;background:var(--surf2);border:1px solid var(--bd);border-radius:10px;color:var(--ink2);font-size:12.5px;font-weight:700;padding:7px 11px;margin-right:8px;cursor:pointer}"
++".arhback:hover{color:var(--acc);border-color:var(--acc)}.arhback svg{width:14px;height:14px}"
++".arhnav{display:flex;align-items:center;margin-bottom:12px}.arhnav .ptabs-arh{flex:1;min-width:0;margin-bottom:0}";
+ document.head.appendChild(st);}
+function renderArhHome(){ensureArhHomeCSS();$("#fab").style.display="none";
+ var gs=_arhGroups();
+ var h='<div class="ahome">'+gs.map(function(g){
+   return '<button class="ahcard" onclick="arhOpenGrp(\''+g.k+'\')"><span class="ahic">'+g.ic+'</span>'
+    +'<span class="ahtx"><span class="ahtt">'+esc(g.n)+'</span><span class="ahsb">'+esc(g.sub)+'</span>'
+    +'<span class="ahn">'+g.tabs.length+' secțiuni</span></span>'
+    +'<span class="chev">'+IC.chev+'</span></button>';}).join("")+'</div>';
+ $("#body").innerHTML=h;}
+function arhOpenGrp(k){if(!_secGuard()){_secAsk(function(){arhOpenGrp(k);});return;}
+ var g=_arhGrpOf(k);if(!g)return;
+ arhGrp=k;if(!g.tabs.some(function(t){return t[0]===arhSub;}))arhSub=g.tabs[0][0];
+ _arhLastSub=null;renderArh();try{$("#body").scrollTop=0;window.scrollTo(0,0);}catch(e){}}
+function arhHome(){if(!_secGuard()){_secAsk(arhHome);return;}
+ if(_wkDraft&&!_wkGuard()){_wkAsk(arhHome);return;}
+ arhGrp="";wkOpen=false;_arhLastSub=null;renderArh();try{$("#body").scrollTop=0;window.scrollTo(0,0);}catch(e){}}
+/* bara de subtaburi a grupului, cu întoarcerea la ecranul de pornire */
+function _arhNavHtml(){var g=_arhGrpOf(arhGrp);if(!g)return "";
+ return '<div class="arhnav"><button class="arhback" onclick="arhHome()">'+IC.back+' Arhivă</button>'
+  +'<div class="ptabs ptabs-arh">'+g.tabs.map(function(t){
+    return '<button class="ptab '+(arhSub===t[0]?"on":"")+'" onclick="arhGo(\''+t[0]+'\')">'+t[1]+'</button>';}).join("")+'</div></div>';}
+/* Subtabul VCP e chiar editorul de săptămâni, care își scrie singur ecranul. După el
+   punem bara la loc, ca să nu se piardă la deschiderea unei săptămâni. */
+function _arhNavPrepend(){try{
+ if(tab!=="arh"||arhSub!=="vcped"||!_arhFull())return;
+ var b=$("#body");if(!b||b.querySelector(".arhnav"))return;
+ b.insertAdjacentHTML("afterbegin",_arhNavHtml());
+ setTimeout(_hscrollBind,0);}catch(e){}}
+
 function renderArh(){arhInitSel();arhEnsureCSS();$("#fab").style.display="none";
+  if(!arhGrp||!_arhGrpOf(arhGrp)){var _g=_arhGroups();
+   if(_g.length===1){arhGrp=_g[0].k;}/* un singur grup: nu mai punem un ecran cu un card */
+   else{renderArhHome();_arhLastSub=null;return;}}
+  var G=_arhGrpOf(arhGrp);
+  if(!G.tabs.some(function(t){return t[0]===arhSub;}))arhSub=G.tabs[0][0];
   /* pe re-randări în ACELAȘI subtab (salvare raport, schimbare filtru) păstrăm scroll-ul și secțiunile deschise */
   var bEl=$("#body");var same=(_arhLastSub===arhSub);
   var sb=same&&bEl?bEl.scrollTop:0;var wy=same?(window.pageYOffset||0):0;
   var open=same&&bEl?[].map.call(bEl.querySelectorAll("details"),function(d){return d.open;}):null;
-  var tabs=[["sumar","Sumar S-1"],["rap","Rapoarte"],["pio600","Pionieri"],["prez","Prezență"],["grp","Grupe"],["resp","Responsab."],["cur","Curățenie generală"],["sarc","Sarcini"],["wm","Întrunirea publică"],["mp","Mărturia publică"],["arhv","Arhivați"],["exp","Export"]];
-  if(_isAdmin())tabs.splice(10,0,["scr","Scrisori"]);
-  if(arhSub==="scr"&&!_isAdmin())arhSub="sumar";
-  if(arhSub==="meu")arhSub="sumar";/* „Profilul meu" e acum tab principal */
   if(arhSub!=="sarc")dutyW=-1;/* ieșirea dintr-o foaie închide săptămâna deschisă în ea */
   if(arhSub!=="mp")mpW=-1;
   if(arhSub!=="wm")wmW=-1;
-  var nav='<div class="ptabs ptabs-arh">'+tabs.map(function(t){return '<button class="ptab '+(arhSub===t[0]?"on":"")+'" onclick="arhGo(\''+t[0]+'\')">'+t[1]+'</button>';}).join("")+'</div>';
+  if(arhSub!=="vcped")wkOpen=false;
+  /* subtabul VCP e editorul de săptămâni: își scrie singur ecranul, iar bara se pune după */
+  if(arhSub==="vcped"){if(wkOpen&&curW>=0&&S.weeks[curW])openWeek(curW);else renderWeeks();
+   _arhLastSub=arhSub;return;}
+  var nav=_arhNavHtml();
   var body=arhSub==="rap"?arhRapHtml():arhSub==="pio600"?arhPioHtml():arhSub==="prez"?arhPrezHtml():arhSub==="grp"?arhGrpHtml():arhSub==="resp"?arhRespHtml():arhSub==="cur"?arhCleanHtml():arhSub==="sarc"?arhDutyHtml():arhSub==="mp"?arhMpHtml():arhSub==="wm"?arhWmHtml():arhSub==="scr"?arhScrHtml():arhSub==="arhv"?arhArchHtml():arhSub==="exp"?arhExpHtml():arhSumarHtml();
   $("#body").innerHTML=nav+body;
   /* cu multe subtaburi bara depășește ecranul — aducem subtabul activ în vizor */
@@ -5236,6 +5349,7 @@ function renderArh(){arhInitSel();arhEnsureCSS();$("#fab").style.display="none";
 /* ===== FAB pe subtaburile Arhivei: descărcările și uneltele secțiunii, fără dubluri în pagină.
    Săgeată de descărcare = doar descărcări; slidere de reglaj = are și unelte/setări. ===== */
 function _arhFab(){var f=$("#fab");if(!f)return;var ed=_canEditArh(),ad=_isAdmin();var cfg=null;
+ if(arhSub==="vcped")return;/* editorul de săptămâni își pune singur butonul */
  if(arhSub==="sumar")cfg={ic:(ed?IC.tune:IC.dl),fn:arhFabSumar};
  else if(arhSub==="rap"){if(ed)cfg={ic:IC.tune,fn:rapToolsSheet};}
  else if(arhSub==="pio600")cfg={ic:IC.dl,fn:function(){pioDownload(theoStartOf(arhYM));}};
@@ -5277,7 +5391,9 @@ function arhFabResp(){var H='';
  if(_canEditArh())H+='<button class="pmrow" onclick="arhFabGo(function(){respEdit(-1);},arhFabResp)">'+IC.plus+'<span><b>Departament nou</b></span></button>';
  H+='<button class="pmrow" onclick="closeSheet();pdfResp()">'+IC.pdf+'<span><b>Responsabilități (PDF)</b> — listă pentru avizier</span></button>';
  sheet("","Responsabilități — descarcă și unelte",H);}
-function arhGo(s){if(s!==arhSub&&typeof _secGuard==="function"&&!_secGuard())return;
+function arhGo(s){if(s===arhSub)return;
+ if(typeof _secGuard==="function"&&!_secGuard()){_secAsk(function(){arhGo(s);});return;}
+ if(_wkDraft&&!_wkGuard()){_wkAsk(function(){arhGo(s);});return;}
  arhSub=s;_arhLastSub=null;renderArh();$("#body").scrollTop=0;try{window.scrollTo(0,0);}catch(e){}}
 
 /* selector lună (an teocratic + lună) */
@@ -5767,9 +5883,8 @@ async function mePinSave(){var cu=_curUser();if(!cu)return;var u=_users().find(f
  logAct("PIN schimbat: "+u.n);save();closeSheet();toast("PIN schimbat ✓");}
 
 /* ---------- ALE MELE (raportul + sarcinile utilizatorului legat de un vestitor) ---------- */
-function meuGoWeek(wi){var o=_allowedTabs();
- if(!_isVestitor()&&o.weeks){go("weeks");try{openWeek(wi);}catch(e){}return;}
- if(o.vcp){go("vcp");try{renderVcp(wi);}catch(e){}}}
+function meuGoWeek(wi){if(!_tabAllowed("prog")){toast("Programările nu-ți sunt disponibile");return;}
+ progSub="vcp";vcpW=wi;go("prog");}
 /* weekISO poate întoarce data cu puncte (ex. „2026.05.06" = ziua întrunirii) — normalizăm aici */
 function _isoDate(s){s=String(s||"").replace(/\./g,"-");var d=new Date(s+"T00:00:00");return isNaN(d.getTime())?null:d;}
 /* doar săptămânile a căror întrunire nu a trecut; fallback pe indexul săptămânii curente */
@@ -5781,7 +5896,7 @@ function _meuInfo(r,b,k){if(!r)return repHas(b.id,k)?'<span style="color:var(--t
   return (r.p?"✓ predicare":"—")+(r.st?(" · "+r.st+" studii"):"")+((hasH&&r.h!=null)?(" · "+r.h+" ore"):"")+(r.cr?(" · credit "+r.cr):"")+((r.o||"").trim()?(" · „"+esc(r.o)+"”"):"");}
 /* din „Profilul meu" direct la săptămâna de curățenie din Sarcini */
 function meuGoClean(wi){if(!_tabAllowed("arh")){toast("Sarcinile nu-ți sunt disponibile");return;}
- dutyW=wi;if(_arhFull())arhSub="sarc";else arhLiteSub="sarc";_arhLastSub=null;go("arh");}
+ dutyW=wi;if(_arhFull()){arhGrp="plan";arhSub="sarc";}else arhLiteSub="sarc";_arhLastSub=null;go("arh");}
 /* --- „Curățenia grupei mele": când e programată grupa din care fac parte ---
    Curățenia nu se dă pe persoane, ci pe grupă, și ține toată săptămâna — de aceea aici nu apare
    o oră, ci săptămâna întreagă, iar săptămâna în curs rămâne afișată până duminică. */
@@ -5804,7 +5919,7 @@ function _meuCleanHtml(my){var gid=myCleanGrp(my);
   return h+'</div></details>';}
 /* --- „Evenimente care urmează": doar cele puse pe o săptămână din caiet, niciunul din trecut --- */
 function _meuEvHtml(){var ev=upcomingEvents();
-  var canJump=_tabAllowed("weeks")||_tabAllowed("vcp");
+  var canJump=_tabAllowed("prog");
   var h='<details class="gcard"'+(ev.length?' open':'')+'><summary><span class="gav">'+IC.star+'</span><span class="ginfo"><span class="gnm">Evenimente care urmează<span class="gcnt">'+ev.length+'</span></span>'
    +'<span class="gsa">vizita supraveghetorului, congrese, Comemorarea — cu data lor</span></span></summary><div class="gbody">';
   h+=ev.length?ev.map(function(e,i){
@@ -5857,7 +5972,7 @@ function arhMeuHtml(){ensureGrpCSS();var my=_myBro();var b=S.bros.find(function(
   var todayISO=now.getFullYear()+"-"+_pad2(now.getMonth()+1)+"-"+_pad2(now.getDate());
   var all=myAssignments(my).concat(myDuties(my)).concat(myWm(my)).concat(myMp(my));var byWeek={};all.forEach(function(e){(byWeek[e.wi]=byWeek[e.wi]||{wi:e.wi,date:e.date,event:e.event,items:[]}).items.push(e);});
   var up=Object.keys(byWeek).map(function(k){return byWeek[k];}).sort(function(a,b){return a.wi-b.wi;}).filter(function(g){return _wkFuture(g,todayISO);});
-  var canJump=_allowedTabs().weeks||_allowedTabs().vcp;
+  var canJump=_tabAllowed("prog");
   h+='<details class="gcard" open><summary><span class="gav">'+IC.cal+'</span><span class="ginfo"><span class="gnm">Sarcinile mele<span class="gcnt">'+up.length+'</span></span><span class="gsa">'+(canJump?'următoarele · apasă o săptămână și ajungi la planificare':'următoarele tale părți la întrunire')+'</span></span></summary><div class="gbody">'
    +(up.length?up.map(function(g,gi){var when=esc(tc(g.date));
       var lines=g.items.map(function(it){return esc(it.label)
@@ -5891,8 +6006,8 @@ function _meuHostHtml(my){var gid=myCleanGrp(my);if(!gid)return "";
       +(canJump?('<span class="chev">'+IC.chev+'</span>'):'')+'</'+(canJump?'button':'div')+'>';}).join("")
    :'<div class="muted" style="padding:12px 4px">Grupa ta nu e programată la ospitalitate în perioada următoare.</div>';
   return h+'</div></details>';}
-function meuGoWm(wi){if(!_tabAllowed("arh")){toast("Întrunirea publică nu-ți e disponibilă");return;}
- wmW=wi;if(_arhFull())arhSub="wm";else arhLiteSub="wm";_arhLastSub=null;go("arh");}
+function meuGoWm(wi){if(!_tabAllowed("prog")){toast("Programările nu-ți sunt disponibile");return;}
+ wmW=wi;progSub="wm";go("prog");}
 /* meniul profilului: fișă, contact, PIN */
 function meuMenu(){var my=_myBro();if(!my){toast("Contul nu e legat de un vestitor");return;}
  var start=(arhTheo!=null?arhTheo:curTheoStart());
@@ -6079,10 +6194,15 @@ function _secAsk(then){var d=_secDraft;if(!d)return;
  .then(function(ok){if(!ok)return;_secDraft=null;_secRestore(d);save();if(then)then();});}
 
 /* ---- cine poate edita ---- */
-function _canEditClean(){if(_isAdmin())return true;var u=_curUser();return !!(u&&u.curE);}
-function _canEditDuty(){if(_isAdmin())return true;var u=_curUser();return !!(u&&u.sarE);}
-function _canEditMp(){if(_isAdmin())return true;var u=_curUser();return !!(u&&u.mpE);}
-function _canEditWm(){if(_isAdmin())return true;var u=_curUser();return !!(u&&u.wmE);}
+/* În „Programări" nimeni nu modifică nimic — e ecranul comun de vizualizare. Cine are
+   dreptul primește acolo un buton care îl duce la locul de modificare, în Arhivă. */
+function _canEditClean(){if(tab==="prog")return false;if(_isAdmin())return true;var u=_curUser();return !!(u&&u.curE);}
+function _canEditDuty(){if(tab==="prog")return false;if(_isAdmin())return true;var u=_curUser();return !!(u&&u.sarE);}
+function _canEditMp(){if(tab==="prog")return false;if(_isAdmin())return true;var u=_curUser();return !!(u&&u.mpE);}
+function _canEditWm(){if(tab==="prog")return false;if(_isAdmin())return true;var u=_curUser();return !!(u&&u.wmE);}
+/* dreptul „adevărat", fără masca de vizualizare — pentru butoanele de trimitere în Arhivă */
+function _mayEditDuty(){if(_isAdmin())return true;var u=_curUser();return !!(u&&u.sarE);}
+function _mayEditWm(){if(_isAdmin())return true;var u=_curUser();return !!(u&&u.wmE);}
 /* orice drum de editare trece pe aici, deci tot aici deschidem ciorna — instantaneul se ia
    ÎNAINTE de prima modificare, ca „Anulează" să poată reveni complet */
 function _needClean(){if(_canEditClean()){_secBegin("cur");return true;}toast("Doar vizualizare — dreptul de editare se dă din Setări → Utilizatori");return false;}
@@ -8034,7 +8154,7 @@ document.getElementById('btnHist').innerHTML=IC.sync;
 (function(){var tb=document.getElementById('btnTheme');if(tb)tb.innerHTML=(window.S&&S.settings&&S.settings.theme==="light")?IC.moon:IC.sun;})();
 document.getElementById('fab').innerHTML=IC.plus;
 (function(){const ICuser='<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>';
- const L={vcp:[IC.book,'VCP'],weeks:[IC.cal,'Programări'],meu:[ICuser,'Profilul meu'],bros:[IC.ppl,'Vestitori'],arh:[IC.arch,'Arhivă']};
+ const L={prog:[IC.cal,'Programări'],meu:[ICuser,'Profilul meu'],bros:[IC.ppl,'Vestitori'],arh:[IC.arch,'Arhivă']};
  document.querySelectorAll('.nb').forEach(b=>{const e=L[b.dataset.tab];if(!e)return;b.innerHTML=e[0]+'<span>'+e[1]+'</span>';});})();
 </script>
 
