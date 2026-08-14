@@ -589,7 +589,7 @@ Object.assign(IC,{
  box:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h18v13H3z"/><path d="M3 7l2-4h14l2 4"/><path d="M10 11h4"/></svg>',
  mark:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15.5 4.5l4 4-9.5 9.5H6v-4z"/><path d="M12.5 7.5l4 4M5 21h14"/></svg>'
 });
-const VERSION="2.95.0";
+const VERSION="2.96.0";
 const SEED_WEEKS=[];
 const SEED_WEEKS_PRE=[];
 const SEED_WEEKS_POST=[];
@@ -4502,6 +4502,12 @@ function startApp(){_dirty=(S._rev||0)>pushedRev();applyTheme();try{bkpMigrate()
    `v` = cheia de „văzut deja"; `label` = versiunea afișată.
    ============================================================================ */
 var NEWS=[
+ {v:"2.96.0",label:"2.96",d:"14.08.2026",t:"Foaia citită arată liniștit",items:[
+  ["cal","Fără semne roșii la vizualizare","Semnul „!” și fâșia „Are deja…” sunt unelte de repartizare: îi spun celui care pune oamenii că persoana mai are ceva în săptămâna aceea. Acum apar doar la el. În „Programări” și pentru cine doar citește foaia rămâne numele, curat."],
+  ["book","Întrunirea publică și VCP, distincte","Sunt două întruniri, nu una. Cine are o temă la Viața creștină nu mai e semnalat la întrunirea de la sfârșit de săptămână, nici invers. Sarcinile și mărturia publică se semnalează în continuare."],
+  ["arch","Arhiva, pe carduri pentru toți","Aceleași carduri ca la administratori: fiecare secțiune își spune numele și ce ține în ea, iar întoarcerea e sus, în capul paginii. Bara de pastile tăiate la margine a dispărut."],
+  ["check","Curățenia grupei mele duce unde trebuie","Din „Profilul meu”, săptămâna de curățenie deschide acum foaia de Sarcini din „Programări” pentru cine n-o are în Arhivă — nu un ecran care nu-i spunea nimic."]
+ ]},
  {v:"2.95.0",label:"2.95",d:"13.08.2026",t:"Alegi mai ușor cine ține tema",items:[
   ["edit","Import plan dintr-un text","Foaia făcută în Word intră dintr-o dată: lipești textul, aplicația potrivește numele cu vestitorii, umple întrunirea publică, locațiile și turele mărturiei publice și bifează privilegiile. Butonul rotund din secțiune → „Import plan”."],
   ["star","Nume din altă congregație","Vorbitorul venit la noi ține de multe ori și rugăciunea. Acum numele lui se poate scrie de mână la oricare post al întrunirii publice, ca la vorbitor, și apare așa pe foaie și în PDF."],
@@ -6150,9 +6156,14 @@ function _wkFuture(g,todayISO){var d=_isoDate(weekISO(g.date));
 function _meuInfo(r,b,k){if(!r)return repHas(b.id,k)?'<span style="color:var(--tealtx,var(--teal));font-weight:700">✓ raport trimis</span>':'<span class="muted">neraportat</span>';
   var c=broCat(b,k);var hasH=catHasHours(c)||c==="pub";
   return (r.p?"✓ predicare":"—")+(r.st?(" · "+r.st+" studii"):"")+((hasH&&r.h!=null)?(" · "+r.h+" ore"):"")+(r.cr?(" · credit "+r.cr):"")+((r.o||"").trim()?(" · „"+esc(r.o)+"”"):"");}
-/* din „Profilul meu" direct la săptămâna de curățenie din Sarcini */
-function meuGoClean(wi){if(!_tabAllowed("arh")){toast("Sarcinile nu-ți sunt disponibile");return;}
- dutyW=wi;if(_arhFull()){arhGrp="plan";arhSub="sarc";}else arhLiteSub="sarc";_arhLastSub=null;go("arh");}
+/* din „Profilul meu" direct la săptămâna de curățenie din Sarcini.
+   Cine nu are foaia în Arhivă o are oricum în „Programări" — acolo îl ducem, la aceeași
+   săptămână, în loc să-l lăsăm pe un ecran care nu-i spune nimic. */
+function meuGoClean(wi){dutyW=wi;_arhLastSub=null;
+ if(_tabAllowed("arh")){
+  if(_arhFull()){arhGrp="plan";arhSub="sarc";go("arh");return;}
+  if(_mayEditDuty()){arhLiteSub="sarc";go("arh");return;}}
+ progSub="sarc";go("prog");}
 /* --- „Curățenia grupei mele": când e programată grupa din care fac parte ---
    Curățenia nu se dă pe persoane, ci pe grupă, și ține toată săptămâna — de aceea aici nu apare
    o oră, ci săptămâna întreagă, iar săptămâna în curs rămâne afișată până duminică. */
@@ -6551,7 +6562,6 @@ function arhCleanHtml(){ensureDutyCSS();var C=cleanD(),ed=_canEditClean();
  var h=_secBar("cur")+'<div class="dsh"><div class="dst"><div class="dstt">'+esc(C.title||"Curățenie generală")+'</div>'
   +'<div class="dsu">'+(C.upd?("Actualizat "+esc(C.upd)):"nemodificat încă")+' · '+C.rows.length+(C.rows.length===1?" rând":" rânduri")+'</div></div>'
   +(ed?('<button class="dse" title="Editează titlul" onclick="cleanTitleSheet()">'+IC.edit+'</button>'):'')+'</div>';
- if(!ed)h+='<div class="muted" style="margin:0 2px 10px;font-size:11.5px">Doar vizualizare. Dreptul de editare se dă din Setări → Utilizatori.</div>';
  if(!C.rows.length){h+='<div class="empty" style="padding:26px 8px">Tabelul e gol.'+(ed?'<br><span class="muted">Adaugă rânduri din butonul plutitor.</span>':'')+'</div>';
   if(ed)h+='<button class="btn pri sm" style="width:100%;margin-top:10px" onclick="cleanReset()">Refă tabelul standard (12 luni)</button>';
   return h;}
@@ -6793,7 +6803,6 @@ function dutyListHtml(){var D=dutyD(),ed=_canEditDuty();
  var h=_secBar("sarc")+'<div class="dsh"><div class="dst"><div class="dstt">'+esc(D.title||"Sarcini")+'</div>'
   +'<div class="dsu">'+(D.upd?("Actualizat "+esc(D.upd)):"nemodificat încă")+' · '+dutyPosts().length+' posturi pe săptămână</div></div>'
   +(ed?('<button class="dse" title="Editează titlul" onclick="dutyTitleSheet()">'+IC.edit+'</button>'):'')+'</div>';
- if(!ed)h+='<div class="muted" style="margin:0 2px 10px;font-size:11.5px">Doar vizualizare. Dreptul de editare se dă din Setări → Utilizatori.</div>';
  if(!S.weeks.length)return h+'<div class="empty" style="padding:26px 8px">Nicio săptămână în caiet.<br><span class="muted">Importă caietul din Setări → Import caiet.</span></div>';
  var cw=vcpCurWeek();
  var years=_wkYearGroups();/* aceeași grupare pe ani/luni ca în celelalte foi */
@@ -6840,7 +6849,10 @@ function dutyWeekHtml(wi){var w=S.weeks[wi],o=dutyOf(wi),ed=_canEditDuty(),posts
  h+='<div class="group gp" style="padding:14px 16px 11px"><div class="nm" style="font-size:16.5px;font-weight:800">Săptămâna '+esc(tc(w.date))+'</div>'
   +'<div class="mt" style="font-size:12.5px;margin-top:3px">'+(w.event?('<span style="color:var(--acc);font-weight:700">'+esc(w.event)+'</span>'):esc(w.bible||""))+'</div></div>';
  h+='<div class="group" style="overflow:hidden">';
- posts.forEach(function(p){var id=o[p.id]||"";var busy=id?dutyBusy(wi,id,p.id):[];
+ /* Semnul „!” e o unealtă de repartizare: îi spune celui care pune oamenii că persoana mai
+    are ceva în săptămâna aceea. Cine doar citește foaia n-are ce face cu el — pentru el
+    rămâne un nume liniștit, fără roșu și fără fâșie de avertizare. */
+ posts.forEach(function(p){var id=o[p.id]||"";var busy=(ed&&id)?dutyBusy(wi,id,p.id):[];
   h+='<div class="dpr"><div class="dpl">'+esc(p.n)+'</div>'
    +'<div class="dprr">'
     +'<button class="dpb '+(id?"":"ph")+(busy.length?" warn":"")+'" '+(ed?('onclick="dutyPick('+wi+',\''+p.id+'\')"'):'disabled style="cursor:default"')+'>'
@@ -7382,7 +7394,6 @@ function mpListHtml(){var D=mpD(),ed=_canEditMp();
  var h=_secBar("mp")+'<div class="dsh"><div class="dst"><div class="dstt">'+esc(D.title||"Mărturia Publică")+'</div>'
   +'<div class="dsu">'+(D.upd?("Actualizat "+esc(D.upd)):"nemodificat încă")+' · '+mpShifts().length+(mpShifts().length===1?" tură":" ture")+' pe săptămână · '+mpLocs().length+(mpLocs().length===1?" locație":" locații")+'</div></div>'
   +(ed?('<button class="dse" title="Editează foaia" onclick="mpTitleSheet()">'+IC.edit+'</button>'):'')+'</div>';
- if(!ed)h+='<div class="muted" style="margin:0 2px 10px;font-size:11.5px">Doar vizualizare. Dreptul de editare se dă din Setări → Utilizatori.</div>';
  if(!S.weeks.length)return h+'<div class="empty" style="padding:26px 8px">Nicio săptămână în caiet.<br><span class="muted">Importă caietul din Setări → Import caiet.</span></div>';
  if(!mpShifts().length)return h+'<div class="empty" style="padding:26px 8px">Nicio tură pe foaie.<br><span class="muted">'+(ed?'Adaugă locațiile și turele din butonul de editare de mai sus.':'Cere unui bătrân să adauge turele.')+'</span></div>';
  var cw=vcpCurWeek();
@@ -7437,7 +7448,8 @@ function mpWeekHtml(wi){var w=S.weeks[wi],ed=_canEditMp();
    +(ed?('<button class="mpsx'+(off?" on":"")+'" onclick="mpToggleOff('+wi+',\''+s.id+'\')">'+(off?"Se ține":"Nu se ține")+'</button>'):'')
    +'</div>';
   if(!off){h+='<div class="mpsl">';
-   for(var i=0;i<cap;i++){var id=sl[i]||"";var busy=id?mpBusy(wi,id,s.id):[];
+   /* avertizarea „are deja…” e pentru cine repartizează; la vizualizare nu apare */
+   for(var i=0;i<cap;i++){var id=sl[i]||"";var busy=(ed&&id)?mpBusy(wi,id,s.id):[];
     h+='<div class="mprow"><span class="mpn">'+(i+1)+'</span>'
      +'<button class="mpb '+(id?"":"ph")+(busy.length?" warn":"")+'" '+(ed?('onclick="mpPick('+wi+',\''+s.id+'\','+i+')"'):'disabled style="cursor:default"')+'>'
      +'<span class="mpx">'+(id?esc(broDisp(id)):"—")+'</span>'+(ed?('<span class="dpc">'+IC.chev+'</span>'):'')+'</button>'
@@ -7638,9 +7650,13 @@ function wmBusy(wi,id,skipKey){var out=[];if(!id)return out;
  if(o.sp===id&&skipKey!=="sp")out.push({t:"w",n:"Cuvântarea publică"});
  wmPosts().forEach(function(p){if(p.id!==skipKey&&o[p.id]===id)out.push({t:"w",n:p.n});});
  return out;}
-/* la alegere arătăm tot ce mai are în săptămâna aceea: întrunirea publică + sarcini + VCP + mărturie */
+/* la alegere arătăm ce mai are în săptămâna aceea: întrunirea publică + sarcini + mărturie.
+   Temele de la VCP NU intră aici: întrunirea de la sfârșit de săptămână și cea din timpul
+   săptămânii sunt două întruniri distincte, iar cine are o temă la una poate foarte bine avea
+   ceva și la cealaltă. Atenționarea nu merge nici în celălalt sens — la VCP nu pomenim
+   întrunirea publică. */
 function wmBusyAll(wi,id,skipKey){var out=wmBusy(wi,id,skipKey);
- try{out=out.concat(dutyBusy(wi,id,null));}catch(e){}
+ try{out=out.concat(dutyBusy(wi,id,null).filter(function(x){return x.t!=="v";}));}catch(e){}
  try{mpShiftsSorted().forEach(function(s){if(mpOff(wi,s.id))return;
   if(mpSlots(wi,s.id).indexOf(id)>=0)out.push({t:"m",n:mpShiftLbl(s,true)});});}catch(e){}
  return out;}
@@ -7674,7 +7690,6 @@ function wmListHtml(){var D=wmD(),ed=_canEditWm();
  var h=_secBar("wm")+'<div class="dsh"><div class="dst"><div class="dstt">'+esc(D.title||"Întrunirea Publică")+'</div>'
   +'<div class="dsu">'+(D.upd?("Actualizat "+esc(D.upd)):"nemodificat încă")+' · '+RO_DAYS[meetDayWVal()].toLowerCase()+' · '+wmPosts().length+(wmPosts().length===1?" post":" posturi")+'</div></div>'
   +(ed?('<button class="dse" title="Editează foaia" onclick="wmTitleSheet()">'+IC.edit+'</button>'):'')+'</div>';
- if(!ed)h+='<div class="muted" style="margin:0 2px 10px;font-size:11.5px">Doar vizualizare. Dreptul de editare se dă din Setări → Utilizatori.</div>';
  if(!S.weeks.length)return h+'<div class="empty" style="padding:26px 8px">Nicio săptămână în caiet.<br><span class="muted">Importă caietul din Setări → Import caiet.</span></div>';
  var cw=vcpCurWeek(),ns=wmSlots();
  var years=_wkYearGroups();
@@ -7725,7 +7740,8 @@ function wmWeekHtml(wi){var w=S.weeks[wi],o=wmOf(wi),ed=_canEditWm(),posts=wmPos
    +'<span class="mpx wmtt" style="white-space:normal">'+((o.tt||"").trim()?esc(o.tt):"—")+'</span>'+(ed?('<span class="dpc">'+IC.chev+'</span>'):'')+'</button>'
   +'</div></div></div>';
  h+='<div class="group" style="overflow:hidden">';
- posts.forEach(function(p){var id=o[p.id]||"";var busy=id?wmBusyAll(wi,id,p.id):[];
+ /* la fel ca la Sarcini: avertizarea o vede doar cine poate schimba foaia */
+ posts.forEach(function(p){var id=o[p.id]||"";var busy=(ed&&id)?wmBusyAll(wi,id,p.id):[];
   h+='<div class="wmf"><div class="wml">'+esc(p.n)+'</div><div class="wmr">'
    +'<button class="mpb '+(id?"":"ph")+(busy.length?" warn":"")+'" '+(ed?('onclick="wmPick('+wi+',\''+p.id+'\')"'):'disabled style="cursor:default"')+'>'
    +'<span class="mpx">'+(id?esc(broDisp(id)):"—")+'</span>'+(ed?('<span class="dpc">'+IC.chev+'</span>'):'')+'</button>'
@@ -8268,25 +8284,34 @@ function _allPdfCSS(){return ""
    Toți utilizatorii văd Curățenia și Sarcinile; raportul propriu și Prezența apar
    doar celor în drept. */
 var arhLiteSub=null;
-/* Întrunirea publică și Sarcinile se văd oricum în „Programări"; aici apar doar dacă
+/* Aceleași carduri ca la Arhiva completă: fiecare secțiune își spune numele și ce ține în ea,
+   intri într-una și te întorci din butonul de sus. Bara de pastile ținea toate secțiunile
+   deodată pe ecran, tăiate la margine, fără să spună nimic despre ce e în fiecare.
+   Întrunirea publică și Sarcinile se văd oricum în „Programări"; aici apar doar dacă
    omul chiar le poate modifica, altfel ar fi de două ori același lucru. */
 function _arhLiteTabs(){var t=[];
- if(_myBro())t.push(["meu","Raportul meu"]);
- if(_attV())t.push(["prez","Prezență"]);
- t.push(["cur","Curățenie generală"]);
- t.push(["mp","Mărturia publică"]);
- if(_mayEditWm())t.push(["wm","Întrunirea publică"]);
- if(_mayEditDuty())t.push(["sarc","Sarcini"]);
+ if(_myBro())t.push(["meu","Raportul meu",IC.edit,"orele, studiile și publicațiile pe care le trimiți în fiecare lună"]);
+ if(_attV())t.push(["prez","Prezență",IC.cal,"prezența la întruniri, lună de lună"]);
+ t.push(["cur","Curățenie generală",IC.check,"congregația de serviciu, fratele responsabil și bifa lunară"]);
+ t.push(["mp","Mărturia publică",IC.ppl,"locațiile, turele pe zile și ore, cu numele de la fiecare tură"]);
+ if(_mayEditWm())t.push(["wm","Întrunirea publică",IC.star,"vorbitor, titlu, președinte, cititor, rugăciune, ospitalitate"]);
+ if(_mayEditDuty())t.push(["sarc","Sarcini",IC.mark,"audio-video, oameni de ordine, podium și grupa de curățenie"]);
  return t;}
-function renderArhLite(){ensureDutyCSS();try{ensureGrpCSS();arhEnsureCSS();}catch(e){}
+function _arhLiteSecOf(k){return _arhLiteTabs().find(function(t){return t[0]===k;})||null;}
+function renderArhLite(){ensureDutyCSS();try{ensureGrpCSS();arhEnsureCSS();ensureArhHomeCSS();}catch(e){}
  var tabs=_arhLiteTabs();
  if(!tabs.length){$("#body").innerHTML='<div class="empty" style="padding:26px 8px">Nimic de arătat aici.</div>';$("#fab").style.display="none";return;}
- if(!arhLiteSub||!tabs.some(function(t){return t[0]===arhLiteSub;}))arhLiteSub=tabs[0][0];
- var nav=(tabs.length>1)?('<div class="ptabs ptabs-arh">'+tabs.map(function(t){return '<button class="ptab '+(arhLiteSub===t[0]?"on":"")+'" onclick="arhLiteGo(\''+t[0]+'\')">'+t[1]+'</button>';}).join("")+'</div>'):'';
+ /* o singură secțiune: n-are rost un ecran de pornire cu un card */
+ if(tabs.length===1)arhLiteSub=tabs[0][0];
+ var sec=arhLiteSub?_arhLiteSecOf(arhLiteSub):null;
+ if(!sec){arhLiteSub=null;$("#fab").style.display="none";
+  $("#body").innerHTML='<div class="ahome">'+tabs.map(function(t){
+    return _ahCard("arhLiteGo('"+t[0]+"')",t[2],t[1],t[3]||"");}).join("")+'</div>';
+  return;}
+ var nav=(tabs.length>1)?('<div class="arhnav"><button class="arhback" onclick="arhLiteHome()">'+IC.back+' Arhivă</button>'
+   +'<span class="ahtt2">'+esc(sec[1])+'</span></div>'):'';
  var body=arhLiteSub==="meu"?_arhVestitorHtml():arhLiteSub==="prez"?_arhPrezVHtml():arhLiteSub==="cur"?arhCleanHtml():arhLiteSub==="mp"?arhMpHtml():arhLiteSub==="wm"?arhWmHtml():arhDutyHtml();
  $("#body").innerHTML=nav+body;
- try{var _pt=$("#body").querySelector(".ptabs-arh"),_on=_pt&&_pt.querySelector(".ptab.on");
-  if(_pt&&_on)_pt.scrollLeft=Math.max(0,_on.offsetLeft-(_pt.clientWidth-_on.offsetWidth)/2);}catch(e){}
  var f=$("#fab");
  if(arhLiteSub==="cur")_arhFabSet(arhFabClean,_canEditClean()?IC.tune:IC.dl);
  else if(arhLiteSub==="sarc")_arhFabSet(arhFabDuty,_canEditDuty()?IC.tune:IC.dl);
@@ -8294,8 +8319,12 @@ function renderArhLite(){ensureDutyCSS();try{ensureGrpCSS();arhEnsureCSS();}catc
  else if(arhLiteSub==="wm")_arhFabSet(arhFabWm,_canEditWm()?IC.tune:IC.dl);
  else if(f)f.style.display="none";}
 function _arhFabSet(fn,ic){var f=$("#fab");if(!f)return;f.innerHTML=ic;f.title="Descarcă / unelte";f.style.display="flex";f.onclick=fn;}
-function arhLiteGo(s){if(s!==arhLiteSub&&!_secGuard())return;
+function arhLiteGo(s){if(s!==arhLiteSub&&!_secGuard()){_secAsk(function(){arhLiteGo(s);});return;}
  arhLiteSub=s;if(s!=="sarc")dutyW=-1;if(s!=="mp")mpW=-1;if(s!=="wm")wmW=-1;
+ renderArhLite();try{$("#body").scrollTop=0;window.scrollTo(0,0);}catch(e){}}
+/* înapoi la cardurile Arhivei, ca la Arhiva completă */
+function arhLiteHome(){if(!_secGuard()){_secAsk(arhLiteHome);return;}
+ arhLiteSub=null;dutyW=-1;mpW=-1;wmW=-1;
  renderArhLite();try{$("#body").scrollTop=0;window.scrollTo(0,0);}catch(e){}}
 
 /* ---------- EXPORT ---------- */
