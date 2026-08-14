@@ -589,7 +589,7 @@ Object.assign(IC,{
  box:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h18v13H3z"/><path d="M3 7l2-4h14l2 4"/><path d="M10 11h4"/></svg>',
  mark:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15.5 4.5l4 4-9.5 9.5H6v-4z"/><path d="M12.5 7.5l4 4M5 21h14"/></svg>'
 });
-const VERSION="2.96.1";
+const VERSION="2.96.2";
 const SEED_WEEKS=[];
 const SEED_WEEKS_PRE=[];
 const SEED_WEEKS_POST=[];
@@ -5176,7 +5176,13 @@ function _hscrollBind(){try{
    if(nx!==el.scrollLeft){el.scrollLeft=nx;e.preventDefault();}
   },{passive:false});});}catch(e){}}
 function sheet(_x,title,html){const bk=$("#sheetBack");if(bk)bk.style.display="none";$("#sheetHd").textContent=title;$("#sheetBody").innerHTML=html;$("#ov").classList.add("show");}
-function closeSheet(){$("#ov").classList.remove("show");}
+/* Cât timp o foaie e deschisă, sincronizarea se ține deoparte (`editBusy`) — nu îmbinăm date
+   sub mâna cuiva care tocmai alege ceva. Dar aproape toate modificările se fac ÎNTR-O foaie
+   (alegerea unei persoane, importul planului), așa că trimiterea rămânea pe seama următoarei
+   bătăi de ceas: cine închidea aplicația imediat după „Aplică" păstra totul doar pe telefonul
+   lui. La închiderea foii dăm deci un ghiont: dacă a rămas ceva netrimis, pleacă acum. */
+function closeSheet(){$("#ov").classList.remove("show");
+ try{if(_dirty&&typeof autoBump==="function")autoBump();}catch(e){}}
 
 window.addEventListener("DOMContentLoaded",()=>{
  document.querySelectorAll(".nb").forEach(b=>b.onclick=()=>{
