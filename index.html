@@ -589,7 +589,7 @@ Object.assign(IC,{
  box:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h18v13H3z"/><path d="M3 7l2-4h14l2 4"/><path d="M10 11h4"/></svg>',
  mark:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15.5 4.5l4 4-9.5 9.5H6v-4z"/><path d="M12.5 7.5l4 4M5 21h14"/></svg>'
 });
-const VERSION="2.97.0";
+const VERSION="2.97.1";
 const SEED_WEEKS=[];
 const SEED_WEEKS_PRE=[];
 const SEED_WEEKS_POST=[];
@@ -4061,7 +4061,12 @@ function _wait(ms){return new Promise(function(res){setTimeout(res,ms);});}
 function _offline(){return typeof navigator!=="undefined"&&navigator.onLine===false;}
 async function _gfetch(url,opts,tries){tries=tries==null?2:tries;for(var k=0;;k++){
  var ctl=(typeof AbortController!=="undefined")?new AbortController():null;var tm=ctl?setTimeout(function(){try{ctl.abort();}catch(e){}},20000):null;
- try{var o=Object.assign({},opts||{});if(ctl)o.signal=ctl.signal;var r=await fetch(url,o);if(tm)clearTimeout(tm);
+ try{var o=Object.assign({},opts||{});if(ctl)o.signal=ctl.signal;
+  /* raspunsurile API GitHub vin cu "Cache-Control: private, max-age=60": fara no-store, browserul
+     servea din cache o copie veche a gistului, iar sincronizarea credea ca in cloud nu s-a schimbat
+     nimic si trimitea starea locala peste modificarile altui dispozitiv. */
+  if(o.cache==null)o.cache="no-store";
+  var r=await fetch(url,o);if(tm)clearTimeout(tm);
   if(r.status>=500&&k<tries){await _wait(700*(k+1));continue;}return r;}
  catch(e){if(tm)clearTimeout(tm);if(k<tries&&!_offline()){await _wait(700*(k+1));continue;}throw e;}}}
 function _errMsg(e){var m=(e&&e.message)||"";
@@ -4132,9 +4137,17 @@ async function ghSync(silent){const g=S.settings.gh;if(!g.token||!g.gist){if(!si
   const r=await _gfetch(`https://api.github.com/gists/${g.gist}`,{headers:hdr});
   if(r.status===304){/* nimic nou în cloud */if(_dirty)doPush=true;else if(!silent)toast("Deja sincronizat");setSyncNow();_busy=false;if(doPush&&autoOn())return ghPush(silent);return;}
   if(!r.ok){_noteHttp(r);let m="";try{m=(await r.json()).message;}catch(e){}throw new Error(r.status+(m?": "+m:""));}
-  try{_getag=r.headers.get("etag")||"";}catch(e){_getag="";}
-  const d=await r.json();const R=JSON.parse(d.files["plan.json"].content);const rr=R._rev||0,lr=S._rev||0;const ldata=hasData(S),rdata=hasData(R);var doApply=false;
-  if(!ldata&&rdata){doApply=!editBusy();}
+  /* ETag-ul se retine DOAR daca ciclul chiar reconciliaza starea. Daca sarim (cineva edita in acel
+     moment), pastrarea lui ducea la un 304 la ciclul urmator si la un push integral care stergea
+     modificarile venite din cloud si nepreluate inca. */
+  var _etNew="";try{_etNew=r.headers.get("etag")||"";}catch(e){_etNew="";}var _skipped=false;
+  const d=await r.json();
+  /* peste 1 MB, GitHub întoarce conținutul TĂIAT (truncated) — fără citirea din raw_url, JSON.parse
+     crăpa și sincronizarea se oprea de tot pentru toată congregația. */
+  const _pf=(d.files&&d.files["plan.json"])||{};var _ptxt=_pf.content||"";
+  if(_pf.truncated&&_pf.raw_url){const _r2=await _gfetch(_pf.raw_url,{},0);if(_r2.ok)_ptxt=await _r2.text();}
+  const R=JSON.parse(_ptxt);const rr=R._rev||0,lr=S._rev||0;const ldata=hasData(S),rdata=hasData(R);var doApply=false;
+  if(!ldata&&rdata){doApply=!editBusy();if(!doApply)_skipped=true;}
   else if(ldata&&!rdata){doPush=true;}
   else{
    /* Baza = ultima stare pe care acest dispozitiv și cloudul au avut-o identică. Cu ea știm exact
@@ -4144,21 +4157,27 @@ async function ghSync(silent){const g=S.settings.gh;if(!g.token||!g.gist){if(!si
    var _bs=_baseSig(_bt),_rCh=_bs?(_sig3(_canon3(R))!==_bs):false;
    if(_bs&&_dirty&&_rCh){/* am modificat și eu, și cloudul → îmbinare, apoi trimit rezultatul */
     if(!editBusy()){/* nu îmbinăm sub mâna cuiva care editează — reluăm la ciclul următor */
-     if(rr>pushedRev()){try{bkpAdd({t:Date.now(),rev:rr,w:(R.weeks||[]).length,b:(R.bros||[]).length,u:"☁ cloud",data:d.files["plan.json"].content},function(a){return a.rev===rr;});}catch(e){}}
+     if(rr>pushedRev()){try{bkpAdd({t:Date.now(),rev:rr,w:(R.weeks||[]).length,b:(R.bros||[]).length,u:"☁ cloud",data:_ptxt},function(a){return a.rev===rr;});}catch(e){}}
      try{_mergeCloudReps(R);}catch(e){}/* rapoarte / ștergeri de rapoarte / prezență: câștigă ora mai nouă */
      var _chg=false;try{_chg=_merge3(_bt,R);}catch(e){}
      S._rev=Math.max(nextRev(),rr+1);localStorage.setItem(KEY,JSON.stringify(S));
      if(_chg){try{_sessRefresh();_sessSave();}catch(e){}try{applyTheme();}catch(e){}try{go(tab);}catch(e){}}
-     doPush=true;}}
+     doPush=true;}else _skipped=true;}
    else if(_bs&&_dirty){doPush=true;}/* doar eu am modificat → trimit (nu deranjează ecranul) */
-   else if(_bs){if(_rCh)doApply=!editBusy();}/* doar cloudul s-a modificat → preiau */
-   else if(_dirty){/* fără bază (prima sincronizare după actualizare) — comportamentul de dinainte */
-    if(rr<lr){doPush=true;}
-    else if(!editBusy()){
-     if(rr>pushedRev()){try{bkpAdd({t:Date.now(),rev:rr,w:(R.weeks||[]).length,b:(R.bros||[]).length,u:"☁ cloud",data:d.files["plan.json"].content},function(a){return a.rev===rr;});}catch(e){}}
+   else if(_bs){if(_rCh){doApply=!editBusy();if(!doApply)_skipped=true;}}/* doar cloudul s-a modificat → preiau */
+   else if(_dirty){/* Fără bază (dispozitiv nou, stocare curățată de browser, IndexedDB indisponibil).
+     Înainte se compara doar numărul de versiune (ora dispozitivului) și, dacă al meu era mai mare,
+     trimiteam ÎNTREAGA stare locală peste cloud — așa dispăreau modificările făcute între timp de
+     altcineva, iar aplicația „revenea" la o variantă mai veche pe toate telefoanele.
+     Acum îmbinăm cu bază goală: nimic nu e considerat șters, deci nu se pierde nimic din nicio parte. */
+    if(!editBusy()){
+     if(rr>pushedRev()){try{bkpAdd({t:Date.now(),rev:rr,w:(R.weeks||[]).length,b:(R.bros||[]).length,u:"☁ cloud",data:_ptxt},function(a){return a.rev===rr;});}catch(e){}}
      try{_mergeCloudReps(R);}catch(e){}
-     S._rev=Math.max(nextRev(),rr+1);localStorage.setItem(KEY,JSON.stringify(S));doPush=true;}}
-   else if(!editBusy()&&rr>lr){doApply=true;}
+     var _chg0=false;try{_chg0=_merge3("{}",R);}catch(e){}
+     S._rev=Math.max(nextRev(),rr+1);localStorage.setItem(KEY,JSON.stringify(S));
+     if(_chg0){try{_sessRefresh();_sessSave();}catch(e){}try{applyTheme();}catch(e){}try{go(tab);}catch(e){}}
+     doPush=true;}else _skipped=true;}
+   else if(rr>lr){if(!editBusy())doApply=true;else _skipped=true;}
    else if(lr>rr){doPush=true;}}
   /* setările Microsoft Forms (od) se ADOPTĂ din cloud dacă lipsesc local — altfel un dispozitiv fără ele
      (1) nu are rotița „Sincronizează cu Forms” la Rapoarte și (2) le-ar ȘTERGE din cloud la următorul push.
@@ -4173,6 +4192,7 @@ async function ghSync(silent){const g=S.settings.gh;if(!g.token||!g.gist){if(!si
    try{_baseSet(R);}catch(_e){}/* de acum baza comună cu cloudul e chiar ce tocmai am preluat */
    localStorage.setItem(KEY,JSON.stringify(S));_applying=false;setPushed(S._rev||0);applyTheme();if(!editBusy())go(tab);else updateSyncInfo();if(!silent)toast("Adus din gist");}
   else if(!doPush&&!silent){toast("Deja sincronizat");}
+  _getag=_skipped?"":_etNew;
   setSyncNow();
  }catch(e){if(!silent)toast("Eroare sync: "+_errMsg(e));updateSyncInfo();}
  finally{_busy=false;}
@@ -4503,6 +4523,10 @@ function startApp(){_dirty=(S._rev||0)>pushedRev();applyTheme();try{bkpMigrate()
    `v` = cheia de „văzut deja"; `label` = versiunea afișată.
    ============================================================================ */
 var NEWS=[
+ {v:"2.97.1",label:"2.97.1",d:"19.08.2026",t:"Nu se mai întoarce la o variantă veche",items:[
+  ["sync","Modificările altcuiva nu mai dispar","Un dispozitiv care nu apucase să vadă ultimele schimbări nu-și mai trimite starea veche peste cloud: le îmbină."],
+  ["sync","Cloudul se citește proaspăt","Verificarea gistului nu mai poate fi servită din memoria browserului, deci nu se mai lucrează cu o copie veche."]
+ ]},
  {v:"2.97.0",label:"2.97",d:"14.08.2026",t:"Săptămâna ține pasul cu tine",items:[
   ["cal","O săptămână, trei foi","În „Programări”, săptămâna aleasă rămâne aceeași când treci de la Viața creștină la Întrunirea publică sau la Sarcini."],
   ["box","Arhiva vestitorilor rămâne a lor","A doua apăsare pe „Arhivă” deschidea din greșeală arhiva de administrator, cu meniurile ei, și „înapoi” nu mai ieșea de acolo."],
