@@ -589,7 +589,7 @@ Object.assign(IC,{
  box:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h18v13H3z"/><path d="M3 7l2-4h14l2 4"/><path d="M10 11h4"/></svg>',
  mark:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15.5 4.5l4 4-9.5 9.5H6v-4z"/><path d="M12.5 7.5l4 4M5 21h14"/></svg>'
 });
-const VERSION="2.98.0";
+const VERSION="2.99.0";
 const SEED_WEEKS=[];
 const SEED_WEEKS_PRE=[];
 const SEED_WEEKS_POST=[];
@@ -956,8 +956,11 @@ function broName(id){const b=S.bros.find(x=>x.id===id);return b?b.name:"";}
    CUM SE SCRIU NUMELE — o singură regulă, peste tot (ecran, PDF, fișe, e-mail)
    ----------------------------------------------------------------------------
    • Surori: NUMELE DE FAMILIE cu majuscule + inițiala prenumelui  → „PASĂRE D."
-   • Frați:  NUMELE DE FAMILIE cu majuscule + prenumele întreg     → „DRĂGHICI Cosmin"
+   • Frați:  NUMELE DE FAMILIE cu majuscule + PRIMUL prenume       → „DRĂGHICI Cosmin"
      …dar la temele cu partener (cursant/partener) și frații se scurtează → „DRĂGHICI C."
+   Regula e aceeași pe TOATE foile: Viața creștină, întrunirea publică, mărturia publică, sarcini,
+   pe ecran și în PDF. Singura listă scrisă altfel e cea pentru Microsoft Forms, unde numele merg
+   întregi, cu toate prenumele, ca raportul să nimerească persoana potrivită (vezi fullNameAll).
    Se ia doar PRIMUL prenume. Numele compuse rămân întregi („AMBROZINSKI-SZABO Monika"):
    se despart numai la spațiu, iar dacă e virgulă, ea separă familia de prenume.
    Înainte fiecare persoană putea avea o formă scrisă de mână, așa că în aceeași listă
@@ -1006,8 +1009,13 @@ function broDispP(id){return nameOf(id,true);}
 /* în fișă: actualizează live „cum apare" pe măsură ce editezi numele, cât timp nu a fost scris manual */
 function bdAuto(nm){var bd=document.getElementById("bd");if(!bd||bd.dataset.custom==="1")return;bd.value=shortName(nm);}
 function expName(id){return nameOf(id,false);}
+/* la temele cu partener (demonstrații, cursant cu partener) se scurtează și frații → „DRĂGHICI C." */
 function expNameP(id){return nameOf(id,true);}
-function expNameS(id){return nameOf(id,true);}
+/* restul foilor — întrunirea publică, mărturia publică, sarcini — sunt locuri de UN singur om,
+   deci merg pe regula obișnuită: fratele cu prenumele („DRĂGHICI Cosmin"), sora cu inițiala
+   („PASĂRE D."). Înainte scurta pe toată lumea, așa că președintele apărea „DAFINOIU M." pe foaia
+   întrunirii publice și „DAFINOIU Mihai" pe cea a Vieții creștine — aceeași persoană, două forme. */
+function expNameS(id){return nameOf(id,false);}
 
 /* parts/ids + history helpers */
 function ensureIds(w){(w.parts||[]).forEach((p,i)=>{if(p.id==null)p.id="p"+i;});}
@@ -4643,6 +4651,12 @@ function startApp(){_dirty=(S._rev||0)>pushedRev();applyTheme();try{bkpMigrate()
    `v` = cheia de „văzut deja"; `label` = versiunea afișată.
    ============================================================================ */
 var NEWS=[
+ {v:"2.99.0",label:"2.99",d:"19.08.2026",t:"Cuvântările publice, ținute la socoteală",items:[
+  ["book","Schițele 1–194, în aplicație","Titlul cuvântării se alege din listă, nu se mai scrie de mână. Foaia reține și numărul schiței, deci pe foaie apare „178. Să umblăm pe calea integrității”."],
+  ["star","Se vede de câte ori s-a ținut fiecare","La alegere, schițele neținute vin primele, apoi cele ținute cel mai demult. Fiecare arată de câte ori s-a ținut, ultima dată când și de cine."],
+  ["ppl","Numele, la fel pe toate foile","Frații cu prenumele („DRĂGHICI Cosmin”), surorile cu inițiala („PASĂRE D.”), iar la temele cu partener scurtat și frații. Pe foaia întrunirii publice, a mărturiei publice și la sarcini apărea scurtat oricine — acum e aceeași regulă peste tot."],
+  ["edit","Import și pentru Viața creștină","Lipești textul și se pun președintele, rugăciunile, conducătorul și cititorul, temele după numărul lor, cântările și evenimentele săptămânii. Butonul rotund din săptămână → „Import plan”."]
+ ]},
  {v:"2.98.0",label:"2.98",d:"19.08.2026",t:"Datele nu se mai pot pierde",items:[
   ["sync","Plasă de siguranță la fiecare trimitere","Înainte de a trimite ceva în cloud, aplicația recitește gistul. Dacă între timp a lucrat altcineva, îmbină întâi și abia apoi trimite, iar starea din cloud intră în copiile de siguranță. Ce a prins se vede la Setări → Sincronizare."],
   ["pdf","PDF-ul trimis fără link în descriere","La PDF-uri apare butonul <b>Trimite</b>: pleacă doar foaia, fără adresa lungă pe care o adăuga vizualizatorul telefonului în mesajul de WhatsApp."],
@@ -5302,7 +5316,8 @@ function wkFabSheet(i){if(i==null||i<0||!S.weeks||!S.weeks[i])return;
  +'<button class="pmrow" onclick="wkFabGo(\'pdf\','+i+')">'+IC.pdf+'<span><b>Descarcă săptămâna</b> — PDF</span></button>'
  +'<button class="pmrow" onclick="wkFabGo(\'all\','+i+')">'+IC.print+'<span><b>Foaia completă</b> — programul + sarcinile + întrunirea de sfârșit de săptămână</span></button>'
  +'<button class="pmrow" onclick="wkFabGo(\'two\','+i+')">'+IC.pdf+'<span><b>Două săptămâni pe o coală</b> — aceasta și următoarea</span></button>'
- +'<button class="pmrow" onclick="wkFabGo(\'per\','+i+')">'+IC.cal+'<span><b>Descarcă pe perioadă</b> — mai multe săptămâni</span></button>');}
+ +'<button class="pmrow" onclick="wkFabGo(\'per\','+i+')">'+IC.cal+'<span><b>Descarcă pe perioadă</b> — mai multe săptămâni</span></button>'
+ +(_canEditVcp()?('<button class="pmrow" onclick="closeSheet();setTimeout(planImportSheet,120)">'+IC.edit+'<span><b>Import plan</b> — lipești textul foii</span></button>'):''));}
 function wkFabGo(what,i){closeSheet();
  if(what==="pdf"){exportPDF(i);return;}
  if(what==="all"){pdfWeekAll([i]);return;}
@@ -7305,10 +7320,15 @@ function _piNorm(s){return fold(String(s||"")).replace(/[^a-z0-9]+/g," ").replac
 /* numele de pe foaie vin și „Prenume Nume", și „Nume Prenume", cu sau fără diacritice:
    se caută vestitorul care are TOATE cuvintele din nume, indiferent de ordine */
 function _piBro(name){var q=_piNorm(name);if(!q)return {err:"gol"};
- var qt=q.split(" ").filter(function(t){return t.length>1;});
+ var all=q.split(" ").filter(Boolean);
+ var qt=all.filter(function(t){return t.length>1;});
+ /* pe foile tipărite partenerii apar scurtat („GREC A."): litera singură e inițiala prenumelui */
+ var qi=all.filter(function(t){return t.length===1;});
  if(!qt.length)return {err:"prea scurt"};
- var hits=brosLive().filter(function(b){var bt=_piNorm(b.name).split(" ");
-  return qt.every(function(t){return bt.indexOf(t)>=0;});});
+ var hits=brosLive().filter(function(b){var bt=_piNorm(b.name).split(" ").filter(Boolean);
+  if(!qt.every(function(t){return bt.indexOf(t)>=0;}))return false;
+  var rest=bt.filter(function(t){return qt.indexOf(t)<0;});
+  return qi.every(function(i){return rest.some(function(t){return t.charAt(0)===i;});});});
  if(hits.length===1)return {b:hits[0]};
  if(hits.length>1)return {err:"mai mulți: "+hits.map(function(b){return b.name;}).join(", ")};
  /* de cele mai multe ori e o mică nepotrivire de nume („Vali" în loc de „Valentina"):
@@ -7348,15 +7368,20 @@ function planImportSheet(){
   +'<div class="pikl">LOC|Pac Basilescu</div>'
   +'<div class="pikl">TURA|Pac Basilescu|6|Tura 1|8:00 – 9:30|3</div>'
   +'<div class="pikl">PRIVMP|Calugaru Susana|Pac Basilescu, Gara de Nord</div>'
-  +'<div class="pikl">PRIVWM|Silviu Tătar|pres,cit,pray,talk</div></div>'
+  +'<div class="pikl">PRIVWM|Silviu Tătar|pres,cit,pray,talk</div>'
+  +'<div class="pikl" style="margin-top:8px">VCP|dată|președinte|rugăciune deschidere|rugăciune încheiere|conducător|cititor</div>'
+  +'<div class="pikl">PARTE|dată|numărul temei|nume|partener</div>'
+  +'<div class="pikl">CANT|dată|deschidere|mijloc|încheiere</div>'
+  +'<div class="pikl">EV|dată|Vizita supraveghetorului de circumscripție|visit|Șereghi Cristian</div></div>'
   +'<div class="hint" style="margin-top:10px">Data se scrie <b>2026-08-01</b>. Ziua turei: 1 = luni … 7 = duminică. Grupa: numărul ei (1, 2, 3…) sau numele scris întreg. Vorbitorul din altă congregație se trece cu numele lui și congregația lui; dacă e din congregație, e de ajuns numele. Câmpurile lăsate goale nu se ating.</div>'
+  +'<div class="hint" style="margin-top:8px"><b>Viața creștină:</b> „numărul temei" e cifra de pe foaie (1, 2, 3…). La temele cu partener se scriu două nume; la Studiul Bibliei, primul e conducătorul și al doilea cititorul. Numele scurtate de pe foaia tipărită („GREC A.") se caută după familie și inițială — dacă ies doi, îl scrii întreg. <b>EV:</b> felul e <b>visit</b> (program normal, cu cuvântare de serviciu), <b>none</b> (nu se ține întrunirea) sau <b>mark</b> (se ține, săptămâna e doar însemnată); un nume nou de eveniment se adaugă singur la tipuri.</div>'
   +'</div></details>';
  sheet("","Import plan",H);}
 function planImportRun(apply){
  var el=document.getElementById("piTxt"),out=document.getElementById("piOut");if(!el||!out)return;
- if(apply&&!_canEditWm()&&!_canEditMp()){toast("Nu ai dreptul de editare");return;}
+ if(apply&&!_canEditWm()&&!_canEditMp()&&!_canEditVcp()){toast("Nu ai dreptul de editare");return;}
  _piPend={};
- var lines=String(el.value||"").split(/\r?\n/),ok=[],err=[],wmTouched=false,mpTouched=false,broTouched=false;
+ var lines=String(el.value||"").split(/\r?\n/),ok=[],err=[],wmTouched=false,mpTouched=false,broTouched=false,vcpTouched=false;
  var wmPost=function(c){return wmPosts().find(function(p){return p.c===c;});};
  var privWm={},privMp={};/* id → listă, strânse la final ca să nu bifăm de zece ori */
  lines.forEach(function(ln,ix){
@@ -7366,6 +7391,61 @@ function planImportRun(apply){
   /* fiecare fel de linie cere dreptul secțiunii în care scrie */
   if(apply&&(kind==="IP")&&!_canEditWm()){err.push(no+"n-ai dreptul la întrunirea publică");return;}
   if(apply&&(kind==="LOC"||kind==="TURA")&&!_canEditMp()){err.push(no+"n-ai dreptul la mărturia publică");return;}
+  if(apply&&(kind==="VCP"||kind==="PARTE"||kind==="EV"||kind==="CANT")&&!_canEditVcp()){err.push(no+"n-ai dreptul la Viața creștină");return;}
+  /* ---- Viața creștină: rândurile fixe ale întrunirii ---- */
+  if(kind==="VCP"||kind==="PARTE"||kind==="EV"||kind==="CANT"){
+   var dv=_piDate(f[1]);if(!dv){err.push(no+"data „"+f[1]+"” nu e de forma 2026-08-01");return;}
+   var wv=_piWeek(dv);if(wv<0){err.push(no+f[1]+" nu cade în nicio săptămână din caiet");return;}
+   var wk=S.weeks[wv];try{ensureIds(wk);}catch(e){}
+   var lbl=tc(wk.date||f[1]),ov=[];
+   if(kind==="EV"){
+    var evn=f[2],evk=(f[3]||"").toLowerCase();
+    if(!evn){if(apply){delete wk.event;delete wk.evId;}vcpTouched=true;ok.push("<b>"+esc(lbl)+"</b> — eveniment scos");return;}
+    var T=evTypes(),t2=T.find(function(x){return _piNorm(x.n)===_piNorm(evn);});
+    if(!t2){
+     if(evk&&["visit","none","mark"].indexOf(evk)<0){err.push(no+"felul „"+f[3]+"” — se scrie visit, none sau mark");return;}
+     /* eveniment nou: „mark" e felul cuminte — întrunirea se ține, săptămâna e doar însemnată */
+     t2={id:"ev_x"+Date.now().toString(36)+T.length,n:evn,k:evk||"mark"};
+     if(apply)T.push(t2);
+     ov.push("tip nou („"+evKindLbl(t2.k)+"”)");}
+    else if(evk&&t2.k!==evk){if(apply)t2.k=evk;ov.push("felul → "+evKindLbl(evk));}
+    if(apply){wk.evId=t2.id;wk.event=t2.n;}
+    /* la vizită, cuvântarea de serviciu o ține supraveghetorul — numele lui stă în setări */
+    if(f[4]){if(apply)S.settings.co=String(f[4]).trim();ov.push("supraveghetor: "+String(f[4]).trim());}
+    vcpTouched=true;ok.push("<b>"+esc(lbl)+"</b> — eveniment: "+esc(t2.n)+(ov.length?(" · "+esc(ov.join(" · "))):""));return;}
+   var plv=S.plans[wv]||{a:{},songs:{}};
+   if(apply){plv=S.plans[wv]=S.plans[wv]||{a:{},songs:{}};plv.a=plv.a||{};plv.songs=plv.songs||{};}
+   if(kind==="CANT"){
+    [[2,"open","deschidere"],[3,"mid","mijloc"],[4,"close","încheiere"]].forEach(function(c){
+     var n2=+f[c[0]];if(!n2)return;if(apply)plv.songs[c[1]]=n2;ov.push(c[2]+": "+n2);});
+    if(!ov.length){err.push(no+"nicio cântare de pus");return;}
+    vcpTouched=true;ok.push("<b>"+esc(lbl)+"</b> — cântări: "+esc(ov.join(" · ")));return;}
+   if(kind==="VCP"){
+    [[2,"pres","președinte"],[3,"open_pr","rugăciunea de deschidere"],[4,"close_pr","rugăciunea de încheiere"],[5,"cond","conducătorul studiului"],[6,"cit","cititorul studiului"]].forEach(function(c){
+     var nm3=f[c[0]];if(!nm3)return;
+     var r3=_piBro(nm3);
+     if(!r3.b){err.push(no+c[2]+" „"+nm3+"” — "+r3.err);return;}
+     if(apply)plv.a[c[1]]=r3.b.id;
+     ov.push(c[2]+" "+broDisp(r3.b.id));});
+    if(!ov.length&&!err.length){err.push(no+"niciun nume de pus");return;}
+    if(ov.length){vcpTouched=true;ok.push("<b>"+esc(lbl)+"</b> — "+esc(ov.join(" · ")));}
+    return;}
+   /* PARTE|dată|numărul de pe foaie|nume|partener */
+   var pn=+f[2];if(!pn){err.push(no+"numărul temei „"+f[2]+"” nu e un număr");return;}
+   var pp=(wk.parts||[]).find(function(x){return (+x.num)===pn;});
+   if(!pp){err.push(no+"săptămâna "+lbl+" n-are tema cu numărul "+pn);return;}
+   var role3=partRole(pp),study3=String(pp.title||"").toLowerCase().indexOf("studiul")>=0;
+   var k1=f[3],k2=f[4];
+   var put=function(key,nm4,what){if(!nm4)return;
+    var r4=_piBro(nm4);
+    if(!r4.b){err.push(no+what+" „"+nm4+"” — "+r4.err);return;}
+    if(apply)plv.a[key]=r4.b.id;
+    ov.push(what+" "+broDisp(r4.b.id));};
+   if(study3){put("cond",k1,"conducător");put("cit",k2,"cititor");}
+   else if(hasPartner(pp,role3)){put(pp.id+"_a",k1,role3);put(pp.id+"_b",k2,"partener");}
+   else{put(pp.id,k1,role3);if(k2)err.push(no+"tema "+pn+" („"+role3+"”) n-are partener");}
+   if(ov.length){vcpTouched=true;ok.push("<b>"+esc(lbl)+"</b> · "+pn+". "+esc(ov.join(" · "))); }
+   return;}
   if(kind==="IP"){
    var d=_piDate(f[1]);if(!d){err.push(no+"data „"+f[1]+"” nu e de forma 2026-08-01");return;}
    var wi=_piWeek(d);if(wi<0){err.push(no+f[1]+" nu cade în nicio săptămână din caiet");return;}
@@ -7452,6 +7532,8 @@ function planImportRun(apply){
  if(wmTouched){_secBegin("wm");_secTouch("Import plan — întrunirea publică ("+ok.length+" linii)");secSave();}
  if(mpTouched){_secBegin("mp");_secTouch("Import plan — mărturia publică");secSave();}
  if(broTouched){logAct("Import plan — bife în fișele vestitorilor: "+privMsg.length);save();}
+ if(vcpTouched){try{histInvalidate();}catch(e){}logAct("Import plan — Viața creștină ("+ok.length+" linii)");save();
+  try{if(typeof openWeek==="function"&&tab==="vcp")openWeek(curW);}catch(e){}}
  toast("Import gata"+(err.length?(" · "+err.length+" linii nepotrivite"):""),err.length?7000:4000);}
 
 /* ============ MĂRTURIA PUBLICĂ ============ */
@@ -7845,6 +7927,62 @@ function wmBusyAll(wi,id,skipKey){var out=wmBusy(wi,id,skipKey);
   if(mpSlots(wi,s.id).indexOf(id)>=0)out.push({t:"m",n:mpShiftLbl(s,true)});});}catch(e){}
  return out;}
 /* ============================================================================
+   CUVÂNTĂRILE PUBLICE — schițele 1–194
+   ----------------------------------------------------------------------------
+   Titlul se scria de mână, deci fiecare îl scria puțin altfel și nu se putea ține socoteala.
+   Acum se alege din listă, iar foaia reține și NUMĂRUL schiței, nu doar titlul. De aici știm
+   de câte ori s-a ținut fiecare cuvântare, când ultima dată și cine a ținut-o.
+   Titlurile din afara listei (cuvântări speciale) se pot scrie mai departe de mână. */
+var PUBTALKS=[[1,"Cât de bine îl cunoști pe Dumnezeu?"],[2,"Vei supraviețui zilelor din urmă?"],[3,"Să ținem pasul cu organizația unită a lui Iehova"],[4,"Ce dovezi avem că Dumnezeu există?"],[5,"Un ajutor real pentru viața de familie"],[6,"Ce învățăm din relatarea despre Potop?"],[7,"Să-l imităm pe „Tatăl îndurărilor tandre”"],[8,"Să trăim nu pentru noi înșine, ci pentru a face voința lui Dumnezeu"],[9,"Să ascultăm și să împlinim Cuvântul lui Dumnezeu"],[10,"Să fim cinstiți în tot ce spunem și facem"],[11,"La fel ca Isus, noi ‘nu facem parte din lume’"],[12,"De ce dorește Dumnezeu să respectăm autoritatea?"],[13,"Punctul de vedere al lui Dumnezeu cu privire la relațiile sexuale și căsătorie"],[14,"Un popor curat îi aduce onoare lui Iehova"],[15,"„Să facem ce este bine față de toți”"],[16,"Să ne întărim prietenia cu Dumnezeu"],[17,"Să-l glorificăm pe Dumnezeu cu tot ce avem"],[18,"Să-l facem pe Iehova fortăreața noastră"],[19,"Cum putem afla ce ne rezervă viitorul?"],[20,"A sosit timpul ca Dumnezeu să conducă lumea"],[21,"Să ne prețuim locul în Regatul lui Dumnezeu"],[22,"Arăți apreciere pentru darurile de la Iehova?"],[23,"Viața are un scop"],[24,"Ați găsit o „perlă de mare valoare”?"],[25,"Să ne împotrivim spiritului lumii"],[26,"Îi pasă lui Dumnezeu de tine?"],[27,"Dați un început bun căsniciei voastre"],[28,"Arătați respect și iubire în căsnicie"],[29,"Ce responsabilități și binecuvântări au părinții?"],[30,"Cum să îmbunătățim comunicarea în familie"],[31,"Ești conștient de necesitățile tale spirituale?"],[32,"Cum putem face față îngrijorărilor vieții"],[33,"Ne vom bucura vreodată de adevărata dreptate?"],[34,"Vei primi semnul pentru a putea supraviețui sfârșitului acestui sistem?"],[35,"Ce trebuie să facem pentru a trăi veșnic?"],[36,"Este această viață totul?"],[37,"Căile lui Dumnezeu ne aduc foloase"],[38,"Cum putem supraviețui sfârșitului lumii?"],[39,"Isus Cristos a învins lumea – Când și cum?"],[40,"Ce evenimente vor avea loc în curând?"],[41,"„Stați liniștiți și veți vedea cum vă salvează Iehova”"],[42,"Poate iubirea să învingă ura?"],[43,"Respectarea cerințelor lui Dumnezeu ne aduce mereu foloase"],[44,"Cum ne pot fi de folos învățăturile lui Isus?"],[45,"Umblați pe calea care duce la viață"],[46,"Să ne încredem pe deplin în Iehova până la sfârșit"],[47,"„Credeți în vestea bună!”"],[48,"Cum îi putem rămâne loiali lui Dumnezeu când suntem puși la încercare"],[49,"Va exista vreodată un pământ curat?"],[50,"Cum putem lua decizii înțelepte?"],[51,"Îi permitem adevărului să ne influențeze viața?"],[52,"Cine este Dumnezeul tău?"],[53,"Ai același mod de gândire ca al lui Dumnezeu?"],[54,"Să ne întărim credința în Dumnezeu și în promisiunile sale"],[55,"Cum ne putem face un nume bun la Dumnezeu?"],[56,"În ce conducător putem avea încredere?"],[57,"Să rezistăm în persecuții"],[58,"Cine sunt adevărații continuatori ai lui Cristos?"],[59,"Veți secera ceea ce semănați"],[60,"Care este scopul tău în viață?"],[61,"În promisiunile cui putem avea încredere?"],[62,"Unde putem găsi o speranță demnă de încredere?"],[63,"Poate fi găsit adevărul?"],[64,"Suntem „iubitori de plăceri” sau „iubitori de Dumnezeu”?"],[65,"Cum putem promova pacea într-o lume cuprinsă de mânie"],[66,"Vei lua și tu parte la seceriș?"],[67,"Să medităm la Cuvântul lui Dumnezeu și la lucrările Sale"],[68,"„Continuați . . . să vă iertați cu mărinimie unii pe alții”"],[69,"De ce să manifestăm o iubire plină de sacrificiu?"],[70,"De ce merită Iehova încrederea ta?"],[71,"Acum este timpul „să stăm treji”!"],[72,"Iubirea – semnul de identificare al adevăraților creștini"],[73,"Cum putem dobândi „o inimă înțeleaptă”"],[74,"Iehova veghează asupra noastră"],[75,"Arată prin modul tău de viață că susții conducerea lui Iehova"],[76,"Cum ne pot ajuta principiile biblice să facem față problemelor vieții?"],[77,"„Fiți mereu ospitalieri”"],[78,"Slujiți-i lui Iehova cu o inimă bucuroasă"],[79,"A cui prietenie o vei alege?"],[80,"Pe ce se bazează speranța voastră? Pe știință sau pe Biblie?"],[81,"Cine este calificat să facă discipoli?"],[82,"Iehova și Cristos – fac ei parte dintr-o trinitate?"],[83,"Trebuie creștinii să respecte Cele zece porunci?"],[84,"Veți scăpa când lumea va fi distrusă?"],[85,"O veste bună într-o lume plină de violență"],[86,"Ce rugăciuni ascultă Dumnezeu?"],[87,"Care este relația ta cu Dumnezeu?"],[88,"De ce să trăim la înălțimea normelor biblice?"],[89,"Veniți, voi, cei însetați după adevăr!"],[90,"Străduiește-te să obții adevărata viață!"],[91,"Prezența lui Mesia și domnia sa"],[92,"Rolul religiei în afacerile lumii"],[93,"Când se vor sfârși dezastrele naturale?"],[94,"Religia adevărată satisface necesitățile societății omenești"],[95,"Nu vă lăsați înșelați de spiritism!"],[96,"Care este viitorul religiei?"],[97,"Să rămânem ireproșabili în mijlocul unei generații perverse"],[98,"„Scena acestei lumi este în schimbare”"],[99,"De ce putem avea încredere în Biblie"],[100,"Cum să clădim prietenii puternice și durabile"],[101,"Iehova, Marele Creator"],[102,"Să acordăm atenție ‘cuvântului profetic’"],[103,"Cum putem găsi adevărata bucurie?"],[104,"Părinți, zidiți cu materiale rezistente la foc?"],[105,"Să găsim mângâiere în toate necazurile noastre"],[106,"Ruinarea pământului aduce pedeapsa divină"],[107,"Ce foloase îți poate aduce o conștiință instruită?"],[108,"De ce putem privi cu încredere viitorul"],[109,"Regatul lui Dumnezeu este aproape"],[110,"Dumnezeu este pe primul loc într-o viață de familie reușită"],[111,"Cum poate fi omenirea vindecată pe deplin?"],[112,"Cum să manifestăm iubire într-o lume egoistă"],[113,"Cum pot tinerii să aibă succes în viață și să fie fericiți?"],[114,"Să apreciem minunile creației lui Dumnezeu"],[115,"Să evităm capcanele lui Satan"],[116,"Alegeți-vă cu înțelepciune prietenii!"],[117,"Cum să învingem răul prin bine"],[118,"Să-i privim pe tineri așa cum îi privește Iehova"],[119,"De ce este util pentru creștini să se păstreze separați de lume"],[120,"De ce să ne supunem acum guvernării lui Dumnezeu"],[121,"O familie mondială care va fi salvată de la distrugere"],[122,"Pacea mondială: din ce sursă va veni ea?"],[123,"De ce creștinii trebuie să se deosebească de lume"],[124,"Baze pentru a avea încredere că Dumnezeu este autorul Bibliei"],[125,"De ce are nevoie omenirea de răscumpărare?"],[126,"Cine poate fi salvat?"],[127,"Ce se întâmplă cu noi când murim?"],[128,"Este iadul într-adevăr un loc al chinului în foc?"],[129,"Este Trinitatea o învățătură biblică?"],[130,"Pământul va dăinui pentru totdeauna"],[131,"Să ne împotrivim cu fermitate Diavolului"],[132,"Învierea – o victorie asupra morții!"],[133,"Are vreo importanță ce credem despre originea oamenilor?"],[134,"Ar trebui creștinii să țină sabatul?"],[135,"Caracterul sacru al vieții și al sângelui"],[136,"Aprobă Dumnezeu folosirea imaginilor în închinare?"],[137,"Au avut loc cu adevărat miracolele biblice?"],[138,"Să dovedim o judecată sănătoasă în timp ce trăim într-o lume depravată"],[139,"Înțelepciunea divină într-o lume a științei"],[140,"Cine este în realitate Isus Cristos?"],[141,"Gemetele creației umane — când se vor sfârși?"],[142,"De ce să ne refugiem la Iehova"],[143,"Încredeți-vă în Dumnezeul oricărei mângâieri"],[144,"O congregație loială sub conducerea lui Cristos"],[145,"Cine este ca Iehova, Dumnezeul nostru?"],[146,"Să folosim instruirea pentru a-l lăuda pe Iehova"],[147,"Să ne încredem în puterea salvatoare a lui Iehova"],[148,"Împărtășiți punctul de vedere al lui Dumnezeu referitor la viață?"],[149,"Umblați cu Dumnezeu?"],[150,"Este această lume condamnată la distrugere?"],[151,"Iehova este un ‘turn de scăpare’ pentru poporul său"],[152,"Adevăratul Armaghedon — De ce? Când?"],[153,"Păstrați vie în minte ‘ziua cea înfricoșătoare’!"],[154,"Guvernarea umană este pusă în balanță"],[155,"A sosit ora de judecată a Babilonului?"],[156,"Ziua Judecății — Un timp de teamă sau de speranță?"],[157,"Cum înfrumusețează creștinii adevărați învățătura divină"],[158,"Să fim curajoși și să ne încredem în Iehova!"],[159,"Să găsim siguranță într-o lume plină de pericole"],[160,"Să ne păstrăm identitatea creștină"],[161,"De ce a suferit și a murit Isus?"],[162,"Eliberare dintr-o lume aflată în întuneric"],[163,"De ce să ne temem de adevăratul Dumnezeu?"],[164,"Mai exercită Dumnezeu autoritate?"],[165,"Ce valori prețuiți?"],[166,"Credința adevărată – Ce este și cum se manifestă?"],[167,"Să fim înțelepți într-o lume lipsită de înțelepciune"],[168,"Vă puteți simți în siguranță în aceste vremuri tulburi!"],[169,"De ce să ne lăsăm îndrumați de Biblie?"],[170,"Cine este în măsură să conducă omenirea?"],[171,"Vă puteți bucura de pace acum și pentru totdeauna!"],[172,"Ce reputație ai la Dumnezeu?"],[173,"Acceptă Dumnezeu toate religiile?"],[174,"Cine va intra în lumea nouă a lui Dumnezeu?"],[175,"De unde știm că Biblia este Cuvântul inspirat al lui Dumnezeu?"],[176,"Când ne vom bucura de adevărata pace și securitate?"],[177,"Unde putem găsi ajutor în timp de necaz?"],[178,"Să umblăm pe calea integrității"],[179,"Să respingem iluziile lumii și să urmărim realitățile Regatului!"],[180,"De ce trebuie să fie reală pentru tine speranța învierii"],[181,"Este sfârșitul mai aproape decât credeți?"],[182,"Ce realizează în prezent Regatul lui Dumnezeu în folosul nostru"],[183,"Să ne abatem ochii de la ceea ce este lipsit de valoare"],[184,"Se sfârșește totul odată cu moartea?"],[185,"Îți influențează adevărul viața?"],[186,"Alăturați-vă poporului fericit al lui Dumnezeu"],[187,"De ce permite Dumnezeul iubirii răutatea?"],[188,"Vă puneți încrederea în Iehova?"],[189,"Să umblăm cu Dumnezeu și vom fi binecuvântați acum și pentru totdeauna"],[190,"O promisiune referitoare la o viață de familie cu adevărat fericită"],[191,"Iubirea și credința ne ajută să învingem lumea"],[192,"Te afli pe calea care duce la viață veșnică?"],[193,"Eliberarea de toate necazurile se apropie"],[194,"Ce foloase ne aduce înțelepciunea divină?"]];
+function ptTitle(n){n=+n;for(var i=0;i<PUBTALKS.length;i++)if(PUBTALKS[i][0]===n)return PUBTALKS[i][1];return "";}
+function ptNumOf(tt){var q=fold(String(tt||"").trim());if(!q)return 0;
+ for(var i=0;i<PUBTALKS.length;i++)if(fold(PUBTALKS[i][1])===q)return PUBTALKS[i][0];return 0;}
+/* numărul + titlul, așa cum se arată peste tot */
+function wmTtl(o){if(!o)return "";var t=String(o.tt||"").trim();if(!t)return "";
+ var n=+o.tn||ptNumOf(t);return (n?(n+". "):"")+t;}
+/* de câte ori s-a ținut fiecare cuvântare, când ultima dată și de cine */
+function ptStats(){var D=wmD(),m={};
+ Object.keys(D.a).forEach(function(k){var wi=+k,o=D.a[k]||{};
+  var t=String(o.tt||"").trim(),n=+o.tn||ptNumOf(t);
+  var key=n?("n"+n):(t?("t"+fold(t)):"");if(!key)return;
+  var e=m[key]||(m[key]={n:n,t:t,c:0,wi:-1,who:""});
+  e.c++;if(wi>e.wi){e.wi=wi;e.who=wmSpeaker(o);if(t)e.t=t;}
+  m[key]=e;});
+ return m;}
+function ptStatOf(st,n,tt){var k=n?("n"+n):(tt?("t"+fold(String(tt).trim())):"");return (k&&st[k])||null;}
+function _ptWhen(e){if(!e)return "nu s-a ținut încă";
+ var w=S.weeks[e.wi];
+ return "de "+e.c+(e.c===1?" dată":" ori")+(w?(" · ultima dată "+tc(w.date)):"")+(e.who?(" — "+e.who):"");}
+/* lista tuturor schițelor, cu socoteala lor */
+var _ptQ="",_ptF="";
+function ptSheet(f){if(f!=null)_ptF=f;var st=ptStats();
+ var rows=PUBTALKS.map(function(x){return {n:x[0],t:x[1],e:ptStatOf(st,x[0],x[1])};});
+ /* cele scrise de mână, în afara listei */
+ Object.keys(st).forEach(function(k){if(k.charAt(0)!=="t")return;var e=st[k];rows.push({n:0,t:e.t,e:e});});
+ var q=fold(_ptQ.trim());
+ var lst=rows.filter(function(r){
+  if(_ptF==="new"&&r.e)return false;
+  if(_ptF==="done"&&!r.e)return false;
+  if(q&&fold(r.t).indexOf(q)<0&&String(r.n).indexOf(q)<0)return false;
+  return true;});
+ if(_ptF==="done")lst.sort(function(a,b){return (b.e?b.e.wi:-1)-(a.e?a.e.wi:-1);});
+ var nDone=rows.filter(function(r){return r.e;}).length;
+ var H='<div class="muted" style="padding:2px 4px 10px">'+PUBTALKS.length+' schițe · <b>'+nDone+'</b> ținute cel puțin o dată</div>'
+  +'<div class="brosrch"><span class="brosrch-ic">'+IC.search+'</span><input class="brosrch-in" type="search" autocomplete="off" placeholder="Caută după număr sau titlu…" value="'+esc(_ptQ)+'" oninput="ptQ(this.value)"></div>'
+  +'<div class="pactrow" style="margin:8px 0 4px">'
+  +['','new','done'].map(function(f2){var lbl=f2===""?"Toate":(f2==="new"?"Neținute":"Ținute");
+    return '<button class="miniact'+(_ptF===f2?" pkgo":"")+'" style="flex:1;justify-content:center" onclick="ptSheet(\''+f2+'\')">'+lbl+'</button>';}).join("")
+  +'</div><div id="ptList"></div>';
+ sheet("Întrunirea publică","Cuvântări publice",H);
+ _ptRender(lst);}
+function ptQ(v){_ptQ=v;ptSheet(null);}
+function _ptRender(lst){var w=document.getElementById("ptList");if(!w)return;
+ if(!lst.length){w.innerHTML='<div class="empty" style="padding:24px 8px">Nicio cuvântare găsită.</div>';return;}
+ w.innerHTML=lst.slice(0,260).map(function(r){
+  return '<div class="group" style="padding:10px 13px"><div class="nm" style="font-size:13.5px;line-height:1.35">'
+   +(r.n?('<b>'+r.n+'.</b> '):'')+esc(r.t)+'</div>'
+   +'<div class="mt" style="font-size:11.5px;margin-top:2px'+(r.e?'':';color:var(--ink3)')+'">'+esc(_ptWhen(r.e))+'</div></div>';}).join("");}
+/* ============================================================================
    CE ȘTIE FOAIA DIN SĂPTĂMÂNILE TRECUTE
    ----------------------------------------------------------------------------
    Vorbitorii veniți din alte congregații se scriau de fiecare dată de la zero — același nume,
@@ -7862,10 +8000,15 @@ function wmTitles(){var D=wmD(),m={},out=[];
  Object.keys(D.a).forEach(function(k){var wi=+k,t=((D.a[k]||{}).tt||"").trim();if(!t)return;
   var f=fold(t),e=m[f];if(!e){e=m[f]={t:t,wi:wi,n:1};out.push(e);}else{e.n++;if(wi>e.wi){e.wi=wi;e.t=t;}}});
  return out.sort(function(a,b){return b.wi-a.wi;});}
-/* aceeași cuvântare, ținută deja: în ce săptămâni și de cine */
-function wmTitleUsed(tt,skipWi){var D=wmD(),q=fold((tt||"").trim()),out=[];if(!q)return out;
+/* aceeași cuvântare, ținută deja: în ce săptămâni și de cine.
+   Se potrivește după NUMĂRUL schiței când îl avem (titlul se mai scrie altfel), altfel după titlu. */
+function wmTitleUsed(tt,skipWi,n){var D=wmD(),q=fold(String(tt||"").trim()),out=[];
+ n=+n||ptNumOf(tt);
+ if(!n&&!q)return out;
  Object.keys(D.a).forEach(function(k){var wi=+k;if(wi===skipWi)return;var o=D.a[k]||{};
-  if(fold((o.tt||"").trim())!==q)return;out.push({wi:wi,who:wmSpeaker(o)});});
+  var on=+o.tn||ptNumOf(o.tt);
+  var hit=n?(on===n):(fold(String(o.tt||"").trim())===q);
+  if(hit)out.push({wi:wi,who:wmSpeaker(o)});});
  return out.sort(function(a,b){return b.wi-a.wi;});}
 function _wmUsedTxt(u){var x=u[0],w=S.weeks[x.wi];
  return "Cuvântarea a mai fost ținută"+(w?(" în "+tc(w.date)):"")+(x.who?(" — "+x.who):"")+(u.length>1?(" (și în alte "+(u.length-1)+")"):"");}
@@ -8007,19 +8150,49 @@ function wmGrpTxtSave(wi){if(!_needWm())return;var v=($("#wgT")?$("#wgT").value:
  wmSetVal(wi,"grpT",v);if(v)wmSetVal(wi,"grp","");
  wmCommit("Întrunirea publică: ospitalitate → "+(v||"scoasă")+" ("+tc(S.weeks[wi].date)+")");
  closeSheet();renderArhRoute();}
-function wmTalkSheet(wi){if(!_needWm())return;var o=wmOf(wi);
- sheet("","Titlul cuvântării",
-  '<div class="muted" style="margin:0 2px 12px">Titlul din schița publică, așa cum apare pe foaia de la avizier.</div>'
- +'<label class="fl">Titlu</label><input class="fld" id="wmTT" list="wmTTL" value="'+esc(o.tt||"")+'" placeholder="ex. Să umblăm pe calea integrității">'
- +'<datalist id="wmTTL">'+wmTitles().slice(0,60).map(function(x){return '<option value="'+esc(x.t)+'">';}).join("")+'</datalist>'
- +((o.tt||"").trim()&&wmTitleUsed(o.tt,wi).length?('<div class="hint" style="margin:9px 0 0">'+esc(_wmUsedTxt(wmTitleUsed(o.tt,wi)))+'</div>'):'')
- +'<button class="btn pri" style="width:100%;margin-top:16px" onclick="wmTalkSave('+wi+')">Salvează</button>');
- setTimeout(function(){var i=document.getElementById("wmTT");if(i)i.focus();},150);}
+var _wtk=null;
+function wmTalkSheet(wi){if(!_needWm())return;_wtk={wi:wi,q:""};wmTalkRender();}
+function wmTalkQ(v){if(_wtk){_wtk.q=v;wmTalkList();}}
+function wmTalkRender(){if(!_wtk)return;var wi=_wtk.wi,o=wmOf(wi);
+ var cur=(o.tt||"").trim(),curN=+o.tn||ptNumOf(cur);
+ var H='<div class="muted" style="margin:0 2px 12px">Alege schița din listă — se reține și numărul ei, deci se poate ține socoteala. Cuvântările din afara listei se scriu de mână.</div>'
+  +(cur?('<div class="hint" style="margin:0 0 12px">Acum: <b>'+(curN?(curN+". "):"")+esc(cur)+'</b>'+(curN?('<br><span class="muted">'+esc(_ptWhen(ptStatOf(ptStats(),curN,cur)))+'</span>'):'')+'</div>'):'')
+  +'<div class="brosrch"><span class="brosrch-ic">'+IC.search+'</span><input id="wtq" class="brosrch-in" type="search" autocomplete="off" placeholder="Caută după număr sau titlu…" value="'+esc(_wtk.q||"")+'" oninput="wmTalkQ(this.value)"></div>'
+  +'<div id="wtkList"></div>'
+  +'<div class="pmlbl" style="margin-top:18px">Sau scrie titlul (cuvântare specială)</div>'
+  +'<input class="fld" id="wmTT" value="'+esc(cur)+'" placeholder="ex. Cuvântare specială">'
+  +'<button class="btn ghost sm" style="width:100%;margin-top:10px" onclick="wmTalkSave('+wi+')">Salvează titlul scris</button>'
+  +(cur?('<button class="btn ghost sm" style="width:100%;margin-top:8px" onclick="wmTalkClear('+wi+')">Scoate titlul</button>'):'');
+ sheet("","Titlul cuvântării",H);wmTalkList();}
+function wmTalkList(){var w=document.getElementById("wtkList");if(!w||!_wtk)return;
+ var wi=_wtk.wi,o=wmOf(wi),curN=+o.tn||ptNumOf(o.tt);
+ var st=ptStats(),q=fold((_wtk.q||"").trim());
+ var lst=PUBTALKS.map(function(x){return {n:x[0],t:x[1],e:ptStatOf(st,x[0],x[1])};})
+  .filter(function(r){return !q||fold(r.t).indexOf(q)>=0||String(r.n).indexOf(q)>=0;});
+ /* întâi cele neținute, apoi cele ținute cel mai demult — așa se rotesc schițele */
+ lst.sort(function(a,b){var wa=a.e?a.e.wi:-1,wb=b.e?b.e.wi:-1;if(wa!==wb)return wa-wb;return a.n-b.n;});
+ w.innerHTML=lst.slice(0,120).map(function(r){
+  return '<div class="dcand '+(curN===r.n?"cur":"")+'"><button class="dcb" onclick="wmTalkPick('+r.n+')">'
+   +'<span class="dca">'+r.n+'</span><span class="dci">'
+   +'<span class="dcn" style="white-space:normal">'+esc(r.t)+(curN===r.n?' <span class="dtag g">aleasă</span>':'')+'</span>'
+   +'<span class="dcl">'+esc(_ptWhen(r.e))+'</span></span></button></div>';}).join("")
+  +(lst.length>120?('<div class="muted" style="padding:8px 4px;font-size:11.5px">…și încă '+(lst.length-120)+'. Caută ca să le vezi.</div>'):'');}
+function wmTalkPick(n){if(!_wtk)return;if(!_needWm())return;var wi=_wtk.wi,t=ptTitle(n);if(!t)return;
+ var used=wmTitleUsed(t,wi,n);
+ wmSetVal(wi,"tn",n);wmSetVal(wi,"tt",t);
+ wmCommit("Întrunirea publică "+tc(S.weeks[wi].date)+": cuvântarea → "+n+". "+t+(used.length?(" [s-a mai ținut: "+used.length+"]"):""));
+ closeSheet();_wtk=null;renderArhRoute();
+ if(used.length)toast(_wmUsedTxt(used),6000);}
+function wmTalkClear(wi){if(!_needWm())return;
+ wmSetVal(wi,"tt","");wmSetVal(wi,"tn","");
+ wmCommit("Întrunirea publică "+tc(S.weeks[wi].date)+": titlul cuvântării → golit");
+ closeSheet();_wtk=null;renderArhRoute();}
 function wmTalkSave(wi){if(!_needWm())return;var v=($("#wmTT")?$("#wmTT").value:"").trim();
- var used=v?wmTitleUsed(v,wi):[];
- wmSetVal(wi,"tt",v);
- wmCommit("Întrunirea publică "+tc(S.weeks[wi].date)+": titlul cuvântării → "+(v||"golit")+(used.length?(" [s-a mai ținut: "+used.length+"]"):""));
- closeSheet();renderArhRoute();
+ var n=ptNumOf(v);/* dacă titlul scris e chiar o schiță din listă, îi punem și numărul */
+ var used=v?wmTitleUsed(v,wi,n):[];
+ wmSetVal(wi,"tt",v);wmSetVal(wi,"tn",n||"");
+ wmCommit("Întrunirea publică "+tc(S.weeks[wi].date)+": titlul cuvântării → "+(v?((n?(n+". "):"")+v):"golit")+(used.length?(" [s-a mai ținut: "+used.length+"]"):""));
+ closeSheet();_wtk=null;renderArhRoute();
  if(used.length)toast(_wmUsedTxt(used),6000);}
 function wmNoteSheet(wi){if(!_needWm())return;var o=wmOf(wi);
  sheet("","Notă pe foaie",
