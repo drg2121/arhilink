@@ -589,7 +589,7 @@ Object.assign(IC,{
  box:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h18v13H3z"/><path d="M3 7l2-4h14l2 4"/><path d="M10 11h4"/></svg>',
  mark:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15.5 4.5l4 4-9.5 9.5H6v-4z"/><path d="M12.5 7.5l4 4M5 21h14"/></svg>'
 });
-const VERSION="2.97.1";
+const VERSION="2.98.0";
 const SEED_WEEKS=[];
 const SEED_WEEKS_PRE=[];
 const SEED_WEEKS_POST=[];
@@ -1353,12 +1353,13 @@ var _histIdx=null,_histIdxRev=-1;
 function histIdx(){
  var rev=(S._rev||0)+"|"+(S.weeks?S.weeks.length:0);
  if(_histIdx&&_histIdxRev===rev)return _histIdx;
- var role={},any={},wk={},all={};
+ var role={},any={},wk={},all={},cnt={};
  (S.weeks||[]).forEach(function(w,wi){var pl=S.plans[wi];if(!w||!pl||!pl.a)return;
   var a=pl.a;
   var put=function(id,r){if(!id)return;
    if(r){role[r]=role[r]||{};if(role[r][id]==null||role[r][id]<wi)role[r][id]=wi;}
    if(any[id]==null||any[id]<wi)any[id]=wi;
+   cnt[id]=(cnt[id]||0)+1;/* câte părți a avut în total — departajează la egalitate */
    (wk[wi]=wk[wi]||{})[id]=1;
    /* rugăciunea nu e o temă: cine se roagă într-o săptămână poate avea liniștit o parte în
       cea următoare, deci n-o punem la socoteala „săptămâni una după alta" */
@@ -1372,11 +1373,13 @@ function histIdx(){
    if(hasPartner(p,r)){put(a[p.id+"_a"],r);put(a[p.id+"_b"],r);}
    else put(asgOf(a,p),r);});});
  var allA={};Object.keys(all).forEach(function(id){allA[id]=Object.keys(all[id]).map(Number).sort(function(a,b){return a-b;});});
- _histIdx={role:role,any:any,wk:wk,all:allA};_histIdxRev=rev;return _histIdx;}
+ _histIdx={role:role,any:any,wk:wk,all:allA,cnt:cnt};_histIdxRev=rev;return _histIdx;}
 /* ultima săptămână în care persoana a avut EXACT tema asta (-1 = niciodată) */
 function lastRoleWi(id,r){var H=histIdx();return (H.role[r]&&H.role[r][id]!=null)?H.role[r][id]:-1;}
 /* ultima săptămână în care a avut orice parte */
 function lastAnyWi(id){var H=histIdx();return H.any[id]!=null?H.any[id]:-1;}
+/* câte părți a avut în total (toate temele, toate săptămânile) */
+function partsCount(id){var H=histIdx();return H.cnt[id]||0;}
 /* e deja pus în săptămâna asta? */
 function usedInWi(id,wi){var H=histIdx();return !!(H.wk[wi]&&H.wk[wi][id]);}
 /* la câte săptămâni distanță e cea mai apropiată parte a lui, față de săptămâna wi.
@@ -1387,6 +1390,7 @@ function histInvalidate(){_histIdx=null;_histIdxRev=-1;}
 function histTouch(id,role,wi){if(!id||wi==null||wi<0)return;var H=_histIdx;if(!H)return;
  if(role){H.role[role]=H.role[role]||{};if(H.role[role][id]==null||H.role[role][id]<wi)H.role[role][id]=wi;}
  if(H.any[id]==null||H.any[id]<wi)H.any[id]=wi;
+ H.cnt[id]=(H.cnt[id]||0)+1;
  (H.wk[wi]=H.wk[wi]||{})[id]=1;
  if(role!=="Rugăciune"){var L=H.all[id]=H.all[id]||[];
   if(L.indexOf(wi)<0){L.push(wi);L.sort(function(a,b){return a-b;});}}}
@@ -1405,6 +1409,10 @@ function rankCmp(role,wi,opts){opts=opts||{};
    var gx=nearGap(xb.id,wi)<=1?1:0,gy=nearGap(yb.id,wi)<=1?1:0;if(gx!==gy)return gx-gy;}
   var rx=lastRoleWi(xb.id,role),ry=lastRoleWi(yb.id,role);if(rx!==ry)return rx-ry;
   var ax=lastAnyWi(xb.id),ay=lastAnyWi(yb.id);if(ax!==ay)return ax-ay;
+  /* la fel de demult (sau niciunul n-a avut nimic): trece înainte cine a avut mai PUȚINE părți
+     în total. Fără asta, la egalitate hotăra alfabetul, așa că aceleași nume de la începutul
+     listei ieșeau mereu primele. */
+  var cx=partsCount(xb.id),cy=partsCount(yb.id);if(cx!==cy)return cx-cy;
   return xb.name.localeCompare(yb.name,"ro");};}
 function autoRank(pool,role,prefPio,wi,mate){const sec=secOfRole(role);
  const isDemo=(sec==="Predicare"&&role!=="Predicare (cuvântare)");
@@ -1422,7 +1430,7 @@ function autoRun(){
  /* copie de siguranță: rezultatul se vede întâi și se salvează sau se anulează în bloc */
  if(!_autoSnap){_autoSnap={};}
  selW.forEach(function(wi){if(!(wi in _autoSnap))_autoSnap[wi]=JSON.stringify(S.plans[wi]||null);});
- let nA=0,nS=0;
+ let nA=0,nS=0;const miss={};
  selW.forEach(wi=>{
   const w=S.weeks[wi];ensureIds(w);
   if(evNoMeet(w))return;
@@ -1440,26 +1448,44 @@ function autoRun(){
   if(selRoles["Rugăciune"])slots.push({key:"close_pr",role:"Rugăciune",part:null});
   if(!onlyEmpty)slots.forEach(s=>{pl.a[s.key]="";});
   const used={};Object.keys(pl.a).forEach(kk=>{if(pl.a[kk])used[pl.a[kk]]=true;});
-  slots.forEach(s=>{
-   if(onlyEmpty&&pl.a[s.key])return;
-   if(s.partner){
-    const mid=pl.a[s.mainKey];if(!mid)return;const main=S.bros.find(x=>x.id===mid);if(!main)return;
-    const recent=autoRecentPartners(mid,3);
-    const famOk=partnerFamOk(s.role);
-    const pool=S.bros.filter(b=>b.active!==false&&!isArchNow(b)&&b.canPartner!==false&&b.id!==mid&&!used[b.id]&&(b.gen===main.gen||(famOk&&((main.famIds&&main.famIds.indexOf(b.id)>=0)||(b.famIds&&b.famIds.indexOf(mid)>=0))))&&recent.indexOf(b.id)<0);
-    const rk=autoRank(pool,s.role,true,wi,main);
-    if(rk.length){pl.a[s.key]=rk[0].b.id;used[rk[0].b.id]=true;histTouch(rk[0].b.id,s.role,wi);nA++;}else nS++;
-   }else{
-    const pool=eligible(s.role).filter(b=>meetsS38(b,s.role,s.part)&&!used[b.id]);
-    const rk=autoRank(pool,s.role,false,wi,null);
-    if(rk.length){pl.a[s.key]=rk[0].b.id;used[rk[0].b.id]=true;histTouch(rk[0].b.id,s.role,wi);nA++;}else nS++;
-   }
-  });
+  /* Ordinea în care umplem locurile: întâi cel cu CEI MAI PUȚINI candidați.
+     Înainte mergeam pur și simplu în ordinea de pe foaie, iar un loc cu doi oameni potriviți
+     rămânea gol fiindcă singurul disponibil fusese pus deja la o parte pe care o putea ține
+     jumătate de congregație. Acum partea grea își ia omul prima, iar cele largi se descurcă
+     cu ce rămâne — se umplu mai multe locuri, cu aceleași reguli S-38. */
+  const pend=slots.filter(s=>!(onlyEmpty&&pl.a[s.key]));
+  const arpC={};
+  let guard=0;
+  while(pend.length&&guard++<600){
+   let bi=-1,bn=1e9,bc=null;
+   for(let i=0;i<pend.length;i++){const c=_autoCand(pend[i],pl,used,arpC);
+    if(!c)continue;/* pereche fără principal — o luăm după ce se pune principalul */
+    if(c.pool.length<bn){bn=c.pool.length;bi=i;bc=c;if(bn===0)break;}}
+   if(bi<0)break;/* au rămas doar perechi orfane */
+   const s=pend.splice(bi,1)[0];
+   const rk=autoRank(bc.pool,s.role,bc.pio,wi,bc.main);
+   if(rk.length){pl.a[s.key]=rk[0].b.id;used[rk[0].b.id]=true;histTouch(rk[0].b.id,s.role,wi);nA++;}
+   else{nS++;miss[s.role]=(miss[s.role]||0)+1;}
+  }
+  pend.forEach(s=>{nS++;miss[s.role]=(miss[s.role]||0)+1;});
  });
- _autoInfo={n:nA,s:nS,w:selW.length};
+ _autoInfo={n:nA,s:nS,w:selW.length,miss:miss};
  closeSheet();openWeek(curW);autoBar();
- toast("Auto-atribuire: "+nA+" puse"+(nS?(" · "+nS+" fără candidat"):"")+" — verifică și salvează",5000);
+ toast("Auto-atribuire: "+nA+" puse"+(nS?(" · "+nS+" fără candidat"+_missTxt(miss)):"")+" — verifică și salvează",5000);
 }
+/* la ce teme n-a avut pe cine pune — altfel „3 fără candidat" nu spunea unde să te uiți */
+function _missTxt(miss){var ks=Object.keys(miss||{});if(!ks.length)return "";
+ ks.sort(function(a,b){return miss[b]-miss[a];});
+ return " ("+ks.slice(0,3).join(", ")+(ks.length>3?"…":"")+")";}
+/* candidații pentru un loc, cu tot cu regulile de pereche (S-38: același sex, în afară de
+   familie acolo unde e permis; nu se repetă ultimii 3 parteneri) */
+function _autoCand(s,pl,used,arpC){
+ if(s.partner){const mid=pl.a[s.mainKey];if(!mid)return null;
+  const main=S.bros.find(x=>x.id===mid);if(!main)return null;
+  const recent=arpC[mid]||(arpC[mid]=autoRecentPartners(mid,3));
+  const famOk=partnerFamOk(s.role);
+  return {pio:true,main:main,pool:S.bros.filter(b=>b.active!==false&&!isArchNow(b)&&b.canPartner!==false&&b.id!==mid&&!used[b.id]&&(b.gen===main.gen||(famOk&&((main.famIds&&main.famIds.indexOf(b.id)>=0)||(b.famIds&&b.famIds.indexOf(mid)>=0))))&&recent.indexOf(b.id)<0)};}
+ return {pio:false,main:null,pool:eligible(s.role).filter(b=>meetsS38(b,s.role,s.part)&&!used[b.id])};}
 /* ---- rezultatul auto-atribuirii: se vede întâi, se salvează sau se anulează în bloc ----
    Înainte se scria direct peste tot, fără cale de întoarcere dacă nu-ți convenea. */
 var _autoSnap=null,_autoInfo=null;
@@ -1469,7 +1495,7 @@ function autoBar(){var el=document.getElementById("autoBar");
   (document.querySelector(".app")||document.body).appendChild(el);}
  var w=Object.keys(_autoSnap).length;
  el.innerHTML='<div class="autobt"><b>Auto-atribuire</b> · '+_autoInfo.n+' puse în '+w+(w===1?' săptămână':' săptămâni')
-  +(_autoInfo.s?(' · '+_autoInfo.s+' fără candidat'):'')+'</div>'
+  +(_autoInfo.s?(' · '+_autoInfo.s+' fără candidat'+_missTxt(_autoInfo.miss)):'')+'</div>'
   +'<button class="btn ghost sm" onclick="autoUndo()">Anulează</button>'
   +'<button class="btn pri sm" onclick="autoKeep()">Salvează</button>';}
 function autoKeep(){if(!_autoSnap)return;
@@ -3746,7 +3772,8 @@ function renderSet(){if(!_isAdmin()){renderSetLimited();return;}$("#fab").style.
     <div class="two" style="margin-top:9px"><button class="btn ghost sm" onclick="ghPaste()">Lipește cod</button><button class="btn ghost sm" onclick="ghPairCode()">Cod împerechere</button></div>
     <div class="muted" style="margin-top:9px;font-size:11.5px">Laptop: token → <b>Salvează</b> → <b>Cod împerechere</b> → copiază. Telefon: <b>Lipește cod</b> → gata.</div>
     <label class="aow" style="margin-top:12px"><input type="checkbox" ${st.autoSync!==false?"checked":""} onchange="S.settings.autoSync=this.checked;save()"><span><b>Sincronizare automată</b> — urcă la fiecare modificare, aduce la deschidere</span></label>
-    <div style="display:flex;align-items:center;gap:10px;margin-top:10px"><span style="font-size:13px;color:var(--ink2)">Interval (secunde, min 2):</span><input type="number" min="2" value="${Math.max(2,st.syncSec||2)}" class="fld" style="width:74px" onchange="S.settings.syncSec=Math.max(2,(+this.value)||2);this.value=S.settings.syncSec;save()"></div>`)
+    <div style="display:flex;align-items:center;gap:10px;margin-top:10px"><span style="font-size:13px;color:var(--ink2)">Interval (secunde, min 2):</span><input type="number" min="2" value="${Math.max(2,st.syncSec||2)}" class="fld" style="width:74px" onchange="S.settings.syncSec=Math.max(2,(+this.value)||2);this.value=S.settings.syncSec;save()"></div>
+    ${_guardLine()}`)
  +_setCard(IC.info,"Notificări",
    (pushReady()? (notifPerm()==="granted"?`<span class="on">push activ pe acest dispozitiv</span> · vin și cu aplicația închisă`:`<span class="warn">push configurat</span> — activează-l și pe acest dispozitiv`) : `<span class="off">push neconfigurat</span> · doar reamintiri locale, la deschiderea aplicației`),
    `<div class="muted" style="margin:0 0 10px"><b>Notificări push în browser</b>, prin serverul Firebase comun cu FamLink (proiect famlink-push) — ajung pe telefon și desktop chiar și cu aplicația închisă:<br>
@@ -4123,10 +4150,103 @@ function updateSyncInfo(){var el=$("#syncInfo");if(!el)return;var t=0;try{t=+loc
   else if(q)txt=q+(q===1?" trimitere în așteptare…":" trimiteri în așteptare…");}
  el.textContent=txt;}
 function setSyncNow(){_ghAuthBad=false;_rlUntil=0;try{localStorage.setItem(KEY+"_sync",String(Date.now()));}catch(e){}updateSyncInfo();}
+/* ============================================================================
+   PLASĂ DE SIGURANȚĂ ÎNAINTE DE TRIMITERE (v2.98)
+   ----------------------------------------------------------------------------
+   Îmbinarea pe trei căi rezolvă conflictele, dar ea decide ÎNAINTE de trimitere, pe baza a ce
+   știa dispozitivul în acel moment. Dacă între timp altcineva a trimis ceva (sau dacă îmbinarea
+   însăși are o scăpare), trimiterea putea încă să suprascrie munca altuia — exact „revenirea la o
+   variantă mai veche".
+   Acum nicio trimitere nu mai pleacă în orb:
+   1. chiar înainte de PATCH recitim gistul. 304 = cloudul e exact cum îl știam, deci trimiterea
+      nu poate șterge nimic. Altfel îmbinăm ÎNTÂI ce a apărut, apoi trimitem rezultatul;
+   2. înainte de a înlocui ceva în cloud, punem starea din cloud în copiile de siguranță;
+   3. verificare finală, independentă de îmbinare: dacă în cloud există un vestitor sau o
+      săptămână care lipsește din ce trimitem și pe care NU l-am șters noi (adică nu se află
+      neatins în bază), le adăugăm înapoi și notăm intervenția. Așa o eventuală scăpare a
+      îmbinării nu mai poate ajunge o pierdere de date.
+   Intervențiile se văd la Setări → Sincronizare → „Plasa de siguranță". */
+function _guardLog(ev){try{var k=KEY+"_guard",a=[];try{a=JSON.parse(localStorage.getItem(k))||[];}catch(e){}
+ a.unshift(ev);a=a.slice(0,12);localStorage.setItem(k,JSON.stringify(a));}catch(e){}}
+function _guardList(){try{return JSON.parse(localStorage.getItem(KEY+"_guard"))||[];}catch(e){return [];}}
+function _guardLine(){var a=_guardList(),n=a.filter(function(x){return x.k==="fix";}).length;
+ return '<div class="muted" style="margin-top:11px;font-size:11.5px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">'
+  +'<span>Plasă de siguranță: <b>activă</b> — nicio trimitere nu pleacă fără să recitim cloudul.</span>'
+  +(a.length?('<button class="btn ghost sm" style="width:auto;padding:4px 10px" onclick="guardSheet()">Ce a prins'+(n?(" ("+n+")"):"")+'</button>'):'')
+  +'</div>';}
+function guardSheet(){var a=_guardList();
+ var LBL={fix:"a repus date care ar fi dispărut",merge:"a îmbinat ce apăruse în cloud",stop:"a oprit trimiterea (se reia singură)"};
+ var body=a.length?a.map(function(x){
+  return '<div class="group" style="padding:11px 13px"><div class="nm" style="font-size:13.5px">'+esc(LBL[x.k]||x.k)+'</div>'
+   +'<div class="mt" style="font-size:12px">'+esc(fmtSync(x.t||0))+(x.m?(" · "+esc(x.m)):"")+'</div></div>';}).join("")
+  :'<div class="empty" style="padding:24px 8px">Nimic de arătat — nicio trimitere n-a avut nevoie de reparație.</div>';
+ sheet("Sincronizare","Plasa de siguranță",
+  '<div class="muted" style="margin:2px 2px 12px">Înainte de fiecare trimitere se recitește gistul. Dacă între timp a apărut ceva de la alt dispozitiv, se îmbină întâi, iar starea din cloud se pune în copiile de siguranță. Ultimele '+a.length+' intervenții:</div>'+body);}
+/* elementele „pierdute": sunt în cloud, lipsesc din ce trimitem și nu le-am șters noi.
+   Ștergerea noastră se recunoaște după bază: acolo elementul există EXACT cum e în cloud. */
+function _guardScan(base,L,R){var res=[],b=base||{};
+ var B={},Lx={},lost=[];
+ (b.bros||[]).forEach(function(x){if(x&&x.id!=null)B["i"+x.id]=x;});
+ (L.bros||[]).forEach(function(x){if(x&&x.id!=null)Lx["i"+x.id]=1;});
+ (R.bros||[]).forEach(function(x){if(!x||x.id==null)return;var k="i"+x.id;if(Lx[k])return;
+  if(Object.prototype.hasOwnProperty.call(B,k)&&_sig3(B[k])===_sig3(x))return;
+  lost.push(k);});
+ if(lost.length)res.push({sec:"bros",keys:lost});
+ var bi=_wkIdx(b.weeks||[]),li=_wkIdx(L.weeks||[]),ri=_wkIdx(R.weeks||[]);
+ if(li&&ri){var lw=[];Object.keys(ri).forEach(function(k){if(li[k]!=null)return;
+   if(bi&&bi[k]!=null&&_sig3((b.weeks||[])[bi[k]])===_sig3((R.weeks||[])[ri[k]]))return;
+   lw.push(k);});
+  if(lw.length)res.push({sec:"weeks",keys:lw});}
+ return res;}
+/* reparația: reunim secțiunea atinsă cu cea din cloud, pornind de la bază GOALĂ — cu bază goală
+   îmbinarea nu consideră nimic șters, deci nu se poate pierde nimic din nicio parte. */
+function _guardFix(R,lost){var did=false;
+ lost.forEach(function(x){
+  if(x.sec==="bros"){var m=_m3(null,S.bros||[],R.bros||[],"bros");
+   if(_sig3(m)!==_sig3(S.bros||[])){S.bros=m;did=true;}}
+  else if(x.sec==="weeks"){var wp=_m3weeks({},_canon3(S),_canon3(R));
+   if(wp&&wp.weeks&&_sig3(wp.weeks)!==_sig3(S.weeks||[])){S.weeks=wp.weeks;S.plans=wp.plans;did=true;}}});
+ try{ensureBroRoles(S.bros);}catch(e){}
+ try{_fixCursanti(S.bros);}catch(e){}
+ return did;}
+/* întoarce true dacă se poate trimite în siguranță */
+async function _prePush(g,url,silent){
+ var hdr={Authorization:"token "+g.token,Accept:"application/vnd.github+json"};
+ if(_getag)hdr["If-None-Match"]=_getag;
+ var r=null;
+ try{r=await _gfetch(url,{headers:hdr});}catch(e){_guardLog({t:Date.now(),k:"stop",m:_errMsg(e)});return false;}
+ if(r.status===304)return true;/* cloudul e exact cum îl știam */
+ if(!r.ok){_noteHttp(r);_guardLog({t:Date.now(),k:"stop",m:"HTTP "+r.status});return false;}
+ /* cloudul s-a schimbat de când l-am citit. Dacă tocmai se editează ceva pe ecran nu îmbinăm
+    peste mâna nimănui — modificările rămân locale și se trimit la ciclul următor. */
+ if(editBusy()&&silent)return false;
+ var d=null;try{d=await r.json();}catch(e){return false;}
+ var pf=(d.files&&d.files["plan.json"])||{},txt=pf.content||"";
+ if(pf.truncated&&pf.raw_url){try{var r2=await _gfetch(pf.raw_url,{},0);if(r2.ok)txt=await r2.text();}catch(e){}}
+ var R=null;try{R=JSON.parse(txt);}catch(e){R=null;}
+ try{_getag=r.headers.get("etag")||"";}catch(e){_getag="";}
+ if(!R||!hasData(R))return true;/* n-avem ce pierde */
+ var rr=R._rev||0;
+ try{bkpAdd({t:Date.now(),rev:rr,w:(R.weeks||[]).length,b:(R.bros||[]).length,u:"☁ cloud",data:txt},function(a){return a.rev===rr;});}catch(e){}
+ var _bt=null;try{_bt=await _baseGet();}catch(e){_bt=null;}
+ var chg=false;
+ try{_mergeCloudReps(R);}catch(e){}
+ try{chg=_merge3(_bt||"{}",R);}catch(e){}
+ var lost=[];try{lost=_guardScan(_bt?JSON.parse(_bt):null,S,R);}catch(e){lost=[];}
+ if(lost.length){var fixed=false;try{fixed=_guardFix(R,lost);}catch(e){}
+  if(fixed)chg=true;
+  _guardLog({t:Date.now(),k:"fix",m:lost.map(function(x){return (x.sec==="bros"?"vestitori":"săptămâni")+": "+x.keys.length;}).join(" · ")});}
+ else _guardLog({t:Date.now(),k:"merge",m:"cloud "+((R.bros||[]).length)+" vestitori · "+((R.weeks||[]).length)+" săptămâni"});
+ S._rev=Math.max(nextRev(),rr+1);
+ try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){}
+ _dirty=true;
+ if(chg){try{_sessRefresh();_sessSave();}catch(e){}try{applyTheme();}catch(e){}try{if(!editBusy())go(tab);}catch(e){}}
+ return true;}
 async function ghPush(silent){const g=S.settings.gh;if(!g.token){if(!silent)toast("Pune tokenul întâi");return;}if(g.gist&&!hasData(S)){if(!silent)toast("Date goale — nu trimit (protejez datele din cloud)");return;}if(_busy){if(!silent)toast("Sync în curs…");return;}if(_offline()){if(!silent)toast("Ești offline — salvez local, sincronizez la reconectare");updateSyncInfo();return;}_busy=true;
- const _c=JSON.parse(JSON.stringify(S));var pr=_c._rev||0;if(_c.settings&&_c.settings.gh){_c.settings.gh.token="";_c.settings.gh.gist="";}
- const body={description:"ArhiLink",public:false,files:{"plan.json":{content:JSON.stringify(_c)}}};
  try{const url=g.gist?`https://api.github.com/gists/${g.gist}`:"https://api.github.com/gists";
+  if(g.gist){var _safe=await _prePush(g,url,silent);if(!_safe){if(!silent)toast("Cloudul s-a schimbat între timp — reiau sincronizarea");updateSyncInfo();return;}}
+  const _c=JSON.parse(JSON.stringify(S));var pr=_c._rev||0;if(_c.settings&&_c.settings.gh){_c.settings.gh.token="";_c.settings.gh.gist="";}
+  const body={description:"ArhiLink",public:false,files:{"plan.json":{content:JSON.stringify(_c)}}};
   const r=await _gfetch(url,{method:g.gist?"PATCH":"POST",headers:{Authorization:"token "+g.token,Accept:"application/vnd.github+json"},body:JSON.stringify(body)});
   if(!r.ok){_noteHttp(r);let m="";try{m=(await r.json()).message;}catch(e){}throw new Error(r.status+(m?": "+m:""));}const d=await r.json();try{_getag=r.headers.get("etag")||"";}catch(e){_getag="";}if(!g.gist){S.settings.gh.gist=d.id;localStorage.setItem(KEY,JSON.stringify(S));if(tab==="set")renderSet();}setPushed(pr);try{_baseSet(_c);}catch(e){}/* baza = exact ce am trimis în cloud */setSyncNow();if(!silent)toast("Salvat în gist");try{roPush();}catch(e){}}catch(e){if(!silent)toast("Eroare sync: "+_errMsg(e));updateSyncInfo();}finally{_busy=false;}}
 async function ghSync(silent){const g=S.settings.gh;if(!g.token||!g.gist){if(!silent)toast("Token + Gist ID necesare");return;}if(_busy)return;if(_offline()){if(!silent)toast("Ești offline — se sincronizează la reconectare");updateSyncInfo();return;}_busy=true;var doPush=false;
@@ -4523,6 +4643,15 @@ function startApp(){_dirty=(S._rev||0)>pushedRev();applyTheme();try{bkpMigrate()
    `v` = cheia de „văzut deja"; `label` = versiunea afișată.
    ============================================================================ */
 var NEWS=[
+ {v:"2.98.0",label:"2.98",d:"19.08.2026",t:"Datele nu se mai pot pierde",items:[
+  ["sync","Plasă de siguranță la fiecare trimitere","Înainte de a trimite ceva în cloud, aplicația recitește gistul. Dacă între timp a lucrat altcineva, îmbină întâi și abia apoi trimite, iar starea din cloud intră în copiile de siguranță. Ce a prins se vede la Setări → Sincronizare."],
+  ["pdf","PDF-ul trimis fără link în descriere","La PDF-uri apare butonul <b>Trimite</b>: pleacă doar foaia, fără adresa lungă pe care o adăuga vizualizatorul telefonului în mesajul de WhatsApp."],
+  ["star","Auto-atribuirea umple întâi partea grea","Se începe cu locul care are cei mai puțini frați potriviți, nu cu primul de pe foaie — așa nu mai rămâne gol tocmai locul unde putea veni un singur om. Regulile S-38 sunt aceleași."],
+  ["ppl","Auto-atribuire mai echitabilă","La aceeași vechime nu mai hotărăște alfabetul, ci cine a avut mai puține părți în total."],
+  ["book","Vorbitorii din alte congregații, ținuți minte","La „Vorbitor” apare lista celor care au mai venit — nume, congregație, ultima cuvântare — și se pun dintr-o apăsare."],
+  ["edit","Cuvântare repetată, semnalată","Titlurile folosite se propun la scriere, iar dacă o cuvântare a mai fost ținută afli când și de cine."],
+  ["cal","Câte locuri mai sunt de completat","Întrunirea publică și Mărturia publică arată de sus câte locuri au rămas goale în săptămânile care urmează, cu un buton spre prima."]
+ ]},
  {v:"2.97.1",label:"2.97.1",d:"19.08.2026",t:"Nu se mai întoarce la o variantă veche",items:[
   ["sync","Modificările altcuiva nu mai dispar","Un dispozitiv care nu apucase să vadă ultimele schimbări nu-și mai trimite starea veche peste cloud: le îmbină."],
   ["sync","Cloudul se citește proaspăt","Verificarea gistului nu mai poate fi servită din memoria browserului, deci nu se mai lucrează cu o copie veche."]
@@ -7450,6 +7579,7 @@ function mpListHtml(){var D=mpD(),ed=_canEditMp();
   +(ed?('<button class="dse" title="Editează foaia" onclick="mpTitleSheet()">'+IC.edit+'</button>'):'')+'</div>';
  if(!S.weeks.length)return h+'<div class="empty" style="padding:26px 8px">Nicio săptămână în caiet.<br><span class="muted">Importă caietul din Setări → Import caiet.</span></div>';
  if(!mpShifts().length)return h+'<div class="empty" style="padding:26px 8px">Nicio tură pe foaie.<br><span class="muted">'+(ed?'Adaugă locațiile și turele din butonul de editare de mai sus.':'Cere unui bătrân să adauge turele.')+'</span></div>';
+ h+=_gapsBar(_gapsNext(4,function(i){var st=mpStat(i);return st.tot-st.f;}),"mpGo","locuri libere la ture");
  var cw=vcpCurWeek();
  var years=_wkYearGroups();
  years.forEach(function(Y){var yk="mpy"+Y.y;var yo=grpOpen(yk);
@@ -7714,6 +7844,44 @@ function wmBusyAll(wi,id,skipKey){var out=wmBusy(wi,id,skipKey);
  try{mpShiftsSorted().forEach(function(s){if(mpOff(wi,s.id))return;
   if(mpSlots(wi,s.id).indexOf(id)>=0)out.push({t:"m",n:mpShiftLbl(s,true)});});}catch(e){}
  return out;}
+/* ============================================================================
+   CE ȘTIE FOAIA DIN SĂPTĂMÂNILE TRECUTE
+   ----------------------------------------------------------------------------
+   Vorbitorii veniți din alte congregații se scriau de fiecare dată de la zero — același nume,
+   aceeași congregație, tastate iar și iar (și de fiecare dată puțin altfel). La fel, nimic nu
+   spunea că o cuvântare a mai fost ținută. Amândouă se pot afla din foile trecute. */
+function wmExtSpk(){var D=wmD(),m={},out=[];
+ Object.keys(D.a).forEach(function(k){var wi=+k,o=D.a[k]||{};if(!o||o.sp)return;
+  var n=(o.spN||"").trim();if(!n)return;var c=(o.cong||"").trim();
+  var key=fold(n)+"|"+fold(c),e=m[key];
+  if(!e){e=m[key]={n:n,c:c,wi:wi,tt:(o.tt||"").trim(),k:1};out.push(e);}
+  else{e.k++;if(wi>=e.wi){e.wi=wi;e.n=n;e.c=c;e.tt=(o.tt||"").trim();}}});
+ return out.sort(function(a,b){return b.wi-a.wi;});}
+/* titlurile folosite până acum, cel mai recent întâi */
+function wmTitles(){var D=wmD(),m={},out=[];
+ Object.keys(D.a).forEach(function(k){var wi=+k,t=((D.a[k]||{}).tt||"").trim();if(!t)return;
+  var f=fold(t),e=m[f];if(!e){e=m[f]={t:t,wi:wi,n:1};out.push(e);}else{e.n++;if(wi>e.wi){e.wi=wi;e.t=t;}}});
+ return out.sort(function(a,b){return b.wi-a.wi;});}
+/* aceeași cuvântare, ținută deja: în ce săptămâni și de cine */
+function wmTitleUsed(tt,skipWi){var D=wmD(),q=fold((tt||"").trim()),out=[];if(!q)return out;
+ Object.keys(D.a).forEach(function(k){var wi=+k;if(wi===skipWi)return;var o=D.a[k]||{};
+  if(fold((o.tt||"").trim())!==q)return;out.push({wi:wi,who:wmSpeaker(o)});});
+ return out.sort(function(a,b){return b.wi-a.wi;});}
+function _wmUsedTxt(u){var x=u[0],w=S.weeks[x.wi];
+ return "Cuvântarea a mai fost ținută"+(w?(" în "+tc(w.date)):"")+(x.who?(" — "+x.who):"")+(u.length>1?(" (și în alte "+(u.length-1)+")"):"");}
+/* câte locuri sunt încă goale în săptămânile care urmează */
+function _gapsNext(n,fn){var cw=(typeof vcpCurWeek==="function")?vcpCurWeek():0;if(cw<0)cw=0;
+ var out={n:0,w:0,first:-1};
+ for(var i=cw;i<S.weeks.length&&out.w<n;i++){var w=S.weeks[i];if(!w)continue;
+  try{if(wkArchIs(_wkMonthKey(i)))continue;}catch(e){}
+  var g=fn(i);if(g==null)continue;out.w++;
+  if(g>0){out.n+=g;if(out.first<0)out.first=i;}}
+ return out;}
+function _gapsBar(G,fnGo,what){if(!G.w)return "";
+ if(!G.n)return '<div class="hint" style="margin:10px 0 2px">Următoarele '+G.w+' săptămâni sunt complete.</div>';
+ return '<div class="hint" style="margin:10px 0 2px;display:flex;align-items:center;gap:9px;flex-wrap:wrap">'
+  +'<span>În următoarele '+G.w+' săptămâni au rămas <b>'+G.n+'</b> '+what+'.</span>'
+  +'<button class="btn ghost sm" style="width:auto;padding:4px 10px" onclick="'+fnGo+'('+G.first+')">Deschide prima</button></div>';}
 function wmHist(id,cat,limit){var out=[],D=wmD(),posts=wmPosts();
  for(var wi=S.weeks.length-1;wi>=0&&out.length<(limit||99);wi--){var o=D.a[String(wi)];if(!o)continue;
   if(o.sp===id&&(!cat||cat==="talk"))out.push({wi:wi,n:"Cuvântare publică"+((o.tt||"").trim()?(" — „"+o.tt+"”"):"")});
@@ -7746,6 +7914,8 @@ function wmListHtml(){var D=wmD(),ed=_canEditWm();
   +(ed?('<button class="dse" title="Editează foaia" onclick="wmTitleSheet()">'+IC.edit+'</button>'):'')+'</div>';
  if(!S.weeks.length)return h+'<div class="empty" style="padding:26px 8px">Nicio săptămână în caiet.<br><span class="muted">Importă caietul din Setări → Import caiet.</span></div>';
  var cw=vcpCurWeek(),ns=wmSlots();
+ /* ce a mai rămas de completat: se vede de sus, nu doar deschizând săptămână cu săptămână */
+ h+=_gapsBar(_gapsNext(8,function(i){var w=S.weeks[i];return evNoMeet(w)?null:(ns-wmFilled(i));}),"wmGo","locuri de completat");
  var years=_wkYearGroups();
  years.forEach(function(Y){var yk="wmy"+Y.y;var yo=grpOpen(yk);
   var _vis=Y.ms.filter(function(M){return !wkArchIs(Y.y+"|"+M.mk);});if(!_vis.length)return;
@@ -7840,13 +8010,17 @@ function wmGrpTxtSave(wi){if(!_needWm())return;var v=($("#wgT")?$("#wgT").value:
 function wmTalkSheet(wi){if(!_needWm())return;var o=wmOf(wi);
  sheet("","Titlul cuvântării",
   '<div class="muted" style="margin:0 2px 12px">Titlul din schița publică, așa cum apare pe foaia de la avizier.</div>'
- +'<label class="fl">Titlu</label><input class="fld" id="wmTT" value="'+esc(o.tt||"")+'" placeholder="ex. Să umblăm pe calea integrității">'
+ +'<label class="fl">Titlu</label><input class="fld" id="wmTT" list="wmTTL" value="'+esc(o.tt||"")+'" placeholder="ex. Să umblăm pe calea integrității">'
+ +'<datalist id="wmTTL">'+wmTitles().slice(0,60).map(function(x){return '<option value="'+esc(x.t)+'">';}).join("")+'</datalist>'
+ +((o.tt||"").trim()&&wmTitleUsed(o.tt,wi).length?('<div class="hint" style="margin:9px 0 0">'+esc(_wmUsedTxt(wmTitleUsed(o.tt,wi)))+'</div>'):'')
  +'<button class="btn pri" style="width:100%;margin-top:16px" onclick="wmTalkSave('+wi+')">Salvează</button>');
  setTimeout(function(){var i=document.getElementById("wmTT");if(i)i.focus();},150);}
 function wmTalkSave(wi){if(!_needWm())return;var v=($("#wmTT")?$("#wmTT").value:"").trim();
+ var used=v?wmTitleUsed(v,wi):[];
  wmSetVal(wi,"tt",v);
- wmCommit("Întrunirea publică "+tc(S.weeks[wi].date)+": titlul cuvântării → "+(v||"golit"));
- closeSheet();renderArhRoute();}
+ wmCommit("Întrunirea publică "+tc(S.weeks[wi].date)+": titlul cuvântării → "+(v||"golit")+(used.length?(" [s-a mai ținut: "+used.length+"]"):""));
+ closeSheet();renderArhRoute();
+ if(used.length)toast(_wmUsedTxt(used),6000);}
 function wmNoteSheet(wi){if(!_needWm())return;var o=wmOf(wi);
  sheet("","Notă pe foaie",
   '<div class="muted" style="margin:0 2px 12px">Un rând scurt care apare sub săptămână pe foaia tipărită (ex. „Adunare specială”, „program înregistrat”).</div>'
@@ -7865,6 +8039,11 @@ function wmSpeakerSheet(wi){if(!_needWm())return;var o=wmOf(wi);
   +'<label class="fl">Numele</label><input class="fld" id="wmSN" value="'+esc(o.sp?"":(o.spN||""))+'" placeholder="ex. Marius Iftode">'
   +'<label class="fl" style="margin-top:10px">Congregația</label><input class="fld" id="wmSC" value="'+esc(o.sp?"":(o.cong||""))+'" placeholder="ex. București Crângași">'
   +'<button class="btn pri" style="width:100%;margin-top:12px" onclick="wmSpeakerExt('+wi+')">Pune vorbitorul</button>';
+ var _ext=wmExtSpk();_wmExt=_ext;
+ if(_ext.length)H+='<div class="pmlbl" style="margin-top:16px">Au mai venit</div>'
+  +_ext.slice(0,14).map(function(e,i){var w=S.weeks[e.wi];
+   return '<button class="pmrow" onclick="wmExtPick('+wi+','+i+')"><span><b>'+esc(e.n)+'</b>'+(e.c?('<span class="muted"> · '+esc(e.c)+'</span>'):'')
+    +'<br><span class="muted" style="font-size:11.5px">ultima dată '+esc(w?tc(w.date):"—")+(e.tt?(' · „'+esc(e.tt)+'”'):'')+(e.k>1?(' · de '+e.k+' ori'):'')+'</span></span></button>';}).join("");
  H+='<div class="pmlbl" style="margin-top:18px">Sau din congregația noastră</div>';
  if(!pool.length)H+='<div class="hint" style="margin:0 0 10px">Niciun frate bifat la „Cuvântare publică”. Bifa se pune în <b>Vestitori</b> → fișă → <b>Întrunirea publică</b>.</div>';
  else H+=pool.slice().sort(function(a,b){return a.name.localeCompare(b.name,"ro");}).map(function(b){
@@ -7872,6 +8051,10 @@ function wmSpeakerSheet(wi){if(!_needWm())return;var o=wmOf(wi);
    return '<button class="pmrow" onclick="wmSpeakerIn('+wi+',\''+b.id+'\')"><span><b>'+esc(broDisp(b.id))+'</b>'+(o.sp===b.id?' <span class="dtag g">ales</span>':'')+(busy.length?('<br><span class="muted" style="font-size:11.5px">are deja '+esc(dutyBusyTxt(busy))+'</span>'):'')+'</span></button>';}).join("");
  if(wmSpeaker(o))H+='<button class="btn ghost sm" style="width:100%;margin-top:14px" onclick="closeSheet();wmSpeakerClear('+wi+')">Scoate vorbitorul</button>';
  sheet("","Vorbitor",H);}
+var _wmExt=[];
+function wmExtPick(wi,i){var e=_wmExt[i];if(!e)return;
+ var a=$("#wmSN"),b=$("#wmSC");if(a)a.value=e.n;if(b)b.value=e.c;
+ wmSpeakerExt(wi);}
 function wmSpeakerExt(wi){if(!_needWm())return;
  var n=($("#wmSN")?$("#wmSN").value:"").trim(),c=($("#wmSC")?$("#wmSC").value:"").trim();
  if(!n){toast("Scrie numele vorbitorului");return;}
@@ -9119,10 +9302,16 @@ function mkbar(){
   function closeBtn(){var x=document.createElement("button");x.textContent="✕";x.setAttribute("aria-label","Închide");x.style.cssText="margin-left:6px;background:none;border:0;color:#b9c0cc;font-size:15px;line-height:1;cursor:pointer";x.onclick=function(){if(b.parentNode)b.parentNode.removeChild(b);};return x;}
   return {
     set:function(t){clear();var s=document.createElement("span");s.textContent=t;b.appendChild(s);},
-    done:function(url,fn){clear();var s=document.createElement("span");s.textContent="PDF gata ✓";b.appendChild(s);
+    /* „Trimite" trimite DOAR fișierul. Deschis din vizualizatorul telefonului, butonul de
+       partajare al sistemului pune și adresa blob: a paginii în mesaj (WhatsApp o arată ca
+       descriere) — aici nu există nici text, nici adresă, deci ajunge doar programarea. */
+    done:function(url,fn,file){clear();var s=document.createElement("span");s.textContent="PDF gata ✓";b.appendChild(s);
+      if(file){var t=document.createElement("button");t.textContent="Trimite";
+        t.style.cssText="background:#FB9D28;color:#15161c;border:0;border-radius:9px;padding:7px 14px;font:inherit;font-weight:800;cursor:pointer";
+        t.onclick=function(){try{navigator.share({files:[file]}).catch(function(){});}catch(e){}};b.appendChild(t);}
       if(url){var a=document.createElement("a");a.href=url;a.download=fn;a.target="_blank";a.rel="noopener";a.textContent="Descarcă";a.style.cssText="color:#FB9D28;font-weight:700;text-decoration:underline;cursor:pointer";b.appendChild(a);}
       b.appendChild(closeBtn());
-      setTimeout(function(){if(b.parentNode)b.parentNode.removeChild(b);},22000);},
+      setTimeout(function(){if(b.parentNode)b.parentNode.removeChild(b);},file?90000:22000);},
     fail:function(msg){clear();var s=document.createElement("span");s.textContent=msg||"Nu am putut genera PDF-ul.";b.appendChild(s);b.appendChild(closeBtn());
       setTimeout(function(){if(b.parentNode)b.parentNode.removeChild(b);},16000);}
   };
@@ -9137,10 +9326,16 @@ function libSrc(sig){
 function savePdfBlob(blob,fn,B){
   try{
     var url=URL.createObjectURL(blob);
-    var a=document.createElement("a");a.href=url;a.download=fn;a.rel="noopener";a.style.display="none";
-    document.body.appendChild(a);a.click();
-    setTimeout(function(){try{document.body.removeChild(a);}catch(e){}},1500);
-    B.done(url,fn);
+    /* pe telefon, unde fișierul se poate trimite direct, NU mai descărcăm automat: așa nimeni
+       nu mai ajunge să trimită din vizualizatorul sistemului, care pune și adresa blob: în
+       mesaj. Rămân două butoane limpezi: Trimite și Descarcă. */
+    var file=null;
+    try{if(typeof File!=="undefined"&&navigator.canShare){var f=new File([blob],fn,{type:"application/pdf"});
+      if(navigator.canShare({files:[f]}))file=f;}}catch(e){file=null;}
+    if(!file){var a=document.createElement("a");a.href=url;a.download=fn;a.rel="noopener";a.style.display="none";
+      document.body.appendChild(a);a.click();
+      setTimeout(function(){try{document.body.removeChild(a);}catch(e){}},1500);}
+    B.done(url,fn,file);
     setTimeout(function(){try{URL.revokeObjectURL(url);}catch(e){}},180000);
   }catch(e){B.fail("Generat, dar descărcarea a eșuat. Încearcă din nou.");}
 }
