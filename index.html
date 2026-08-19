@@ -589,7 +589,7 @@ Object.assign(IC,{
  box:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h18v13H3z"/><path d="M3 7l2-4h14l2 4"/><path d="M10 11h4"/></svg>',
  mark:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15.5 4.5l4 4-9.5 9.5H6v-4z"/><path d="M12.5 7.5l4 4M5 21h14"/></svg>'
 });
-const VERSION="2.99.0";
+const VERSION="2.99.1";
 const SEED_WEEKS=[];
 const SEED_WEEKS_PRE=[];
 const SEED_WEEKS_POST=[];
@@ -3845,6 +3845,10 @@ function _j(o){return ContentService.createTextOutput(JSON.stringify(o)).setMime
    `<div class="muted" style="margin:0 0 8px">Încarcă un .epub (mwb) — adaugă detaliile temelor (schiță, versete, lecție) la butonul „i" și săptămânile lunilor noi. Nu șterge alocările.</div>
     <button class="btn ghost sm" style="width:100%" onclick="$('#imepub').click()">Alege .epub</button>
     <input type="file" id="imepub" accept=".epub" style="display:none" onchange="importEpub(this)">`)
+ +_setCard(IC.edit,"Import plan (text)",
+   `repartizările dintr-un text lipit — Viața creștină, întrunirea publică, mărturia publică`,
+   `<div class="muted" style="margin:0 0 8px">Lipești textul foii și se pun președintele, rugăciunile, temele după numărul lor, cântările, evenimentele, vorbitorul de la întrunirea publică și turele mărturiei publice. Se verifică întâi și nimic nu intră până nu apeși „Aplică".</div>
+    <button class="btn ghost sm" style="width:100%" onclick="planImportSheet()">Deschide importul</button>`)
  +_setCard(IC.hist,"Backup",
    `salvează / restaurează totul dintr-un fișier .json`,
    `<div class="two" style="margin-top:2px"><button class="btn ghost sm" onclick="exportJSON()">Backup (.json)</button><button class="btn ghost sm" onclick="$('#imp').click()">Restaurează (.json)</button></div>
@@ -4651,6 +4655,9 @@ function startApp(){_dirty=(S._rev||0)>pushedRev();applyTheme();try{bkpMigrate()
    `v` = cheia de „văzut deja"; `label` = versiunea afișată.
    ============================================================================ */
 var NEWS=[
+ {v:"2.99.1",label:"2.99.1",d:"19.08.2026",t:"Importul, la vedere",items:[
+  ["edit","„Import plan” se găsește acum","Era doar sub butonul rotund, după ce deschideai o săptămână. Acum e și în <b>Setări → Import plan (text)</b>, și pe lista de săptămâni din Viața creștină."]
+ ]},
  {v:"2.99.0",label:"2.99",d:"19.08.2026",t:"Cuvântările publice, ținute la socoteală",items:[
   ["book","Schițele 1–194, în aplicație","Titlul cuvântării se alege din listă, nu se mai scrie de mână. Foaia reține și numărul schiței, deci pe foaie apare „178. Să umblăm pe calea integrității”."],
   ["star","Se vede de câte ori s-a ținut fiecare","La alegere, schițele neținute vin primele, apoi cele ținute cel mai demult. Fiecare arată de câte ori s-a ținut, ultima dată când și de cine."],
@@ -5794,7 +5801,13 @@ function renderArh(){arhInitSel();arhEnsureCSS();$("#fab").style.display="none";
   if(arhSub!=="wm")wmW=-1;
   if(arhSub!=="vcped")wkOpen=false;
   /* subtabul VCP e editorul de săptămâni: își scrie singur ecranul, iar bara se pune după */
-  if(arhSub==="vcped"){if(wkOpen&&curW>=0&&S.weeks[curW])openWeek(curW);else renderWeeks();
+  if(arhSub==="vcped"){if(wkOpen&&curW>=0&&S.weeks[curW])openWeek(curW);
+   else{renderWeeks();
+    /* pe lista de săptămâni butonul rotund lipsea cu totul — uneltele foii (importul) nu se
+       găseau decât după ce deschideai o săptămână */
+    var _f=$("#fab");
+    if(_f){if(_canEditVcp()){_f.innerHTML=IC.tune;_f.title="Unelte";_f.style.display="flex";_f.onclick=vcpListFab;}
+     else _f.style.display="none";}}
    _arhLastSub=arhSub;return;}
   var nav=_arhNavHtml();
   var body=arhSub==="rap"?arhRapHtml():arhSub==="pio600"?arhPioHtml():arhSub==="prez"?arhPrezHtml():arhSub==="grp"?arhGrpHtml():arhSub==="resp"?arhRespHtml():arhSub==="cur"?arhCleanHtml():arhSub==="sarc"?arhDutyHtml():arhSub==="mp"?arhMpHtml():arhSub==="wm"?arhWmHtml():arhSub==="scr"?arhScrHtml():arhSub==="arhv"?arhArchHtml():arhSub==="exp"?arhExpHtml():arhSumarHtml();
@@ -5822,6 +5835,10 @@ function _arhFab(){var f=$("#fab");if(!f)return;var ed=_canEditArh(),ad=_isAdmin
  else if(arhSub==="wm")cfg={ic:(_canEditWm()?IC.tune:IC.dl),fn:arhFabWm};
  if(!cfg){f.style.display="none";return;}
  f.innerHTML=cfg.ic;f.title="Descarcă / unelte";f.style.display="flex";f.onclick=cfg.fn;}
+function vcpListFab(){
+ sheet("Viața creștină","Unelte",
+  '<button class="pmrow" onclick="arhFabGo(planImportSheet,vcpListFab)">'+IC.edit+'<span><b>Import plan</b> — lipești textul foii</span></button>'
+ +'<button class="pmrow" onclick="closeSheet();openExportPick()">'+IC.pdf+'<span><b>Descarcă pe perioadă</b> — mai multe săptămâni</span></button>');}
 function arhFabGo(fn,back){closeSheet();fn();_sheetBackTo(back);}
 function arhFabSumar(){
  var inact='<div class="muted" style="display:flex;align-items:center;gap:7px;margin:12px 2px 2px;font-size:12px">Considerat inactiv după <select onchange="arhSetInactive(this.value)" style="background:var(--surf);color:var(--ink);border:1px solid var(--bd);border-radius:7px;padding:3px 6px;font-size:12px">'+[3,4,5,6].map(function(n){return '<option value="'+n+'" '+(arhInactiveN()===n?"selected":"")+'>'+n+'</option>';}).join("")+'</select> luni la rând fără raport</div>';
