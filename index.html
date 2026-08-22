@@ -589,7 +589,7 @@ Object.assign(IC,{
  box:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h18v13H3z"/><path d="M3 7l2-4h14l2 4"/><path d="M10 11h4"/></svg>',
  mark:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15.5 4.5l4 4-9.5 9.5H6v-4z"/><path d="M12.5 7.5l4 4M5 21h14"/></svg>'
 });
-const VERSION="3.0.1";
+const VERSION="3.0.2";
 /* Versiunea minima care are voie sa SCRIE in cloud. Se trece in gist la fiecare trimitere;
    un dispozitiv ramas pe un build mai vechi decat atat nu mai poate suprascrie datele —
    doar citeste si se actualizeaza singur. Asa nu mai poate un singur telefon uitat deschis
@@ -1206,11 +1206,19 @@ function goVcpEdit(i){if(!_tabAllowed("arh")){toast("Nu ai acces la Arhivă");re
 function wkBackList(){wkOpen=false;_arhLastSub=null;
  if(tab==="arh")renderArhRoute();else{arhGrp="plan";arhSub="vcped";go("arh");}}
 function _vcpStyle(){if(document.getElementById("vcpstyle"))return;const s=document.createElement("style");s.id="vcpstyle";s.textContent='.vro{display:flex;align-items:baseline;gap:8px;font-size:13.5px;margin-top:3px}.vro .vrol{color:var(--ink3);font-size:12px;flex:0 0 auto}.vro b{font-weight:700}'
- +'.vln{display:flex;align-items:flex-start;gap:12px}'
- +'.vln .vnm{flex:0 0 auto;max-width:48%;display:flex;flex-direction:column;align-items:flex-end;gap:1px}'
- +'.vln .vnm .vro{margin-top:0;justify-content:flex-end;text-align:right;flex-wrap:wrap}'
- +'.vln .vnm .vro b{white-space:nowrap}'
- +'.ptiw{display:flex;align-items:flex-start;gap:7px}.ptiw .pti{flex:1;min-width:0}'
+ /* Pe telefon numele stau SUB temă, aliniate la dreapta — nu alături de ea. Alături, un nume
+    lung (numele de familie e un singur cuvânt, nu se poate rupe) fura jumătate din rând, iar
+    tema se subția până se rupea în șase rânduri. Mai rău: numele aveau „nowrap" într-o coloană
+    limitată la 48%, deci ieșeau din ea și se suprapuneau peste butonul „i" și peste titlu.
+    Acum coloana poate să se micșoreze (min-width:0) și numele se rup pe rânduri, nu peste text. */
+ +'.vln{display:flex;flex-direction:column;gap:4px}'
+ +'.vln .vnm{flex:0 0 auto;align-self:stretch;max-width:100%;min-width:0;display:flex;flex-direction:column;align-items:flex-end;gap:1px}'
+ +'.vln .vnm .vro{margin-top:0;justify-content:flex-end;text-align:right;flex-wrap:wrap;min-width:0}'
+ +'.vln .vnm .vro b{white-space:normal;overflow-wrap:break-word}'
+ /* pe ecran lat încape tot pe un rând: tema în stânga, numele în dreapta */
+ +'@media(min-width:640px){.vln{flex-direction:row;align-items:flex-start;gap:14px}'
+ +'.vln .vnm{flex:0 1 auto;align-self:auto;max-width:46%}}'
+ +'.ptiw{display:flex;align-items:flex-start;gap:6px}.ptiw .pti{flex:1;min-width:0}'
  +'.vinfo{display:inline-flex;align-items:center;justify-content:center;width:19px;height:19px;margin:0;padding:0;border:1px solid var(--bd);border-radius:50%;background:var(--surf);color:var(--ink3);cursor:pointer;flex:0 0 auto}.vinfo:hover,.vinfo:active{color:var(--acc);border-color:var(--acc)}.vinfo svg{width:11px;height:11px}';document.head.appendChild(s);}
 function renderVcp(i){_fabDl(vcpDlSheet);_vcpStyle();
  if(typeof i==="number")vcpW=i;
@@ -4793,6 +4801,11 @@ function startApp(){_dirty=computeDirty();applyTheme();try{bkpMigrate();}catch(e
    `v` = cheia de „văzut deja"; `label` = versiunea afișată.
    ============================================================================ */
 var NEWS=[
+ {v:"3.0.2",label:"3.0.2",d:"22.08.2026",t:"Foaia săptămânii, citibilă",items:[
+  ["ppl","Numele nu mai intră peste temă","Stăteau într-o coloană îngustă din care ieșeau, așa că un nume lung se așeza peste butonul „i” și peste titlu. Acum numele se rup pe rânduri, în locul lor."],
+  ["cal","Tema are tot rândul","Pe telefon, numele trec sub temă, aliniate la dreapta. Înainte împărțeau rândul cu ea, iar o temă lungă se subția până se rupea în șase rânduri. Pe ecran lat rămân alături, ca până acum."],
+  ["check","Aceeași așezare peste tot","„Cursant” și „Partener” apăreau când lângă nume, când deasupra lui, de la un rând la altul. Acum stau la fel în toată foaia."]
+ ]},
  {v:"3.0.1",label:"3.0.1",d:"22.08.2026",t:"Mai puțin consum de date",items:[
   ["sync","Cât ține o foaie deschisă, nu se mai descarcă tot","Sincronizarea automată reia la 12 secunde. Cât aveai o fereastră deschisă, fiecare reluare aducea din nou TOATE datele congregației — sute de megaocteți pe oră pe date mobile. Acum întreabă doar „s-a schimbat ceva?” și aduce datele o singură dată, când se poate."],
   ["info","Pagina se încarcă mai repede","Iconul aplicației era inclus în pagină la mărimea greșită, de 5 ori mai mare decât trebuia. S-au dus 143 KB din fiecare deschidere și din fiecare actualizare."]
