@@ -84,6 +84,9 @@ body:has(.app.light){background:#e8eaf2}
 .fab:hover{background:var(--acc2)}
 .fab svg{width:26px;height:26px}
 @media(min-width:640px){.fab{bottom:24px}}
+/* Butonul rotund plutește peste conținut. Fără spațiul de mai jos, ultimul rând al listei
+   rămânea ascuns sub el (numele de la "Rugăciune" nu se mai putea citi la finalul săptămânii). */
+.body.fabpad{padding-bottom:96px}
 /* groups / cards */
 .group{background:var(--surf);border:1px solid var(--bd);border-radius:16px;margin-bottom:12px;overflow:hidden}
 .gp{padding:15px 16px}
@@ -128,6 +131,13 @@ body:has(.app.light){background:#e8eaf2}
 .roltag{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.4px;padding:2px 7px;border-radius:6px;background:var(--accsoft);color:var(--acc);margin-left:6px}
 .roltag.pio{background:var(--surf2);color:var(--ink2)}
 .roltag.appt{white-space:nowrap;hyphens:none;-webkit-hyphens:none}
+/* Eticheta grupei, tipul si numirea stau pe randul lor, sub nume. Pe acelasi rand cu numele,
+   un nume lung plus "SLUJITOR AUXILIAR" ingusta coloana numelui pana cand acesta se rupea
+   cuvant cu cuvant, iar ultima eticheta iesea din card. */
+.brotg{display:flex;flex-wrap:wrap;align-items:center;gap:5px 6px;margin-top:5px}
+.brotg .gtag,.brotg .roltag{margin-left:0}
+.item>.spacer{min-width:0}
+.item .nm{overflow-wrap:break-word}
 .pick{display:flex;align-items:center;gap:8px;width:100%;min-width:0;margin-top:7px;background:var(--bg);color:var(--ink);
  border:1px solid var(--bd);border-radius:11px;padding:10px 12px;font-size:14px;font-weight:600;cursor:pointer;text-align:left}
 .pick.ph{color:var(--ink3);font-weight:500}
@@ -589,7 +599,7 @@ Object.assign(IC,{
  box:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h18v13H3z"/><path d="M3 7l2-4h14l2 4"/><path d="M10 11h4"/></svg>',
  mark:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15.5 4.5l4 4-9.5 9.5H6v-4z"/><path d="M12.5 7.5l4 4M5 21h14"/></svg>'
 });
-const VERSION="3.0.2";
+const VERSION="3.0.3";
 /* Versiunea minima care are voie sa SCRIE in cloud. Se trece in gist la fiecare trimitere;
    un dispozitiv ramas pe un build mai vechi decat atat nu mai poate suprascrie datele —
    doar citeste si se actualizeaza singur. Asa nu mai poate un singur telefon uitat deschis
@@ -2305,8 +2315,9 @@ function broRowHtml(b){
  return `<div class="group"><button class="item" onclick="editBro('${b.id}')">
    <div class="av">${initials(b.name)||"·"}</div>
    <div class="spacer"><div class="nm">${esc(b.name)}${b.active===false?' <span class="pill" style="font-size:10px;padding:2px 8px">inactiv</span>':''}</div>
-   <div class="mt">${b.gen==="F"?"soră":"frate"} · ${broPrivN(b)} ${broPrivN(b)===1?"privilegiu":"privilegii"}${b.disp?' · „'+esc(b.disp)+'”':''}</div></div>
-   ${broGrpTag(b)}${(b.pio||b.isPub===false)?'<span class="roltag pio">'+esc(pioLabel(b.pio||"Cursant"))+'</span>':''}${apptTag(b.rol)}<span class="chev">${IC.chev}</span></button></div>`;}
+   <div class="mt">${b.gen==="F"?"soră":"frate"} · ${broPrivN(b)} ${broPrivN(b)===1?"privilegiu":"privilegii"}${b.disp?' · „'+esc(b.disp)+'”':''}</div>
+   ${(()=>{const t=broGrpTag(b)+((b.pio||b.isPub===false)?'<span class="roltag pio">'+esc(pioLabel(b.pio||"Cursant"))+'</span>':'')+apptTag(b.rol);return t?'<div class="brotg">'+t+'</div>':'';})()}</div>
+   <span class="chev">${IC.chev}</span></button></div>`;}
 function _gcardHead(g,i,n){var sa=[];
  if(g.sup)sa.push('<span><span class="gsl">S</span>'+esc(broDisp(g.sup))+'</span>');
  if(g.asis)sa.push('<span><span class="gsl">A</span>'+esc(broDisp(g.asis))+'</span>');
@@ -4801,6 +4812,10 @@ function startApp(){_dirty=computeDirty();applyTheme();try{bkpMigrate();}catch(e
    `v` = cheia de „văzut deja"; `label` = versiunea afișată.
    ============================================================================ */
 var NEWS=[
+ {v:"3.0.3",label:"3.0.3",d:"26.08.2026",t:"Lista de vestitori, întreagă",items:[
+  ["ppl","Etichetele trec sub nume","Grupa, tipul și numirea stăteau pe același rând cu numele. La un nume lung lângă „SLUJITOR AUXILIAR”, numele se rupea cuvânt cu cuvânt într-o coloană subțire, iar ultima etichetă ieșea din card. Acum numele are tot rândul, iar etichetele stau dedesubt."],
+  ["dl","Butonul rotund nu mai acoperă ultimul rând","La capătul listei sau al foii, ultimul rând rămânea sub el — numele de la „Rugăciune” nu se mai putea citi. Acum conținutul se termină deasupra butonului."]
+ ]},
  {v:"3.0.2",label:"3.0.2",d:"22.08.2026",t:"Foaia săptămânii, citibilă",items:[
   ["ppl","Numele nu mai intră peste temă","Stăteau într-o coloană îngustă din care ieșeau, așa că un nume lung se așeza peste butonul „i” și peste titlu. Acum numele se rup pe rânduri, în locul lor."],
   ["cal","Tema are tot rândul","Pe telefon, numele trec sub temă, aliniate la dreapta. Înainte împărțeau rândul cu ea, iar o temă lungă se subția până se rupea în șase rânduri. Pe ecran lat rămân alături, ca până acum."],
@@ -5463,6 +5478,12 @@ function doExportSelected(){const idx=[...document.querySelectorAll(".exck")].fi
  exportWeeksPDF(idx, pdfName(idx), {s89:mode==="both"});}
 
 /* ===== FAB de descărcare: în VCP (vestitori + admini) și în săptămâna din Programări ===== */
+/* #fab e ascuns/afișat din vreo șapte locuri; în loc să adăugăm spațiu în fiecare, urmărim
+   într-un singur loc când e vizibil și punem clasa pe zona derulabilă. */
+function _fabPad(){var f=document.getElementById("fab"),b=document.getElementById("body");if(!f||!b)return;
+ var upd=function(){b.classList.toggle("fabpad",getComputedStyle(f).display!=="none");};
+ try{new MutationObserver(upd).observe(f,{attributes:true,attributeFilter:["style","class"]});}catch(e){}
+ upd();}
 function _fabDl(fn){var f=$("#fab");if(!f)return;f.innerHTML=IC.dl;f.title="Descarcă planificarea";f.style.display="flex";f.onclick=fn;}
 /* săgeata „‹ înapoi" din capul sheet-ului te întoarce la meniul anterior — în toate cazurile */
 function _sheetBackTo(fn){var bk=$("#sheetBack");if(!bk)return;bk.style.display="";bk.onclick=function(){fn();};}
@@ -5539,6 +5560,7 @@ window.addEventListener("DOMContentLoaded",()=>{
  window.addEventListener("pagehide",autoFlush);
  if(navigator.storage&&navigator.storage.persist)navigator.storage.persist().catch(()=>{});
  try{initPTR();}catch(e){}
+ try{_fabPad();}catch(e){}
  bootFromLink().then(function(){bootGate();});
 });</script>
 <script>
