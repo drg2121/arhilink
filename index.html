@@ -620,7 +620,7 @@ Object.assign(IC,{
  box:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h18v13H3z"/><path d="M3 7l2-4h14l2 4"/><path d="M10 11h4"/></svg>',
  mark:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15.5 4.5l4 4-9.5 9.5H6v-4z"/><path d="M12.5 7.5l4 4M5 21h14"/></svg>'
 });
-const VERSION="3.1.0";
+const VERSION="3.1.1";
 /* Versiunea minima care are voie sa SCRIE in cloud. Se trece in gist la fiecare trimitere;
    un dispozitiv ramas pe un build mai vechi decat atat nu mai poate suprascrie datele —
    doar citeste si se actualizeaza singur. Asa nu mai poate un singur telefon uitat deschis
@@ -4286,9 +4286,9 @@ function autoPullLoad(){_dirty=computeDirty();var p=null;
    peste cele din cloud. */
 var _choresDone=false;
 function _startupChores(){if(_choresDone)return;_choresDone=true;
- try{archSweep();}catch(e){}
- try{usersLinkBros();}catch(e){}
- try{capMigRun();}catch(e){}
+ try{archSweep();}catch(e){try{logErr("startupChores/archSweep: "+_errMsg(e),e&&e.stack,"boot");}catch(_e){}}
+ try{usersLinkBros();}catch(e){try{logErr("startupChores/usersLinkBros: "+_errMsg(e),e&&e.stack,"boot");}catch(_e){}}
+ try{capMigRun();}catch(e){try{logErr("startupChores/capMigRun: "+_errMsg(e),e&&e.stack,"boot");}catch(_e){}}
  try{_sessRefresh();_sessSave();}catch(e){}}
 function fmtSync(t){var d=new Date(t),n=new Date(),hh=("0"+d.getHours()).slice(-2),mm=("0"+d.getMinutes()).slice(-2);return d.toDateString()===n.toDateString()?(hh+":"+mm):(("0"+d.getDate()).slice(-2)+"."+("0"+(d.getMonth()+1)).slice(-2)+" "+hh+":"+mm);}
 function updateSyncInfo(){var el=$("#syncInfo");if(!el)return;var t=0;try{t=+localStorage.getItem(KEY+"_sync")||0;}catch(e){}
@@ -4850,6 +4850,9 @@ function startApp(){_dirty=computeDirty();applyTheme();try{bkpMigrate();}catch(e
    `v` = cheia de „văzut deja"; `label` = versiunea afișată.
    ============================================================================ */
 var NEWS=[
+ {v:"3.1.1",label:"3.1.1",d:"26.08.2026",t:"Bifele de capacități, corectate",items:[
+  ["ppl","Migrarea bifelor putea rămâne fără efect pe un dispozitiv nou","Dacă rula înainte ca dispozitivul să apuce să primească datele din cloud, se marca „gata” fără să fi bifat nimic — și nu mai reîncerca niciodată. Acum așteaptă până sunt vestitori încărcați și, pe dispozitivele deja blocate așa, reîncearcă o dată."]
+ ]},
  {v:"3.1.0",label:"3.1",d:"26.08.2026",t:"Bifele vin singure, scrollul nu se mai blochează",items:[
   ["ppl","Locațiile și părțile de la mărturia publică/întrunirea publică, bifate singure","Cine a fost pus la o tură sau un post evident poate fi pus din nou — dar bifele din fișă trebuiau puse manual, pentru fiecare, de la zero. Acum se pun singure din istoric (și din foile vechi de avizier, pentru mărturia publică), o singură dată. Bifele puse manual nu se ating."],
   ["hist","Subsecțiune nouă „Erori” în Istoric","La Setări → Istoric, sub „cine a făcut ce”. Ține, doar pe acest dispozitiv, ultimele erori tehnice ale aplicației — utile dacă ceva nu merge și trebuie povestit exact ce s-a întâmplat."],
@@ -8795,7 +8798,9 @@ function arhFabWm(){var ed=_canEditWm();
     2. pentru mărturia publică, cele două foi vechi de avizier (august 2026 și
        septembrie 2025) — nume scrise de mână acolo, potrivite după nume normalizat.
    ============================================================================ */
-var CAP_MIG_V=1;
+var CAP_MIG_V=2;/* v2: garda de mai jos (S.bros gol) — v1 putea marca „gata" pe o stare încă
+   nesincronizată și nu mai reîncerca niciodată; ridicarea numărului forțează o reîncercare
+   pe orice dispozitiv care a apucat să se blocheze așa cu v1 */
 /* nume „Nume Prenume" (cum apar pe foile vechi de avizier) → locațiile unde au fost puși */
 var _capMigPdf=[
  ["Grec Alexandra",["Piața 16 Februarie","Pod Basarab"]],
@@ -8836,6 +8841,10 @@ function _capMigAddWm(b,cat){if(!cat)return false;var L=b.wm||(b.wm=[]);
 function capMigRun(){
  if(!S.settings)S.settings={};
  if((S.settings._capMigV||0)>=CAP_MIG_V)return;
+ /* dacă la pornire lista de vestitori încă nu s-a încărcat (dispozitiv nou, dinaintea primei
+    sincronizări), nu marcăm migrarea „gata" — altfel rulează o singură dată pe stare goală,
+    nu găsește nimic de bifat și nu mai reîncearcă NICIODATĂ, nici după ce vin datele reale. */
+ if(!(S.bros&&S.bros.length))return;
  var chg=false,nMp=0,nWm=0,touched={};
  function touch(id){touched[id]=1;}
  /* 1a. istoricul intern — mărturia publică: fiecare tură primită arată locația */
