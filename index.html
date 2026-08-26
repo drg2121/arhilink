@@ -235,8 +235,8 @@ label.fl{display:block;font-size:11.5px;color:var(--ink2);margin:12px 0 5px;font
 .wkbar .wkpos{flex:0 0 auto;padding:0 6px;font-size:14.5px}
 .wkbar .wkb{width:34px;height:32px}
 .wkbar .wkspace{justify-self:end}
-.wkbar .wknavc .wkedit{margin-left:9px;color:var(--ink3)}
-.wkbar .wknavc .wkedit:hover{color:var(--acc)}
+.wkbar .wkedit{color:var(--ink3)}
+.wkbar .wkedit:hover{color:var(--acc)}
 .wksavebar{position:sticky;top:0;z-index:20;display:flex;gap:8px;justify-content:flex-end;align-items:center;background:var(--bg);padding:8px 0 10px;margin:0 0 4px;border-bottom:1px solid var(--bd)}
 .wksavebar:empty{display:none}
 .wksavebar .btn{width:auto;padding:10px 20px}
@@ -563,6 +563,27 @@ label.fl{display:block;font-size:11.5px;color:var(--ink2);margin:12px 0 5px;font
  <div class="toast" id="toast"></div>
 </div>
 <script>
+/* ============================================================================
+   ERORI — captură globală, pentru subsecțiunea „Erori" din Istoric (Setări)
+   ----------------------------------------------------------------------------
+   Doar pe acest dispozitiv — nu intră în S, nu se sincronizează în cloud, e o
+   unealtă tehnică de diagnostic, nu o dată de congregație. Trei surse: erorile
+   necaptate (window.onerror), promisiunile respinse necaptate (unhandledrejection)
+   și cele prinse explicit din cod, unde altfel se pierdeau tăcut într-un catch gol.
+   Ultimele ~150, cu golire manuală. Cheia e scrisă direct (nu prin KEY, definit
+   mai jos) ca prinderea să meargă chiar dacă o eroare apare înainte de acel rând. */
+var ERR_KEY="planintr_v1_errs";
+function _errList(){try{var raw=localStorage.getItem(ERR_KEY);return raw?JSON.parse(raw):[];}catch(e){return [];}}
+function _errWhere(){try{var t=(typeof tab!=="undefined"?tab:"");return t+((t==="arh"&&typeof arhSub!=="undefined"&&arhSub)?("/"+arhSub):"");}catch(e){return "";}}
+function logErr(msg,stack,where){try{
+ var arr=_errList();
+ arr.push({t:Date.now(),msg:String(msg==null?"":msg).slice(0,500),
+  stack:stack?String(stack).split("\n").slice(0,4).join("\n").slice(0,600):"",
+  w:where||_errWhere(),v:(typeof VERSION!=="undefined"?VERSION:"")});
+ if(arr.length>150)arr=arr.slice(-150);
+ localStorage.setItem(ERR_KEY,JSON.stringify(arr));}catch(e){}}
+window.addEventListener("error",function(ev){try{logErr((ev&&ev.message)||"eroare",ev&&ev.error&&ev.error.stack);}catch(e){}});
+window.addEventListener("unhandledrejection",function(ev){try{var r=ev&&ev.reason;logErr((r&&(r.message||r))||"promisiune respinsă",r&&r.stack);}catch(e){}});
 const IC={
  sun:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.4M12 19.1v2.4M2.5 12h2.4M19.1 12h2.4M4.9 4.9l1.7 1.7M17.4 17.4l1.7 1.7M19.1 4.9l-1.7 1.7M6.6 17.4l-1.7 1.7"/></svg>',
  moon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A8.5 8.5 0 1 1 11.2 3a6.6 6.6 0 0 0 9.8 9.8z"/></svg>',
@@ -599,7 +620,7 @@ Object.assign(IC,{
  box:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h18v13H3z"/><path d="M3 7l2-4h14l2 4"/><path d="M10 11h4"/></svg>',
  mark:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15.5 4.5l4 4-9.5 9.5H6v-4z"/><path d="M12.5 7.5l4 4M5 21h14"/></svg>'
 });
-const VERSION="3.0.3";
+const VERSION="3.1.0";
 /* Versiunea minima care are voie sa SCRIE in cloud. Se trece in gist la fiecare trimitere;
    un dispozitiv ramas pe un build mai vechi decat atat nu mai poate suprascrie datele —
    doar citeste si se actualizeaza singur. Asa nu mai poate un singur telefon uitat deschis
@@ -731,7 +752,7 @@ function save(){
   if(!ok){try{localStorage.removeItem(KEY+"_bkp");localStorage.setItem(KEY,JSON.stringify(S));ok=true;}catch(_){}}
   if(!ok){try{if(S.log&&S.log.length>150)S.log=S.log.slice(0,150);localStorage.setItem(KEY,JSON.stringify(S));ok=true;}catch(_){}}
   if(ok){try{toast("Spațiul local era plin — am eliberat automat și am salvat");}catch(_){}}
-  else{try{toast("⚠ Nu am putut salva local (memoria browserului e plină) — fă un Backup (.json) și golește istoricul/backup-urile vechi",7000);}catch(_){}}}
+  else{try{toast("⚠ Nu am putut salva local (memoria browserului e plină) — fă un Backup (.json) și golește istoricul/backup-urile vechi",7000);}catch(_){}try{logErr("Salvare locală eșuată: "+_errMsg(e),e&&e.stack,"save");}catch(_e){}}}
  if(!_applying&&typeof autoBump==="function")autoBump();}
 function _wkDirtyBtn(){var el=document.getElementById("wkSaveSlot");
  if(el&&_wkDraft&&_wkDraft.dirty&&!el.querySelector("button"))el.innerHTML='<button class="btn pri sm" onclick="wkCommit()">Salvează</button><button class="btn ghost sm" onclick="wkCancel()">Anulează</button>';}
@@ -809,7 +830,23 @@ function initPTR(){var body=document.getElementById("body");if(!body||document.g
  body.addEventListener("touchmove",function(e){if(!pulling||busy)return;dist=e.touches[0].clientY-startY;if(dist<=0){setInd(0,false);return;}var h=Math.min(dist*0.5,86);setInd(h,h>=TH);},{passive:true});
  body.addEventListener("touchend",function(){if(!pulling||busy)return;pulling=false;if(dist*0.5>=TH){busy=true;ind.classList.add("load");ind.style.height="50px";var t=txt();if(t)t.textContent="Se actualizează…";
    Promise.resolve(doPullRefresh()).catch(function(){}).then(function(){setTimeout(function(){busy=false;ind.classList.remove("load","ready");setInd(0,false);},500);});}
-  else setInd(0,false);},{passive:true});}
+  else setInd(0,false);},{passive:true});
+ /* gestul poate fi anulat de sistem (schimbare rapidă de tab, gest de swipe preluat de OS) —
+    fără asta, „pulling" rămânea agățat pe true și indicatorul rămânea cu înălțimea din trageere,
+    iar zona de deasupra listei părea blocată */
+ body.addEventListener("touchcancel",function(){if(!pulling)return;pulling=false;if(!busy)setInd(0,false);},{passive:true});}
+/* pe telefon, un tap pe un rând în timp ce degetul aluneca puțin (începutul unui scroll)
+   tot deschidea rândul — browserul consideră „tap" orice atingere care nu s-a mișcat destul,
+   chiar dacă lista a continuat să deruleze din inerție. Un singur prag global, la nivel de
+   document: dacă atingerea s-a mișcat peste prag, clic-ul „fantomă" de la final e anulat
+   înainte să ajungă la orice onclick. */
+(function(){var moved=false,sx=0,sy=0,TH=10;
+ document.addEventListener("touchstart",function(e){if(!e.touches||e.touches.length!==1){moved=false;return;}
+  moved=false;sx=e.touches[0].clientX;sy=e.touches[0].clientY;},{passive:true,capture:true});
+ document.addEventListener("touchmove",function(e){if(moved||!e.touches||e.touches.length!==1)return;
+  if(Math.abs(e.touches[0].clientX-sx)>TH||Math.abs(e.touches[0].clientY-sy)>TH)moved=true;},{passive:true,capture:true});
+ document.addEventListener("click",function(e){if(!moved)return;moved=false;e.preventDefault();e.stopPropagation();},true);
+})();
 (function(){try{var fav=document.querySelector('link[rel="icon"]'),tch=document.querySelector('link[rel="apple-touch-icon"]'),mf=document.querySelector('link[rel="manifest"][href^="data:"]');if(!mf)return;var ic=[];if(fav)ic.push({src:fav.href,sizes:"192x192",type:"image/png"});if(tch)ic.push({src:tch.href,sizes:"512x512",type:"image/png"});var m={name:"ArhiLink",short_name:"ArhiLink",display:"standalone",background_color:"#15161c",theme_color:"#15161c",icons:ic};var b=new Blob([JSON.stringify(m)],{type:"application/json"});mf.href=URL.createObjectURL(b);}catch(e){}})();
 
 function applyTheme(){const light=S.settings.theme==="light";APP().classList.toggle("light",light);
@@ -1241,7 +1278,7 @@ function renderVcp(i){_fabDl(vcpDlSheet);_vcpStyle();
  const nn=`<button class="wkb" onclick="renderVcp(${vcpW+1})" ${vcpW>=S.weeks.length-1?"disabled":""} title="Săptămâna următoare">${IC.fwd}</button>`;
  /* creionul intră în grupul de navigare, nu într-o coloană a lui: pe telefon coloana a
     treia a grilei se prăbușea și butonul sărea pe rândul următor */
- const bar=`<div class="wkbar vcpbar"><span class="wkspace"></span><div class="wknavc">${np}<span class="wkpos">${esc(tc(w.date))}</span>${nn}${_progEditBtn()}</div><span class="wkspace"></span></div>`;
+ const bar=`<div class="wkbar vcpbar"><span class="wkspace"></span><div class="wknavc">${np}<span class="wkpos">${esc(tc(w.date))}</span>${nn}</div><span class="wkspace">${_progEditBtn()}</span></div>`;
  const head=`<div class="group gp" style="padding:15px 16px 11px"><div class="nm" style="font-size:17px;font-weight:800">${tc(w.date)}</div><div class="mt" style="font-size:13px;margin-top:3px">${w.event?'<span style="color:var(--acc);font-weight:700">'+esc(w.event)+(w.eventName?' — '+esc(w.eventName):'')+'</span>':esc(w.bible||'')}</div></div>`;
  const isVisit=isVisitEv(w);
  if(evNoMeet(w)){$("#body").innerHTML=bar+head+`<div class="evb"><div class="et">${esc(evLabel(w))}</div>${w.eventName?'<div class="ed" style="color:var(--ink);font-weight:700;font-size:15px">'+esc(w.eventName)+'</div>':''}<div class="ed">În această săptămână nu se ține întrunirea (S-38).</div></div>`;_progNavFix();window.scrollTo(0,0);const b0=$("#body");if(b0)b0.scrollTop=0;return;}
@@ -4251,6 +4288,7 @@ var _choresDone=false;
 function _startupChores(){if(_choresDone)return;_choresDone=true;
  try{archSweep();}catch(e){}
  try{usersLinkBros();}catch(e){}
+ try{capMigRun();}catch(e){}
  try{_sessRefresh();_sessSave();}catch(e){}}
 function fmtSync(t){var d=new Date(t),n=new Date(),hh=("0"+d.getHours()).slice(-2),mm=("0"+d.getMinutes()).slice(-2);return d.toDateString()===n.toDateString()?(hh+":"+mm):(("0"+d.getDate()).slice(-2)+"."+("0"+(d.getMonth()+1)).slice(-2)+" "+hh+":"+mm);}
 function updateSyncInfo(){var el=$("#syncInfo");if(!el)return;var t=0;try{t=+localStorage.getItem(KEY+"_sync")||0;}catch(e){}
@@ -4463,7 +4501,7 @@ async function ghSync(silent){const g=S.settings.gh;if(!g.token||!g.gist){if(!si
   else if(!doPush&&!silent){toast("Deja sincronizat");}
   _getag=_etNew;_needSync=_skipped;
   setSyncNow();
- }catch(e){if(!silent)toast("Eroare sync: "+_errMsg(e));updateSyncInfo();}
+ }catch(e){if(!silent)toast("Eroare sync: "+_errMsg(e));updateSyncInfo();try{logErr("Eroare sync: "+_errMsg(e),e&&e.stack,"sync");}catch(_e){}}
  finally{_busy=false;}
  if(doPush&&autoOn())return ghPush(silent);}
 /* îmbină rapoartele, ștergerile de rapoarte și prezența din cloud în starea locală, pe bucăți:
@@ -4812,6 +4850,13 @@ function startApp(){_dirty=computeDirty();applyTheme();try{bkpMigrate();}catch(e
    `v` = cheia de „văzut deja"; `label` = versiunea afișată.
    ============================================================================ */
 var NEWS=[
+ {v:"3.1.0",label:"3.1",d:"26.08.2026",t:"Bifele vin singure, scrollul nu se mai blochează",items:[
+  ["ppl","Locațiile și părțile de la mărturia publică/întrunirea publică, bifate singure","Cine a fost pus la o tură sau un post evident poate fi pus din nou — dar bifele din fișă trebuiau puse manual, pentru fiecare, de la zero. Acum se pun singure din istoric (și din foile vechi de avizier, pentru mărturia publică), o singură dată. Bifele puse manual nu se ating."],
+  ["hist","Subsecțiune nouă „Erori” în Istoric","La Setări → Istoric, sub „cine a făcut ce”. Ține, doar pe acest dispozitiv, ultimele erori tehnice ale aplicației — utile dacă ceva nu merge și trebuie povestit exact ce s-a întâmplat."],
+  ["dl","Scrollul nu se mai blochează la schimbare rapidă de tab","Gestul de „trage pentru actualizare” rămânea uneori agățat când sistemul anula atingerea (schimbare rapidă de tab, gest preluat de telefon), iar zona de deasupra listei părea înțepenită."],
+  ["check","Un tap din greșeală, în timp ce derulezi, nu mai deschide rândul","Pe telefon, un rând se putea deschide singur dacă degetul aluneca puțin chiar când ridicai atingerea — acum atingerea care s-a mișcat destul nu mai declanșează clicul."],
+  ["cal","Navigatorul săptămânii, centrat","„‹ 14–20 Septembrie ›” stătea împins spre stânga, fără nimic care să tragă în dreapta cât creionul de editare din dreapta. Acum creionul stă în afara grupului de navigare, iar data rămâne la mijloc."]
+ ]},
  {v:"3.0.3",label:"3.0.3",d:"26.08.2026",t:"Lista de vestitori, întreagă",items:[
   ["ppl","Etichetele trec sub nume","Grupa, tipul și numirea stăteau pe același rând cu numele. La un nume lung lângă „SLUJITOR AUXILIAR”, numele se rupea cuvânt cu cuvânt într-o coloană subțire, iar ultima etichetă ieșea din card. Acum numele are tot rândul, iar etichetele stau dedesubt."],
   ["dl","Butonul rotund nu mai acoperă ultimul rând","La capătul listei sau al foii, ultimul rând rămânea sub el — numele de la „Rugăciune” nu se mai putea citi. Acum conținutul se termină deasupra butonului."]
@@ -5205,8 +5250,21 @@ function setPassSave(){var a=($("#pw1")?$("#pw1").value:"").trim(),b=($("#pw2")?
 async function rmPass(){if(!(await uiConfirm("Ștergi parola?")))return;S.settings.passHash="";save();renderSet();toast("Parolă ștearsă");}
 function logAct(t){try{if(!S.log)S.log=[];S.log.push({t:Date.now(),u:_userGet()||"?",a:t});if(S.log.length>250)S.log=S.log.slice(-250);}catch(e){}}
 function fmtHist(ts){var d=new Date(ts),n=new Date(),z=function(x){return ("0"+x).slice(-2);};var hm=z(d.getHours())+":"+z(d.getMinutes());if(d.toDateString()===n.toDateString())return "azi "+hm;var y=new Date(n.getTime()-864e5);if(d.toDateString()===y.toDateString())return "ieri "+hm;return z(d.getDate())+"."+z(d.getMonth()+1)+" "+hm;}
-function openHistory(){var L=(S.log||[]).slice().reverse(),h="";if(!L.length){h='<div class="muted" style="text-align:center;padding:26px 8px;line-height:1.5">Nicio activitate încă.<br>Aici vei vedea cine a făcut modificări și când.</div>';}else{h='<div class="hist">';for(var i=0;i<L.length;i++){var e=L[i];h+='<div class="hrow"><div class="hwho">'+esc(e.u||"?")+'</div><div class="hwhen">'+fmtHist(e.t)+'</div><div class="hact">'+esc(e.a||"")+'</div></div>';}h+='</div>';if(L.length>3)h+='<button class="btn ghost sm" style="width:100%;margin-top:14px" onclick="clearHistory()">Golește istoricul</button>';}sheet("","Cine a făcut ce",h);}
+function openHistory(){var L=(S.log||[]).slice().reverse(),h="";if(!L.length){h='<div class="muted" style="text-align:center;padding:26px 8px;line-height:1.5">Nicio activitate încă.<br>Aici vei vedea cine a făcut modificări și când.</div>';}else{h='<div class="hist">';for(var i=0;i<L.length;i++){var e=L[i];h+='<div class="hrow"><div class="hwho">'+esc(e.u||"?")+'</div><div class="hwhen">'+fmtHist(e.t)+'</div><div class="hact">'+esc(e.a||"")+'</div></div>';}h+='</div>';if(L.length>3)h+='<button class="btn ghost sm" style="width:100%;margin-top:14px" onclick="clearHistory()">Golește istoricul</button>';}
+ h+=_errSectionHtml();
+ sheet("","Cine a făcut ce",h);}
 async function clearHistory(){if(!(await uiConfirm("Golești istoricul de activitate?")))return;S.log=[];save();closeSheet();toast("Istoric golit");}
+/* subsecțiunea „Erori": doar locale, tehnice — separate de „cine a făcut ce", care e istoricul de congregație */
+function _errSectionHtml(){var E=_errList().slice().reverse();
+ var h='<div class="grpttl" style="margin-top:20px">Erori<span class="muted" style="font-weight:400"> — doar pe acest dispozitiv</span></div>';
+ if(!E.length)return h+'<div class="muted" style="padding:8px 2px 2px">Nicio eroare înregistrată.</div>';
+ h+='<div class="hist">'+E.map(function(e){
+   return '<div class="hrow"><div class="hwho">'+esc(e.w||"—")+(e.v?(' <span class="muted" style="font-weight:400">v'+esc(e.v)+'</span>'):'')+'</div>'
+    +'<div class="hwhen">'+fmtHist(e.t)+'</div>'
+    +'<div class="hact">'+esc(e.msg||"")+(e.stack?('<div class="muted" style="font-family:ui-monospace,Menlo,monospace;font-size:10.5px;margin-top:3px;white-space:pre-wrap;overflow-wrap:anywhere">'+esc(e.stack)+'</div>'):'')+'</div></div>';}).join("")+'</div>'
+  +'<button class="btn ghost sm" style="width:100%;margin-top:10px" onclick="clearErrLog()">Golește erorile</button>';
+ return h;}
+async function clearErrLog(){if(!(await uiConfirm("Golești lista de erori de pe acest dispozitiv?")))return;try{localStorage.removeItem(ERR_KEY);}catch(e){}openHistory();toast("Erori golite");}
 
 /* epub */
 async function importEpub(inp){const f=inp.files[0];if(!f)return;toast("Se citește caietul…");
@@ -7242,7 +7300,7 @@ function dutyWeekHtml(wi){var w=S.weeks[wi],o=dutyOf(wi),ed=_canEditDuty(),posts
  var h=_secBar("sarc")+'<div class="'+_wkBarCls()+'">'+_wkBack("Sarcini","dutyBack()")
   +'<div class="wknavc"><button class="wkb" onclick="dutyGo('+(wi-1)+')" '+(np(wi-1)?"":"disabled")+' title="Săptămâna anterioară">'+IC.back+'</button>'
   +'<span class="wkpos">'+esc(tc(w.date))+'</span>'
-  +'<button class="wkb" onclick="dutyGo('+(wi+1)+')" '+(np(wi+1)?"":"disabled")+' title="Săptămâna următoare">'+IC.fwd+'</button>'+_progEditBtn()+'</div><span class="wkspace"></span></div>';
+  +'<button class="wkb" onclick="dutyGo('+(wi+1)+')" '+(np(wi+1)?"":"disabled")+' title="Săptămâna următoare">'+IC.fwd+'</button></div><span class="wkspace">'+_progEditBtn()+'</span></div>';
  if(evNoMeet(w))return h+'<div class="evb" style="margin-top:10px"><div class="et">'+esc(evLabel(w))+'</div><div class="ed">În această săptămână nu se ține întrunirea, deci nu se repartizează sarcini (S-38).</div></div>';
  h+='<div class="group gp" style="padding:14px 16px 11px"><div class="nm" style="font-size:16.5px;font-weight:800">Săptămâna '+esc(tc(w.date))+'</div>'
   +'<div class="mt" style="font-size:12.5px;margin-top:3px">'+(w.event?('<span style="color:var(--acc);font-weight:700">'+esc(w.event)+'</span>'):esc(w.bible||""))+'</div></div>';
@@ -8290,7 +8348,7 @@ function wmWeekHtml(wi){var w=S.weeks[wi],o=wmOf(wi),ed=_canEditWm(),posts=wmPos
  var h=_secBar("wm")+'<div class="'+_wkBarCls()+'">'+_wkBack("Întrunirea publică","wmBack()")
   +'<div class="wknavc"><button class="wkb" onclick="wmGo('+(wi-1)+')" '+(np(wi-1)?"":"disabled")+' title="Săptămâna anterioară">'+IC.back+'</button>'
   +'<span class="wkpos">'+esc(tc(w.date))+'</span>'
-  +'<button class="wkb" onclick="wmGo('+(wi+1)+')" '+(np(wi+1)?"":"disabled")+' title="Săptămâna următoare">'+IC.fwd+'</button>'+_progEditBtn()+'</div><span class="wkspace"></span></div>';
+  +'<button class="wkb" onclick="wmGo('+(wi+1)+')" '+(np(wi+1)?"":"disabled")+' title="Săptămâna următoare">'+IC.fwd+'</button></div><span class="wkspace">'+_progEditBtn()+'</span></div>';
  if(evNoMeet(w))return h+'<div class="evb" style="margin-top:10px"><div class="et">'+esc(evLabel(w))+'</div><div class="ed">În această săptămână nu se ține întrunirea de la sfârșit de săptămână, deci nu se repartizează nimic.</div></div>';
  h+='<div class="group gp" style="padding:14px 16px 11px"><div class="nm" style="font-size:16.5px;font-weight:800">'+esc(dt?_fmtDayLong(dt):tc(w.date))+'</div>'
   +'<div class="mt" style="font-size:12.5px;margin-top:3px">'+(w.event?('<span style="color:var(--acc);font-weight:700">'+esc(evLabel(w))+'</span>'):('Săptămâna '+esc(tc(w.date))))+'</div></div>';
@@ -8726,6 +8784,81 @@ function arhFabWm(){var ed=_canEditWm();
   +'<button class="pmrow" onclick="arhFabGo(planImportSheet,arhFabWm)">'+IC.edit+'<span><b>Import plan</b> — lipești textul foii</span></button>';
  sheet("","Întrunirea publică",H);}
 
+/* ============================================================================
+   MIGRARE — bifele de capacitate din istoric (mărturia publică + întrunirea publică)
+   ----------------------------------------------------------------------------
+   Cine a fost pus în trecut la o tură sau un post poate, evident, să fie pus din nou —
+   dar bifele din fișă (b.mpl, b.wm) trebuiau puse manual pentru fiecare, de la zero.
+   Rulează o singură dată (S.settings._capMigV), doar ADAUGĂ — nu atinge niciodată o
+   bifă pusă manual sau scoasă anume — din două surse:
+    1. istoricul intern (S.mp.a, S.wm.a) — sigur, leagă direct la id-ul vestitorului;
+    2. pentru mărturia publică, cele două foi vechi de avizier (august 2026 și
+       septembrie 2025) — nume scrise de mână acolo, potrivite după nume normalizat.
+   ============================================================================ */
+var CAP_MIG_V=1;
+/* nume „Nume Prenume" (cum apar pe foile vechi de avizier) → locațiile unde au fost puși */
+var _capMigPdf=[
+ ["Grec Alexandra",["Piața 16 Februarie","Pod Basarab"]],
+ ["Todea Rebeca",["Piața 16 Februarie","Gara de Nord"]],
+ ["Racila Dorina",["Piața 16 Februarie","Pod Basarab"]],
+ ["Ciocan Mihaela",["Piața 16 Februarie"]],
+ ["Szancsay Iulia",["Piața 16 Februarie"]],
+ ["Szancsaly Iulia",["Piața 16 Februarie","Pac Basilescu","Gara de Nord"]],
+ ["Szancsaly Robert",["Piața 16 Februarie","Pod Basarab","Gara de Nord"]],
+ ["Calugaru Susana",["Piața 16 Februarie","Pod Basarab","Pac Basilescu","Gara de Nord"]],
+ ["Demian Adrian",["Piața 16 Februarie"]],
+ ["Demian Mirela",["Piața 16 Februarie"]],
+ ["Campean Elena",["Piața 16 Februarie"]],
+ ["Zapartan Tatiana",["Piața 16 Februarie","Gara de Nord"]],
+ ["Pantazi Monica",["Piața 16 Februarie","Pac Basilescu","Gara de Nord"]],
+ ["Paraschiv Luminita",["Piața 16 Februarie","Gara de Nord"]],
+ ["Spirescu Silvia",["Gara de Nord"]],
+ ["Draghici Iemima",["Gara de Nord","Pac Basilescu"]],
+ ["Comanache Raymond",["Gara de Nord"]],
+ ["Comanache Mihaela",["Gara de Nord"]],
+ ["Cituran Rodica",["Gara de Nord"]],
+ ["Vasi Emilia",["Gara de Nord","Pac Basilescu"]],
+ ["Dafinoiu Mihai",["Gara de Nord"]],
+ ["Pantea Vali",["Gara de Nord","Pac Basilescu"]],
+ ["Simion Beniamin",["Pod Basarab","Gara de Nord"]],
+ ["Nedelea Iulia",["Gara de Nord"]],
+ ["Zemba Mark",["Gara de Nord"]],
+ ["Simion Daniel",["Pod Basarab","Pac Basilescu"]],
+ ["Simion Lidia",["Pod Basarab","Pac Basilescu"]],
+ ["Hodor Nicu",["Pac Basilescu"]],
+ ["Hodor Lenuta",["Pac Basilescu"]]
+];
+function _capMigLocId(nm){var q=_piNorm(nm),l=mpLocs().find(function(x){return _piNorm(x.n)===q;});return l?l.id:null;}
+function _capMigAddMp(b,locId){if(!locId)return false;var L=b.mpl||(b.mpl=[]);
+ if(L.indexOf("*")>=0||L.indexOf(locId)>=0)return false;L.push(locId);return true;}
+function _capMigAddWm(b,cat){if(!cat)return false;var L=b.wm||(b.wm=[]);
+ if(L.indexOf(cat)>=0)return false;L.push(cat);return true;}
+function capMigRun(){
+ if(!S.settings)S.settings={};
+ if((S.settings._capMigV||0)>=CAP_MIG_V)return;
+ var chg=false,nMp=0,nWm=0,touched={};
+ function touch(id){touched[id]=1;}
+ /* 1a. istoricul intern — mărturia publică: fiecare tură primită arată locația */
+ try{var Dm=mpD();
+  Object.keys(Dm.a||{}).forEach(function(k){var o=Dm.a[k];if(!o)return;
+   Object.keys(o).forEach(function(sid){if(sid==="off")return;var s=mpShift(sid);if(!s)return;
+    var arr=o[sid];if(!Array.isArray(arr))return;
+    arr.forEach(function(id){if(!id)return;var b=(S.bros||[]).find(function(x){return x.id===id;});if(!b)return;
+     if(_capMigAddMp(b,s.loc)){chg=true;nMp++;touch(id);}});});});}catch(e){}
+ /* 1b. istoricul intern — întrunirea publică: fiecare post primit arată bifa (categoria) */
+ try{var Dw=wmD(),posts=wmPosts();
+  Object.keys(Dw.a||{}).forEach(function(k){var o=Dw.a[k];if(!o)return;
+   if(o.sp){var b=(S.bros||[]).find(function(x){return x.id===o.sp;});
+    if(b&&_capMigAddWm(b,"talk")){chg=true;nWm++;touch(o.sp);}}
+   posts.forEach(function(p){var id=o[p.id];if(!id)return;var b=(S.bros||[]).find(function(x){return x.id===id;});
+    if(b&&_capMigAddWm(b,p.c)){chg=true;nWm++;touch(id);}});});}catch(e){}
+ /* 2. secundar — foile vechi de avizier, potrivite după nume (doar mărturia publică) */
+ try{_capMigPdf.forEach(function(row){var r=_piBro(row[0]);if(!r.b)return;
+  row[1].forEach(function(ln){var lid=_capMigLocId(ln);if(!lid)return;
+   if(_capMigAddMp(r.b,lid)){chg=true;nMp++;touch(r.b.id);}});});}catch(e){}
+ S.settings._capMigV=CAP_MIG_V;
+ if(chg){try{logAct("Migrare bife capacități — "+Object.keys(touched).length+" fișe, +"+nMp+" locații mărturie publică, +"+nWm+" bife întrunire publică");}catch(e){}}
+ save();}
 
 /* ============================================================================
    FOAIA COMPLETĂ A SĂPTĂMÂNII — o singură coală cu tot ce se ține în ea:
