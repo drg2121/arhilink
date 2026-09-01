@@ -374,6 +374,7 @@ label.fl{display:block;font-size:11.5px;color:var(--ink2);margin:12px 0 5px;font
 .spk i{width:3px;height:4px;border-radius:2px;background:var(--bd);display:block}
 .spk i.o{height:8px;background:var(--ink3)}
 .spk i.t{height:13px;background:var(--acc)}
+.spk i.fu{opacity:.4}
 @media(max-width:400px){.spk{gap:1px}.spk i{width:2px}}
 .pfr{flex:0 0 auto;align-self:center;width:44px;text-align:center;margin-left:8px;padding:5px 3px;display:flex;flex-direction:column;align-items:center;gap:1px;border:1px solid var(--bd);border-radius:11px;background:var(--surf2);color:var(--ink2)}
 .pfr b{font-size:14.5px;font-weight:800;line-height:1;font-variant-numeric:tabular-nums}
@@ -620,7 +621,7 @@ Object.assign(IC,{
  box:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h18v13H3z"/><path d="M3 7l2-4h14l2 4"/><path d="M10 11h4"/></svg>',
  mark:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15.5 4.5l4 4-9.5 9.5H6v-4z"/><path d="M12.5 7.5l4 4M5 21h14"/></svg>'
 });
-const VERSION="3.1.2";
+const VERSION="3.1.3";
 /* Versiunea minima care are voie sa SCRIE in cloud. Se trece in gist la fiecare trimitere;
    un dispozitiv ramas pe un build mai vechi decat atat nu mai poate suprascrie datele —
    doar citeste si se actualizeaza singur. Asa nu mai poate un singur telefon uitat deschis
@@ -1455,12 +1456,14 @@ var _histIdx=null,_histIdxRev=-1;
 function histIdx(){
  var rev=(S._rev||0)+"|"+(S.weeks?S.weeks.length:0);
  if(_histIdx&&_histIdxRev===rev)return _histIdx;
- var role={},any={},wk={},all={},cnt={};
+ var role={},any={},wk={},all={},cnt={},roleL={},anyL={};
  (S.weeks||[]).forEach(function(w,wi){var pl=S.plans[wi];if(!w||!pl||!pl.a)return;
   var a=pl.a;
   var put=function(id,r){if(!id)return;
-   if(r){role[r]=role[r]||{};if(role[r][id]==null||role[r][id]<wi)role[r][id]=wi;}
+   if(r){role[r]=role[r]||{};if(role[r][id]==null||role[r][id]<wi)role[r][id]=wi;
+    roleL[r]=roleL[r]||{};(roleL[r][id]=roleL[r][id]||{})[wi]=1;}
    if(any[id]==null||any[id]<wi)any[id]=wi;
+   (anyL[id]=anyL[id]||{})[wi]=1;
    cnt[id]=(cnt[id]||0)+1;/* câte părți a avut în total — departajează la egalitate */
    (wk[wi]=wk[wi]||{})[id]=1;
    /* rugăciunea nu e o temă: cine se roagă într-o săptămână poate avea liniștit o parte în
@@ -1474,8 +1477,24 @@ function histIdx(){
    if((p.title||"").toLowerCase().indexOf("studiul")>=0)return;/* tratat prin cond/cit */
    if(hasPartner(p,r)){put(a[p.id+"_a"],r);put(a[p.id+"_b"],r);}
    else put(asgOf(a,p),r);});});
- var allA={};Object.keys(all).forEach(function(id){allA[id]=Object.keys(all[id]).map(Number).sort(function(a,b){return a-b;});});
- _histIdx={role:role,any:any,wk:wk,all:allA,cnt:cnt};_histIdxRev=rev;return _histIdx;}
+ var _srt=function(o){return Object.keys(o).map(Number).sort(function(a,b){return a-b;});};
+ var allA={};Object.keys(all).forEach(function(id){allA[id]=_srt(all[id]);});
+ var roleA={};Object.keys(roleL).forEach(function(r){roleA[r]={};Object.keys(roleL[r]).forEach(function(id){roleA[r][id]=_srt(roleL[r][id]);});});
+ var anyA={};Object.keys(anyL).forEach(function(id){anyA[id]=_srt(anyL[id]);});
+ _histIdx={role:role,any:any,wk:wk,all:allA,cnt:cnt,roleL:roleA,anyL:anyA};_histIdxRev=rev;return _histIdx;}
+/* Săptămâna care se planifică împarte caietul în două, iar întrebările sunt diferite:
+   „de când n-a mai avut?" se uită ÎNAPOI, „nu cumva e deja pus?" se uită ÎNAINTE.
+   Până acum se ținea minte doar cea mai TÂRZIE săptămână, oricare ar fi fost ea: cine era
+   deja pus peste o săptămână ieșea în listă cu „la această temă: niciodată", fiindcă
+   săptămâna găsită era în viitor, iar socoteala „acum N săptămâni" nu se poate face pe ea.
+   De aceea ținem acum toate săptămânile fiecăruia și răspundem separat la cele două. */
+function _pickLast(L,base){if(!L||!L.length)return -1;var r=-1;for(var i=0;i<L.length;i++){if(L[i]<=base)r=L[i];else break;}return r;}
+function _pickNext(L,base){if(!L||!L.length)return -1;for(var i=0;i<L.length;i++){if(L[i]>base)return L[i];}return -1;}
+/* ultima/următoarea săptămână cu EXACT tema asta, față de săptămâna care se planifică */
+function lastRoleWiTo(id,r,base){var H=histIdx();return _pickLast(H.roleL[r]&&H.roleL[r][id],base);}
+function nextRoleWi(id,r,base){var H=histIdx();return _pickNext(H.roleL[r]&&H.roleL[r][id],base);}
+/* următoarea săptămână în care are deja orice parte */
+function nextAnyWi(id,base){var H=histIdx();return _pickNext(H.anyL[id],base);}
 /* ultima săptămână în care persoana a avut EXACT tema asta (-1 = niciodată) */
 function lastRoleWi(id,r){var H=histIdx();return (H.role[r]&&H.role[r][id]!=null)?H.role[r][id]:-1;}
 /* ultima săptămână în care a avut orice parte */
@@ -1490,8 +1509,11 @@ function histInvalidate(){_histIdx=null;_histIdxRev=-1;}
 /* după fiecare atribuire ținem indexul la zi, altfel următoarea săptămână ar fi judecată
    ca și cum atribuirea asta nu s-ar fi făcut (de aici veneau aceleași nume peste tot) */
 function histTouch(id,role,wi){if(!id||wi==null||wi<0)return;var H=_histIdx;if(!H)return;
- if(role){H.role[role]=H.role[role]||{};if(H.role[role][id]==null||H.role[role][id]<wi)H.role[role][id]=wi;}
+ var _push=function(L){if(L.indexOf(wi)<0){L.push(wi);L.sort(function(a,b){return a-b;});}};
+ if(role){H.role[role]=H.role[role]||{};if(H.role[role][id]==null||H.role[role][id]<wi)H.role[role][id]=wi;
+  H.roleL=H.roleL||{};H.roleL[role]=H.roleL[role]||{};_push(H.roleL[role][id]=H.roleL[role][id]||[]);}
  if(H.any[id]==null||H.any[id]<wi)H.any[id]=wi;
+ H.anyL=H.anyL||{};_push(H.anyL[id]=H.anyL[id]||[]);
  H.cnt[id]=(H.cnt[id]||0)+1;
  (H.wk[wi]=H.wk[wi]||{})[id]=1;
  if(role!=="Rugăciune"){var L=H.all[id]=H.all[id]||[];
@@ -1692,14 +1714,39 @@ function lastAnyMap(base){var m={};
    else if(k==="cit"&&a.cond)partner=broDisp(a.cond);
    m[id]={wi:wi,label:label,partner:partner};});}
  return m;}
-/* Graficul de sub nume: ultimele SPK_N săptămâni, o bară pentru fiecare. Bară scundă și
+/* Graficul de sub nume: ultimele SPK_N săptămâni ȘI următoarele SPK_FUT (mai șterse, ca să se
+   vadă dintr-o privire dacă omul e deja prins în perioada care vine). O bară pentru fiecare. Bară scundă și
    ștearsă = n-a avut nimic, bară medie = a avut ceva, bară înaltă și portocalie = a avut
    chiar tema care se atribuie acum. Se citește ritmul dintr-o privire — cine iese des, cine
    n-a mai fost demult, cine repetă aceeași temă — lucruri pe care o dată și un număr nu le
    spun. Se strâng pentru toată lista deodată, dintr-o singură trecere prin fereastra asta. */
-var SPK_N=26;
-function spkMaps(role,base){var from=Math.max(0,base-SPK_N+1),any={},rol={};
- for(var wi=from;wi<=base&&wi<S.weeks.length;wi++){var w=S.weeks[wi];if(!w)continue;ensureIds(w);
+/* oglinda lui lastAnyMap: prima temă de DUPĂ săptămâna care se planifică. Fără ea, cine e
+   deja pus peste o săptămână arăta în listă ca un om odihnit. */
+function nextAnyMap(base){var m={};
+ for(var wi=(base==null?0:base+1);wi<S.weeks.length;wi++){var w=S.weeks[wi];if(!w)continue;ensureIds(w);
+  var pl=S.plans[wi];if(!pl||!pl.a)continue;var a=pl.a,byId={};
+  (w.parts||[]).forEach(function(p){byId[p.id]=p;});
+  Object.keys(a).forEach(function(k){var id=a[k];if(!id||m[id])return;
+   var bk=k.replace(/_(a|b)$/,""),p=byId[k]||byId[bk],label=null,partner=null;
+   if(p)label=(p.num?p.num+". ":"")+(p.title||roleLabel(partRole(p)));
+   else if(_PK_SPECIAL[k])label=_PK_SPECIAL[k];
+   else return;
+   if(!byId[k]&&byId[bk]){var mid=(k.slice(-2)==="_a")?a[bk+"_b"]:a[bk+"_a"];if(mid)partner=broDisp(mid);}
+   else if(k==="cond"&&a.cit)partner=broDisp(a.cit);
+   else if(k==="cit"&&a.cond)partner=broDisp(a.cond);
+   m[id]={wi:wi,label:label,partner:partner};});}
+ return m;}
+/* aceeași întrebare pentru perechi: nu „cu cine a mai fost", ci „cu cine e deja pus" */
+function pairNextMap(mateId,base){var m={};if(!mateId)return m;
+ for(var wi=(base==null?0:base+1);wi<S.weeks.length;wi++){var w=S.weeks[wi];if(!w)continue;ensureIds(w);
+  var pl=S.plans[wi];if(!pl||!pl.a)continue;var a=pl.a,prs=[];
+  if(a.cond&&a.cit)prs.push([a.cond,a.cit]);
+  (w.parts||[]).forEach(function(p){var x=a[p.id+"_a"],y=a[p.id+"_b"];if(x&&y)prs.push([x,y]);});
+  prs.forEach(function(pr){var o=pr[0]===mateId?pr[1]:(pr[1]===mateId?pr[0]:null);if(o&&m[o]==null)m[o]=wi;});}
+ return m;}
+var SPK_N=26,SPK_FUT=5;
+function spkMaps(role,base){var from=Math.max(0,base-SPK_N+1),to=Math.min(S.weeks.length-1,base+SPK_FUT),any={},rol={};
+ for(var wi=from;wi<=to;wi++){var w=S.weeks[wi];if(!w)continue;ensureIds(w);
   var pl=S.plans[wi];if(!pl||!pl.a)continue;var a=pl.a,byId={};
   (w.parts||[]).forEach(function(p){byId[p.id]=p;});
   Object.keys(a).forEach(function(k){var id=a[k];if(!id)return;
@@ -1711,10 +1758,10 @@ function spkMaps(role,base){var from=Math.max(0,base-SPK_N+1),any={},rol={};
    if(!p&&!r)return;
    (any[id]=any[id]||{})[wi]=1;
    if(r&&role&&r===role)(rol[id]=rol[id]||{})[wi]=1;});}
- return {from:from,to:base,any:any,rol:rol};}
+ return {from:from,to:to,base:base,any:any,rol:rol};}
 function spkHtml(id,M){var h="",A=M.any[id]||{},R=M.rol[id]||{};
- for(var wi=M.from;wi<=M.to;wi++)h+='<i class="'+(R[wi]?"t":(A[wi]?"o":""))+'"></i>';
- return '<span class="spk" title="Ultimele '+(M.to-M.from+1)+' de săptămâni · bară plină = a avut ceva, portocalie = chiar tema asta">'+h+'</span>';}
+ for(var wi=M.from;wi<=M.to;wi++){var c=R[wi]?"t":(A[wi]?"o":"");if(M.base!=null&&wi>M.base)c+=" fu";h+='<i class="'+c+'"></i>';}
+ return '<span class="spk" title="Săptămânile din jur · bară plină = are ceva, portocalie = chiar tema asta; cele de după săptămâna planificată sunt mai șterse">'+h+'</span>';}
 /* de câte săptămâni n-a mai avut lucrul ăsta, față de săptămâna care se planifică; null = niciodată */
 function _wksBetween(base,wi){return (wi==null||wi<0||base==null||base<0||wi>base)?null:(base-wi);}
 function _wksAgo(wi){return _wksBetween(curW,wi);}
@@ -1723,8 +1770,13 @@ function _wkWord(n){return n===1?"săptămână":"săptămâni";}
 /* „acum 0 săptămâni" nu se spune: dacă e chiar săptămâna care se planifică, o zicem pe nume */
 function _agoTxt(n){return n===0?"chiar săptămâna asta":("acum "+n+" "+_wkWord(n));}
 /* pastila cu numărul mare din dreapta rândului — aceeași în toate listele de alegere */
-function _freshBadge(n,never){return '<span class="pfr '+_freshCls(n)+'" title="'
- +(n==null?esc(never||"Niciodată"):("Ultima dată "+_agoTxt(n)))+'">'
+function _freshBadge(n,never,fut){
+ /* fut = peste câte săptămâni are deja ceva (null = nimic). Culoarea o dă cea mai apropiată
+    parte, din trecut sau din viitor — altfel cineva pus peste o săptămână ieșea verde. */
+ var cls=_freshCls(n);if(fut!=null){var c2=_freshCls(fut),o=["r","a","","g","nv"];if(o.indexOf(c2)<o.indexOf(cls))cls=c2;}
+ return '<span class="pfr '+cls+'" title="'
+ +(n==null?esc(never||"Niciodată"):("Ultima dată "+_agoTxt(n)))
+ +(fut!=null?(" · are deja ceva peste "+fut+" "+_wkWord(fut)):"")+'">'
  +(n==null?'<b>—</b>':'<b>'+n+'</b><i>săpt.</i>')+'</span>';}
 function openPick(role,key){if(!_needEdit())return;pickCtx={role,key};renderPick();}
 function pickF(t,v){pickFilter[t]=(pickFilter[t]===v?"":v);renderPick();}
@@ -1741,7 +1793,7 @@ function renderPick(){const role=pickCtx.role;const mate=pickMate();
  const srch=`<div class="brosrch"><span class="brosrch-ic">${IC.search}</span><input id="pickq" class="brosrch-in" type="search" autocomplete="off" enterkeyhint="search" placeholder="Caută vestitor…" value="${esc(pickSearch)}" oninput="pickSearchUpd(this.value)"><button class="brosrch-x" tabindex="-1" title="Șterge căutarea" onclick="pickClear()">×</button></div>`;
  let H=`<div class="muted" style="padding:2px 4px 9px">Apasă pe rând ca să-i vezi istoricul · <b>Alege</b> îl pune la temă${mate?(' · trebuie <b>'+(partnerFamOk(role)?'același sex sau din familie':'același sex')+'</b>'):''}</div>`;
  /* cheia numărului din dreapta: fără ea, cifra nu spune nimic din prima */
- H+=`<div class="pklg"><span><b>Graficul</b>: ultimele ${SPK_N} de săptămâni <span class="spk lg"><i class="o"></i><i class="t"></i><i class=""></i></span> — portocaliu = chiar tema asta · <b>numărul</b>: săptămâni de la ultima lui temă</span></div>`;
+ H+=`<div class="pklg"><span><b>Graficul</b>: ultimele ${SPK_N} de săptămâni și următoarele ${SPK_FUT} <span class="spk lg"><i class="o"></i><i class="t"></i><i class=""></i><i class="o fu"></i></span> — portocaliu = chiar tema asta, șters = ce urmează · <b>numărul</b>: săptămâni de la ultima lui temă</span></div>`;
  H+=srch;
  H+=`<div class="pfbar2">${pickFGroup("sex","Gen")}${pickFGroup("pio","Tip")}</div>`;
  H+=`<div class="pcard"><button class="psel" onclick="setPick('')"><span class="pava" style="background:var(--surf2);color:var(--ink3)">—</span><span class="pinfo"><span class="pnm" style="color:var(--ink3)">— niciunul —</span><span class="psub">scoate atribuirea</span></span></button></div>`;
@@ -1773,12 +1825,19 @@ function renderPickList(){const wrap=document.getElementById("pickList");if(!wra
  const hb=curW-1;
  const pairM=mate?pairLastMap(mate.id,hb):null,mateNm=mate?broDisp(mate.id):"";
  const anyM=lastAnyMap(hb),spkM=spkMaps(role,curW);
+ /* ce are fiecare DUPĂ săptămâna asta: fără el, cine e deja pus peste o săptămână
+    ieșea „niciodată", iar planificarea făcută în altă ordine decât cea a caietului
+    (sau reluată mai târziu) punea aceiași oameni la două săptămâni una după alta */
+ const nextM=nextAnyMap(curW),pairN=mate?pairNextMap(mate.id,curW):null;
  list.forEach(({b})=>{const here=used[b.id]&&pl.a[pickCtx.key]!==b.id;const cur=pl.a[pickCtx.key]===b.id;
    /* Numărul mare răspunde la întrebarea dintâi: de când n-a mai avut OMUL ĂSTA vreo temă.
       Înainte era socotit doar pe tema deschisă, așa că mai toți ieșeau „niciodată" și
       numărul nu mai despărțea pe nimeni de nimeni. */
    const la=anyM[b.id]||null;
-   const fresh=_freshBadge(la?_wksAgo(la.wi):null,"Nicio temă până acum");
+   const _nx0=nextM[b.id]||null,_nn0=_nx0?(_nx0.wi-curW):null;
+   /* numărul mare rămâne „de când n-a mai avut", dar dacă e deja pus în săptămânile care vin
+      nu mai are voie să iasă verde: pastila ia culoarea celei mai apropiate părți, de oriunde */
+   const fresh=_freshBadge(la?_wksAgo(la.wi):null,"Nicio temă până acum",_nn0);
    /* primul rând: ultima temă, oricare a fost ea, cu partea și cu cine a ținut-o */
    let l1;
    if(la)l1='ultima temă: <b>'+esc(tc((S.weeks[la.wi]||{}).date||''))+'</b> · '+esc(la.label)
@@ -1786,13 +1845,19 @@ function renderPickList(){const wrap=document.getElementById("pickList");if(!wra
    else l1='nicio temă până acum';
    /* al doilea rând: tema deschisă acum, perechea, și ce mai are în jur. Culoarea o poartă
       pastila din dreapta; aici rămâne text liniștit, ca roșul să însemne doar ciocnire. */
-   const rw=lastRoleWi(b.id,role),rn=_wksAgo(rw);
+   const rw=lastRoleWiTo(b.id,role,curW),rn=_wksAgo(rw);
    const l2=['la această temă: <b>'+((rw===curW)?'e pus acum':(rn==null?'niciodată':_agoTxt(rn)))+'</b>'];
-   if(mate){const pw=pairM[b.id],pa=_wksAgo(pw);
-     if(pw==null)l2.push('<span class="ok">cu '+esc(mateNm)+': <b>niciodată</b></span>');
-     else l2.push('<span class="'+(pa!=null&&pa<13?'pcu':'')+'">cu '+esc(mateNm)+': <b>'
-       +(pa!=null?_agoTxt(pa):esc(tc(S.weeks[pw].date)))+'</b></span>');}
-   if(!cur&&nearGap(b.id,curW)<=1)l2.push('<span class="warn">are ceva în săptămâna vecină</span>');
+   const rfw=nextRoleWi(b.id,role,curW);
+   if(rfw>=0)l2.push('<span class="warn">aceeași temă și peste '+(rfw-curW)+' '+_wkWord(rfw-curW)+'</span>');
+   if(mate){const pw=pairM[b.id],pa=_wksAgo(pw),pn=pairN?pairN[b.id]:null;
+     if(pw==null&&pn==null)l2.push('<span class="ok">cu '+esc(mateNm)+': <b>niciodată</b></span>');
+     else if(pw!=null)l2.push('<span class="'+(pa!=null&&pa<13?'pcu':'')+'">cu '+esc(mateNm)+': <b>'
+       +(pa!=null?_agoTxt(pa):esc(tc(S.weeks[pw].date)))+'</b></span>');
+     if(pn!=null)l2.push('<span class="warn">împreună cu '+esc(mateNm)+' și peste '+(pn-curW)+' '+_wkWord(pn-curW)+'</span>');}
+   /* ce urmează pentru omul ăsta — cea mai apropiată parte de după săptămâna planificată */
+   const nx=(!cur&&nextM[b.id])?nextM[b.id]:null,nn=nx?(nx.wi-curW):null;
+   if(nx&&nn<=8)l2.push('<span class="warn">are deja peste '+nn+' '+_wkWord(nn)+': '+esc(tc((S.weeks[nx.wi]||{}).date||''))+' · '+esc(nx.label)+'</span>');
+   if(!cur&&!nx&&nearGap(b.id,curW)<=1)l2.push('<span class="warn">are ceva în săptămâna vecină</span>');
    const meta='<span class="pkm"><span class="pkl">'+l1+'</span>'
      +'<span class="pkl">'+l2.join(" · ")+'</span></span>';
    h+=`<div class="pcard ${here?'hl':''} ${cur?'cur':''}">`
@@ -1811,10 +1876,17 @@ function pickHistToggle(id){var box=document.getElementById("ph-"+id);if(!box)re
   var b=card.querySelector(".psel");if(b)b.setAttribute("aria-expanded",open?"true":"false");}
  if(open&&!box.getAttribute("data-f")){box.setAttribute("data-f","1");box.innerHTML=pickHistHtml(id);}}
 function pickHistHtml(id){
- var all=myAssignments(id).filter(function(e){return e.wi<curW;}).sort(function(a,b){return b.wi-a.wi;});
+ var A=myAssignments(id);
+ var fut=A.filter(function(e){return e.wi>curW;}).sort(function(a,b){return a.wi-b.wi;}).slice(0,4);
+ var head=fut.length?('<div class="phnote">Ce urmează</div>'+fut.map(function(e){
+   return '<div class="phrow"><div class="phw">'+esc(tc(e.date))+'</div><div class="phb"><b>'+esc(e.label)+'</b>'
+    +(e.partner?(' · <span class="pcu">cu '+esc(e.partner)+'</span>'):'')
+    +' <span class="phag">· peste '+(e.wi-curW)+' '+_wkWord(e.wi-curW)+'</span></div></div>';}).join("")
+  +'<div class="phnote">Înainte</div>'):"";
+ var all=A.filter(function(e){return e.wi<curW;}).sort(function(a,b){return b.wi-a.wi;});
  var rows=all.slice(0,8);
- if(!rows.length)return '<div class="phnote">Nicio temă până acum.</div>';
- return rows.map(function(e){var ag=_wksAgo(e.wi);
+ if(!rows.length)return head?(head+'<div class="phnote">Nicio temă până acum.</div>'):'<div class="phnote">Nicio temă până acum.</div>';
+ return head+rows.map(function(e){var ag=_wksAgo(e.wi);
    return '<div class="phrow"><div class="phw">'+esc(tc(e.date))+'</div><div class="phb"><b>'+esc(e.label)+'</b>'
     +(e.partner?(' · <span class="pcu">cu '+esc(e.partner)+'</span>'):'')
     +(ag!=null?(' <span class="phag">· '+_agoTxt(ag)+'</span>'):'')+'</div></div>';}).join("")
@@ -4882,6 +4954,11 @@ function startApp(){_dirty=computeDirty();applyTheme();try{bkpMigrate();}catch(e
    `v` = cheia de „văzut deja"; `label` = versiunea afișată.
    ============================================================================ */
 var NEWS=[
+ {v:"3.1.3",label:"3.1.3",d:"01.09.2026",t:"Lista de alegere se uită și înainte, nu doar înapoi",items:[
+  ["star","„La această temă: niciodată” pentru cineva deja pus peste o săptămână","Lista ținea minte doar cea mai TÂRZIE săptămână a fiecăruia. Dacă aceea era în viitor, socoteala „acum N săptămâni” nu se putea face pe ea și ieșea „niciodată” — deși omul era deja programat la aceeași temă peste o săptămână. Se întâmpla oricând planificai o săptămână după ce o completaseși pe următoarea, sau reveneai la una mai veche. Acum trecutul și viitorul se socotesc separat."],
+  ["cal","Se vede ce urmează pentru fiecare","Sub nume scrie acum și „are deja peste 2 săptămâni: 12-18 Octombrie · Conducător studiu”, iar la perechi „împreună cu … și peste 3 săptămâni”. Pastila cu numărul nu mai iese verde pentru cineva prins în săptămânile care vin."],
+  ["hist","Graficul arată și săptămânile care urmează","Ultimele 26 de săptămâni, ca până acum, plus următoarele 5, desenate mai șters. Iar istoricul desfăcut în listă începe cu „Ce urmează”."]
+ ]},
  {v:"3.1.2",label:"3.1.2",d:"01.09.2026",t:"Raportul, la vedere în „Profilul meu”",items:[
   ["edit","Raportul lunar nu mai dispare la început de an teocratic","În septembrie, luna de raportat (august) ține de anul teocratic trecut, iar cardul de raport ieșea cu totul din „Profilul meu” — și la administratori, și la vestitori. Acum cardul e mereu acolo."],
   ["cal","Alegi luna pentru care raportezi","Sub card e o listă cu luna în curs și ultimele douăsprezece. Implicit e luna de raportat; cine își trece raportul pe parcurs poate alege luna care nu s-a încheiat încă."],
