@@ -620,7 +620,7 @@ Object.assign(IC,{
  box:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h18v13H3z"/><path d="M3 7l2-4h14l2 4"/><path d="M10 11h4"/></svg>',
  mark:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15.5 4.5l4 4-9.5 9.5H6v-4z"/><path d="M12.5 7.5l4 4M5 21h14"/></svg>'
 });
-const VERSION="3.1.1";
+const VERSION="3.1.2";
 /* Versiunea minima care are voie sa SCRIE in cloud. Se trece in gist la fiecare trimitere;
    un dispozitiv ramas pe un build mai vechi decat atat nu mai poate suprascrie datele —
    doar citeste si se actualizeaza singur. Asa nu mai poate un singur telefon uitat deschis
@@ -2079,6 +2079,38 @@ async function delPart(id){if(!_needEdit())return;const w=S.weeks[curW];const id
  if(!(await uiConfirm("Ștergi această parte?")))return;
  logAct("Parte ștearsă");w.parts.splice(idx,1);const pl=S.plans[curW];if(pl&&pl.a){delete pl.a[id];delete pl.a[id+"_a"];delete pl.a[id+"_b"];}
  save();closeSheet();openWeek(curW);}
+/* ============================================================================
+   FORMA TEMEI, COMPLETATĂ DIN CAIET
+   ----------------------------------------------------------------------------
+   Caietul scrie forma imediat după durată: „Demonstrație.", „Discuție.", „Cuvântare.", iar de ea
+   depinde cine poate ține tema și dacă are partener (S-38). Importul din .epub o reține în p.fmt,
+   dar săptămânile aduse cu versiunile de dinaintea acelei reguli au rămas fără ea, iar aplicația
+   le trata implicit ca demonstrație: „Explică-ți convingerile" ținută ca CUVÂNTARE primea un loc
+   de partener care rămânea gol pe foaie.
+   Textul temei din caiet (S.info) păstrează marcajul, așa că de acolo îl citim. Marcajul e o
+   propoziție de sine stătătoare — „Discuție cu un elev." NU e „Discuție.", altfel tema și-ar
+   pierde partenerul. Reparăm doar la secțiunea Predicare, singura unde forma schimbă locurile. */
+function _fmtFromInfo(w,p){
+ if(!w||!p||p.fmt||p.sec!=="Predicare")return "";
+ var inf=null;try{inf=infoFor(w,p);}catch(e){}
+ var t=((inf&&inf.info)||"").replace(/\s+/g," ").trim().toLowerCase().slice(0,220);
+ var m=t.match(/(?:^|\))\s*(demonstra[țt]ie|discu[țt]ie|cuv[âa]ntare)\s*\./);
+ if(!m)return "";
+ return /demonstra/.test(m[1])?"demo":(/discu/.test(m[1])?"disc":"talk");}
+/* rulează la pornire; e idempotentă, deci după prima trecere nu mai are ce face */
+function fmtRepair(){if(!_canEditVcp())return 0;var n=0;
+ (S.weeks||[]).forEach(function(w,wi){if(!w)return;try{ensureIds(w);}catch(e){}
+  (w.parts||[]).forEach(function(p){
+   var f=_fmtFromInfo(w,p);if(!f)return;
+   var a=((S.plans[wi]||{}).a)||{};
+   /* dacă partea pierde partenerul, dar pe locul de partener e cineva, nu atingem nimic:
+      hotărăște omul, nu migrarea — altfel un nume ar dispărea de pe foaie fără să se vadă */
+   if(f!=="demo"&&a[p.id+"_b"])return;
+   p.fmt=f;n++;
+   if(f!=="demo"){if(a[p.id+"_a"]&&!a[p.id])a[p.id]=a[p.id+"_a"];delete a[p.id+"_a"];delete a[p.id+"_b"];}
+  });});
+ if(n){logAct("Forma temelor completată din caiet ("+n+")");save();}
+ return n;}
 function addPart(sec){if(!_needEdit())return;const w=S.weeks[curW];ensureIds(w);const np={id:"c"+Date.now().toString(36),sec:sec,num:null,title:"Parte nouă",min:5};logAct("Parte adăugată");
  const ord={Comori:0,Predicare:1,Viata:2};let ins=w.parts.length;
  if(w.parts.some(p=>p.sec===sec)){for(let j=w.parts.length-1;j>=0;j--){if(w.parts[j].sec===sec){ins=j+1;break;}}}
@@ -4823,7 +4855,7 @@ function masterGo(){var p=(($("#gMk")&&$("#gMk").value)||"").trim();
 function _logo(){var im=document.querySelector(".logoimg");return im?im.src:"";}
 function _userGet(){try{return localStorage.getItem(KEY+"_user")||"";}catch(e){return "";}}
 function _userSet(n){try{if(n)localStorage.setItem(KEY+"_user",n);}catch(e){}}
-function startApp(){_dirty=computeDirty();applyTheme();try{bkpMigrate();}catch(e){}try{_sessRefresh();_sessSave();}catch(e){}go(_firstTab());updateSyncInfo();autoPullLoad();startSyncTimer();try{setTimeout(function(){verPoll(true);},5000);}catch(e){}try{if(_upgNeeded())setTimeout(function(){if(!sheetOpen())upgSheet();},1500);}catch(e){}try{setTimeout(odAuto,4000);setInterval(odAuto,60000);}catch(e){}
+function startApp(){_dirty=computeDirty();applyTheme();try{bkpMigrate();}catch(e){}try{fmtRepair();}catch(e){}try{_sessRefresh();_sessSave();}catch(e){}go(_firstTab());updateSyncInfo();autoPullLoad();startSyncTimer();try{setTimeout(function(){verPoll(true);},5000);}catch(e){}try{if(_upgNeeded())setTimeout(function(){if(!sheetOpen())upgSheet();},1500);}catch(e){}try{setTimeout(odAuto,4000);setInterval(odAuto,60000);}catch(e){}
  try{setTimeout(notifCheck,3000);setInterval(notifCheck,120000);}catch(e){}
  try{setTimeout(usersUpgradePins,2500);}catch(e){}
  try{refHydrate().then(function(){setTimeout(function(){refFetch();},4200);});}catch(e){}
@@ -4850,6 +4882,12 @@ function startApp(){_dirty=computeDirty();applyTheme();try{bkpMigrate();}catch(e
    `v` = cheia de „văzut deja"; `label` = versiunea afișată.
    ============================================================================ */
 var NEWS=[
+ {v:"3.1.2",label:"3.1.2",d:"01.09.2026",t:"Raportul, la vedere în „Profilul meu”",items:[
+  ["edit","Raportul lunar nu mai dispare la început de an teocratic","În septembrie, luna de raportat (august) ține de anul teocratic trecut, iar cardul de raport ieșea cu totul din „Profilul meu” — și la administratori, și la vestitori. Acum cardul e mereu acolo."],
+  ["cal","Alegi luna pentru care raportezi","Sub card e o listă cu luna în curs și ultimele douăsprezece. Implicit e luna de raportat; cine își trece raportul pe parcurs poate alege luna care nu s-a încheiat încă."],
+  ["check","Secțiunile din „Profilul meu” pornesc închise","Sarcinile, curățenia, ospitalitatea și evenimentele se deschid la apăsare. Așa raportul și numele tău se văd de la prima privire, fără derulare."],
+  ["star","Forma temei, completată din caiet","Caietul scrie „Cuvântare.”, „Discuție.” sau „Demonstrație.” — de asta depinde cine ține tema și dacă are partener. La săptămânile aduse cu versiuni mai vechi forma lipsea, iar „Explică-ți convingerile” ținută ca <b>cuvântare</b> primea un loc de partener care rămânea gol pe foaie. Acum forma se citește din textul temei și se completează singură."]
+ ]},
  {v:"3.1.1",label:"3.1.1",d:"26.08.2026",t:"Bifele de capacități, corectate",items:[
   ["ppl","Migrarea bifelor putea rămâne fără efect pe un dispozitiv nou","Dacă rula înainte ca dispozitivul să apuce să primească datele din cloud, se marca „gata” fără să fi bifat nimic — și nu mai reîncerca niciodată. Acum așteaptă până sunt vestitori încărcați și, pe dispozitivele deja blocate așa, reîncearcă o dată."]
  ]},
@@ -6631,7 +6669,7 @@ function _meuCleanHtml(my){var gid=myCleanGrp(my);
    +'<div class="gbody"><div class="muted" style="padding:12px 4px">Ca să vezi când e rândul grupei tale, cere-i unui bătrân să te treacă într-o grupă de serviciu (Arhivă → Grupe).</div></div></details>';
   var all=myCleanWeeks(my),up=all.filter(function(g){return g.st!=="past";});
   var canJump=_tabAllowed("arh");
-  var h='<details class="gcard" open><summary><span class="gav">'+IC.check+'</span><span class="ginfo"><span class="gnm">Curățenia grupei mele<span class="gcnt">'+up.length+'</span></span>'
+  var h='<details class="gcard"><summary><span class="gav">'+IC.check+'</span><span class="ginfo"><span class="gnm">Curățenia grupei mele<span class="gcnt">'+up.length+'</span></span>'
    +'<span class="gsa">'+esc(cleanGrpLbl(gid))+' · se face toată săptămâna</span></span></summary><div class="gbody">';
   var iFut=-1;for(var q=0;q<up.length;q++){if(up[q].st==="fut"){iFut=q;break;}}
   h+=up.length?up.map(function(g,gi){var now=(g.st==="now");
@@ -6646,7 +6684,7 @@ function _meuCleanHtml(my){var gid=myCleanGrp(my);
 /* --- „Evenimente care urmează": doar cele puse pe o săptămână din caiet, niciunul din trecut --- */
 function _meuEvHtml(){var ev=upcomingEvents();
   var canJump=_tabAllowed("prog");
-  var h='<details class="gcard"'+(ev.length?' open':'')+'><summary><span class="gav">'+IC.star+'</span><span class="ginfo"><span class="gnm">Evenimente care urmează<span class="gcnt">'+ev.length+'</span></span>'
+  var h='<details class="gcard"><summary><span class="gav">'+IC.star+'</span><span class="ginfo"><span class="gnm">Evenimente care urmează<span class="gcnt">'+ev.length+'</span></span>'
    +'<span class="gsa">vizita supraveghetorului, congrese, Comemorarea — cu data lor</span></span></summary><div class="gbody">';
   h+=ev.length?ev.map(function(e,i){
      var sub=[e.what];if(e.theme)sub.unshift("„"+esc(e.theme)+"”");if(e.talk)sub.push("Cuvântarea: „"+esc(e.talk)+"”");
@@ -6658,6 +6696,13 @@ function _meuEvHtml(){var ev=upcomingEvents();
    :'<div class="muted" style="padding:12px 4px">Niciun eveniment programat în perioada următoare.</div>';
   h+='<div class="muted" style="font-size:11.5px;padding:10px 4px 2px">Apar doar evenimentele puse pe o săptămână din caiet. Cele trecute nu se mai arată.</div>';
   return h+'</div></details>';}
+/* luna aleasă în cardul "Raportul meu" din Profilul meu (null = luna de raportat) */
+var meuRepK=null;
+function meuSetRep(v){meuRepK=String(v||"")||null;arhRerender();}
+/* lunile oferite în selector: luna în curs + ultimele 12 încheiate, cele mai recente primele */
+function _meuRepOpts(){var d=new Date(),out=[];
+ for(var i=0;i<=12;i++){var x=new Date(d.getFullYear(),d.getMonth()-i,1);var k=ymOf(x.getFullYear(),x.getMonth());out.push({k:k,name:monthName(k)});}
+ return out;}
 function arhMeuHtml(){ensureGrpCSS();var my=_myBro();var b=S.bros.find(function(x){return x.id===my;});
   if(!my||!b)return '<div class="empty" style="padding:26px 8px">Contul tău nu e legat de un vestitor.<br><span class="muted">Setări → Utilizatori → Editează → „Vestitorul asociat".</span></div>'
    +_meuEvHtml();/* evenimentele nu depind de fișa vestitorului — le vede oricine */
@@ -6680,26 +6725,36 @@ function arhMeuHtml(){ensureGrpCSS();var my=_myBro();var b=S.bros.find(function(
      +'<div class="pio-bar"><div class="pio-fill'+(pDone?' done':'')+'" style="width:'+pPct+'%"></div></div>'
      +'<div class="pio-sub"><span>'+pPct+'%</span>'+(pCr?'<span>credit '+Math.round(pCr)+' h</span>':'')+'<span>'+pRep+'/12 luni</span>'+(pSt?'<span>'+pSt+' studii</span>':'')+'<span>'+pPace+'</span></div>'
      +'<div class="muted" style="font-size:11px;margin-top:8px">Apasă pentru rapoartele lunare și fișa S-21.</div></div>';}
-  /* luna de introdus acum (luna trecută), doar în anul curent */
+  /* Raportul meu — cardul apare MEREU, pentru oricine are un vestitor asociat (administrator,
+     editor sau vestitor). Nu mai depinde de anul teocratic ales: în septembrie, luna de raportat
+     (august) ține de anul trecut, iar înainte cardul dispărea cu totul din "Profilul meu".
+     Din selector se poate alege și luna în curs, pentru cine își trece raportul pe parcurs. */
   var cur=months.find(function(m){return m.k===repK;});
-  if(cur){var rc=repOf(my,repK);var sent=rc||repHas(my,repK);
-    h+='<div class="meucard"><div class="a-hd" style="margin:0 0 3px">De raportat acum</div><div style="font-size:22px;font-weight:800">'+esc(cur.name)+'</div>'
-     +'<div style="margin-top:5px;font-size:12.5px;color:var(--ink2)">'+(rc?('<span style="color:var(--tealtx,var(--teal));font-weight:700">✓ raport trimis</span> · '+_meuInfo(rc,b,repK)):(sent?_meuInfo(null,b,repK):'<span style="color:var(--maroon);font-weight:700">încă neraportat</span>'))+'</div>'
-     +'<button class="btn '+(sent?'ghost':'pri')+' sm" style="width:100%;margin-top:11px" onclick="arhEditReport(\''+my+'\',\''+repK+'\')">'+(sent?"Editează raportul":"Completează raportul")+'</button></div>';}
+  var mopts=_meuRepOpts(),meuK=(meuRepK&&mopts.some(function(m){return m.k===meuRepK;}))?meuRepK:repK;
+  var curK=ymOf(now.getFullYear(),now.getMonth());
+  {var rc=repOf(my,meuK);var sent=rc||repHas(my,meuK);
+    h+='<div class="meucard"><div class="a-hd" style="margin:0 0 3px">'+(meuK===repK?"De raportat acum":(meuK===curK?"Luna în curs":"Raport lunar"))+'</div><div style="font-size:22px;font-weight:800">'+esc(monthName(meuK))+'</div>'
+     +'<div style="margin-top:5px;font-size:12.5px;color:var(--ink2)">'+(rc?('<span style="color:var(--tealtx,var(--teal));font-weight:700">✓ raport trimis</span> · '+_meuInfo(rc,b,meuK)):(sent?_meuInfo(null,b,meuK):'<span style="color:var(--maroon);font-weight:700">încă neraportat</span>'))+'</div>'
+     +'<div style="display:flex;align-items:center;gap:8px;margin-top:11px"><span class="muted" style="font-size:11.5px;flex:0 0 auto">Luna</span><select class="fld" style="width:auto;flex:1" onchange="meuSetRep(this.value)">'
+     +mopts.map(function(m){return '<option value="'+m.k+'" '+(m.k===meuK?"selected":"")+'>'+esc(m.name)+(m.k===repK?" — de raportat":(m.k===curK?" — luna în curs":""))+'</option>';}).join("")
+     +'</select></div>'
+     +'<button class="btn '+(sent?'ghost':'pri')+' sm" style="width:100%;margin-top:11px" onclick="arhEditReport(\''+my+'\',\''+meuK+'\')">'+(sent?"Editează raportul":"Completează raportul")+'</button>'
+     +(meuK===curK?'<div class="muted" style="font-size:11.5px;margin-top:9px">Luna nu s-a încheiat — poți salva acum și completa mai târziu; raportul se trimite oricum la fel.</div>':'')
+     +'</div>';}
   /* istoric: lunile dinaintea celei de raportat, cele mai recente primele */
   var past=months.filter(function(m){return cur?m.k<repK:m.k<=repK;}).reverse();
-  if(past.length){
-    h+='<details class="gcard"><summary><span class="gav">'+IC.hist+'</span><span class="ginfo"><span class="gnm">Istoric — an '+theoLabel(start)+'<span class="gcnt">'+past.length+'</span></span><span class="gsa">lunile anterioare, cele mai recente primele</span></span></summary><div class="gbody">'
+  if(past.length||av.length>1){
+    h+='<details class="gcard"><summary><span class="gav">'+IC.hist+'</span><span class="ginfo"><span class="gnm">Istoric — an '+theoLabel(start)+(past.length?('<span class="gcnt">'+past.length+'</span>'):'')+'</span><span class="gsa">'+(past.length?'lunile anterioare, cele mai recente primele':'alege alt an teocratic')+'</span></span></summary><div class="gbody">'
      +(av.length>1?('<div style="display:flex;justify-content:flex-end;padding:8px 4px 2px"><select class="fld" style="width:auto" onchange="arhTheo=+this.value;arhRerender()">'+yopt+'</select></div>'):'')
-     +past.map(function(m){var r=repOf(my,m.k);
-       return '<div style="display:flex;align-items:center;gap:10px;padding:9px 4px;border-bottom:1px solid var(--bd)"><div style="flex:1;min-width:0"><b style="font-size:13.5px">'+esc(m.name)+'</b><div class="muted" style="font-size:11.5px">'+_meuInfo(r,b,m.k)+'</div></div><button class="btn ghost sm" style="width:auto" onclick="arhEditReport(\''+my+'\',\''+m.k+'\')">'+(r?"Editează":"Completează")+'</button></div>';}).join("")
+     +(past.length?past.map(function(m){var r=repOf(my,m.k);
+       return '<div style="display:flex;align-items:center;gap:10px;padding:9px 4px;border-bottom:1px solid var(--bd)"><div style="flex:1;min-width:0"><b style="font-size:13.5px">'+esc(m.name)+'</b><div class="muted" style="font-size:11.5px">'+_meuInfo(r,b,m.k)+'</div></div><button class="btn ghost sm" style="width:auto" onclick="arhEditReport(\''+my+'\',\''+m.k+'\')">'+(r?"Editează":"Completează")+'</button></div>';}).join(""):'<div class="muted" style="padding:12px 4px">Anul teocratic abia a început — alege anul trecut din lista de mai sus ca să vezi lunile lui.</div>')
      +'</div></details>';}
   /* sarcinile mele (VCP) — card în stilul aplicației; apeși săptămâna și ajungi la planificare */
   var todayISO=now.getFullYear()+"-"+_pad2(now.getMonth()+1)+"-"+_pad2(now.getDate());
   var all=myAssignments(my).concat(myDuties(my)).concat(myWm(my)).concat(myMp(my));var byWeek={};all.forEach(function(e){(byWeek[e.wi]=byWeek[e.wi]||{wi:e.wi,date:e.date,event:e.event,items:[]}).items.push(e);});
   var up=Object.keys(byWeek).map(function(k){return byWeek[k];}).sort(function(a,b){return a.wi-b.wi;}).filter(function(g){return _wkFuture(g,todayISO);});
   var canJump=_tabAllowed("prog");
-  h+='<details class="gcard" open><summary><span class="gav">'+IC.cal+'</span><span class="ginfo"><span class="gnm">Sarcinile mele<span class="gcnt">'+up.length+'</span></span><span class="gsa">'+(canJump?'următoarele · apasă o săptămână și ajungi la planificare':'următoarele tale părți la întrunire')+'</span></span></summary><div class="gbody">'
+  h+='<details class="gcard"><summary><span class="gav">'+IC.cal+'</span><span class="ginfo"><span class="gnm">Sarcinile mele<span class="gcnt">'+up.length+'</span></span><span class="gsa">'+(canJump?'următoarele · apasă o săptămână și ajungi la planificare':'următoarele tale părți la întrunire')+'</span></span></summary><div class="gbody">'
    +(up.length?up.map(function(g,gi){var when=esc(tc(g.date));
       var lines=g.items.map(function(it){return esc(it.label)
         +(it.duty?' <span class="gtag t2">sarcină</span>':'')
@@ -6722,7 +6777,7 @@ function _meuHostHtml(my){var gid=myCleanGrp(my);if(!gid)return "";
   var all=myWmHost(my),up=all.filter(function(g){return !_dayPast(g.dt);});
   if(!all.length)return "";
   var canJump=_tabAllowed("arh");
-  var h='<details class="gcard"'+(up.length?' open':'')+'><summary><span class="gav">'+IC.ppl+'</span><span class="ginfo"><span class="gnm">Ospitalitatea grupei mele<span class="gcnt">'+up.length+'</span></span>'
+  var h='<details class="gcard"><summary><span class="gav">'+IC.ppl+'</span><span class="ginfo"><span class="gnm">Ospitalitatea grupei mele<span class="gcnt">'+up.length+'</span></span>'
    +'<span class="gsa">'+esc(cleanGrpLbl(gid))+' · la întrunirea de sfârșit de săptămână</span></span></summary><div class="gbody">';
   h+=up.length?up.map(function(g,gi){
      return '<'+(canJump?'button':'div')+' class="item" style="border-bottom:1px solid var(--bd);width:100%;text-align:left'+(canJump?';cursor:pointer':'')+'"'+(canJump?(' onclick="meuGoWm('+g.wi+')"'):'')+'>'
