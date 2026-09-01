@@ -621,7 +621,7 @@ Object.assign(IC,{
  box:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h18v13H3z"/><path d="M3 7l2-4h14l2 4"/><path d="M10 11h4"/></svg>',
  mark:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15.5 4.5l4 4-9.5 9.5H6v-4z"/><path d="M12.5 7.5l4 4M5 21h14"/></svg>'
 });
-const VERSION="3.2.3";
+const VERSION="3.2.4";
 /* Versiunea minima care are voie sa SCRIE in cloud. Se trece in gist la fiecare trimitere;
    un dispozitiv ramas pe un build mai vechi decat atat nu mai poate suprascrie datele —
    doar citeste si se actualizeaza singur. Asa nu mai poate un singur telefon uitat deschis
@@ -1161,7 +1161,7 @@ function renderWeeks(){
   _vis.forEach(M=>{const mk2=yk+"|"+M.mk;const _ak=Y.y+"|"+M.mk,_isA=wkArchIs(_ak);const mo=_isA?false:grpOpen(mk2);
    h+=`<div class="mgroup"${_isA?' style="opacity:.72"':''}><div class="mhead" style="display:flex;align-items:center"><button class="mhead" style="flex:1;border:0;background:none;padding:0" onclick="toggleGrp('${mk2}')"><span class="mchev ${mo?'op':''}">${IC.chev}</span><span class="mttl">${monthLabel(M.mk)}${_isA?' <span class="gtag t2">arhivată</span>':''}</span><span class="mcount">${M.items.length} săpt.</span></button>${_canEditVcp()?`<button class="pico" title="${_isA?'Scoate din arhivă':'Arhivează luna'}" style="flex:0 0 auto;margin-left:6px" onclick="event.stopPropagation();wkArchSet('${_ak}',${_isA?0:1})">${_isA?IC.back:IC.box||IC.trash}</button>`:''}</div><div class="mbody" id="g_${mk2}" style="display:${mo?'block':'none'}">`;
    M.items.forEach(i=>{const w=S.weeks[i];const pl=S.plans[i]||{};const f=Object.keys(pl.a||{}).filter(k=>pl.a[k]).length;
-    const _pe=evProgName(w);
+    const _pe=w.event||"";
     const sub=_pe?'<span style="color:var(--acc);font-weight:700">'+esc(_pe)+'</span>':esc(w.bible||'');
     const pill=_pe?'<span class="pill has">eveniment</span>':'<span class="pill '+(f?'has':'')+'">'+(f?f+' alocate':'gol')+'</span>';
     h+=`<div class="group"><button class="item" onclick="openWeek(${i})"><div class="av">${_pe?IC.star:IC.cal}</div><div class="spacer" style="text-align:left"><div class="nm">${tc(w.date)}</div><div class="mt">${sub}</div></div>${pill}<span class="chev">${IC.chev}</span></button></div>`;});
@@ -1194,7 +1194,7 @@ function openWeek(i){if(_wkDraft&&_wkDraft.i!==i&&!_wkGuard())return;wkOpen=true
   +`<button class="miniact" onclick="editStart()">${IC.clock} ${S.settings.start}</button>`
   +`<button class="miniact" onclick="autoSheet()">${IC.auto} Auto</button>`
   +(_canEditVcp()?`<button class="miniact" onclick="mailWeekSheet(${i})" title="Trimite temele pe e-mail">✉ E-mail</button>`:``)+`</div>`;
- const head=`<div class="group gp" style="padding:15px 16px 11px"><div class="nm" style="font-size:17px;font-weight:800">${tc(w.date)}</div><div class="mt" style="font-size:13px;margin-top:3px">${evProgName(w)?'<span style="color:var(--acc);font-weight:700">'+esc(evProgName(w))+(w.eventName?' — '+esc(w.eventName):'')+'</span>':esc(w.bible||'')}</div></div>`;
+ const head=`<div class="group gp" style="padding:15px 16px 11px"><div class="nm" style="font-size:17px;font-weight:800">${tc(w.date)}</div><div class="mt" style="font-size:13px;margin-top:3px">${w.event?'<span style="color:var(--acc);font-weight:700">'+esc(w.event)+(w.eventName?' — '+esc(w.eventName):'')+'</span>':esc(w.bible||'')}</div></div>`;
  const isVisit=isVisitEv(w);
  if(evNoMeet(w)){$("#body").innerHTML=bar+head
    +`<div class="evb"><div class="et">${esc(evLabel(w))}</div>${w.eventName?'<div class="ed" style="color:var(--ink);font-weight:700;font-size:15px">'+esc(w.eventName)+'</div>':''}<div class="ed">În această săptămână nu se ține întrunirea, deci nu se face nicio planificare (S-38).</div></div>`
@@ -1281,7 +1281,7 @@ function renderVcp(i){_fabDl(vcpDlSheet);_vcpStyle();
  /* creionul intră în grupul de navigare, nu într-o coloană a lui: pe telefon coloana a
     treia a grilei se prăbușea și butonul sărea pe rândul următor */
  const bar=`<div class="wkbar vcpbar"><span class="wkspace"></span><div class="wknavc">${np}<span class="wkpos">${esc(tc(w.date))}</span>${nn}</div><span class="wkspace">${_progEditBtn()}</span></div>`;
- const head=`<div class="group gp" style="padding:15px 16px 11px"><div class="nm" style="font-size:17px;font-weight:800">${tc(w.date)}</div><div class="mt" style="font-size:13px;margin-top:3px">${evProgName(w)?'<span style="color:var(--acc);font-weight:700">'+esc(evProgName(w))+(w.eventName?' — '+esc(w.eventName):'')+'</span>':esc(w.bible||'')}</div></div>`;
+ const head=`<div class="group gp" style="padding:15px 16px 11px"><div class="nm" style="font-size:17px;font-weight:800">${tc(w.date)}</div><div class="mt" style="font-size:13px;margin-top:3px">${w.event?'<span style="color:var(--acc);font-weight:700">'+esc(w.event)+(w.eventName?' — '+esc(w.eventName):'')+'</span>':esc(w.bible||'')}</div></div>`;
  const isVisit=isVisitEv(w);
  if(evNoMeet(w)){$("#body").innerHTML=bar+head+`<div class="evb"><div class="et">${esc(evLabel(w))}</div>${w.eventName?'<div class="ed" style="color:var(--ink);font-weight:700;font-size:15px">'+esc(w.eventName)+'</div>':''}<div class="ed">În această săptămână nu se ține întrunirea (S-38).</div></div>`;_progNavFix();window.scrollTo(0,0);const b0=$("#body");if(b0)b0.scrollTop=0;return;}
  const nmv=key=>{const id=a[key];if(!id)return '<span style="color:var(--ink3)">—</span>';return '<b class="'+(dn[key]?'titlehl':'')+'">'+esc(broDisp(id))+'</b>';};
@@ -1426,7 +1426,7 @@ function autoSheet(){
   _rows.push(`<label class="aow${noMeet?' aodis':''}${idx===_cw?' aonow':''}">`
    +`<input type="checkbox" class="auto-wk" value="${idx}" ${(idx===curW&&!noMeet)?"checked":""} ${noMeet?"disabled":""} onchange="autoCount()">`
    +`<span>${esc(tc(w.date))}${idx===_cw?'<span class="aotag">acum</span>':''}`
-   +`${evProgName(w)?`<span class="aoev">${esc(evLabel(w))}${noMeet?" · fără întrunire":""}</span>`:''}</span></label>`);});
+   +`${w.event?`<span class="aoev">${esc(evLabel(w))}${noMeet?" · fără întrunire":""}</span>`:''}</span></label>`);});
  const wk=_rows.length?_rows.join(""):'<div class="muted" style="padding:10px 2px">Nicio săptămână de programat.</div>';
  const ct=AUTO_CATS.map(c=>`<label class="aow"><input type="checkbox" class="auto-cat" value="${c[0]}" checked onchange="autoCount()"><span>${esc(c[1])}</span></label>`).join("");
  const H=`<div class="aosec" id="aosec-wk"><button class="aohd" onclick="autoTog('wk')"><span class="aoht">Săptămâni</span><span class="aosum" id="aosum-wk"></span><span class="aochev">${IC.chev}</span></button><div class="aobody"><div class="aobtns"><button class="achip" onclick="autoAll('wk',1)">Toate</button><button class="achip" onclick="autoAll('wk',0)">Niciuna</button><button class="achip" onclick="autoOnlyThis()">Doar asta</button></div>${wk}${_nOld?`<div class="muted" style="padding:8px 2px 2px;font-size:11.5px">${_nOld} ${_nOld===1?"săptămână trecută":"săptămâni trecute"} nu apar aici.</div>`:''}</div></div><div class="aosec" id="aosec-cat"><button class="aohd" onclick="autoTog('cat')"><span class="aoht">Categorii</span><span class="aosum" id="aosum-cat"></span><span class="aochev">${IC.chev}</span></button><div class="aobody"><div class="aobtns"><button class="achip" onclick="autoAll('cat',1)">Toate</button><button class="achip" onclick="autoAll('cat',0)">Niciuna</button></div>${ct}</div></div><label class="aow" style="margin-top:6px"><input type="checkbox" id="auto-empty" checked><span><b>Doar pozițiile goale</b> — nu suprascrie ce ai pus manual</span></label><button class="btn pri" style="margin-top:16px" onclick="autoRun()">Atribuie</button>`;
@@ -2207,19 +2207,16 @@ const EVT_PRE=["Congres de circumscripție","Congres regional","Comemorarea mor�
      visit — program normal, cu Studiul Bibliei înlocuit de cuvântarea de serviciu (30 min.)
      none  — nu se ține întrunirea în acea săptămână (congres, Comemorare)
      mark  — program normal, săptămâna e doar marcată cu numele evenimentului
-     ftonly— nu atinge programul întrunirilor; se vede numai pe foaia de teren
    Unde nu e întrunire nu se face nici planificarea de Sarcini (audio-video, ordine, curățenie). */
 var EV_KINDS=[["visit","Vizita supraveghetorului de circumscripție","Program normal, dar Studiul Bibliei e înlocuit cu o cuvântare de serviciu de 30 de minute (S-38 §21)"],
  ["none","Nu se ține întrunirea","Săptămâna rămâne fără program — congres (§22), Comemorarea (§23)"],
- ["mark","Program normal, doar marcat","Întrunirea se ține ca de obicei; săptămâna e doar marcată cu numele evenimentului"],
- ["ftonly","Doar la întrunirile de teren","Nu atinge programul întrunirilor și nu se anunță nicăieri altundeva; marchează numai foaia întrunirilor pentru serviciul de teren (ex. vizita supraveghetorului serviciului la o grupă)"]];
+ ["mark","Program normal, doar marcat","Întrunirea se ține ca de obicei; săptămâna e doar marcată cu numele evenimentului"]];
 function evKindLbl(k){var r=EV_KINDS.find(function(x){return x[0]===k;});return r?r[1]:k;}
 var EV_SEED=[
  {id:"ev_visit", n:"Vizita supraveghetorului de circumscripție", k:"visit"},
  {id:"ev_congc", n:"Congres de circumscripție",                  k:"none"},
  {id:"ev_congr", n:"Congres regional",                           k:"none"},
- {id:"ev_mem",   n:"Comemorarea morții lui Cristos",             k:"none"},
- {id:"ev_sserv", n:"Vizita supraveghetorului serviciului",        k:"ftonly"}];
+ {id:"ev_mem",   n:"Comemorarea morții lui Cristos",             k:"none"}];
 function evTypes(){
  if(!S.settings.evTypes){S.settings.evTypes=JSON.parse(JSON.stringify(EV_SEED));}
  return S.settings.evTypes;}
@@ -2233,24 +2230,17 @@ function evOf(w){if(!w||!w.event)return null;var L=evTypes(),t=null;
  if(/supraveghetor/i.test(e))return {id:"",n:e,k:"visit"};
  return {id:"",n:e,k:"none"};/* necunoscut → ca înainte: fără program */}
 function evNoMeet(w){var t=evOf(w);return !!(t&&t.k==="none");}
-/* eveniment care ține DOAR de foaia întrunirilor pentru serviciul de teren: nu schimbă
-   programul întrunirilor și nu se anunță nicăieri altundeva */
-function evFtOnly(w){var t=evOf(w);return !!(t&&t.k==="ftonly");}
-/* numele evenimentului așa cum se vede în programul întrunirilor — gol pentru cele care
-   privesc numai foaia de teren */
-function evProgName(w){return evFtOnly(w)?"":((w&&w.event)||"");}
 function evVisit(w){var t=evOf(w);return !!(t&&t.k==="visit");}
 function evLabel(w){var t=evOf(w);return (t&&t.n)||(w&&w.event)||"";}
 /* ce se întâmplă în acea săptămână, pe scurt — pentru „Profilul meu" */
 function evShortWhat(w){var t=evOf(w);if(!t)return "";
  if(t.k==="none")return "Nu se țin întruniri în această săptămână";
  if(t.k==="visit")return "Program normal · Studiul Bibliei e înlocuit de cuvântarea de serviciu (30 min.)";
- if(t.k==="ftonly")return "Program normal · marcaj numai pe foaia întrunirilor de teren";
  return "Program normal · săptămâna e doar marcată";}
 /* evenimentele care urmează, cu data lor din caiet: doar cele puse pe o săptămână (vizită, congres,
    Comemorare…) și doar cât timp săptămâna nu a trecut. Cele din trecut nu se mai arată nimănui. */
 function upcomingEvents(){var out=[],t=new Date();t.setHours(0,0,0,0);
- (S.weeks||[]).forEach(function(w,i){if(!w||!w.event||evFtOnly(w))return;/* marcajele de teren nu se anunță aici */
+ (S.weeks||[]).forEach(function(w,i){if(!w||!w.event)return;
   var d=_weekStartDate(i);if(!d)return;/* fără dată în caiet nu e „programat" */
   var e=new Date(d.getFullYear(),d.getMonth(),d.getDate()+6,23,59,59,0);
   if(e<t)return;
@@ -4415,7 +4405,7 @@ function _startupChores(){if(_choresDone)return;_choresDone=true;
  try{capMigRun();}catch(e){try{logErr("startupChores/capMigRun: "+_errMsg(e),e&&e.stack,"boot");}catch(_e){}}
  try{ftSeedRun();}catch(e){try{logErr("startupChores/ftSeedRun: "+_errMsg(e),e&&e.stack,"boot");}catch(_e){}}
  try{_ftNoteDrop();}catch(e){try{logErr("startupChores/_ftNoteDrop: "+_errMsg(e),e&&e.stack,"boot");}catch(_e){}}
- try{_ftEvSeed();}catch(e){try{logErr("startupChores/_ftEvSeed: "+_errMsg(e),e&&e.stack,"boot");}catch(_e){}}
+ try{_ftEvDrop();}catch(e){try{logErr("startupChores/_ftEvDrop: "+_errMsg(e),e&&e.stack,"boot");}catch(_e){}}
  try{_sessRefresh();_sessSave();}catch(e){}}
 function fmtSync(t){var d=new Date(t),n=new Date(),hh=("0"+d.getHours()).slice(-2),mm=("0"+d.getMinutes()).slice(-2);return d.toDateString()===n.toDateString()?(hh+":"+mm):(("0"+d.getDate()).slice(-2)+"."+("0"+(d.getMonth()+1)).slice(-2)+" "+hh+":"+mm);}
 function updateSyncInfo(){var el=$("#syncInfo");if(!el)return;var t=0;try{t=+localStorage.getItem(KEY+"_sync")||0;}catch(e){}
@@ -5171,7 +5161,7 @@ function myAssignments(broId){var out=[];if(!broId)return out;
    else if(byId[base]){p=byId[base];label=(p.num?p.num+". ":"")+(p.title||roleLabel(partRole(p)));var mid=key.slice(-2)==="_a"?a[base+"_b"]:a[base+"_a"];if(mid)partner=broDisp(mid);}
    else if(SPECIAL[key]){label=SPECIAL[key];if(key==="cond"&&a.cit)partner=broDisp(a.cit);if(key==="cit"&&a.cond)partner=broDisp(a.cond);}
    else continue;
-   out.push({wi:wi,date:w.date,event:evProgName(w),label:label,partner:partner});}}
+   out.push({wi:wi,date:w.date,event:w.event||"",label:label,partner:partner});}}
  return out;}
 function renderArhVestitor(){$("#fab").style.display="none";$("#body").innerHTML=_arhVestitorHtml();}
 function _arhVestitorHtml(){var my=_myBro();var b=S.bros.find(function(x){return x.id===my;});var name=b?broDisp(my):"—";
@@ -5534,7 +5524,7 @@ function weekBlock(i){const w=S.weeks[i];ensureIds(w);const pl=S.plans[i]||{a:{}
    rows.push(R(t,title,"",right,secCol,dn[k+"_t"]));t=addMin(t,mn);if((p.title||"").toLowerCase().includes("citirea")||p.sec==="Predicare")t=addMin(t,1);});
   rows.push(R(t,"Recapitulare/Prezentarea următoarei întruniri/Anunțuri (3 min.)","",""));t=addMin(t,3);t=addMin(t,1);
   rows.push(R(t,songLine(pl.songs?.close??w.songs[2])+(isVisit?" — aleasă de supraveghetor":""),"Rugăciune",nm("close_pr"),null,dn["s_close"]));
-  var evb=evProgName(w)?('<div class="pevbar">'+esc(evLabel(w))+(w.eventName?' — '+esc(w.eventName):'')+'</div>'):"";
+  var evb=w.event?('<div class="pevbar">'+esc(evLabel(w))+(w.eventName?' — '+esc(w.eventName):'')+'</div>'):"";
   body=evb+`<table class="ptbl">${rows.join("")}</table>`;}
  return `<div class="pdfpage"><div class="phd"><span>${esc(WK_HDR)}</span><span>${esc(S.settings.cong)}</span></div>`
   +`<div class="prl"></div>${WK_SUB}<div class="pwk">${w.event?tc(w.date):(weekISO(w.date)||tc(w.date))}${(w.bible&&!w.event)?" | "+esc(w.bible):""}</div>`
@@ -7390,7 +7380,7 @@ function dutyHist(id,cat,limit){var out=[],D=dutyD(),posts=dutyPosts();
 /* sarcinile mele — pentru „Profilul meu" și pentru pagina vestitorului */
 function myDuties(broId){var out=[];if(!broId)return out;var D=dutyD(),posts=dutyPosts();
  Object.keys(D.a).forEach(function(k){var wi=+k;var w=S.weeks[wi];if(!w)return;var o=D.a[k]||{};
-  posts.forEach(function(p){if(o[p.id]===broId)out.push({wi:wi,date:w.date,event:evProgName(w),label:p.n,partner:null,duty:1});});});
+  posts.forEach(function(p){if(o[p.id]===broId)out.push({wi:wi,date:w.date,event:w.event||"",label:p.n,partner:null,duty:1});});});
  return out.sort(function(a,b){return a.wi-b.wi;});}
 /* ---- curățenia grupei mele ----
    Grupa de serviciu se pune pe săptămâni întregi (Sarcini → „Grupă (curățenie)"), deci nu are
@@ -8043,7 +8033,7 @@ function myMp(broId){var out=[];if(!broId)return out;var D=mpD();
    if(!Array.isArray(o[s.id])||o[s.id].indexOf(broId)<0)return;
    var dt=_wkDayDate(wi,s.d);
    var mates=o[s.id].filter(function(x){return x&&x!==broId;}).map(function(x){return broDisp(x);});
-   out.push({wi:wi,date:w.date,event:evProgName(w),mp:1,dt:dt,
+   out.push({wi:wi,date:w.date,event:w.event||"",mp:1,dt:dt,
     label:"Mărturia publică — "+mpLocName(s.loc)+(s.n?(" · "+s.n):"")+(s.h?(" · "+s.h):"")+(dt?(" · "+_fmtDayShort(dt)):""),
     partner:mates.length?mates.join(", "):null});});});
  return out.sort(function(a,b){return a.wi-b.wi;});}
@@ -8352,17 +8342,31 @@ function ftLocOf(wi,sid){var o=ftOf(wi);var ov=(o.loc&&o.loc[sid])||"";
 function ftOff(wi,sid){var o=ftOf(wi);return !!(o.off&&o.off[sid]);}
 /* Marcajul săptămânii (vizite, congrese) NU se scrie aici: ține de caiet, nu de foaia
    de teren. Îl luăm din evenimentul săptămânii, ca să nu fie scris de două ori și cu
-   două formulări. Evenimentele de felul „ftonly" — vizita supraveghetorului serviciului —
-   se văd NUMAI aici, fiindcă nu schimbă cu nimic programul întrunirilor. */
-function _ftEvTxt(wi){var w=S.weeks[wi];if(!w||!w.event)return "";
- var n=evLabel(w),d=(w.eventName||"").trim();
- return n+(d?(" — "+d):"");}
+   două formulări. Peste el vine vizita supraveghetorului serviciului, care se pune chiar
+   de pe foaia asta — ea privește grupele care merg în teren, nu programul întrunirilor. */
+function _ftEvTxt(wi){var out=[],w=S.weeks[wi];
+ if(w&&w.event){var d=(w.eventName||"").trim();out.push(evLabel(w)+(d?(" — "+d):""));}
+ var ss=ftSSLbl(wi);if(ss)out.push(ss);
+ return out.join(" · ");}
+/* Vizita supraveghetorului serviciului se pune de pe foaia asta, nu din evenimentele
+   caietului: ea privește grupa care merge în teren în săptămâna aceea, nu programul
+   întrunirilor. „*" = vizită fără o grupă anume; altfel e o grupă de serviciu, sau un
+   text scris liber („grupele 1 și 2"), ca la grupa de curățenie din Sarcini. */
+function ftSS(wi){return ftOf(wi).ss||"";}
+function ftSSTxt(wi){return (ftOf(wi).ssT||"").trim();}
+function ftSSWho(wi){var g=ftSS(wi),t=ftSSTxt(wi);
+ if(g&&g!=="*"){var l=grpLblNum(g)||grpName(g);if(l)return l;}
+ return t?_grpCell(t):"";}
+function ftSSLbl(wi){if(!ftSS(wi)&&!ftSSTxt(wi))return "";
+ var who=ftSSWho(wi);
+ return "Vizita supraveghetorului serviciului"+(who?(" — "+who):"");}
 function _ftRow(wi){var D=ftD(),k=String(wi);return D.a[k]||(D.a[k]={});}
 function _ftPrune(wi){var D=ftD(),k=String(wi),o=D.a[k];
  if(!o)return;
  if(o.loc&&!Object.keys(o.loc).length)delete o.loc;
  if(o.off&&!Object.keys(o.off).length)delete o.off;
- delete o.note;/* rămășiță din prima versiune, când însemnarea se scria de mână */
+ if(!o.ss)delete o.ss;if(!o.ssT)delete o.ssT;
+ delete o.note;/* rămășiță din prima versiune, când marcajul se scria de mână */
  if(!Object.keys(o).length)delete D.a[k];}
 function ftSetWho(wi,sid,id){var o=_ftRow(wi);if(id)o[sid]=id;else delete o[sid];_ftPrune(wi);}
 function ftSetLoc(wi,sid,locId){var o=_ftRow(wi);var s=ftSlot(sid);
@@ -8425,7 +8429,13 @@ function ensureFtCSS(){if(document.getElementById("ftcss"))return;var st=documen
 +"@media(max-width:430px){.ftf{flex-wrap:wrap;gap:5px}.ftf .ftl{flex:1 1 100%;max-width:none}.ftf .ftr{flex:1 1 0}}"
 +".ftnb{width:100%;text-align:left;background:var(--bg);border:1px solid var(--bd);border-radius:11px;padding:9px 11px;color:var(--ink);font-size:13px;line-height:1.4;cursor:pointer;white-space:normal}"
 +".ftnb.ph{color:var(--ink3)}"
-+".ftnote{background:var(--accsoft);color:var(--acc);border-radius:10px;padding:7px 11px;font-size:12px;font-weight:700;margin:0 0 9px;line-height:1.4}";
++".ftnote{background:var(--accsoft);color:var(--acc);border-radius:10px;padding:7px 11px;font-size:12px;font-weight:700;margin:0 0 9px;line-height:1.4}"
++".ftssb{display:flex;align-items:center;gap:9px;width:100%;text-align:left;background:var(--surf);border:1px dashed var(--bd);border-radius:11px;padding:9px 12px;margin:0 0 10px;color:var(--ink3);font-size:12.5px;font-weight:700;cursor:pointer;line-height:1.35}"
++".ftssb.on{border-style:solid;border-color:var(--acc);color:var(--ink)}"
++".ftssb svg{width:15px;height:15px;flex:0 0 auto}"
++".ftssb>span:first-of-type{flex:1;min-width:0}"
++".ftssb .ftssc{flex:0 0 auto;color:var(--ink3);display:flex}"
++".ftsspi{flex:0 0 auto}.ftsspi svg{width:17px;height:17px}.ftsspi.on{color:var(--acc)}";
  document.head.appendChild(st);}
 
 function arhFtHtml(){ensureDutyCSS();ensureMpCSS();ensureFtCSS();
@@ -8456,10 +8466,16 @@ function ftListHtml(){var D=ftD(),ed=_canEditFt();
     var nms=[];ftSlotsSorted().forEach(function(s){if(ftOff(i,s.id))return;
       var id=ftWho(i,s.id);if(id&&nms.length<3)nms.push(expNameS(id)||broDisp(id));});
     var sub=st.f?(nms.join(" · ")+(st.f>3?(" +"+(st.f-3)):"")):"neprogramat";
-    h+='<button class="dwrow'+(i===cw?" now":"")+'" onclick="ftGo('+i+')">'
+    var ssw=ftSSWho(i),sso=!!ftSSLbl(i);
+    /* butonul de vizită stă chiar în dreptul săptămânii: se pune dintr-o singură apăsare,
+       fără să mai intri în ea. Rândul e un buton, deci al doilea nu poate sta înăuntru. */
+    h+='<div style="display:flex;align-items:center;gap:5px;margin-bottom:7px">'
+     +'<button class="dwrow'+(i===cw?" now":"")+'" style="flex:1;min-width:0;margin-bottom:0" onclick="ftGo('+i+')">'
      +'<span class="dwn'+(st.tot&&st.f>=st.tot?" full":"")+'">'+st.f+'/'+st.tot+'</span>'
-     +'<span class="dwi"><span class="dwt">'+esc(tc(w.date))+(i===cw?' <span class="dtag">acum</span>':'')+'</span><span class="dws">'+sub+'</span></span>'
-     +'<span class="chev">'+IC.chev+'</span></button>';});
+     +'<span class="dwi"><span class="dwt">'+esc(tc(w.date))+(i===cw?' <span class="dtag">acum</span>':'')+(sso?' <span class="gtag t2">SS'+(ssw?(" · "+esc(ssw)):"")+'</span>':'')+'</span><span class="dws">'+sub+'</span></span>'
+     +'<span class="chev">'+IC.chev+'</span></button>'
+     +(ed?('<button class="pico ftsspi'+(sso?" on":"")+'" title="Vizita supraveghetorului serviciului" onclick="ftSSPick('+i+')">'+IC.star+'</button>'):'')
+     +'</div>';});
    h+='</div></div>';});
   h+='</div></div>';});
  return h;}
@@ -8471,9 +8487,11 @@ function ftWeekHtml(wi){var w=S.weeks[wi],ed=_canEditFt();
   +'<button class="wkb" onclick="ftGo('+(wi+1)+')" '+(np(wi+1)?"":"disabled")+' title="Săptămâna următoare">'+IC.fwd+'</button></div><span class="wkspace"></span></div>';
  h+='<div class="group gp" style="padding:14px 16px 11px"><div class="nm" style="font-size:16.5px;font-weight:800">Săptămâna '+esc(tc(w.date))+'</div>'
   +'<div class="mt" style="font-size:12.5px;margin-top:3px">fratele care conduce întrunirea pentru predicare, în fiecare zi de pe foaie</div></div>';
- var ev=_ftEvTxt(wi);
+ var ev=_ftEvTxt(wi),ssl=ftSSLbl(wi);
  if(ev)h+='<div class="ftnote">'+esc(ev)+'</div>';
- else if(ed)h+='<div class="muted" style="margin:0 2px 10px;font-size:11.5px">Marcajul săptămânii — vizita supraveghetorului serviciului, congrese — se ia din <b>evenimentul</b> ei. Îl pui din <b>Setări → Evenimente</b>, bifând acolo săptămânile.</div>';
+ if(ed)h+='<button class="ftssb'+(ssl?' on':'')+'" onclick="ftSSPick('+wi+')">'+IC.star
+  +'<span>'+(ssl?('Vizita supraveghetorului serviciului: <b>'+esc(ftSSWho(wi)||"fără grupă anume")+'</b>'):'Pune vizita supraveghetorului serviciului')+'</span>'
+  +'<span class="ftssc">'+IC.chev+'</span></button>';
  var ss=ftSlotsSorted();
  if(!ss.length)return h+'<div class="empty" style="padding:26px 8px">Nicio zi pe foaie.</div>';
  ss.forEach(function(s){
@@ -8505,6 +8523,28 @@ function ftClear(wi,sid){if(!_needFt())return;var id=ftWho(wi,sid);if(!id)return
  ftSetWho(wi,sid,"");
  ftCommit("Întrunirile de teren "+tc(S.weeks[wi].date)+": scos "+broDisp(id)+" de la "+ftSlotLbl(wi,ftSlot(sid),true));
  renderArhRoute();}
+/* --- vizita supraveghetorului serviciului, pe o săptămână --- */
+function ftSSPick(wi){if(!_needFt())return;var o=ftOf(wi),gs=grpsAll(),cur=o.ss||"",t=(o.ssT||"").trim();
+ var H='<div class="muted" style="margin:0 2px 10px">Săptămâna '+esc(tc(S.weeks[wi].date))+' · se vede numai pe foaia de teren și în PDF-ul ei, ca notă de subsol.</div>';
+ H+='<button class="pmrow" onclick="ftSSSet('+wi+',\'\')">'+((!cur&&!t)?IC.check:IC.chev)+'<span><b>— nu e vizită —</b></span></button>';
+ H+='<button class="pmrow" onclick="ftSSSet('+wi+',\'*\')">'+((cur==="*"&&!t)?IC.check:IC.chev)+'<span><b>Vizită, fără grupă anume</b></span></button>';
+ /* numele grupei are de multe ori numărul în el („Grupa 2 — Mezeș"); grpLblNum nu-l repetă */
+ gs.forEach(function(g,i){H+='<button class="pmrow" onclick="ftSSSet('+wi+',\''+g.id+'\')">'+((cur===g.id)?IC.check:IC.chev)+'<span><b>'+esc(grpLblNum(g.id)||("Grupa "+(i+1)))+'</b></span></button>';});
+ if(!gs.length)H+='<div class="muted" style="padding:8px 4px;font-size:11.5px">Nicio grupă de serviciu definită (Arhivă → Grupe). Poți scrie grupa liber, mai jos.</div>';
+ H+='<div class="pmlbl" style="margin-top:12px">Sau scrie liber</div>'
+  +'<div class="rowflex" style="gap:8px"><input class="fld" id="ftSsT" style="flex:1;margin:0" value="'+esc(t)+'" placeholder="ex. grupele 1 și 2"><button class="btn pri sm" style="width:auto" onclick="ftSSTxtSave('+wi+')">Pune</button></div>';
+ sheet("","Vizita supraveghetorului serviciului",H);}
+function ftSSSet(wi,gid){if(!_needFt())return;var o=_ftRow(wi);
+ if(gid){o.ss=gid;delete o.ssT;}else{delete o.ss;delete o.ssT;}
+ _ftPrune(wi);
+ ftCommit("Întrunirile de teren "+tc(S.weeks[wi].date)+": vizita supraveghetorului serviciului "+(gid?("→ "+(ftSSWho(wi)||"fără grupă anume")):"scoasă"));
+ closeSheet();renderArhRoute();}
+function ftSSTxtSave(wi){if(!_needFt())return;var v=($("#ftSsT")?$("#ftSsT").value:"").trim(),o=_ftRow(wi);
+ if(v){o.ssT=v;if(!o.ss)o.ss="*";}else{delete o.ssT;if(o.ss==="*")delete o.ss;}
+ _ftPrune(wi);
+ ftCommit("Întrunirile de teren "+tc(S.weeks[wi].date)+": vizita supraveghetorului serviciului "+(v?("→ "+v):"scoasă"));
+ closeSheet();renderArhRoute();}
+
 /* --- locul, pentru o singură săptămână --- */
 function ftLocPick(wi,sid){if(!_needFt())return;var s=ftSlot(sid);if(!s)return;
  var cur=ftLocOf(wi,sid);
@@ -8817,17 +8857,25 @@ function _ftSeedSlot(d){return ftSlots().find(function(s){return (+s.d)===(+d);}
 /* Prima versiune a foii avea un câmp de însemnare scris de mână, iar migrarea punea în el
    „Vizita supraveghetorului…". Textul acela ținea de caiet, nu de foaia de teren, și era
    și greșit formulat. Îl scoatem o singură dată; de acum marcajul vine din eveniment. */
-/* „Vizita supraveghetorului serviciului" e un marcaj al foii de teren, nu al programului
-   întrunirilor. Lista de evenimente există deja la toată lumea, așa că tipul nou se adaugă
-   o singură dată; de acolo se pune pe ce săptămâni vrei, și acum, și pe viitor. */
-function _ftEvSeed(){if(!S.settings)S.settings={};
- if(S.settings._ftEvV)return;
- try{var L=evTypes(),q=_piNorm("Vizita supraveghetorului serviciului");
-  if(!L.some(function(x){return x.id==="ev_sserv"||_piNorm(x.n)===q;})){
-   L.push({id:"ev_sserv",n:"Vizita supraveghetorului serviciului",k:"ftonly"});
-   try{logAct("Eveniment adăugat: Vizita supraveghetorului serviciului (marcaj doar pe foaia de teren)");}catch(e){}}
+/* Vizita supraveghetorului serviciului a stat o clipă în lista de evenimente. N-are ce
+   căuta acolo: evenimentele sunt ale caietului și le vede toată congregația, pe când
+   vizita la o grupă privește numai foaia de teren. O scoatem de acolo o singură dată, iar
+   săptămânile care apucaseră s-o primească trec pe marcajul foii de teren, cu grupa lor. */
+function _ftEvDrop(){if(!S.settings)S.settings={};
+ if(S.settings._ftEvV===2)return;
+ try{var L=evTypes(),q=_piNorm("Vizita supraveghetorului serviciului"),n=0;
+  var mine=L.filter(function(x){return x.id==="ev_sserv"||_piNorm(x.n)===q;});
+  if(mine.length){
+   (S.weeks||[]).forEach(function(w,i){if(!w||!w.event)return;
+    if(!mine.some(function(t){return (w.evId&&w.evId===t.id)||w.event===t.n;}))return;
+    var g=(w.eventName||"").trim();
+    delete w.event;delete w.evId;delete w.eventName;
+    if(!ftSS(i)&&!ftSSTxt(i)){var o=_ftRow(i);o.ss="*";if(g)o.ssT=g;_ftPrune(i);}
+    n++;});
+   S.settings.evTypes=L.filter(function(x){return mine.indexOf(x)<0;});
+   try{logAct("Vizita supraveghetorului serviciului a ieșit din evenimente — se pune acum din foaia întrunirilor de teren"+(n?(" ("+n+" săpt. mutate)"):""));}catch(e){}}
  }catch(e){}
- S.settings._ftEvV=1;save();}
+ S.settings._ftEvV=2;save();}
 function _ftNoteDrop(){if(!S.settings)S.settings={};
  if(S.settings._ftNoteV)return;
  var D=S.ft,chg=false;
@@ -9018,9 +9066,9 @@ function wmHist(id,cat,limit){var out=[],D=wmD(),posts=wmPosts();
 function myWm(broId){var out=[];if(!broId)return out;var D=wmD(),posts=wmPosts();
  Object.keys(D.a).forEach(function(k){var wi=+k;var w=S.weeks[wi];if(!w)return;var o=D.a[k]||{};
   var dt=wmDateOf(wi);var when=dt?(" · "+_fmtDayShort(dt)):"";
-  if(o.sp===broId)out.push({wi:wi,date:w.date,event:evProgName(w),wm:1,label:"Cuvântarea publică"+((o.tt||"").trim()?(" — „"+o.tt+"”"):"")+when,partner:null});
+  if(o.sp===broId)out.push({wi:wi,date:w.date,event:w.event||"",wm:1,label:"Cuvântarea publică"+((o.tt||"").trim()?(" — „"+o.tt+"”"):"")+when,partner:null});
   posts.forEach(function(p){if(o[p.id]!==broId)return;
-   out.push({wi:wi,date:w.date,event:evProgName(w),wm:1,label:"Întrunirea publică — "+p.n+when,partner:null});});});
+   out.push({wi:wi,date:w.date,event:w.event||"",wm:1,label:"Întrunirea publică — "+p.n+when,partner:null});});});
  return out.sort(function(a,b){return a.wi-b.wi;});}
 /* ospitalitatea e pe grupă: cine e în grupa respectivă o vede în „Profilul meu" */
 function myWmHost(broId){var out=[],gid=myCleanGrp(broId);if(!gid)return out;var D=wmD();
