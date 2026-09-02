@@ -621,7 +621,7 @@ Object.assign(IC,{
  box:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h18v13H3z"/><path d="M3 7l2-4h14l2 4"/><path d="M10 11h4"/></svg>',
  mark:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15.5 4.5l4 4-9.5 9.5H6v-4z"/><path d="M12.5 7.5l4 4M5 21h14"/></svg>'
 });
-const VERSION="3.6.0";
+const VERSION="3.6.1";
 /* Versiunea minima care are voie sa SCRIE in cloud. Se trece in gist la fiecare trimitere;
    un dispozitiv ramas pe un build mai vechi decat atat nu mai poate suprascrie datele —
    doar citeste si se actualizeaza singur. Asa nu mai poate un singur telefon uitat deschis
@@ -3921,6 +3921,9 @@ function renderSet(){if(!_isAdmin()){renderSetLimited();return;}$("#fab").style.
  const days={1:"Luni",2:"Marți",3:"Miercuri",4:"Joi",5:"Vineri",6:"Sâmbătă",0:"Duminică"};
  const nUsers=(st.users||[]).length;
  const odSet=!!(st.od&&(st.od.rap||st.od.prez));
+ /* Un fișier de backup vechi, importat fără `gh`, lăsa Setările să crape la
+    cardul de sincronizare — și cu ele tot ecranul, deci și ieșirea din el. */
+ if(!st.gh)st.gh={token:"",gist:""};
  const ghOn=!!(st.gh&&st.gh.token);
  const stCSS=`<style>
  .setcard{background:var(--surf);border:1px solid var(--bd);border-radius:16px;margin-bottom:10px;overflow:hidden}
@@ -4971,6 +4974,7 @@ var NEWS=[
   ["info","Semnul „?” din antet","Stă lângă rotiță, în toate secțiunile, în același loc. Îl apeși și se deschide tutorialul secțiunii ÎN CARE TE AFLI — nu tot manualul. Din „Mărturia publică” vezi cum se pun turele; din „Rapoarte”, cum se completează un raport."],
   ["book","Tutoriale cu telefonul desenat","Fiecare tutorial arată pașii pe un telefon desenat, cu un deget care apasă exact unde trebuie: se deschide foaia, se scrie în câmp, se apasă „Salvează”. Le dai mai departe cu degetul, ca pe o prezentare, și le poți relua oricând."],
   ["sheep","Un tutorial numai pentru vestitori","Scris din partea vestitorului obișnuit: ce are de făcut o dată pe lună și ce doar vede. Cu întrebările care se pun cel mai des — „n-am fost în predicare luna asta”, „nu văd câmpul de ore”."],
+  ["fwd","„Încearcă acum”","La finalul fiecărei demonstrații e un buton care închide tutorialul și te duce drept în ecranul despre care tocmai a fost vorba — cât ai pașii proaspeți în minte."],
   ["check","Toate, la un loc, în Setări","Setări → Tutoriale ține lista completă, pe grupuri. Semnul „?” rămâne scurtătura către secțiunea deschisă."]
  ]},
  {v:"3.5.0",label:"3.5",d:"02.09.2026",t:"Schița se împacă cu lista de vestitori, bifă cu bifă",items:[
@@ -11483,7 +11487,8 @@ function tutCSS(){if(document.getElementById("tutcss"))return;
 +"border-top:1px solid var(--bd);background:var(--surf)}"
 +".tutdots{flex:1;display:flex;gap:6px;justify-content:center;flex-wrap:wrap}"
 +".tutdots button{width:7px;height:7px;border-radius:50%;border:0;padding:0;background:var(--bd);cursor:pointer;transition:.22s}"
-+".tutdots button.on{background:var(--acc);transform:scale(1.4)}"
++".tutdots button.done{background:var(--acc);opacity:.45}"
++".tutdots button.on{background:var(--acc);opacity:1;transform:scale(1.4)}"
 +".tutnb{width:42px;height:38px;flex:0 0 auto;border:1px solid var(--bd);border-radius:11px;background:var(--surf2);"
 +"color:var(--ink2);cursor:pointer;display:grid;place-items:center;padding:0;font-size:19px;line-height:1}"
 +".tutnb:disabled{opacity:.35;cursor:default}"
@@ -11573,6 +11578,11 @@ function tutCSS(){if(document.getElementById("tutcss"))return;
 +".treplay{align-self:flex-start;display:inline-flex;align-items:center;gap:7px;border:1px solid var(--bd);"
 +"background:var(--surf);color:var(--ink2);border-radius:10px;padding:7px 12px;font-size:12.5px;font-weight:700;cursor:pointer}"
 +".treplay:hover{border-color:var(--acc);color:var(--acc)}.treplay svg{width:14px;height:14px}"
+ /* „Încearcă acum" — duce din tutorial drept în ecranul despre care e vorba */
++".tgo{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;margin-top:14px;"
++"border:1px solid var(--acc);background:var(--accsoft);color:var(--acc);border-radius:12px;"
++"padding:12px 14px;font-family:inherit;font-size:13.5px;font-weight:800;cursor:pointer}"
++".tgo:active{transform:scale(.985)}.tgo svg{width:15px;height:15px;flex:0 0 auto}"
  /* ---- telefonul desenat ---- */
 +".tphone{position:relative;width:232px;height:446px;flex:0 0 auto;background:#0b0c10;border-radius:30px;padding:7px;"
 +"box-shadow:0 16px 40px rgba(0,0,0,.28)}"
@@ -11657,10 +11667,15 @@ function tutCSS(){if(document.getElementById("tutcss"))return;
 +".tp-ov svg circle{fill:none;stroke:var(--teal);stroke-width:5;stroke-dasharray:245;stroke-dashoffset:245;transform:rotate(-90deg);transform-origin:center}"
 +".tp-ov svg path{fill:none;stroke:var(--teal);stroke-width:7;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:60;stroke-dashoffset:60}"
 +".tp-ov.on svg circle{animation:tdraw245 .55s ease forwards}.tp-ov.on svg path{animation:tdraw60 .35s .4s ease forwards}"
+ /* mesajul scurt de jos, ca „toast"-ul aplicației */
++".tp-toast{position:absolute;left:9px;right:9px;bottom:38px;z-index:8;background:#000;color:#fff;"
++"border-radius:9px;padding:7px 10px;font-size:8.5px;font-weight:700;text-align:center;"
++"opacity:0;transform:translateY(6px);transition:opacity .25s,transform .25s;pointer-events:none}"
++".tp-toast.on{opacity:.94;transform:none}"
  /* degetul */
 +".tcur{position:absolute;z-index:9;width:24px;height:24px;border-radius:50%;background:var(--accsoft);"
 +"border:2px solid var(--acc);transform:translate(-50%,-50%);left:50%;top:90%;opacity:0;pointer-events:none;"
-+"transition:left .72s cubic-bezier(.3,.7,.3,1),top .72s cubic-bezier(.3,.7,.3,1),opacity .25s}"
++"transition:left .42s cubic-bezier(.3,.7,.3,1),top .42s cubic-bezier(.3,.7,.3,1),opacity .25s}"
 +".tcur.on{opacity:1}"
 +".tcur.tap{animation:ttap .34s ease}"
 +"@keyframes ttap{40%{transform:translate(-50%,-50%) scale(.6)}}"
@@ -11735,6 +11750,8 @@ var TP={
    +'<div class="shd">'+esc(titlu)+'<span class="sx">×</span></div>'+h+'</div>';},
  ok:function(id,t,s){return '<div class="tp-ov" id="'+id+'"><svg viewBox="0 0 90 90"><circle cx="45" cy="45" r="39"/>'
    +'<path d="M30 46 41 57 61 35"/></svg><b>'+esc(t)+'</b><span>'+esc(s||"")+'</span></div>';},
+ /* mesajul scurt de jos — aplicația îl arată la aproape fiecare salvare */
+ toast:function(id){return '<div class="tp-toast" id="'+id+'"><span id="'+id+'_t"></span></div>';},
  sp:function(n){return '<div style="height:'+(n||4)+'px"></div>';}
 };
 
@@ -11746,6 +11763,14 @@ function _tutHead(o,n){var h="";
  if(o.h)h+='<h2 class="'+(n?"th1":"th2")+' ta ta2">'+o.h+'</h2>';
  if(o.p)h+='<p class="tp ta ta3">'+o.p+'</p>';
  return h;}
+/* „Încearcă acum: …" — închide tutorialul și te duce chiar în ecranul despre
+   care tocmai a fost vorba. Fără el, tutorialul rămâne o poveste; cu el, omul
+   ajunge cu un deget acolo unde are de lucru. */
+function _tutGo(o,i){if(!o.go)return "";
+ return '<button class="tgo ta ta8" onclick="tutTry('+i+')">Încearcă acum: '+esc(o.go.label)
+  +'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>';}
+function tutTry(i){var o=_tutSl[i];if(!o||!o.go)return;_tutBack=null;tutClose();
+ setTimeout(function(){try{o.go.run();}catch(e){}},80);}
 
 function _tutSlide(o,idx){
  if(o.k==="intro")return '<div class="tsl" data-i="'+idx+'"><div class="tintro">'
@@ -11753,16 +11778,18 @@ function _tutSlide(o,idx){
    +'<div class="thint ta ta5"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg> Trage cu degetul spre stânga sau apasă <span class="tk">Mai departe</span></div></div></div>';
  if(o.k==="cards")return '<div class="tsl" data-i="'+idx+'">'+_tutHead(o)+'<div class="tcards">'
    +(o.items||[]).map(function(it,i){return '<div class="tcard ta ta'+Math.min(8,i+3)+'"><span class="tci">'+(it[0]||IC.info)+'</span>'
-     +'<span style="flex:1;min-width:0"><b>'+esc(it[1])+'</b><p>'+it[2]+'</p></span></div>';}).join("")+'</div></div>';
+     +'<span style="flex:1;min-width:0"><b>'+esc(it[1])+'</b><p>'+it[2]+'</p></span></div>';}).join("")+'</div>'+_tutGo(o,idx)+'</div>';
  if(o.k==="rules")return '<div class="tsl" data-i="'+idx+'">'+_tutHead(o)+'<div class="trules">'
-   +(o.items||[]).map(function(it,i){return '<div class="trule '+it[0]+' ta ta'+Math.min(8,i+3)+'"><b>'+esc(it[1])+'</b><p>'+it[2]+'</p></div>';}).join("")+'</div></div>';
+   +(o.items||[]).map(function(it,i){return '<div class="trule '+it[0]+' ta ta'+Math.min(8,i+3)+'"><b>'+esc(it[1])+'</b><p>'+it[2]+'</p></div>';}).join("")+'</div>'+_tutGo(o,idx)+'</div>';
  if(o.k==="faq")return '<div class="tsl" data-i="'+idx+'">'+_tutHead(o)+'<div class="tfaq">'
-   +(o.items||[]).map(function(it,i){return '<div class="tqa ta ta'+Math.min(8,i+3)+'"><div class="tq">'+esc(it[0])+'</div><div class="tr">'+it[1]+'</div></div>';}).join("")+'</div></div>';
+   +(o.items||[]).map(function(it,i){return '<div class="tqa ta ta'+Math.min(8,i+3)+'"><div class="tq">'+esc(it[0])+'</div><div class="tr">'+it[1]+'</div></div>';}).join("")+'</div>'+_tutGo(o,idx)+'</div>';
  if(o.k==="recap")return '<div class="tsl" data-i="'+idx+'"><div class="trecap">'
    +'<svg class="tdone" viewBox="0 0 90 90"><circle cx="45" cy="45" r="39"/><path d="M30 46 41 57 61 35"/></svg>'
    +'<h2 class="th2 ta ta1">'+(o.h||"Atât e tot")+'</h2>'
    +(o.p?('<p class="tp ta ta2">'+o.p+'</p>'):"")
    +'<div class="tchips">'+(o.chips||[]).map(function(c,i){return '<div class="tchip ta ta'+Math.min(8,i+3)+'"><span class="tn">'+(i+1)+'</span>'+c+'</div>';}).join("")+'</div>'
+   +_tutGo(o,idx)
+   +'<p class="tp ta ta8" style="margin-top:16px;font-size:12.5px">Îl găsești oricând la semnul <b>?</b> din antet, în secțiunea în care te afli.</p>'
    +'<button class="tall ta ta8" onclick="tutIndex()">'+IC.book+' Toate tutorialele</button></div></div>';
  /* demonstrația: pașii + telefonul */
  var st=(o.steps||[]).map(function(s,i){return '<div class="tstep" data-s="'+(i+1)+'"><span class="tsn">'+(i+1)+'</span>'
@@ -11772,7 +11799,8 @@ function _tutSlide(o,idx){
    +'<div class="tdemo ta ta3"><div class="tphone"><div class="tphs">'+scr
    +(o.ov||"")+'<div class="tcur"></div></div></div>'
    +'<div class="tsteps">'+st
-   +'<button class="treplay" onclick="tutReplay()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg> Reia demonstrația</button></div></div></div>';}
+   +'<button class="treplay" onclick="tutReplay()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg> Reia demonstrația</button></div></div>'
+   +_tutGo(o,idx)+'</div>';}
 
 /* ---------------------------------------------------------------------------
    Motorul demonstrației. Scriptul e o listă de [milisecunde, comandă, …]:
@@ -11781,7 +11809,8 @@ function _tutSlide(o,idx){
      ["tap"] apasă                       ["show"] / ["hide"]  degetul
      ["prs",id] butonul apăsat           ["cls",id,c] / ["rm",id,c]  clase
      ["type",id,text,viteză] scrie       ["sh",id] / ["shx",id] foaia de jos
-     ["ok",id] ecranul „gata"            ["loop"] o ia de la capăt
+     ["ok",id] ecranul „gata"            ["toast",id,text] / ["toastx",id]
+     ["loop"] o ia de la capăt
 
    `cur` e pentru cromul telefonului (bara de sus, butonul rotund, bara de jos),
    care stă în același loc oriunde. Pentru conținut se folosește `curEl`: degetul
@@ -11820,7 +11849,7 @@ function _tutPlay(sl,o,delay){
   scrs.forEach(function(s,i){s.classList.toggle("on",i===0);});
   steps.forEach(function(s){s.classList.remove("on","dn");});
   [].forEach.call(sl.querySelectorAll(".tp-sh,.tp-dim"),function(x){x.classList.remove("on");});
-  [].forEach.call(sl.querySelectorAll(".tp-ov"),function(x){x.classList.remove("on");});
+  [].forEach.call(sl.querySelectorAll(".tp-ov,.tp-toast"),function(x){x.classList.remove("on");});
   [].forEach.call(sl.querySelectorAll(".prs"),function(x){x.classList.remove("prs");});
   [].forEach.call(sl.querySelectorAll(".tp-f"),function(x){x.classList.remove("fc");});
   [].forEach.call(sl.querySelectorAll("[data-t0]"),function(x){x.textContent=x.getAttribute("data-t0");});
@@ -11845,6 +11874,9 @@ function _tutPlay(sl,o,delay){
     var d2=_tutEl(sl,c[2]+"_d");if(d2)d2.classList.remove("on");}
    else if(a==="ok"){var o1=_tutEl(sl,c[2]);if(o1)o1.classList.add("on");}
    else if(a==="type"){var t1=_tutEl(sl,c[2]+"_t");if(t1)t1.textContent=c[3]||"";}
+   else if(a==="toast"){var z1=_tutEl(sl,c[2]),z2=_tutEl(sl,c[2]+"_t");
+    if(z2)z2.textContent=c[3]||"";if(z1)z1.classList.add("on");}
+   else if(a==="toastx"){var z3=_tutEl(sl,c[2]);if(z3)z3.classList.remove("on");}
   }catch(e){}});
   return;}
  _tutRun=true;
@@ -11870,6 +11902,9 @@ function _tutPlay(sl,o,delay){
     else if(a==="shx"){var s2=_tutEl(sl,c[2]);if(s2)s2.classList.remove("on");
      var d2=_tutEl(sl,c[2]+"_d");if(d2)d2.classList.remove("on");}
     else if(a==="ok"){var o1=_tutEl(sl,c[2]);if(o1)o1.classList.add("on");}
+    else if(a==="toast"){var t1=_tutEl(sl,c[2]),t1t=_tutEl(sl,c[2]+"_t");
+     if(t1t)t1t.textContent=c[3]||"";if(t1)t1.classList.add("on");}
+    else if(a==="toastx"){var t2=_tutEl(sl,c[2]);if(t2)t2.classList.remove("on");}
     else if(a==="loop"){if(_tutRun)_tutPlay(sl,o,600);}
    }catch(e){}
   });
@@ -11895,12 +11930,15 @@ function _tutMount(){var o=document.getElementById("tutov");if(o)return o;
   +'<div class="tuthd"><span class="tth" id="tutTtl"></span><span class="ttn" id="tutNum"></span>'
   +'<button class="tutx" id="tutX" aria-label="Închide tutorialul">×</button></div>'
   +'<div class="tutdeck" id="tutdeck"></div>'
-  +'<div class="tutft"><button class="tutnb" id="tutPrev" aria-label="Înapoi">‹</button>'
+  +'<div class="tutft"><button class="tutnb" id="tutRe" aria-label="De la început" title="De la început">'
+  +'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg></button>'
+  +'<button class="tutnb" id="tutPrev" aria-label="Înapoi">‹</button>'
   +'<div class="tutdots" id="tutdots"></div>'
   +'<button class="tutnb pri" id="tutNext">Mai departe</button></div></div>';
  /* îl punem lângă `.app`, ca variabilele de temă (`.app.light`) să ajungă și la el */
  var ap=document.querySelector(".app");(ap||document.body).appendChild(o);
  o.querySelector("#tutX").onclick=tutClose;
+ o.querySelector("#tutRe").onclick=function(){tutGo(0);};
  o.querySelector("#tutPrev").onclick=function(){tutGo(_tutI-1);};
  o.querySelector("#tutNext").onclick=function(){if(_tutI>=_tutSl.length-1)tutClose();else tutGo(_tutI+1);};
  /* trasul cu degetul, ca în prezentări */
@@ -11937,10 +11975,11 @@ function tutGo(n,first){
   if(i!==n)s.scrollTop=0;});
  _tutI=n;
  var dots=document.getElementById("tutdots");
- if(dots)[].forEach.call(dots.children,function(b,i){b.classList.toggle("on",i===n);});
+ if(dots)[].forEach.call(dots.children,function(b,i){b.classList.toggle("on",i===n);b.classList.toggle("done",i<n);});
  var pb=document.getElementById("tutpb");if(pb)pb.style.width=((n+1)/_tutSl.length*100)+"%";
  var nm=document.getElementById("tutNum");if(nm)nm.textContent=(n+1)+" / "+_tutSl.length;
  var pv=document.getElementById("tutPrev");if(pv)pv.disabled=(n===0);
+ var re=document.getElementById("tutRe");if(re)re.disabled=(n===0);
  var nx=document.getElementById("tutNext");if(nx)nx.textContent=(n===_tutSl.length-1)?"Am înțeles":"Mai departe";
  var o=_tutSl[n];
  if(o&&o.k==="demo"&&sls[n])_tutAt(0,function(){_tutPlay(sls[n],o,900);});}
@@ -11968,6 +12007,29 @@ function tutKey(){try{
  return "start";}catch(e){return "start";}}
 
 function tutHere(){tutOpen(tutKey());}
+
+/* Drumul din tutorial spre ecranul adevărat, pentru butonul „Încearcă acum".
+   Vestitorii n-au Arhiva completă: pentru ei mergem pe secțiunile ușoare, iar
+   dacă secțiunea nu există la ei rămânem la cardurile Arhivei. */
+function tutGoArh(grp,sub){try{
+ if(typeof _arhFull==="function"&&!_arhFull()){
+  if(typeof _arhLiteSecOf==="function"&&_arhLiteSecOf(sub)){arhLiteSub=sub;go("arh");return;}
+  arhLiteSub=null;go("arh");return;}
+ arhGrp=grp;arhSub=sub;_arhLastSub=null;wkOpen=false;go("arh");}catch(e){try{go("arh");}catch(e2){}}}
+function tutGoProg(s){try{go("prog");if(typeof progGo==="function")progGo(s);}catch(e){}}
+
+/* ---------------------------------------------------------------------------
+   Prima deschidere: o singură dată, „Bun venit în ArhiLink". Nu insistă — dacă
+   e ceva deschis pe ecran (foaia „Ce e nou", poarta de intrare) se lasă păgubaș
+   și rămâne semnul „?" din antet.
+   --------------------------------------------------------------------------- */
+function maybeShowTut(){try{
+ if(_tutSeenSet()._any)return;
+ if(document.querySelector(".gate"))return;
+ var ov=document.getElementById("ov");if(ov&&ov.classList.contains("show"))return;
+ if(document.getElementById("tutov")&&document.getElementById("tutov").classList.contains("on"))return;
+ if(typeof _curUser==="function"&&(typeof _users==="function"&&_users().length)&&!_curUser())return;
+ tutOpen("start");}catch(e){}}
 
 /* eticheta secțiunii, pentru titlul butonului și pentru lista cu toate */
 function _tutTitle(k){var d=TUT.D[TUT.A[k]||k];return d?d.t:"";}
@@ -12024,6 +12086,8 @@ function _tutBtnSync(){var b=document.getElementById("btnHelp");if(!b)return;
  /* titlul butonului urmărește secțiunea deschisă — verificăm din când în când,
     fără să ne legăm de fiecare funcție de randare din aplicație */
  setInterval(function(){try{if(document.getElementById("btnHelp"))_tutBtnSync();}catch(e){}},1200);
+ /* prima deschidere, după ce aplicația s-a așezat */
+ setTimeout(maybeShowTut,9000);
  document.addEventListener("keydown",function(e){
   var on=document.getElementById("tutov");if(!on||!on.classList.contains("on"))return;
   if(e.key==="Escape"){e.preventDefault();tutClose();}
@@ -12952,6 +13016,64 @@ TUT.D["set"]={t:"Setări",sub:"sincronizare, utilizatori, import, temă",ic:IC.g
  {k:"recap",h:"Setările",p:"Se ating rar, dar de aici pornește tot.",
   chips:["Congregația și orele","Utilizatorii și drepturile","Sincronizarea și importurile"]}
 ]};
+
+/* ---------------------------------------------------------------------------
+   „Încearcă acum" — fiecare tutorial știe spre ce ecran duce
+   ----------------------------------------------------------------------------
+   Se pune pe slide-ul cu demonstrația (sau, unde nu e demonstrație, pe cel cu
+   cardurile), ca omul să ajungă acolo cât are pașii proaspeți în minte.
+   --------------------------------------------------------------------------- */
+var TUT_GO={
+ "start":     {label:"Programări",                run:function(){go("prog");}},
+ "vestitor":  {label:"Profilul meu",              run:function(){go("meu");}},
+ "meu":       {label:"Profilul meu",              run:function(){go("meu");}},
+ "prog.vcp":  {label:"programul săptămânii",      run:function(){tutGoProg("vcp");}},
+ "prog.wm":   {label:"Întrunirea publică",        run:function(){tutGoProg("wm");}},
+ "prog.sarc": {label:"foaia de sarcini",          run:function(){tutGoProg("sarc");}},
+ "arh":       {label:"Arhiva",                    run:function(){arhHome();}},
+ "arh.vcped": {label:"Viața creștină",            run:function(){tutGoArh("plan","vcped");}},
+ "arh.wm":    {label:"Întrunirea publică",        run:function(){tutGoArh("plan","wm");}},
+ "arh.mp":    {label:"Mărturia publică",          run:function(){tutGoArh("plan","mp");}},
+ "arh.teren": {label:"Întrunirile de teren",      run:function(){tutGoArh("plan","teren");}},
+ "arh.sarc":  {label:"Sarcini",                   run:function(){tutGoArh("plan","sarc");}},
+ "arh.cur":   {label:"Curățenie generală",        run:function(){tutGoArh("plan","cur");}},
+ "arh.sumar": {label:"Sumarul S-1",               run:function(){tutGoArh("rap","sumar");}},
+ "arh.rap":   {label:"Rapoartele lunii",          run:function(){tutGoArh("rap","rap");}},
+ "arh.pio600":{label:"Pionierii",                 run:function(){tutGoArh("rap","pio600");}},
+ "arh.prez":  {label:"Prezența",                  run:function(){tutGoArh("rap","prez");}},
+ "arh.grp":   {label:"Grupele",                   run:function(){tutGoArh("rap","grp");}},
+ "arh.resp":  {label:"Responsabilitățile",        run:function(){tutGoArh("rap","resp");}},
+ "arh.arhv":  {label:"Arhivații",                 run:function(){tutGoArh("rap","arhv");}},
+ "arh.scr":   {label:"Scrisorile",                run:function(){tutGoArh("rap","scr");}},
+ "arh.exp":   {label:"Exporturile",               run:function(){tutGoArh("rap","exp");}},
+ "bros":      {label:"lista de vestitori",        run:function(){go("bros");}},
+ "set":       {label:"Setările",                  run:function(){go("set");}}
+};
+Object.keys(TUT_GO).forEach(function(k){var d=TUT.D[k];if(!d||!d.s)return;
+ var t=null;
+ for(var i=0;i<d.s.length&&!t;i++)if(d.s[i].k==="demo")t=d.s[i];
+ for(var j=0;j<d.s.length&&!t;j++)if(d.s[j].k==="cards")t=d.s[j];
+ if(t)t.go=TUT_GO[k];});
+
+/* ---------------------------------------------------------------------------
+   Mesajul scurt de „Salvat" — aplicația îl arată la fiecare salvare, deci îl
+   arată și telefonul desenat, chiar după apăsarea pe buton. Cheia e butonul pe
+   care cade apăsarea; de la timpul lui pornim mesajul.
+   --------------------------------------------------------------------------- */
+var TUT_TOAST={
+ "arh.vcped":["bPick","Salvat"], "arh.wm":["bSp","Salvat"],   "arh.mp":["bMp","Salvat"],
+ "arh.teren":["bFt","Salvat"],   "arh.sarc":["bD","Salvat"],  "arh.cur":["bCl","Salvat"],
+ "arh.rap":["bRp","Salvat"],     "arh.prez":["bZ","Salvat"],  "arh.grp":["bG","Salvat"],
+ "arh.resp":["bRs","Salvat"],    "bros":["bB","Salvat"],      "set":["bU","Salvat"]
+};
+Object.keys(TUT_TOAST).forEach(function(k){var d=TUT.D[k];if(!d||!d.s)return;
+ var id=TUT_TOAST[k][0],msg=TUT_TOAST[k][1];
+ d.s.forEach(function(s){
+  if(s.k!=="demo"||!s.run)return;
+  var t=null;s.run.forEach(function(c){if(c[1]==="prs"&&c[2]===id)t=c[0];});
+  if(t==null)return;
+  s.ov=(s.ov||"")+TP.toast("tTst");
+  s.run=s.run.concat([[t+450,"toast","tTst",msg],[t+3200,"toastx","tTst"]]);});});
 
 /* ---------------------------------------------------------------------------
    Aliasuri — secțiunile pe care le vede vestitorul duc la tutorialele scrise
