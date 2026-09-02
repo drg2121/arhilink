@@ -93,7 +93,7 @@ self.addEventListener('notificationclick', function (event) {
    CDN-urile cunoscute, ca ArhiLink să pornească și fără internet.
    Strategie: network-first pentru pagină (update-urile ajung imediat, cache doar
    ca fallback offline); cache-first pentru CDN-uri (librării versionate). */
-var CACHE = 'arhilink-v5'; // bump: SW-ul nou (anti-dublură) se activează imediat
+var CACHE = 'arhilink-v6'; // bump: 3.7.0 — pagina nouă intră în cache imediat
 var ASSETS = ['./', 'index.html', 'manifest.json', 'firebase-config.js',
               'apple-touch-icon.png', 'icon-512.png'];
 var CDN_HOSTS = ['cdn.jsdelivr.net', 'cdnjs.cloudflare.com', 'www.gstatic.com',
