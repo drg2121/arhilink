@@ -621,7 +621,7 @@ Object.assign(IC,{
  box:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h18v13H3z"/><path d="M3 7l2-4h14l2 4"/><path d="M10 11h4"/></svg>',
  mark:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15.5 4.5l4 4-9.5 9.5H6v-4z"/><path d="M12.5 7.5l4 4M5 21h14"/></svg>'
 });
-const VERSION="3.3.1";
+const VERSION="3.3.2";
 /* Versiunea minima care are voie sa SCRIE in cloud. Se trece in gist la fiecare trimitere;
    un dispozitiv ramas pe un build mai vechi decat atat nu mai poate suprascrie datele —
    doar citeste si se actualizeaza singur. Asa nu mai poate un singur telefon uitat deschis
@@ -4967,11 +4967,11 @@ function startApp(){_dirty=computeDirty();applyTheme();try{bkpMigrate();}catch(e
    `v` = cheia de „văzut deja"; `label` = versiunea afișată.
    ============================================================================ */
 var NEWS=[
- {v:"3.3.1",label:"3.3",d:"02.09.2026",t:"Grupele se planifică într-un tabel, cu schițe de trimis mai departe",items:[
+ {v:"3.3.2",label:"3.3",d:"02.09.2026",t:"Grupele se planifică într-un tabel, cu schițe de trimis mai departe",items:[
   ["cal","Schița de reorganizare","În Arhivă → Grupe pornești o schiță de la grupele de acum. Ea trăiește separat: umbli în ea cât vrei, grupele în vigoare nu se mișcă până n-o pui în aplicare. Poți ține mai multe schițe deodată, ca să compari două variante."],
   ["ppl","Tabelul de repartizare","Pe rânduri vestitorii, pe coloane grupele — o apăsare mută omul. Fiecare rând scrie de unde vine („acum G1 → G3”), iar mutările se văd cu bară colorată. Sus stau numărul din fiecare grupă, media, câți au rămas nerepartizați și câte mutări s-au făcut. Cauți după nume, sortezi după grupa de acum sau după cea din schiță și poți lăsa în listă doar mutările."],
   ["star","Supraveghetorul și asistentul, puși direct din tabel","Apeși numele cuiva și îl faci S sau A în grupa lui din schiță — nu mai trebuie să intri în capul coloanei. Cei doi stau în capul blocului fiecărei grupe, iar cine e mutat în altă parte pierde singur sarcina de acolo."],
-  ["pdf","PDF-ul schiței, de trimis celor cu care te consulți","Aceeași foaie ca lista de avizier, ca să se citească la fel — plus nota ta, fiecare schimbare tăiată cu galben și însemnată cu grupa din care vine, cei rămași nerepartizați și un loc de scris observații. Când s-a hotărât, „Pune schița în aplicare” schimbă grupele reale dintr-o dată."]
+  ["pdf","PDF-ul schiței, de trimis celor cu care te consulți","Aceeași foaie ca lista de avizier, ca să se citească la fel — galben peste tot: titlul, banda de sus și fiecare schimbare, însemnată și cu grupa din care vine; plus nota ta, cei rămași nerepartizați și un loc de scris observații. Când s-a hotărât, „Pune schița în aplicare” schimbă grupele reale dintr-o dată."]
  ]},
  {v:"3.1.3",label:"3.1.3",d:"01.09.2026",t:"Lista de alegere se uită și înainte, nu doar înapoi",items:[
   ["star","„La această temă: niciodată” pentru cineva deja pus peste o săptămână","Lista ținea minte doar cea mai TÂRZIE săptămână a fiecăruia. Dacă aceea era în viitor, socoteala „acum N săptămâni” nu se putea face pe ea și ieșea „niciodată” — deși omul era deja programat la aceeași temă peste o săptămână. Se întâmpla oricând planificai o săptămână după ce o completaseși pe următoarea, sau reveneai la una mai veche. Acum trecutul și viitorul se socotesc separat."],
@@ -6943,7 +6943,7 @@ function _pdfGrupeV(p){var grps=p?(p.grps||[]):grpsAll();if(!grps.length){toast(
       return '<tr'+(cl?' class="'+cl+'"':'')+'><td>'+esc(b.name)+(tg?' <span class="gt">'+esc(tg)+'</span>':'')+mvTag(b,g.id)+'</td></tr>';}).join("");
     return '<div class="gcol"><table class="gtbl"><thead><tr><th>'+esc(l1).toUpperCase()+(l2?'<span class="gsub2">'+esc(l2).toUpperCase()+'</span>':'')+'<span class="gn">'+mem.length+'</span></th></tr></thead><tbody>'+rows+'</tbody></table></div>';}).join("");
   var noG=roster.filter(function(b){return !of(b);});
-  var head=p?('<h1>SCHIȚĂ — PROPUNERE DE GRUPE</h1><div class="sub">'+esc(S.settings.cong||"")+' · '+esc(p.name||"schiță")+'</div>')
+  var head=p?('<h1><span class="ghl">SCHIȚĂ</span> — PROPUNERE DE GRUPE</h1><div class="sub">'+esc(S.settings.cong||"")+' · '+esc(p.name||"schiță")+'</div>')
             :('<h1>GRUPELE DE SERVICIU</h1><div class="sub">'+esc(S.settings.cong||"")+' · actualizat '+fmtDMY(new Date())+'</div>');
   var banner=p?('<div class="gdrf"><b>SCHIȚĂ GRUPE</b> · '+fmtDMY(new Date(p.up||p.at||Date.now()))
     +(p.note?('<div class="gdrn">'+esc(p.note)+'</div>'):'')+'</div>'):'';
@@ -6969,7 +6969,9 @@ function _pdfGrupeV(p){var grps=p?(p.grps||[]):grpsAll();if(!grps.length){toast(
   +".gtbl .gt{color:#b07f16;font-size:7.8pt;font-weight:800;letter-spacing:.3px}"
   +".gtbl .gmv{color:#8a6200;font-size:7.8pt;font-weight:800}"
   +".gmvi{background:#fff1a8;border-radius:1mm;padding:0 1mm;font-weight:700}"
-  +".gdrf{border:1px solid #cfe0f2;border-left:3px solid #2b6cb0;background:#f3f8fd;border-radius:2mm;padding:2.6mm 4mm;margin-bottom:3mm;font-size:9pt;color:#24435f}"
+  +".gdrf{border:1px solid #e8cf7a;border-left:4px solid #d9a400;background:#fff1a8;border-radius:2mm;padding:2.6mm 4mm;margin-bottom:3mm;font-size:9pt;color:#6b5410}"
+  +".gdrf b{color:#6b5410;letter-spacing:.6px}"
+  +".gpg .s1h h1 .ghl{background:#fff1a8;box-shadow:0 0 0 1.4mm #fff1a8;border-radius:1mm}"
   +".gdrn{margin-top:1.6mm;font-size:9.5pt;color:#14171c;white-space:pre-wrap}"
   +".gnog{margin-top:3mm;border:1px solid #eadfc8;border-radius:2mm;background:#fffdf8;padding:2.6mm 4mm;font-size:9pt;line-height:1.5;color:#14171c}"
   +".gfoot{margin-top:4mm;border:1px solid #eadfc8;border-left:3px solid #C77F1A;background:#fcf8ef;border-radius:2mm;padding:3mm 4.5mm;display:flex;gap:7mm;align-items:center}"
