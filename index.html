@@ -621,7 +621,7 @@ Object.assign(IC,{
  box:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h18v13H3z"/><path d="M3 7l2-4h14l2 4"/><path d="M10 11h4"/></svg>',
  mark:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15.5 4.5l4 4-9.5 9.5H6v-4z"/><path d="M12.5 7.5l4 4M5 21h14"/></svg>'
 });
-const VERSION="3.4.0";
+const VERSION="3.5.0";
 /* Versiunea minima care are voie sa SCRIE in cloud. Se trece in gist la fiecare trimitere;
    un dispozitiv ramas pe un build mai vechi decat atat nu mai poate suprascrie datele —
    doar citeste si se actualizeaza singur. Asa nu mai poate un singur telefon uitat deschis
@@ -4967,6 +4967,12 @@ function startApp(){_dirty=computeDirty();applyTheme();try{bkpMigrate();}catch(e
    `v` = cheia de „văzut deja"; `label` = versiunea afișată.
    ============================================================================ */
 var NEWS=[
+ {v:"3.5.0",label:"3.5",d:"02.09.2026",t:"Schița se împacă cu lista de vestitori, bifă cu bifă",items:[
+  ["star","Persoanele provizorii au acum toate atributele","La cine urmează să vină pui gen (frate/soră), rol (bătrân, slujitor auxiliar) și privilegiu (PR, PA, PS, misionar, vestitor nebotezat) — exact ca la un vestitor adevărat. Vezi pe loc cum va arăta rândul pe foaie, cu etichetele lui, iar cifrele grupei îl socotesc la fel ca pe ceilalți."],
+  ["info","Ești atenționat ce nu se potrivește","Cât timp schița socotește oameni pe care aplicația nu-i are, sau nu-i mai socotește pe unii pe care aplicația încă îi are, deasupra tabelului stă o bandă care spune câți sunt de adăugat și câți de scos. O apeși și vezi lista pe nume."],
+  ["check","Adăugarea și scoaterea se fac doar cu bifă","Punerea în aplicare trece întâi prin lista de nepotriviri. Bifezi cui i se deschide fișă de vestitor (cu numele, genul, rolul și privilegiul din schiță, direct în grupa lui) și cine trece în arhivă, din ce lună și cu ce motiv. Nebifat înseamnă neatins, iar la final confirmi o dată tot ce urmează să se întâmple, pe nume."],
+  ["ppl","Nu se creează dubluri din greșeală","Dacă numele unei persoane provizorii seamănă cu al cuiva din aplicație, rândul ei vine nebifat și scrie cu cine seamănă — poate era deja acolo, sub altă formă a numelui. Cine e deja arhivat apare ca atare, fără bifă: n-are ce i se mai face."]
+ ]},
  {v:"3.4.0",label:"3.4",d:"02.09.2026",t:"Schița spune cifrele fiecărei grupe și socotește cine pleacă și cine vine",items:[
   ["ppl","Cifrele grupei, chiar sub capul coloanei","Pe foaia schiței, fiecare grupă își poartă acum sinteza: câți vestitori, câți bătrâni, câți slujitori auxiliari, câți pionieri regulari și speciali. Aceleași cifre stau și sub tabel, în aplicație. Legenda lungă s-a strâns la strictul necesar, ca foaia să rămână pe o singură pagină."],
   ["mark","Scoți din schiță pe cine crezi că pleacă","Apeși numele și îl scoți: nu mai intră la cifre, iar pe foaie apare tăiat, la „Socotiți plecați”. În aplicație rămâne vestitor întreg — schița doar nu-l mai numără. Îl aduci înapoi tot de acolo."],
@@ -7070,7 +7076,7 @@ function gpAddList(p){p.add=p.add||[];return p.add;}
 function gpIsOut(p,bid){return (p.out||[]).indexOf(bid)>=0;}
 function gpProv(p,bid){return bid?((p.add||[]).find(function(x){return x.id===bid;})||null):null;}
 /* forma unei intrări provizorii, ca să treacă prin aceleași funcții ca un vestitor real */
-function _gpProvBro(a){return {id:a.id,name:a.name||"",rol:a.rol||"",pio:a.pio||"",active:true,_prov:true};}
+function _gpProvBro(a){return {id:a.id,name:a.name||"",gen:a.gen||"M",rol:a.rol||"",pio:a.pio||"",active:true,_prov:true};}
 /* rândurile schiței: vestitorii reali rămași + cei adăugați provizoriu.
    `withOut` îi aduce înapoi și pe cei scoși, ca să se poată apăsa în tabel. */
 function gpRows(p,withOut){return gpRoster().filter(function(b){return withOut||!gpIsOut(p,b.id);})
@@ -7202,27 +7208,41 @@ function gpBack(bid){if(!_gpEd())return;var p=gpGet(gpOpen);if(!p)return;
  if(p.outp)delete p.outp[bid];
  _gpTouch(p);closeSheet();_gpRe();toast("Înapoi în schiță");}
 /* ---- persoană adăugată provizoriu ---- */
-var _GP_PIO=[["","Vestitor"],["Pionier","Pionier regular"],["Pionier auxiliar","Pionier auxiliar"],["Pionier special","Pionier special"],["Misionar","Misionar"],["Vestitor nebotezat","Vestitor nebotezat"]];
+/* aceleași atribute ca la un vestitor adevărat — de aici ies etichetele B/SA/PR/PA/PS/M/VN
+   de pe foaie și tot de aici se completează fișa, dacă persoana ajunge să fie adăugată */
+var _GP_PIO=[["","Vestitor"],["Vestitor nebotezat","Vestitor nebotezat (VN)"],["Pionier","Pionier regular (PR)"],["Pionier auxiliar","Pionier auxiliar permanent (PA)"],["Pionier special","Pionier special (PS)"],["Misionar","Misionar (M)"]];
+var _GP_ROL=[["","— (fără numire)"],["Bătrân","Bătrân (B)"],["Slujitor","Slujitor auxiliar (SA)"]];
+var _GP_GEN=[["M","Frate"],["F","Soră"]];
 function gpProvNew(){if(!_gpEd())return;var p=gpGet(gpOpen);if(!p)return;_gpProvSheet(p,null);}
 function gpProvEdit(bid){if(!_gpEd())return;var p=gpGet(gpOpen);if(!p)return;var a=gpProv(p,bid);if(a)_gpProvSheet(p,a);}
 function _gpProvSheet(p,a){var isNew=!a;
- var sel=function(id,cur,opts){return '<select id="'+id+'" class="fld">'+opts.map(function(o){
+ var sel=function(id,cur,opts){return '<select id="'+id+'" class="fld" onchange="_gpProvPrev()">'+opts.map(function(o){
    return '<option value="'+esc(o[0])+'" '+(o[0]===(cur||"")?"selected":"")+'>'+esc(o[1])+'</option>';}).join("")+'</select>';};
  var gopts=[["","— fără grupă —"]].concat((p.grps||[]).map(function(g,i){return [g.id,"G"+(i+1)+" · "+g.name];}));
  sheet("",(isNew?"Adaugă în schiță":"Persoană provizorie"),
-  '<div class="hint" style="margin-bottom:12px">Cineva care urmează să vină, dar încă nu e vestitor în aplicație. Numele trăiește doar în schiță: intră la cifre și apare pe foaie marcat <b>+ vine</b>, dar nu se creează nicio fișă, nici după ce pui schița în aplicare.</div>'
- +'<label class="fl">Numele, așa cum vrei să apară pe foaie</label><input id="gpp_n" class="fld" value="'+esc((a&&a.name)||"")+'" placeholder="ex. POPESCU Ion">'
- +'<div class="two" style="margin-top:8px"><div><label class="fl">Rol</label>'+sel("gpp_r",(a&&a.rol)||"",[["","—"],["Bătrân","Bătrân"],["Slujitor","Slujitor auxiliar"]])+'</div>'
- +'<div><label class="fl">Privilegiu</label>'+sel("gpp_p",(a&&a.pio)||"",_GP_PIO)+'</div></div>'
+  '<div class="hint" style="margin-bottom:12px">Cineva care urmează să vină, dar încă nu e vestitor în aplicație. Numele trăiește doar în schiță: intră la cifre și apare pe foaie marcat <b>+ vine</b>, dar nu se creează nicio fișă. Când pui schița în aplicare ești întrebat dacă vrei să-i deschizi fișă de vestitor — cu ce completezi aici.</div>'
+ +'<label class="fl">Numele, așa cum vrei să apară pe foaie</label><input id="gpp_n" class="fld" oninput="_gpProvPrev()" value="'+esc((a&&a.name)||"")+'" placeholder="ex. POPESCU Ion">'
+ +'<div class="two" style="margin-top:8px"><div><label class="fl">Gen</label>'+sel("gpp_gen",(a&&a.gen)||"M",_GP_GEN)+'</div>'
+ +'<div><label class="fl">Rol</label>'+sel("gpp_r",(a&&a.rol)||"",_GP_ROL)+'</div></div>'
+ +'<label class="fl" style="margin-top:8px">Privilegiu</label>'+sel("gpp_p",(a&&a.pio)||"",_GP_PIO)
  +'<label class="fl" style="margin-top:8px">Grupa din schiță</label>'+sel("gpp_g",(a?gpOf(p,a.id):""),gopts)
+ +'<div class="hint" id="gpp_pv" style="margin-top:10px"></div>'
  +'<div class="rowflex" style="gap:9px;margin-top:18px">'+(isNew?'':'<button class="btn danger sm" onclick="gpProvDel(\''+a.id+'\')">Șterge</button>')
  +'<div class="spacer"></div><button class="btn ghost sm" style="width:auto" onclick="closeSheet()">Anulează</button>'
- +'<button class="btn pri sm" style="width:auto" onclick="gpProvSave(\''+(a?a.id:"")+'\')">Salvează</button></div>');}
+ +'<button class="btn pri sm" style="width:auto" onclick="gpProvSave(\''+(a?a.id:"")+'\')">Salvează</button></div>');
+ _gpProvPrev();}
+/* se vede din timp cum va arăta rândul pe foaie, cu tot cu etichete */
+function _gpProvPrev(){var e=document.getElementById("gpp_pv");if(!e)return;
+ var n=(($("#gpp_n")||{}).value||"").trim();
+ var t=grpTags({id:"_gpp",rol:($("#gpp_r")||{}).value||"",pio:($("#gpp_p")||{}).value||""},null);
+ e.innerHTML=n?('Pe foaie: <b>'+esc(n)+'</b>'+(t?(' <span class="gpnums">'+esc(t)+'</span>'):' <span class="muted">fără etichete</span>')
+   +' <span class="gpitag prov">+ vine</span>')
+  :'<span class="muted">Scrie numele ca să vezi cum apare pe foaie.</span>';}
 function gpProvSave(bid){if(!_gpEd())return;var p=gpGet(gpOpen);if(!p)return;
  var n=($("#gpp_n").value||"").trim();if(!n){toast("Pune un nume");return;}
  var a=bid?gpProv(p,bid):null;
  if(!a){a={id:"gx"+Date.now()+"_"+Math.random().toString(36).slice(2,6),name:n};gpAddList(p).push(a);}
- a.name=n;a.rol=$("#gpp_r").value;a.pio=$("#gpp_p").value;
+ a.name=n;a.gen=$("#gpp_gen").value;a.rol=$("#gpp_r").value;a.pio=$("#gpp_p").value;
  var g=$("#gpp_g").value;p.asg=p.asg||{};if(g)p.asg[a.id]=g;else delete p.asg[a.id];
  _gpTouch(p);closeSheet();_gpRe();toast(bid?"Salvat":"Adăugat provizoriu în schiță");}
 async function gpProvDel(bid){if(!_gpEd())return;var p=gpGet(gpOpen);if(!p)return;var a=gpProv(p,bid);if(!a)return;
@@ -7348,7 +7368,12 @@ function ensureGpCSS(){if(document.getElementById("gpcss"))return;var st=documen
 +"#gptbl tbody tr.gadd th.gpnm{box-shadow:inset 3px 0 0 #1fa855}"
 +"#gptbl tbody tr.gout th.gpnm{box-shadow:inset 3px 0 0 #d65454;opacity:.62}"
 +"#gptbl tbody tr.gout .gpnx{text-decoration:line-through}"
-+".gpoutc{text-align:center!important;font-size:10.5px;color:var(--ink3);padding:0 8px!important}";
++".gpoutc{text-align:center!important;font-size:10.5px;color:var(--ink3);padding:0 8px!important}"
+/* avertismentul de nepotrivire: se vede înainte de a pune schița în aplicare, nu abia atunci */
++".gpwarn{display:block;width:100%;text-align:left;background:var(--accsoft);border:1px solid var(--acc);border-radius:12px;padding:10px 13px;margin:0 0 10px;color:var(--acc);cursor:pointer;font:inherit}"
++".gpwarn b{display:block;font-size:13px;font-weight:800}"
++".gpwarn span{display:block;font-size:11.5px;margin-top:3px;color:var(--ink2)}"
++".gpwarnt{display:block;font-size:11px;font-weight:700;color:var(--acc);margin-top:3px}";
  document.head.appendChild(st);}
 /* cardul de pornire al planificării, pus deasupra grupelor în vigoare */
 function gpIntroHtml(){ensureGpCSS();var ps=gpAll().slice().sort(function(a,b){return (b.up||b.at||0)-(a.up||a.at||0);});
@@ -7379,6 +7404,11 @@ function gpBoardHtml(p){ensureGrpCSS();ensureGpCSS();
  var h='<div class="gphd"><div class="t">'+esc(p.name||"Schiță")+'</div>'
   +(p.note?('<div class="nt">'+esc(p.note)+'</div>'):'')
   +'<div class="gpsum" id="gpsum">'+_gpSumHtml(p,st)+'</div></div>';
+ /* nepotrivirile se spun din capul locului, nu abia la punerea în aplicare */
+ if(_canEditArh()){var mm=gpMismatch(p),mmOut=mm.out.filter(function(x){return !x.arch;});
+  if(mm.add.length||mmOut.length)h+='<button class="gpwarn" onclick="gpRecon(\''+p.id+'\')"><b>Schița nu se potrivește cu lista de vestitori</b>'
+   +'<span>'+[mm.add.length?(mm.add.length+" de adăugat"):"",mmOut.length?(mmOut.length+" de scos"):""].filter(Boolean).join(" · ")
+   +' — vezi ce se schimbă în aplicație</span></button>';}
  if(!gs.length)return h+'<div class="empty" style="padding:26px 8px">Schița n-are nicio grupă.<br><span class="muted">Adaugă o coloană din butonul rotund.</span></div>';
  h+='<div class="gpbar"><input class="fld" placeholder="caută nume…" value="'+esc(gpQ)+'" oninput="gpSearch(this.value)">'
   +'<select class="fld" onchange="gpSortSet(this.value)">'
@@ -7421,6 +7451,7 @@ function gpFab(){var p=gpGet(gpOpen);if(!p)return;var ed=_canEditArh();var H='';
   +'<button class="pmrow" onclick="closeSheet();gpColAdd(\''+p.id+'\')">'+IC.plus+'<span><b>Grupă nouă în schiță</b> — încă o coloană</span></button>'
   +'<button class="pmrow" onclick="closeSheet();gpReset(\''+p.id+'\')">'+IC.sync+'<span><b>Reia de la grupele de acum</b> — pierzi mutările din schiță</span></button>'
   +'<button class="pmrow" onclick="closeSheet();gpDup(\''+p.id+'\')">'+IC.box+'<span><b>Copiază schița</b> — a doua variantă de discutat</span></button>'
+  +(gpMmCount(p)?('<button class="pmrow" onclick="closeSheet();gpRecon(\''+p.id+'\')">'+IC.info+'<span><b>Nepotriviri cu lista de vestitori</b> ('+gpMmCount(p)+')<br><span class="muted">cine e de adăugat în aplicație și cine de scos</span></span></button>'):'')
   +'<button class="pmrow" onclick="closeSheet();gpApply(\''+p.id+'\')">'+IC.check+'<span><b>Pune schița în aplicare</b> — grupele reale se schimbă</span></button>'
   +'<button class="pmrow" onclick="closeSheet();gpDel(\''+p.id+'\')">'+IC.trash+'<span><b>Șterge schița</b></span></button>';}
  sheet("","Schiță — descarcă și unelte",H);}
@@ -7430,30 +7461,128 @@ async function gpReset(id){if(!_gpEd())return;var p=gpGet(id);if(!p)return;
  p.grps=grpsAll().map(function(g){return {id:g.id,name:g.name,sup:g.sup||"",asis:g.asis||""};});
  p.asg={};p.out=[];p.add=[];p.outp={};gpRoster().forEach(function(b){var g=grpOf(b);if(g)p.asg[b.id]=g;});
  p.up=Date.now();save();renderArhRoute();toast("Schița pornește iar de la grupele de acum");}
+/* ---- nepotrivirile dintre schiță și lista adevărată de vestitori ----
+   Schița poate socoti oameni pe care aplicația nu-i are (cei adăugați provizoriu) și poate
+   să nu-i mai socotească pe unii pe care aplicația încă îi are (cei scoși). La punerea în
+   aplicare nu ghicim ce vrea utilizatorul: i le punem în față, bifă cu bifă. */
+function gpMismatch(p){
+ var add=(p.add||[]).map(function(a){
+  /* dacă numele seamănă cu al cuiva din aplicație, s-ar putea să fie deja acolo — nu-l creăm din reflex */
+  var m=matchBro(a.name||"");
+  var dup=(m&&m.sc>=0.8)?((S.bros||[]).find(function(x){return x.id===m.id;})||null):null;
+  return {a:a,gid:gpOf(p,a.id),dup:dup};});
+ var out=(p.out||[]).map(function(id){return (S.bros||[]).find(function(x){return x.id===id;});})
+  .filter(function(b){return b&&isPublisher(b);})
+  .map(function(b){return {b:b,gid:grpOf(b),arch:archOf(b)};});
+ return {add:add,out:out};}
+function gpMmCount(p){var m=gpMismatch(p);
+ return m.add.length+m.out.filter(function(x){return !x.arch;}).length;}
+function gpRecon(id){if(!_gpEd())return;var p=gpGet(id);if(!p)return;
+ var mm=gpMismatch(p),pend=mm.out.filter(function(x){return !x.arch;});
+ if(!mm.add.length&&!mm.out.length){toast("Schița se potrivește cu lista de vestitori");return;}
+ var H='<div class="hint" style="margin-bottom:14px">Ce ai hotărât în schiță nu s-a întâmplat încă și în lista de vestitori. Bifează ce vrei să se schimbe <b>în aplicație</b> — fără bifă nu se atinge nimeni. Grupele se pun în aplicare oricum.</div>';
+ if(mm.add.length){
+  H+='<div class="edsec">De adăugat ca vestitori ('+mm.add.length+')</div>'
+   +'<div class="muted" style="margin:0 2px 9px;font-size:11.5px">Sunt în schiță, dar n-au fișă în aplicație. Bifat, li se deschide fișă cu numele, genul, rolul și privilegiul din schiță, direct în grupa din schiță.</div>'
+   +'<div class="famlist">'+mm.add.map(function(x){
+     var tg=grpTags(_gpProvBro(x.a),null);
+     return '<label class="famrow"><input type="checkbox" class="gpra" value="'+x.a.id+'" '+(x.dup?"":"checked")+'>'
+      +'<span><b>'+esc(x.a.name||"")+'</b>'+(tg?' <span class="gpitag">'+esc(tg)+'</span>':'')
+      +'<br><span class="muted" style="font-size:11px">'+((x.a.gen==="F")?"soră":"frate")+' · '
+      +(x.gid?("în "+esc(grpNameIn(p,x.gid))):"fără grupă")+'</span>'
+      +(x.dup?('<br><span class="gpwarnt">seamănă cu „'+esc(x.dup.name||"")+'” — poate e deja în aplicație, verifică înainte să bifezi</span>'):'')
+      +'</span></label>';}).join("")+'</div>';}
+ if(mm.out.length){
+  H+='<div class="edsec" style="margin-top:16px">De scos din aplicație ('+pend.length+')</div>'
+   +'<div class="muted" style="margin:0 2px 9px;font-size:11.5px">În schiță i-ai socotit plecați, dar în aplicație sunt încă vestitori. Bifat, trec în <b>arhivă</b> din luna aleasă mai jos — lunile de dinainte rămân neatinse și oricând îi poți readuce.</div>'
+   +'<div class="famlist">'+mm.out.map(function(x){
+     if(x.arch)return '<label class="famrow" style="opacity:.6"><input type="checkbox" disabled>'
+      +'<span><b>'+esc(x.b.name||"")+'</b><br><span class="muted" style="font-size:11px">'
+      +(x.arch.k<=curYM()?"deja în arhivă din ":"deja programat pentru arhivă din ")+esc(monthName(x.arch.k))+' — nu mai e nimic de făcut</span></span></label>';
+     return '<label class="famrow"><input type="checkbox" class="gpro" value="'+x.b.id+'">'
+      +'<span><b>'+esc(x.b.name||"")+'</b><br><span class="muted" style="font-size:11px">acum în '+(x.gid?esc(grpName(x.gid)):"nicio grupă")+'</span></span></label>';}).join("")+'</div>';
+  if(pend.length)H+='<div class="two" style="margin-top:10px"><div><label class="fl">Se aplică din luna</label><select id="gpr_k" class="fld">'+archMonthOpts(curYM())+'</select></div>'
+   +'<div><label class="fl">Motiv</label><select id="gpr_st" class="fld"><option value="mutat">Mutat la altă congregație</option><option value="alt">Altele</option></select></div></div>'
+   +'<input id="gpr_n" class="fld" style="margin-top:8px" placeholder="detalii (obligatoriu la „Altele”)">';}
+ H+='<div class="rowflex" style="gap:9px;margin-top:20px"><div class="spacer"></div>'
+  +'<button class="btn ghost sm" style="width:auto" onclick="closeSheet()">Renunță</button>'
+  +'<button class="btn pri sm" style="width:auto" onclick="gpReconGo(\''+id+'\')">Continuă</button></div>';
+ sheet("","Nepotriviri cu lista de vestitori",H);}
+/* numele unei grupe din schiță (poate fi o coloană care încă nu există în grupele reale) */
+function grpNameIn(p,gid){var g=(p.grps||[]).find(function(x){return x.id===gid;});
+ return g?("G"+gpIdx(p,gid)+" · "+(g.name||"")):"grupă ștearsă";}
+function gpReconGo(id){if(!_gpEd())return;var p=gpGet(id);if(!p)return;
+ var addIds=[].map.call(document.querySelectorAll(".gpra:checked"),function(c){return c.value;});
+ var outIds=[].map.call(document.querySelectorAll(".gpro:checked"),function(c){return c.value;});
+ var st=($("#gpr_st")&&$("#gpr_st").value)||"mutat",note=($("#gpr_n")&&$("#gpr_n").value.trim())||"";
+ var k=($("#gpr_k")&&$("#gpr_k").value)||curYM();
+ if(outIds.length&&st!=="mutat"&&!note){toast("Scrie pe scurt motivul scoaterii");return;}
+ closeSheet();_gpApplyGo(p,{add:addIds,out:outIds,k:k,st:st,note:note});}
 /* punerea în aplicare: abia acum se ating grupele reale și fișele vestitorilor */
 async function gpApply(id){if(!_gpEd())return;var p=gpGet(id);if(!p)return;
+ /* dacă schița nu se potrivește cu lista de vestitori, întâi se lămuresc nepotrivirile */
+ if(gpMmCount(p)){gpRecon(id);return;}
+ _gpApplyGo(p,{add:[],out:[],k:curYM(),st:"mutat",note:""});}
+async function _gpApplyGo(p,rec){if(!_gpEd())return;
  var st=gpStats(p);
  var gone=grpsAll().filter(function(g){return !(p.grps||[]).some(function(x){return x.id===g.id;});});
+ var keptAdd=st.add-rec.add.length,keptOut=gpOutBros(p).length-rec.out.length;
  var msg="Pui în aplicare schița „"+(p.name||"")+"”?\n\n"+st.mv+(st.mv===1?" vestitor își schimbă":" vestitori își schimbă")+" grupa"
   +(st.rl?("\n"+st.rl+(st.rl===1?" își schimbă sarcina":" își schimbă sarcina")+" în aceeași grupă"):"")
   +(gone.length?("\nSe șterg "+gone.length+" grupe: "+gone.map(function(g){return g.name;}).join(", ")):"")
   +(st.none?("\nRămân "+st.none+" nerepartizați"):"")
-  /* provizoriile rămân provizorii: aplicarea nu arhivează pe nimeni și nu deschide fișe noi */
-  +(st.out?("\nCei "+st.out+" scoși provizoriu rămân în grupele lor de acum — dacă chiar pleacă, îi arhivezi din fișă"):"")
-  +(st.add?("\nCele "+st.add+" persoane adăugate provizoriu NU se creează ca vestitori — rămân doar în schiță"):"")
+  +(rec.add.length?("\n\nSE DESCHID "+rec.add.length+" fișe de vestitor:\n"+rec.add.map(function(aid){var a=gpProv(p,aid);return "· "+((a&&a.name)||"");}).join("\n")):"")
+  +(rec.out.length?("\n\nTREC ÎN ARHIVĂ "+rec.out.length+(rec.out.length===1?" vestitor":" vestitori")+", din "+monthName(rec.k)+":\n"+rec.out.map(function(bid){return "· "+broDisp(bid);}).join("\n")):"")
+  /* ce n-a fost bifat rămâne cum era — se spune limpede, ca să nu pară că s-a pierdut */
+  +(keptAdd>0?("\n\n"+keptAdd+(keptAdd===1?" persoană adăugată provizoriu rămâne":" persoane adăugate provizoriu rămân")+" doar în schiță — fără fișă în aplicație"):"")
+  +(keptOut>0?("\n"+keptOut+(keptOut===1?" scos provizoriu rămâne vestitor în aplicație, în grupa lui de acum":" scoși provizoriu rămân vestitori în aplicație, în grupele lor de acum")):"")
   +"\n\nSchița rămâne în listă, ca urmă a ce s-a hotărât.";
  if(!(await uiConfirm(msg)))return;
- S.grps=(p.grps||[]).map(function(g){var sup=g.sup||"",asis=g.asis||"";
-  /* un provizoriu pus supraveghetor sau asistent nu poate ajunge în grupele reale */
-  if(gpProv(p,sup))sup="";if(gpProv(p,asis))asis="";
-  return {id:g.id,name:g.name,sup:sup,asis:asis};});
+ /* 1. grupele reale iau forma coloanelor din schiță */
+ S.grps=(p.grps||[]).map(function(g){return {id:g.id,name:g.name,sup:g.sup||"",asis:g.asis||""};});
+ /* 2. vestitorii de acum se mută; cei scoși în schiță rămân unde sunt, orice s-ar fi bifat mai sus */
  gpRoster().forEach(function(b){if(gpIsOut(p,b.id))return;b.grp=gpOf(p,b.id)||"";});
+ /* 3. fișele noi — abia după mutări, ca bucla de mai sus să nu le șteargă grupa */
+ var made={};
+ rec.add.forEach(function(aid){var a=gpProv(p,aid);if(!a)return;
+  var nb=_gpMakeBro(a,gpOf(p,aid));made[aid]=nb.id;
+  /* în schiță rândul rămâne, dar de-acum e vestitorul adevărat — altfel ar apărea de două ori */
+  if(p.asg[aid])p.asg[nb.id]=p.asg[aid];delete p.asg[aid];
+  (p.grps||[]).forEach(function(g){if(g.sup===aid)g.sup=nb.id;if(g.asis===aid)g.asis=nb.id;});
+  p.add=(p.add||[]).filter(function(x){return x.id!==aid;});});
+ /* 4. un provizoriu rămas provizoriu nu poate fi supraveghetor sau asistent într-o grupă reală */
+ S.grps.forEach(function(g){var sup=g.sup||"",asis=g.asis||"";
+  g.sup=made[sup]||(gpProv(p,sup)?"":sup);
+  g.asis=made[asis]||(gpProv(p,asis)?"":asis);});
  /* supraveghetorul și asistentul trebuie să fie și membri, ca la editarea unei grupe */
  S.grps.forEach(function(g){[g.sup,g.asis].forEach(function(bid){if(!bid)return;
   var b=(S.bros||[]).find(function(x){return x.id===bid;});if(b)b.grp=g.id;});});
+ /* 5. scoaterile: aceeași arhivare ca din fișa vestitorului, ca să fie reversibilă la fel */
+ var nArh=0;rec.out.forEach(function(bid){if(_gpArchive(bid,rec))nArh++;});
  p.applied=Date.now();
- logAct("Grupe puse în aplicare din schița „"+(p.name||"")+"” — "+st.mv+" mutări");
- save();gpOpen="";renderArhRoute();toast("Grupele au fost schimbate · "+st.mv+" mutări",4500);}
+ logAct("Grupe puse în aplicare din schița „"+(p.name||"")+"” — "+st.mv+" mutări"
+  +(rec.add.length?(", "+rec.add.length+" vestitori adăugați"):"")+(nArh?(", "+nArh+" trecuți în arhivă"):""));
+ save();gpOpen="";renderArhRoute();
+ toast("Grupele au fost schimbate · "+st.mv+" mutări"
+  +(rec.add.length?(" · +"+rec.add.length+" adăugați"):"")+(nArh?(" · "+nArh+" în arhivă"):""),5000);}
+/* fișă nouă pornind de la o intrare provizorie — doar câmpurile pe care schița le știe */
+function _gpMakeBro(a,gid){var name=String(a.name||"").trim();
+ var o={id:"b"+Date.now()+Math.random().toString(36).slice(2,5),name:name,disp:shortName(name),dispExp:true,
+  famIds:[],canPartner:true,pio:a.pio||"",isPub:true,grp:gid||"",duties:[],wm:[],mpl:[],ft:0,
+  gen:a.gen||"M",rol:a.rol||"",active:true,roles:[],rSeed:1};
+ S.bros=S.bros||[];S.bros.push(o);
+ if(typeof userSyncBro==="function")userSyncBro(o,true);
+ logAct("Vestitor adăugat din schiță: "+name);
+ return o;}
+function _gpArchive(bid,rec){var b=(S.bros||[]).find(function(x){return x.id===bid;});
+ if(!b||archOf(b))return false;
+ var fut=archFutureAssign(bid,rec.k);
+ fut.forEach(function(f){f.keys.forEach(function(key){delete S.plans[f.wi].a[key];});});
+ if(b.arch&&b.arch.k)b.archPast=(b.archPast||[]).concat([b.arch]);
+ b.arch={st:rec.st,note:rec.note,k:rec.k,t:Date.now(),by:(_curUser()&&_curUser().n)||""};
+ if(rec.k<=curYM())_archStrip(b);
+ logAct("Vestitor în arhivă din schiță: "+(b.name||"")+" (din "+monthName(rec.k)+")");
+ return true;}
 
 /* ---------- DATE DE CONTACT (export, doar administratori) ---------- */
 function _cTip(b){var p=b.pio||"";return p==="Pionier"?"Pio. Reg.":p==="Pionier auxiliar"?"PA Perm.":p==="Pionier special"?"Pio. Spec.":p==="Misionar"?"Misionar":p==="Vestitor nebotezat"?"VN":"Vestitor";}
