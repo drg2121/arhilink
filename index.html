@@ -621,7 +621,7 @@ Object.assign(IC,{
  box:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h18v13H3z"/><path d="M3 7l2-4h14l2 4"/><path d="M10 11h4"/></svg>',
  mark:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15.5 4.5l4 4-9.5 9.5H6v-4z"/><path d="M12.5 7.5l4 4M5 21h14"/></svg>'
 });
-const VERSION="3.3.3";
+const VERSION="3.4.0";
 /* Versiunea minima care are voie sa SCRIE in cloud. Se trece in gist la fiecare trimitere;
    un dispozitiv ramas pe un build mai vechi decat atat nu mai poate suprascrie datele —
    doar citeste si se actualizeaza singur. Asa nu mai poate un singur telefon uitat deschis
@@ -4967,6 +4967,12 @@ function startApp(){_dirty=computeDirty();applyTheme();try{bkpMigrate();}catch(e
    `v` = cheia de „văzut deja"; `label` = versiunea afișată.
    ============================================================================ */
 var NEWS=[
+ {v:"3.4.0",label:"3.4",d:"02.09.2026",t:"Schița spune cifrele fiecărei grupe și socotește cine pleacă și cine vine",items:[
+  ["ppl","Cifrele grupei, chiar sub capul coloanei","Pe foaia schiței, fiecare grupă își poartă acum sinteza: câți vestitori, câți bătrâni, câți slujitori auxiliari, câți pionieri regulari și speciali. Aceleași cifre stau și sub tabel, în aplicație. Legenda lungă s-a strâns la strictul necesar, ca foaia să rămână pe o singură pagină."],
+  ["mark","Scoți din schiță pe cine crezi că pleacă","Apeși numele și îl scoți: nu mai intră la cifre, iar pe foaie apare tăiat, la „Socotiți plecați”. În aplicație rămâne vestitor întreg — schița doar nu-l mai numără. Îl aduci înapoi tot de acolo."],
+  ["star","Adaugi pe cine urmează să vină, chiar dacă n-are încă fișă","Din butonul rotund pui un nume scris de mână, cu rol și privilegiu, direct într-o grupă. Intră la cifre și pe foaie, marcat verde cu „◂vine”. Nu se creează niciun vestitor: nici la punerea în aplicare. Dacă ștergi schița, dispar cu ea."],
+  ["check","Punerea în aplicare nu atinge provizoriile","Cei scoși rămân în grupele lor de acum — dacă chiar pleacă, îi arhivezi din fișă. Cei adăugați nu ajung nicăieri în aplicație, nici dacă i-ai pus supraveghetori sau asistenți în schiță."]
+ ]},
  {v:"3.3.2",label:"3.3",d:"02.09.2026",t:"Grupele se planifică într-un tabel, cu schițe de trimis mai departe",items:[
   ["cal","Schița de reorganizare","În Arhivă → Grupe pornești o schiță de la grupele de acum. Ea trăiește separat: umbli în ea cât vrei, grupele în vigoare nu se mișcă până n-o pui în aplicare. Poți ține mai multe schițe deodată, ca să compari două variante."],
   ["ppl","Tabelul de repartizare","Pe rânduri vestitorii, pe coloane grupele — o apăsare mută omul. Fiecare rând scrie de unde vine („acum G1 → G3”), iar mutările se văd cu bară colorată. Sus stau numărul din fiecare grupă, media, câți au rămas nerepartizați și câte mutări s-au făcut. Cauți după nume, sortezi după grupa de acum sau după cea din schiță și poți lăsa în listă doar mutările."],
@@ -6927,13 +6933,33 @@ function arhGrpHtml(){ensureGrpCSS();var grps=grpsAll();var h="";
 /* PDF-ul grupelor. Aceeași foaie servește și grupele în vigoare, și o schiță de reorganizare:
    „acelasi format tot", ca schița trimisă spre consultare să se citească exact ca lista finală. */
 function pdfGrupe(){_pdfGrupeV(null);}
+/* Foaia trebuie să rămână pe o singură pagină A4, oricât ar crește congregația. Motorul PDF
+   desenează pagina la 794px lățime și o taie la 1122px, deci socotim aici cât iese și strângem
+   rândurile până încape. Înălțimile sunt măsurate pe foaia adevărată, nu calculate din pt. */
+var _GP_DENS=[["",29.7],["d1",25.4],["d2",22.4],["d3",19.9],["d4",17.3],["d5",14.8]];
+function _gpFitCls(nRows,nExtra,noteTxt,isDraft){
+ var note=String(noteTxt||"");
+ var lines=note?note.split("\n").reduce(function(n,l){return n+Math.max(1,Math.ceil(l.length/108));},0):0;
+ var chrome=68/*marginile paginii*/+(isDraft?72:89)/*titlul*/
+  +(isDraft?(46+lines*17):0)/*banda schiței, cu nota*/
+  +(isDraft?103:110)/*subsolul cu cifrele și legenda*/
+  +nExtra*39/*nerepartizați, socotiți plecați*/
+  +(isDraft?71:51)/*capul coloanei, cu rândul de cifre*/;
+ var avail=1122-chrome-18;/* rezervă: legenda se poate rupe pe încă un rând */
+ for(var i=0;i<_GP_DENS.length;i++){if(nRows*_GP_DENS[i][1]<=avail)return _GP_DENS[i][0];}
+ return _GP_DENS[_GP_DENS.length-1][0];/* mai strâns de atât nu se mai poate citi */}
 function _pdfGrupeV(p){var grps=p?(p.grps||[]):grpsAll();if(!grps.length){toast("Nu există grupe");return;}
   var of=p?function(b){return (p.asg||{})[b.id]||"";}:function(b){return grpOf(b);};
   var roster=(S.bros||[]).filter(function(b){return b.active!==false&&!isArchNow(b)&&isPublisher(b);});
+  /* pe schiță, cifrele sunt ale congregației de după: fără cei socotiți plecați, cu cei care vin */
+  var outs=p?roster.filter(function(b){return gpIsOut(p,b.id);}):[];
+  if(p)roster=roster.filter(function(b){return !gpIsOut(p,b.id);}).concat((p.add||[]).map(_gpProvBro));
   var totAct=roster.length;
   var liveIdx={};grpsAll().forEach(function(g,i){liveIdx[g.id]=i+1;});
   /* în schiță, fiecare nume mutat își poartă grupa din care vine — asta se discută la consultare */
-  var mvTag=function(b,gid){if(!p)return "";var cur=grpOf(b);
+  var mvTag=function(b,gid){if(!p)return "";
+    if(b._prov)return ' <span class="gadd">&#9666;vine</span>';
+    var cur=grpOf(b);
     if(cur!==gid)return ' <span class="gmv">'+(cur?("&#9666;G"+(liveIdx[cur]||"?")):"&#9666;nou")+'</span>';
     /* rămâne în grupa lui, dar cu altă sarcină — atunci marcajul spune ce era înainte */
     var r0=grpRoleNow(b),r1=gpRoleOf(p,b.id);if(r0===r1)return "";
@@ -6942,21 +6968,36 @@ function _pdfGrupeV(p){var grps=p?(p.grps||[]):grpsAll();if(!grps.length){toast(
   var cols=grps.map(function(g){var mem=grpSortMembers(roster.filter(function(b){return of(b)===g.id;}),g);
     var parts=g.name.split("—");var l1=(parts[0]||g.name).trim(),l2=(parts[1]||"").trim();
     var rows=mem.map(function(b){var tg=grpTags(b,g);var lead=(g.sup===b.id||g.asis===b.id);
-      var mvd=!!(p&&gpChg(p,b));var cl=(lead?"glead":"")+(mvd?(lead?" gmvr":"gmvr"):"");
+      var mvd=!!(p&&!b._prov&&gpChg(p,b));
+      var cl=(lead?"glead":"")+(b._prov?" gaddr":(mvd?" gmvr":""));cl=cl.trim();
       return '<tr'+(cl?' class="'+cl+'"':'')+'><td>'+esc(b.name)+(tg?' <span class="gt">'+esc(tg)+'</span>':'')+mvTag(b,g.id)+'</td></tr>';}).join("");
-    return '<div class="gcol"><table class="gtbl"><thead><tr><th>'+esc(l1).toUpperCase()+(l2?'<span class="gsub2">'+esc(l2).toUpperCase()+'</span>':'')+'<span class="gn">'+mem.length+'</span></th></tr></thead><tbody>'+rows+'</tbody></table></div>';}).join("");
+    /* cifrele grupei, chiar sub cap: câți vestitori și din ce e făcută grupa */
+    var srow=p?('<tr class="gsr"><th>'+esc(gpCntTxt(gpCnt(mem)))+'</th></tr>'):'';
+    return '<div class="gcol"><table class="gtbl"><thead><tr><th>'+esc(l1).toUpperCase()+(l2?'<span class="gsub2">'+esc(l2).toUpperCase()+'</span>':'')+'<span class="gn">'+mem.length+'</span></th></tr>'+srow+'</thead><tbody>'+rows+'</tbody></table></div>';}).join("");
   var noG=roster.filter(function(b){return !of(b);});
   var head=p?('<h1><span class="ghl">SCHIȚĂ</span> — PROPUNERE DE GRUPE</h1><div class="sub">'+esc(S.settings.cong||"")+' · '+esc(p.name||"schiță")+'</div>')
             :('<h1>GRUPELE DE SERVICIU</h1><div class="sub">'+esc(S.settings.cong||"")+' · actualizat '+fmtDMY(new Date())+'</div>');
   var banner=p?('<div class="gdrf"><b>SCHIȚĂ GRUPE</b> · '+fmtDMY(new Date(p.up||p.at||Date.now()))
     +(p.note?('<div class="gdrn">'+esc(p.note)+'</div>'):'')+'</div>'):'';
   var extra=(p&&noG.length)?('<div class="gnog"><b>Nerepartizați ('+noG.length+'):</b> '+noG.map(function(b){
-    var mvd=!!grpOf(b);return (mvd?'<span class="gmvi">':'<span>')+esc(b.name)+mvTag(b,"")+'</span>';}).join(" · ")+'</div>'):'';
-  var leg='<b>S</b> supraveghetor · <b>A</b> asistent · <b>B</b> bătrân · <b>SA</b> slujitor auxiliar · <b>PR</b> pionier regular · <b>PA</b> pionier auxiliar · <b>PS</b> pionier special · <b>M</b> misionar · <b>VN</b> vestitor nebotezat'
-   +(p?' · <span class="gmvi">galben</span> = schimbare față de grupele de acum · <b>&#9666;G2</b> vine din grupa 2 · <b>&#9666;nou</b> nu era în nicio grupă · <b>&#9666;S</b>/<b>&#9666;A</b> sarcina de dinainte, în aceeași grupă · <b>&#9666;fără</b> n-avea sarcină':'');
-  var inner='<div class="page gpg"><div class="s1h">'+head+'</div>'+banner
+    var mvd=!!grpOf(b)||!!b._prov;return (mvd?'<span class="gmvi">':'<span>')+esc(b.name)+mvTag(b,"")+'</span>';}).join(" · ")+'</div>'):'';
+  /* cei socotiți plecați nu mai stau în coloane, dar se văd — altfel nu se înțelege de unde vin cifrele */
+  if(outs.length)extra+='<div class="gnog gouts"><b>Socotiți plecați ('+outs.length+') — provizoriu, încă în aplicație:</b> '
+    +outs.map(function(b){var cg=grpOf(b);return '<span class="gost">'+esc(b.name)+'</span>'
+      +(cg?(' <span class="gmv">&#9666;G'+(liveIdx[cg]||"?")+'</span>'):'');}).join(" · ")+'</div>';
+  var T=gpCnt(roster);
+  var nums=p?('<b>'+esc(gpCntTxt(T))+'</b>'
+    +(outs.length?(' · <span class="gost">&#8722;'+outs.length+' pleacă</span>'):'')
+    +((p.add||[]).length?(' · <span class="gadd">+'+(p.add||[]).length+' vin</span>'):'')+'<br>'):'';
+  /* pe schiță cifrele sunt ce contează, deci legenda se strânge la strictul necesar */
+  var leg=p?(nums+'<b>S</b>/<b>A</b> supraveghetor/asistent · <b>B</b> bătrân · <b>SA</b> slujitor auxiliar · <b>PR</b>/<b>PA</b>/<b>PS</b> pionier regular/auxiliar/special · <b>M</b> misionar · <b>VN</b> nebotezat<br>'
+    +'<span class="gmvi">galben</span> = schimbare · <b>&#9666;G2</b> vine din grupa 2 · <b>&#9666;nou</b> n-avea grupă · <b>&#9666;S/&#9666;A/&#9666;fără</b> sarcina de dinainte · <span class="gadd">&#9666;vine</span> nu e încă vestitor în aplicație · <span class="gost">tăiat</span> socotit plecat')
+   :('<b>S</b> supraveghetor · <b>A</b> asistent · <b>B</b> bătrân · <b>SA</b> slujitor auxiliar · <b>PR</b> pionier regular · <b>PA</b> pionier auxiliar · <b>PS</b> pionier special · <b>M</b> misionar · <b>VN</b> vestitor nebotezat');
+  var maxRows=grps.reduce(function(n,g){return Math.max(n,roster.filter(function(b){return of(b)===g.id;}).length);},0);
+  var fit=_gpFitCls(maxRows,(noG.length?1:0)+(outs.length?1:0),p?p.note:"",!!p);
+  var inner='<div class="page gpg'+(p?" drf":"")+(fit?(" "+fit):"")+'"><div class="s1h">'+head+'</div>'+banner
    +'<div class="gwrap">'+cols+'</div>'+extra
-   +'<div class="gfoot"><span class="gtot">TOTAL VESTITORI ACTIVI: <b>'+totAct+'</b></span><span class="gleg">'+leg+'</span></div>'
+   +'<div class="gfoot"><span class="gtot">TOTAL VESTITORI '+(p?'ÎN SCHIȚĂ':'ACTIVI')+': <b>'+totAct+'</b></span><span class="gleg">'+leg+'</span></div>'
    +'<div class="ftt2">Printat '+fmtDMY(new Date())+'</div></div>';
   arhPdfWindow((p?("Schiță grupe — "+(p.name||"")):("Grupe de serviciu — "+(S.settings.cong||"")))+".pdf",inner,
    ".gpg{padding:9mm 8mm 9mm;position:relative}.gpg .s1h{margin-bottom:4mm}.gpg .s1h h1{font-size:19pt;letter-spacing:1.2px;color:#14171c}.gpg .s1h h1::after{content:'';display:block;width:30mm;height:2.6px;background:#C77F1A;margin:2mm auto 0;border-radius:2px}.gpg .s1h .sub{font-size:11pt;margin-top:1.6mm}"
@@ -6964,6 +7005,7 @@ function _pdfGrupeV(p){var grps=p?(p.grps||[]):grpsAll();if(!grps.length){toast(
   +".gtbl{width:100%;border-collapse:collapse;border:1px solid #eadfc8;border-radius:2mm;overflow:hidden}"
   +".gtbl thead th{background:#faf3e6;color:#7a5510;font-size:10pt;font-weight:800;letter-spacing:.4px;text-align:center;padding:2.8mm 2mm 2.4mm;border-bottom:2.5px solid #C77F1A;position:relative;line-height:1.25}"
   +".gtbl .gsub2{display:block;font-size:7.8pt;color:#a8874a;font-weight:700;letter-spacing:.8px}"
+  +".gtbl thead tr.gsr th{background:#fffdf8;color:#7a5510;font-size:7.2pt;font-weight:800;letter-spacing:0;padding:.8mm 1mm;border-bottom:1px solid #eadfc8;white-space:nowrap}"
   +".gtbl .gn{position:absolute;right:1.8mm;top:1.8mm;background:#C77F1A;color:#fff;border-radius:999px;padding:.4mm 2.2mm;font-size:8.5pt;font-weight:800}"
   +".gtbl td{padding:1.7mm 2.4mm;font-size:9.5pt;line-height:1.25;border-bottom:1px solid #f2ede1;color:#14171c;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:45mm}"
   +".gtbl tbody tr:nth-child(even) td{background:#fcfaf5}.gtbl .glead td{background:#fbf2df!important;font-weight:700}"
@@ -6971,6 +7013,11 @@ function _pdfGrupeV(p){var grps=p?(p.grps||[]):grpsAll();if(!grps.length){toast(
   +".gtbl .gt{color:#b07f16;font-size:7.8pt;font-weight:800;letter-spacing:.3px}"
   +".gtbl .gmv{color:#8a6200;font-size:7.8pt;font-weight:800}"
   +".gmvi{background:#fff1a8;border-radius:1mm;padding:0 1mm;font-weight:700}"
+  /* provizoriile schiței: verde pentru cine vine, tăiat pentru cine e socotit plecat */
+  +".gtbl .gaddr td{background:#e4f6e8!important;box-shadow:inset 2.2px 0 0 #1f8a45}"
+  +".gadd{color:#1f8a45;font-size:7.8pt;font-weight:800}"
+  +".gost{text-decoration:line-through;color:#a04545;font-weight:700}"
+  +".gouts{background:#fff8f8;border-color:#eccfcf}"
   +".gdrf{border:1px solid #e8cf7a;border-left:4px solid #d9a400;background:#fff1a8;border-radius:2mm;padding:2.6mm 4mm;margin-bottom:3mm;font-size:9pt;color:#6b5410}"
   +".gdrf b{color:#6b5410;letter-spacing:.6px}"
   +".gpg .s1h h1 .ghl{background:#fff1a8;box-shadow:0 0 0 1.4mm #fff1a8;border-radius:1mm}"
@@ -6979,7 +7026,24 @@ function _pdfGrupeV(p){var grps=p?(p.grps||[]):grpsAll();if(!grps.length){toast(
   +".gfoot{margin-top:4mm;border:1px solid #eadfc8;border-left:3px solid #C77F1A;background:#fcf8ef;border-radius:2mm;padding:3mm 4.5mm;display:flex;gap:7mm;align-items:center}"
   +".gtot{font-size:12pt;font-weight:700;color:#14171c;white-space:nowrap}.gtot b{color:#C77F1A;font-size:16pt}"
   +".gleg{font-size:8.5pt;color:#5b626c;line-height:1.55}.gleg b{color:#7a5510}"
-  +".ftt2{position:absolute;bottom:3.5mm;right:8mm;font-size:7pt;color:#8a929c;letter-spacing:.3px}");}
+  +".ftt2{position:absolute;bottom:3.5mm;right:8mm;font-size:7pt;color:#8a929c;letter-spacing:.3px}"
+  /* schița e o foaie de lucru: se strânge peste tot, ca locul să rămână pentru nume și cifre */
+  +".gpg.drf .s1h{margin-bottom:2.8mm}.gpg.drf .s1h h1{font-size:16pt}.gpg.drf .s1h h1::after{margin-top:1.4mm;height:2.2px}.gpg.drf .s1h .sub{font-size:9.5pt;margin-top:1mm}"
+  +".gpg.drf .gdrf{padding:1.9mm 3.4mm;margin-bottom:2.4mm;font-size:8.4pt}.gpg.drf .gdrn{margin-top:1.1mm;font-size:9pt}"
+  +".gpg.drf .gnog{margin-top:2.2mm;padding:1.8mm 3mm;font-size:8.2pt;line-height:1.4}"
+  +".gpg.drf .gfoot{margin-top:2.6mm;padding:2.2mm 3.6mm;gap:5mm;align-items:flex-start}"
+  +".gpg.drf .gtot{font-size:10.5pt;padding-top:.6mm}.gpg.drf .gtot b{font-size:14pt}"
+  +".gpg.drf .gleg{font-size:7.6pt;line-height:1.45}"
+  /* trepte de îndesare: se aprinde doar cea de care e nevoie, după grupa cea mai mare */
+  +".gpg.d1 .gtbl td{padding:1.25mm 2mm;font-size:9pt}"
+  +".gpg.d2 .gtbl td{padding:.95mm 1.8mm;font-size:8.5pt}"
+  +".gpg.d2 .gtbl .gt,.gpg.d2 .gtbl .gmv,.gpg.d2 .gtbl .gadd{font-size:7pt}"
+  +".gpg.d3 .gtbl td{padding:.7mm 1.6mm;font-size:8pt}"
+  +".gpg.d3 .gtbl .gt,.gpg.d3 .gtbl .gmv,.gpg.d3 .gtbl .gadd{font-size:6.6pt}"
+  +".gpg.d4 .gtbl td{padding:.5mm 1.4mm;font-size:7.4pt}"
+  +".gpg.d5 .gtbl td{padding:.3mm 1.2mm;font-size:6.8pt}"
+  +".gpg.d4 .gtbl .gt,.gpg.d4 .gtbl .gmv,.gpg.d4 .gtbl .gadd,.gpg.d5 .gtbl .gt,.gpg.d5 .gtbl .gmv,.gpg.d5 .gtbl .gadd{font-size:6.2pt}"
+  +".gpg.d3 .gtbl thead th,.gpg.d4 .gtbl thead th,.gpg.d5 .gtbl thead th{padding:2mm 1.6mm 1.8mm;font-size:9pt}");}
 
 /* ============================================================================
    SCHIȚE DE GRUPE — planificarea reorganizării
@@ -6996,6 +7060,29 @@ function gpAll(){S.grpPlans=S.grpPlans||[];return S.grpPlans;}
 function gpGet(id){return gpAll().find(function(x){return x.id===id;})||null;}
 function gpOf(p,bid){return (p&&p.asg&&p.asg[bid])&&(p.grps||[]).some(function(g){return g.id===p.asg[bid];})?p.asg[bid]:"";}
 function gpRoster(){return (S.bros||[]).filter(function(b){return isPublisher(b)&&!isArchNow(b);});}
+/* ---- provizoriile schiței: cine credem că pleacă și cine urmează să vină ----
+   Amândouă trăiesc doar în schiță. Cel „scos" rămâne vestitor întreg în aplicație — schița
+   doar nu-l mai socotește; cel „adăugat" n-are fișă nicăieri, e un nume scris de mână, ca
+   să se vadă cum arată grupele după ce vine. Punerea în aplicare nu creează și nu șterge pe
+   nimeni dintre ei, iar ștergerea schiței îi ia cu ea. */
+function gpOutList(p){p.out=p.out||[];return p.out;}
+function gpAddList(p){p.add=p.add||[];return p.add;}
+function gpIsOut(p,bid){return (p.out||[]).indexOf(bid)>=0;}
+function gpProv(p,bid){return bid?((p.add||[]).find(function(x){return x.id===bid;})||null):null;}
+/* forma unei intrări provizorii, ca să treacă prin aceleași funcții ca un vestitor real */
+function _gpProvBro(a){return {id:a.id,name:a.name||"",rol:a.rol||"",pio:a.pio||"",active:true,_prov:true};}
+/* rândurile schiței: vestitorii reali rămași + cei adăugați provizoriu.
+   `withOut` îi aduce înapoi și pe cei scoși, ca să se poată apăsa în tabel. */
+function gpRows(p,withOut){return gpRoster().filter(function(b){return withOut||!gpIsOut(p,b.id);})
+  .concat((p.add||[]).map(_gpProvBro));}
+function gpOutBros(p){return gpRoster().filter(function(b){return gpIsOut(p,b.id);});}
+/* cifrele unei grupe: câți vestitori, câți bătrâni, slujitori auxiliari, pionieri regulari/speciali */
+function gpCnt(list){var c={v:0,b:0,sa:0,pr:0,ps:0};
+ list.forEach(function(b){if(b.active===false)return;c.v++;
+  if(b.rol==="Bătrân")c.b++;else if(b.rol==="Slujitor")c.sa++;
+  if(b.pio==="Pionier")c.pr++;else if(b.pio==="Pionier special")c.ps++;});
+ return c;}
+function gpCntTxt(c){return "V "+c.v+" · B "+c.b+" · SA "+c.sa+" · PR "+c.pr+" · PS "+c.ps;}
 /* S sau A — dar numai în grupa în care schița îl are; altfel eticheta ar rămâne pe cineva mutat */
 function gpRoleOf(p,bid){var gid=gpOf(p,bid);if(!gid)return "";
  var g=(p.grps||[]).find(function(x){return x.id===gid;});if(!g)return "";
@@ -7008,10 +7095,11 @@ function grpRoleNow(b){if(!b)return "";var g=grpsAll().find(function(x){return x
 function gpChg(p,b){return grpOf(b)!==gpOf(p,b.id)||grpRoleNow(b)!==gpRoleOf(p,b.id);}
 function gpIdx(p,gid){var i=(p.grps||[]).findIndex(function(g){return g.id===gid;});return i<0?0:i+1;}
 function gpStats(p){var c={},none=0,mv=0,rl=0,tot=0;
- gpRoster().forEach(function(b){var nw=gpOf(p,b.id);
+ gpRows(p).forEach(function(b){var nw=gpOf(p,b.id);
   if(b.active!==false){tot++;if(nw)c[nw]=(c[nw]||0)+1;else none++;}
+  if(b._prov)return;/* cei veniți provizoriu nu se socotesc „mutări" — n-aveau de unde pleca */
   if(grpOf(b)!==nw)mv++;else if(grpRoleNow(b)!==gpRoleOf(p,b.id))rl++;});
- return {c:c,none:none,mv:mv,rl:rl,tot:tot};}
+ return {c:c,none:none,mv:mv,rl:rl,tot:tot,out:gpOutBros(p).length,add:(p.add||[]).length};}
 function _gpTouch(p){p.up=Date.now();clearTimeout(_gpSaveT);_gpSaveT=setTimeout(function(){save();},600);}
 function _gpEd(){if(_canEditArh())return true;toast("Doar vizualizare — nu poți modifica schița");return false;}
 /* o schiță pornește din grupele de acum: copiezi starea și de acolo încolo o muți cum vrei */
@@ -7019,7 +7107,7 @@ function gpNew(){if(!_gpEd())return;
  /* două schițe pornite în aceeași zi ar purta același nume — a doua primește un număr */
  var nm="Schiță "+fmtDMY(new Date()),k=2;while(gpAll().some(function(x){return x.name===nm;}))nm="Schiță "+fmtDMY(new Date())+" ("+(k++)+")";
  var p={id:"gp"+Date.now(),name:nm,note:"",at:Date.now(),up:Date.now(),by:(_userGet()||""),
-  grps:grpsAll().map(function(g){return {id:g.id,name:g.name,sup:g.sup||"",asis:g.asis||""};}),asg:{}};
+  grps:grpsAll().map(function(g){return {id:g.id,name:g.name,sup:g.sup||"",asis:g.asis||""};}),asg:{},out:[],add:[]};
  gpRoster().forEach(function(b){var g=grpOf(b);if(g)p.asg[b.id]=g;});
  gpAll().push(p);logAct("Schiță de grupe creată: "+p.name);save();closeSheet();gpGoto(p.id);}
 function gpDup(id){if(!_gpEd())return;var s=gpGet(id);if(!s)return;
@@ -7044,11 +7132,12 @@ function gpColAdd(id){if(!_gpEd())return;var p=gpGet(id);if(!p)return;
  p.grps=p.grps||[];p.grps.push({id:"g"+Date.now(),name:"Grupa "+(p.grps.length+1),sup:"",asis:""});
  _gpTouch(p);_gpRe();}
 function gpCol(gid){var p=gpGet(gpOpen);if(!p)return;var g=(p.grps||[]).find(function(x){return x.id===gid;});if(!g)return;
- var mem=gpRoster().filter(function(b){return gpOf(p,b.id)===gid;}).sort(function(a,b){return a.name.localeCompare(b.name,"ro");});
- var opt=function(sel){return '<option value="">— nimeni —</option>'+mem.map(function(b){return '<option value="'+b.id+'" '+(b.id===sel?"selected":"")+'>'+esc(b.name)+'</option>';}).join("");};
+ var mem=gpRows(p).filter(function(b){return gpOf(p,b.id)===gid;}).sort(function(a,b){return a.name.localeCompare(b.name,"ro");});
+ var opt=function(sel){return '<option value="">— nimeni —</option>'+mem.map(function(b){return '<option value="'+b.id+'" '+(b.id===sel?"selected":"")+'>'+esc(b.name)+(b._prov?" (provizoriu)":"")+'</option>';}).join("");};
  var ed=_canEditArh();
  sheet("","G"+gpIdx(p,gid)+" — coloana din schiță",
-  (ed?('<label class="fl">Numele grupei</label><input id="gc_n" class="fld" value="'+esc(g.name||"")+'">'
+  '<div class="gpnums" style="display:block;margin:0 2px 12px">'+esc(gpCntTxt(gpCnt(mem)))+'</div>'
+ +(ed?('<label class="fl">Numele grupei</label><input id="gc_n" class="fld" value="'+esc(g.name||"")+'">'
    +'<div class="two" style="margin-top:8px"><div><label class="fl">Supraveghetor (S)</label><select id="gc_s" class="fld">'+opt(g.sup)+'</select></div><div><label class="fl">Asistent (A)</label><select id="gc_a" class="fld">'+opt(g.asis)+'</select></div></div>'
    +'<div class="hint" style="margin-top:8px">Supraveghetorul și asistentul se aleg dintre cei puși în coloană în schiță ('+mem.length+').</div>'):('<div class="muted" style="margin:0 2px">'+esc(g.name||"")+' · '+mem.length+' vestitori</div>'))
  +(ed?('<div class="rowflex" style="gap:9px;margin-top:18px"><button class="btn danger sm" onclick="gpColDel(\''+gid+'\')">Șterge coloana</button><div class="spacer"></div><button class="btn ghost sm" style="width:auto" onclick="closeSheet()">Anulează</button><button class="btn pri sm" style="width:auto" onclick="gpColSave(\''+gid+'\')">Salvează</button></div>'):''));}
@@ -7056,30 +7145,91 @@ function gpColSave(gid){if(!_gpEd())return;var p=gpGet(gpOpen);if(!p)return;var 
  var n=$("#gc_n").value.trim();if(!n){toast("Pune numele grupei");return;}
  g.name=n;g.sup=$("#gc_s").value;g.asis=$("#gc_a").value;_gpTouch(p);closeSheet();_gpRe();toast("Salvat");}
 async function gpColDel(gid){if(!_gpEd())return;var p=gpGet(gpOpen);if(!p)return;var g=(p.grps||[]).find(function(x){return x.id===gid;});if(!g)return;
- var n=gpRoster().filter(function(b){return gpOf(p,b.id)===gid;}).length;
+ var n=gpRows(p).filter(function(b){return gpOf(p,b.id)===gid;}).length;
  if(!(await uiConfirm("Scoți coloana „"+(g.name||"")+"” din schiță?"+(n?(n===1?" Vestitorul din ea rămâne nerepartizat.":(" Cei "+n+" din ea rămân nerepartizați.")):""))))return;
  p.grps=(p.grps||[]).filter(function(x){return x.id!==gid;});
  Object.keys(p.asg||{}).forEach(function(k){if(p.asg[k]===gid)delete p.asg[k];});
  _gpTouch(p);closeSheet();_gpRe();}
 /* ---- tabelul ---- */
 function gpTap(bid,gid){var p=gpGet(gpOpen);if(!p)return;if(!_gpEd())return;
+ if(gpIsOut(p,bid)){toast("E scos din schiță — adu-l înapoi din dreptul numelui");return;}
  p.asg=p.asg||{};if(gid)p.asg[bid]=gid;else delete p.asg[bid];
  /* dacă era supraveghetor sau asistent în grupa din care pleacă, sarcina rămâne acolo goală */
  (p.grps||[]).forEach(function(g){if(g.id===gid)return;if(g.sup===bid)g.sup="";if(g.asis===bid)g.asis="";});
  _gpPaintRow(p,bid);_gpPaintCounts(p);_gpTouch(p);}
 /* fișa scurtă a unui rând: aici se pun supraveghetorul și asistentul, fără să treci prin coloană */
 function gpWho(bid){var p=gpGet(gpOpen);if(!p)return;
- var b=(S.bros||[]).find(function(x){return x.id===bid;});if(!b)return;
+ var pv=gpProv(p,bid);
+ var b=pv?_gpProvBro(pv):(S.bros||[]).find(function(x){return x.id===bid;});if(!b)return;
+ var out=!pv&&gpIsOut(p,bid);
  var gid=gpOf(p,bid),g=(p.grps||[]).find(function(x){return x.id===gid;});
  var r=gpRoleOf(p,bid),ed=_canEditArh();
  var sub=g?('În schiță: <b>G'+gpIdx(p,gid)+'</b> · '+esc(g.name||"")):'În schiță: <b>fără grupă</b>';
- var H='<div class="muted" style="margin:0 2px 12px">'+sub+' · acum: '+(grpOf(b)?('<b>G'+gpIdx(p,grpOf(b))+'</b>'):'<b>fără grupă</b>')+'</div>';
- if(!g)H+='<div class="hint">Ca să-l faci supraveghetor sau asistent, pune-l întâi într-o grupă — apeși cerculeţul din dreptul lui, pe coloana grupei.</div>';
- else if(!ed)H+='<div class="muted" style="margin:0 2px">'+(r==="S"?"Supraveghetorul grupei.":r==="A"?"Asistentul grupei.":"Fără sarcină în grupă.")+'</div>';
- else{H+='<button class="pmrow" onclick="gpSetRole(\''+bid+'\',\'S\')">'+IC.star+'<span><b>Supraveghetor (S)</b> la '+esc(g.name||"")+(r==="S"?' <span class="dtag g">acum el</span>':(g.sup?(' <span class="muted">— acum '+esc(broDisp(g.sup))+'</span>'):''))+'</span></button>'
-   +'<button class="pmrow" onclick="gpSetRole(\''+bid+'\',\'A\')">'+IC.ppl+'<span><b>Asistent (A)</b> la '+esc(g.name||"")+(r==="A"?' <span class="dtag g">acum el</span>':(g.asis?(' <span class="muted">— acum '+esc(broDisp(g.asis))+'</span>'):''))+'</span></button>';
-  if(r)H+='<button class="pmrow" onclick="gpSetRole(\''+bid+'\',\'\')">'+IC.check+'<span><b>Fără sarcină</b> — rămâne doar membru</span></button>';}
- sheet("",b.name||"Vestitor",H);}
+ var H='<div class="muted" style="margin:0 2px 12px">'+(out?'<b>Scos din schiță</b> — socotit ca plecat':sub)
+  +' · acum: '+(pv?'<b>nu e în aplicație</b>':(grpOf(b)?('<b>G'+gpIdx(p,grpOf(b))+'</b>'):'<b>fără grupă</b>'))+'</div>';
+ if(pv)H+='<div class="hint" style="margin-bottom:12px">Persoană adăugată doar în schiță. Nu are fișă de vestitor și nu apare nicăieri în aplicație — nici după ce pui schița în aplicare.</div>';
+ if(out)H+='<div class="hint" style="margin-bottom:12px">Nu intră la cifrele schiței și pe foaie apare tăiat, la „ies din grupe". În aplicație rămâne neatins — dacă chiar pleacă, îl arhivezi din fișa lui.</div>';
+ if(out){if(ed)H+='<button class="pmrow" onclick="gpBack(\''+bid+'\')">'+IC.back+'<span><b>Adu-l înapoi în schiță</b> — se întoarce în grupa lui de acum</span></button>';}
+ else{
+  if(!g)H+='<div class="hint">Ca să-l faci supraveghetor sau asistent, pune-l întâi într-o grupă — apeși cerculeţul din dreptul lui, pe coloana grupei.</div>';
+  else if(!ed)H+='<div class="muted" style="margin:0 2px">'+(r==="S"?"Supraveghetorul grupei.":r==="A"?"Asistentul grupei.":"Fără sarcină în grupă.")+'</div>';
+  else{H+='<button class="pmrow" onclick="gpSetRole(\''+bid+'\',\'S\')">'+IC.star+'<span><b>Supraveghetor (S)</b> la '+esc(g.name||"")+(r==="S"?' <span class="dtag g">acum el</span>':(g.sup?(' <span class="muted">— acum '+esc(gpNameOf(p,g.sup))+'</span>'):''))+'</span></button>'
+    +'<button class="pmrow" onclick="gpSetRole(\''+bid+'\',\'A\')">'+IC.ppl+'<span><b>Asistent (A)</b> la '+esc(g.name||"")+(r==="A"?' <span class="dtag g">acum el</span>':(g.asis?(' <span class="muted">— acum '+esc(gpNameOf(p,g.asis))+'</span>'):''))+'</span></button>';
+   if(r)H+='<button class="pmrow" onclick="gpSetRole(\''+bid+'\',\'\')">'+IC.check+'<span><b>Fără sarcină</b> — rămâne doar membru</span></button>';}
+  if(ed&&pv)H+='<button class="pmrow" onclick="gpProvEdit(\''+bid+'\')">'+IC.edit+'<span><b>Nume și privilegiu</b> — cum apare pe foaie</span></button>'
+    +'<button class="pmrow" onclick="gpProvDel(\''+bid+'\')">'+IC.trash+'<span><b>Scoate-l din schiță</b> — nu mai vine</span></button>';
+  if(ed&&!pv)H+='<button class="pmrow" onclick="gpOut(\''+bid+'\')">'+IC.mark+'<span><b>Scoate-l din schiță</b> — socotești că pleacă<br><span class="muted">rămâne vestitor în aplicație, doar schița nu-l mai numără</span></span></button>';}
+ sheet("",(b.name||"Vestitor")+(pv?" (provizoriu)":""),H);}
+/* numele unui S/A din schiță — poate fi și o intrare provizorie, care n-are fișă */
+function gpNameOf(p,bid){var pv=gpProv(p,bid);return pv?(pv.name||""):broDisp(bid);}
+/* ---- scos din schiță / adus înapoi ---- */
+function gpOut(bid){if(!_gpEd())return;var p=gpGet(gpOpen);if(!p)return;
+ if(gpProv(p,bid)||gpIsOut(p,bid))return;
+ /* ținem minte unde-l avea schița, ca readucerea să nu-l lase mutat sau fără sarcină */
+ p.outp=p.outp||{};p.outp[bid]={g:gpOf(p,bid),r:gpRoleOf(p,bid)};
+ gpOutList(p).push(bid);delete (p.asg||{})[bid];
+ (p.grps||[]).forEach(function(g){if(g.sup===bid)g.sup="";if(g.asis===bid)g.asis="";});
+ _gpTouch(p);closeSheet();_gpRe();toast("Scos din schiță — grupele reale nu s-au atins",3500);}
+function gpBack(bid){if(!_gpEd())return;var p=gpGet(gpOpen);if(!p)return;
+ p.out=(p.out||[]).filter(function(x){return x!==bid;});
+ var memo=(p.outp||{})[bid]||{};
+ var b=(S.bros||[]).find(function(x){return x.id===bid;});
+ var gid=memo.g||(b?grpOf(b):"");
+ if(gid&&(p.grps||[]).some(function(x){return x.id===gid;})){p.asg=p.asg||{};p.asg[bid]=gid;
+  /* sarcina se întoarce doar dacă între timp n-a luat-o altcineva */
+  var g=(p.grps||[]).find(function(x){return x.id===gid;});
+  if(memo.r==="S"&&g&&!g.sup)g.sup=bid;else if(memo.r==="A"&&g&&!g.asis)g.asis=bid;}
+ if(p.outp)delete p.outp[bid];
+ _gpTouch(p);closeSheet();_gpRe();toast("Înapoi în schiță");}
+/* ---- persoană adăugată provizoriu ---- */
+var _GP_PIO=[["","Vestitor"],["Pionier","Pionier regular"],["Pionier auxiliar","Pionier auxiliar"],["Pionier special","Pionier special"],["Misionar","Misionar"],["Vestitor nebotezat","Vestitor nebotezat"]];
+function gpProvNew(){if(!_gpEd())return;var p=gpGet(gpOpen);if(!p)return;_gpProvSheet(p,null);}
+function gpProvEdit(bid){if(!_gpEd())return;var p=gpGet(gpOpen);if(!p)return;var a=gpProv(p,bid);if(a)_gpProvSheet(p,a);}
+function _gpProvSheet(p,a){var isNew=!a;
+ var sel=function(id,cur,opts){return '<select id="'+id+'" class="fld">'+opts.map(function(o){
+   return '<option value="'+esc(o[0])+'" '+(o[0]===(cur||"")?"selected":"")+'>'+esc(o[1])+'</option>';}).join("")+'</select>';};
+ var gopts=[["","— fără grupă —"]].concat((p.grps||[]).map(function(g,i){return [g.id,"G"+(i+1)+" · "+g.name];}));
+ sheet("",(isNew?"Adaugă în schiță":"Persoană provizorie"),
+  '<div class="hint" style="margin-bottom:12px">Cineva care urmează să vină, dar încă nu e vestitor în aplicație. Numele trăiește doar în schiță: intră la cifre și apare pe foaie marcat <b>+ vine</b>, dar nu se creează nicio fișă, nici după ce pui schița în aplicare.</div>'
+ +'<label class="fl">Numele, așa cum vrei să apară pe foaie</label><input id="gpp_n" class="fld" value="'+esc((a&&a.name)||"")+'" placeholder="ex. POPESCU Ion">'
+ +'<div class="two" style="margin-top:8px"><div><label class="fl">Rol</label>'+sel("gpp_r",(a&&a.rol)||"",[["","—"],["Bătrân","Bătrân"],["Slujitor","Slujitor auxiliar"]])+'</div>'
+ +'<div><label class="fl">Privilegiu</label>'+sel("gpp_p",(a&&a.pio)||"",_GP_PIO)+'</div></div>'
+ +'<label class="fl" style="margin-top:8px">Grupa din schiță</label>'+sel("gpp_g",(a?gpOf(p,a.id):""),gopts)
+ +'<div class="rowflex" style="gap:9px;margin-top:18px">'+(isNew?'':'<button class="btn danger sm" onclick="gpProvDel(\''+a.id+'\')">Șterge</button>')
+ +'<div class="spacer"></div><button class="btn ghost sm" style="width:auto" onclick="closeSheet()">Anulează</button>'
+ +'<button class="btn pri sm" style="width:auto" onclick="gpProvSave(\''+(a?a.id:"")+'\')">Salvează</button></div>');}
+function gpProvSave(bid){if(!_gpEd())return;var p=gpGet(gpOpen);if(!p)return;
+ var n=($("#gpp_n").value||"").trim();if(!n){toast("Pune un nume");return;}
+ var a=bid?gpProv(p,bid):null;
+ if(!a){a={id:"gx"+Date.now()+"_"+Math.random().toString(36).slice(2,6),name:n};gpAddList(p).push(a);}
+ a.name=n;a.rol=$("#gpp_r").value;a.pio=$("#gpp_p").value;
+ var g=$("#gpp_g").value;p.asg=p.asg||{};if(g)p.asg[a.id]=g;else delete p.asg[a.id];
+ _gpTouch(p);closeSheet();_gpRe();toast(bid?"Salvat":"Adăugat provizoriu în schiță");}
+async function gpProvDel(bid){if(!_gpEd())return;var p=gpGet(gpOpen);if(!p)return;var a=gpProv(p,bid);if(!a)return;
+ if(!(await uiConfirm("Scoți „"+(a.name||"")+"” din schiță? E doar o intrare provizorie — nimic altundeva nu se atinge.")))return;
+ p.add=(p.add||[]).filter(function(x){return x.id!==bid;});delete (p.asg||{})[bid];
+ (p.grps||[]).forEach(function(g){if(g.sup===bid)g.sup="";if(g.asis===bid)g.asis="";});
+ _gpTouch(p);closeSheet();_gpRe();}
 function gpSetRole(bid,r){if(!_gpEd())return;var p=gpGet(gpOpen);if(!p)return;
  var gid=gpOf(p,bid);if(!gid){toast("Pune-l întâi într-o grupă");return;}
  var g=(p.grps||[]).find(function(x){return x.id===gid;});if(!g)return;
@@ -7091,29 +7241,38 @@ function gpSetRole(bid,r){if(!_gpEd())return;var p=gpGet(gpOpen);if(!p)return;
 /* re-randare care păstrează derularea tabelului — altfel sari în capul listei la fiecare schimbare */
 function _gpRe(){var w=document.querySelector(".gpwrap2");var t=w?w.scrollTop:0;
  renderArhRoute();setTimeout(function(){var w2=document.querySelector(".gpwrap2");if(w2)w2.scrollTop=t;},0);}
-function _gpWas(b,nw,p){var cur=grpOf(b);
+function _gpWas(b,nw,p){
+ if(b._prov)return "vine — nu e încă în aplicație"+(nw?(" → G"+gpIdx(p,nw)):" · fără grupă");
+ var cur=grpOf(b);
+ if(gpIsOut(p,b.id))return (cur?("acum G"+(gpIdx(p,cur)||"?")):"fără grupă")+" · scos din schiță (pleacă)";
  var r0=grpRoleNow(b),r1=gpRoleOf(p,b.id);
  var rn=function(r){return r==="S"?"supraveghetor":r==="A"?"asistent":"fără sarcină";};
  var rtx=(r0===r1)?"":(" · "+rn(r0)+" → "+rn(r1));
  if(cur===nw)return (cur?("acum G"+(gpIdx(p,cur)||"?")):"fără grupă")+rtx;
  return (cur?("acum G"+(gpIdx(p,cur)||"?")):"acum fără grupă")+" → "+(nw?("G"+gpIdx(p,nw)):"fără grupă")+rtx;}
+/* vestitorul din spatele unui rând — real sau adăugat provizoriu în schiță */
+function gpBro(p,bid){var pv=gpProv(p,bid);
+ return pv?_gpProvBro(pv):((S.bros||[]).find(function(x){return x.id===bid;})||null);}
+function _gpMv(p,b){return !b._prov&&!gpIsOut(p,b.id)&&gpChg(p,b);}
 function _gpPaintRow(p,bid){var tr=document.querySelector('#gptbl tr[data-b="'+bid+'"]');if(!tr)return;
- var b=(S.bros||[]).find(function(x){return x.id===bid;});if(!b)return;var nw=gpOf(p,bid);
+ var b=gpBro(p,bid);if(!b)return;var nw=gpOf(p,bid);
  [].forEach.call(tr.querySelectorAll(".gpdot"),function(d){d.classList.toggle("on",(d.getAttribute("data-g")||"")===nw);});
- tr.classList.toggle("mv",gpChg(p,b));
+ tr.classList.toggle("mv",_gpMv(p,b));
  var w=tr.querySelector(".gpwas");if(w)w.textContent=_gpWas(b,nw,p);
  var rl=tr.querySelector(".gprl");if(rl){var r=gpRoleOf(p,bid);rl.innerHTML=r?('<span class="gtag">'+r+'</span>'):"";}
  /* dacă tocmai a pierdut S/A prin mutare, grupa din care a plecat rămâne fără el în antet —
     și cine rămâne fără sarcină nu mai e o schimbare, deci se recitesc toate rândurile */
  [].forEach.call(document.querySelectorAll("#gptbl tbody tr"),function(t2){
   var id2=t2.getAttribute("data-b");if(id2===bid)return;
-  var b2=(S.bros||[]).find(function(x){return x.id===id2;});if(!b2)return;
+  var b2=gpBro(p,id2);if(!b2)return;
   var e=t2.querySelector(".gprl");if(e){var r2=gpRoleOf(p,id2);
    var want=r2?('<span class="gtag">'+r2+'</span>'):"";if(e.innerHTML!==want)e.innerHTML=want;}
-  t2.classList.toggle("mv",gpChg(p,b2));
+  t2.classList.toggle("mv",_gpMv(p,b2));
   var w2=t2.querySelector(".gpwas");if(w2){var s2=_gpWas(b2,gpOf(p,id2),p);if(w2.textContent!==s2)w2.textContent=s2;}});}
-function _gpPaintCounts(p){var st=gpStats(p);
- (p.grps||[]).forEach(function(g){var e=document.getElementById("gpn_"+g.id);if(e)e.textContent=st.c[g.id]||0;});
+function _gpPaintCounts(p){var st=gpStats(p);var rows=gpRows(p);
+ (p.grps||[]).forEach(function(g){var e=document.getElementById("gpn_"+g.id);if(e)e.textContent=st.c[g.id]||0;
+  var c=document.getElementById("gpc_"+g.id);
+  if(c)c.textContent=gpCntTxt(gpCnt(rows.filter(function(b){return gpOf(p,b.id)===g.id;})));});
  var e0=document.getElementById("gpn_none");if(e0)e0.textContent=st.none;
  var s=document.getElementById("gpsum");if(s)s.innerHTML=_gpSumHtml(p,st);}
 function _gpSumHtml(p,st){var n=(p.grps||[]).length;
@@ -7122,13 +7281,16 @@ function _gpSumHtml(p,st){var n=(p.grps||[]).length;
   +'<span class="gpstat">'+n+' grupe · media '+String(avg).replace(".",",")+'</span>'
   +'<span class="gpstat'+(st.none?" warn":"")+'">'+st.none+' nerepartizați</span>'
   +'<span class="gpstat'+(st.mv?" acc":"")+'">'+st.mv+' '+(st.mv===1?"mutare":"mutări")+' față de acum</span>'
-  +(st.rl?('<span class="gpstat acc">'+st.rl+' '+(st.rl===1?"sarcină schimbată":"sarcini schimbate")+' în aceeași grupă</span>'):'');}
+  +(st.rl?('<span class="gpstat acc">'+st.rl+' '+(st.rl===1?"sarcină schimbată":"sarcini schimbate")+' în aceeași grupă</span>'):'')
+  +(st.out?('<span class="gpstat out">−'+st.out+' '+(st.out===1?"pleacă":"pleacă")+' (provizoriu)</span>'):'')
+  +(st.add?('<span class="gpstat add">+'+st.add+' '+(st.add===1?"vine":"vin")+' (provizoriu)</span>'):'');}
 function gpSearch(v){gpQ=(v||"").toLowerCase();_gpFilter();}
 function _gpFilter(){var p=gpGet(gpOpen);if(!p)return;
  [].forEach.call(document.querySelectorAll("#gptbl tbody tr"),function(tr){
   var nm=tr.getAttribute("data-nm")||"";
   var okQ=!gpQ||nm.indexOf(gpQ)>=0;
-  var okM=!gpOnlyMv||tr.classList.contains("mv");
+  /* „schimbări" cuprinde și provizoriile — și ele schimbă cum arată grupele */
+  var okM=!gpOnlyMv||tr.classList.contains("mv")||tr.classList.contains("gadd")||tr.classList.contains("gout");
   tr.style.display=(okQ&&okM)?"":"none";});}
 function gpSortSet(v){gpSort=v;renderArhRoute();}
 function gpMvTog(){gpOnlyMv=!gpOnlyMv;var b=document.getElementById("gpmvb");if(b)b.classList.toggle("on",gpOnlyMv);_gpFilter();}
@@ -7176,7 +7338,17 @@ function ensureGpCSS(){if(document.getElementById("gpcss"))return;var st=documen
 +".gpn{display:inline-block;margin-top:3px;font-size:10px;font-weight:800;background:var(--accsoft);color:var(--acc);border-radius:999px;padding:1px 6px}"
 +".gpleg{margin:10px 2px 0;font-size:11.5px;color:var(--ink3);line-height:1.65}"
 +".gpleg b{color:var(--ink2)}"
-+".gpitag{display:inline-block;font-size:9px;font-weight:800;letter-spacing:.3px;padding:1px 5px;border-radius:5px;background:var(--surf2);border:1px solid var(--bd);color:var(--ink3);margin-left:5px;vertical-align:1px}";
++".gpitag{display:inline-block;font-size:9px;font-weight:800;letter-spacing:.3px;padding:1px 5px;border-radius:5px;background:var(--surf2);border:1px solid var(--bd);color:var(--ink3);margin-left:5px;vertical-align:1px}"
++".gpnums{font-size:11px;font-weight:800;color:var(--acc);background:var(--accsoft);border-radius:999px;padding:1px 8px;margin-left:6px;white-space:nowrap}"
+/* provizoriile: verde pentru cine vine, tăiat și stins pentru cine pleacă */
++".gpitag.prov{background:rgba(31,168,85,.16);border-color:transparent;color:#1fa855}"
++".gpitag.out{background:rgba(214,84,84,.16);border-color:transparent;color:#d65454}"
++".gpstat.add{background:rgba(31,168,85,.16);border-color:transparent;color:#1fa855}"
++".gpstat.out{background:rgba(214,84,84,.16);border-color:transparent;color:#d65454}"
++"#gptbl tbody tr.gadd th.gpnm{box-shadow:inset 3px 0 0 #1fa855}"
++"#gptbl tbody tr.gout th.gpnm{box-shadow:inset 3px 0 0 #d65454;opacity:.62}"
++"#gptbl tbody tr.gout .gpnx{text-decoration:line-through}"
++".gpoutc{text-align:center!important;font-size:10.5px;color:var(--ink3);padding:0 8px!important}";
  document.head.appendChild(st);}
 /* cardul de pornire al planificării, pus deasupra grupelor în vigoare */
 function gpIntroHtml(){ensureGpCSS();var ps=gpAll().slice().sort(function(a,b){return (b.up||b.at||0)-(a.up||a.at||0);});
@@ -7185,7 +7357,8 @@ function gpIntroHtml(){ensureGpCSS();var ps=gpAll().slice().sort(function(a,b){r
  if(ps.length){h+='<div class="gplist">'+ps.map(function(p){var st=gpStats(p);
    return '<button class="gprow2" onclick="gpGoto(\''+p.id+'\')"><span class="n"><b>'+esc(p.name||"Schiță")+'</b><span>'
     +(p.grps||[]).length+' grupe · '+st.tot+' vestitori · actualizată '+fmtDMY(new Date(p.up||p.at||Date.now()))
-    +(p.applied?(' · aplicată '+fmtDMY(new Date(p.applied))):'')+'</span></span>'
+    +(p.applied?(' · aplicată '+fmtDMY(new Date(p.applied))):'')
+    +(st.out?(' · −'+st.out+' pleacă'):'')+(st.add?(' · +'+st.add+' vin'):'')+'</span></span>'
     +'<span class="gpbadge">'+(st.mv+st.rl)+((st.mv+st.rl)===1?" schimbare":" schimbări")+'</span><span class="chev">'+IC.chev+'</span></button>';}).join("")+'</div>';}
  if(_canEditArh())h+='<button class="btn '+(ps.length?"ghost":"pri")+' sm" style="width:100%;margin-top:11px" onclick="gpNew()">'+(ps.length?"Încă o schiță":"Începe o schiță")+' — '+(grpsAll().length?"pornește de la grupele de acum":"construiești grupele de la zero")+'</button>';
  else if(!ps.length)h+='<div class="s" style="margin-top:9px">Nu e nicio schiță deocamdată.</div>';
@@ -7193,11 +7366,12 @@ function gpIntroHtml(){ensureGpCSS();var ps=gpAll().slice().sort(function(a,b){r
 /* tabelul de planificare: rânduri = vestitori, coloane = grupele schiței */
 function gpBoardHtml(p){ensureGrpCSS();ensureGpCSS();
  var gs=p.grps||[],st=gpStats(p);
- var list=gpRoster().slice();
+ var list=gpRows(p,true);
  /* gruparea rândurilor e chiar planificarea: blocuri de grupă, cu supraveghetorul și asistentul
     în capul fiecăruia, ca la foaia tipărită — între blocuri se trage o linie */
- var gof=function(b){return gpSort==="new"?gpOf(p,b.id):grpOf(b);};
- var key=function(b){var g=gof(b);return g?gpIdx(p,g):99;};
+ var gof=function(b){return gpSort==="new"?gpOf(p,b.id):(b._prov?gpOf(p,b.id):grpOf(b));};
+ /* cei scoși stau la urmă de tot, după „fără grupă" — sunt ieșirea din schiță, nu o grupă */
+ var key=function(b){if(gpIsOut(p,b.id))return 100;var g=gof(b);return g?gpIdx(p,g):99;};
  var lead=function(b){var g=gs.find(function(x){return x.id===gof(b);});return !g?2:(g.sup===b.id?0:g.asis===b.id?1:2);};
  if(gpSort==="az")list.sort(function(a,b){return a.name.localeCompare(b.name,"ro");});
  else list.sort(function(a,b){var ka=key(a),kb=key(b);if(ka!==kb)return ka-kb;
@@ -7216,26 +7390,34 @@ function gpBoardHtml(p){ensureGrpCSS();ensureGpCSS();
   +gs.map(function(g,i){return '<th onclick="gpCol(\''+g.id+'\')" title="'+esc(g.name||"")+'"><span class="gpch">G'+(i+1)+'</span><span class="gpn" id="gpn_'+g.id+'">'+(st.c[g.id]||0)+'</span></th>';}).join("")
   +'<th title="fără grupă"><span class="gpch">—</span><span class="gpn" id="gpn_none">'+st.none+'</span></th></tr>';
  var prevK=null;
- var body=list.map(function(b){var nw=gpOf(p,b.id);var moved=gpChg(p,b);
+ var body=list.map(function(b){var nw=gpOf(p,b.id);var out=gpIsOut(p,b.id);
    var tg=grpTags(b,null);
    var k=(gpSort==="az")?null:key(b);var sep=(k!=null&&prevK!=null&&k!==prevK);prevK=k;
-   var cells=gs.map(function(g){return '<td><button class="gpdot'+(nw===g.id?" on":"")+'" data-g="'+g.id+'" onclick="gpTap(\''+b.id+'\',\''+g.id+'\')" aria-label="'+esc(g.name||"")+'"></button></td>';}).join("")
-    +'<td><button class="gpdot'+(nw?"":" on")+'" data-g="" onclick="gpTap(\''+b.id+'\',\'\')" aria-label="fără grupă"></button></td>';
+   var cls=(_gpMv(p,b)?"mv":"")+(sep?" sep":"")+(out?" gout":"")+(b._prov?" gadd":"");
+   /* rândul scos nu mai are cerculețe: n-are unde fi pus, cât timp e socotit plecat */
+   var cells=out?('<td colspan="'+(gs.length+1)+'" class="gpoutc">scos din schiță — apasă numele ca să-l aduci înapoi</td>')
+    :(gs.map(function(g){return '<td><button class="gpdot'+(nw===g.id?" on":"")+'" data-g="'+g.id+'" onclick="gpTap(\''+b.id+'\',\''+g.id+'\')" aria-label="'+esc(g.name||"")+'"></button></td>';}).join("")
+    +'<td><button class="gpdot'+(nw?"":" on")+'" data-g="" onclick="gpTap(\''+b.id+'\',\'\')" aria-label="fără grupă"></button></td>');
    var rl=gpRoleOf(p,b.id);
-   return '<tr data-b="'+b.id+'" data-nm="'+esc((b.name||"").toLowerCase())+'" class="'+(moved?"mv":"")+(sep?" sep":"")+'">'
+   return '<tr data-b="'+b.id+'" data-nm="'+esc((b.name||"").toLowerCase())+'" class="'+cls+'">'
     +'<th class="gpnm"><button class="gpwho" onclick="gpWho(\''+b.id+'\')"><span class="gpnx">'+esc(b.name)
     +'<span class="gprl">'+(rl?'<span class="gtag">'+rl+'</span>':'')+'</span>'
+    +(b._prov?'<span class="gpitag prov">+ vine</span>':'')+(out?'<span class="gpitag out">pleacă</span>':'')
     +(tg?'<span class="gpitag">'+esc(tg)+'</span>':'')+(b.active===false?'<span class="gpitag">inactiv</span>':'')+'</span>'
     +'<span class="gpwas">'+_gpWas(b,nw,p)+'</span></button></th>'+cells+'</tr>';}).join("");
  h+='<div class="gpwrap2"><table id="gptbl"><thead>'+head+'</thead><tbody>'+body+'</tbody></table></div>';
- h+='<div class="gpleg">'+gs.map(function(g,i){var sa=[];if(g.sup)sa.push("S "+broDisp(g.sup));if(g.asis)sa.push("A "+broDisp(g.asis));
-   return '<b>G'+(i+1)+'</b> '+esc(g.name||"")+(sa.length?(' <span class="muted">· '+esc(sa.join(" · "))+'</span>'):'');}).join("<br>")
-  +'<br><b>—</b> fără grupă. Apeși <b>numele</b> ca să-l faci supraveghetor sau asistent, și <b>capul unei coloane</b> ca să-i schimbi numele grupei. Din butonul rotund descarci PDF-ul schiței sau o pui în aplicare.</div>';
+ /* aceleași cifre care ies pe foaie, ca să nu fie nevoie de PDF ca să vezi cum stă fiecare grupă */
+ h+='<div class="gpleg">'+gs.map(function(g,i){var sa=[];if(g.sup)sa.push("S "+gpNameOf(p,g.sup));if(g.asis)sa.push("A "+gpNameOf(p,g.asis));
+   var c=gpCnt(gpRows(p).filter(function(b){return gpOf(p,b.id)===g.id;}));
+   return '<b>G'+(i+1)+'</b> '+esc(g.name||"")+' <span class="gpnums" id="gpc_'+g.id+'">'+esc(gpCntTxt(c))+'</span>'
+    +(sa.length?('<br><span class="muted" style="margin-left:16px">'+esc(sa.join(" · "))+'</span>'):'');}).join("<br>")
+  +'<br><b>—</b> fără grupă. Apeși <b>numele</b> ca să-l faci supraveghetor sau asistent, să-l scoți din schiță (pleacă) sau să-l aduci înapoi, și <b>capul unei coloane</b> ca să-i schimbi numele grupei. Din butonul rotund adaugi pe cineva care urmează să vină, descarci PDF-ul schiței sau o pui în aplicare.</div>';
  return h;}
 /* butonul rotund al schiței */
 function gpFab(){var p=gpGet(gpOpen);if(!p)return;var ed=_canEditArh();var H='';
  H+='<button class="pmrow" onclick="closeSheet();gpPdf(\''+p.id+'\')">'+IC.pdf+'<span><b>Schița ca PDF</b> — de trimis celor cu care te consulți</span></button>';
  if(ed){H+='<button class="pmrow" onclick="arhFabGo(function(){gpMeta(\''+p.id+'\');},gpFab)">'+IC.edit+'<span><b>Nume și notă</b> — ce se propune și de ce</span></button>'
+  +'<button class="pmrow" onclick="closeSheet();gpProvNew()">'+IC.ppl+'<span><b>Adaugă pe cineva care vine</b> — nu e încă vestitor în aplicație<br><span class="muted">rămâne doar în schiță, dar intră la cifre și pe foaie</span></span></button>'
   +'<button class="pmrow" onclick="closeSheet();gpColAdd(\''+p.id+'\')">'+IC.plus+'<span><b>Grupă nouă în schiță</b> — încă o coloană</span></button>'
   +'<button class="pmrow" onclick="closeSheet();gpReset(\''+p.id+'\')">'+IC.sync+'<span><b>Reia de la grupele de acum</b> — pierzi mutările din schiță</span></button>'
   +'<button class="pmrow" onclick="closeSheet();gpDup(\''+p.id+'\')">'+IC.box+'<span><b>Copiază schița</b> — a doua variantă de discutat</span></button>'
@@ -7244,9 +7426,9 @@ function gpFab(){var p=gpGet(gpOpen);if(!p)return;var ed=_canEditArh();var H='';
  sheet("","Schiță — descarcă și unelte",H);}
 function gpPdf(id){var p=gpGet(id);if(!p)return;_pdfGrupeV(p);}
 async function gpReset(id){if(!_gpEd())return;var p=gpGet(id);if(!p)return;
- if(!(await uiConfirm("Reiei schița de la grupele de acum? Mutările făcute în ea se pierd.")))return;
+ if(!(await uiConfirm("Reiei schița de la grupele de acum? Mutările făcute în ea se pierd"+(((p.out||[]).length||(p.add||[]).length)?", împreună cu cei scoși și cei adăugați provizoriu":"")+".")))return;
  p.grps=grpsAll().map(function(g){return {id:g.id,name:g.name,sup:g.sup||"",asis:g.asis||""};});
- p.asg={};gpRoster().forEach(function(b){var g=grpOf(b);if(g)p.asg[b.id]=g;});
+ p.asg={};p.out=[];p.add=[];p.outp={};gpRoster().forEach(function(b){var g=grpOf(b);if(g)p.asg[b.id]=g;});
  p.up=Date.now();save();renderArhRoute();toast("Schița pornește iar de la grupele de acum");}
 /* punerea în aplicare: abia acum se ating grupele reale și fișele vestitorilor */
 async function gpApply(id){if(!_gpEd())return;var p=gpGet(id);if(!p)return;
@@ -7256,10 +7438,16 @@ async function gpApply(id){if(!_gpEd())return;var p=gpGet(id);if(!p)return;
   +(st.rl?("\n"+st.rl+(st.rl===1?" își schimbă sarcina":" își schimbă sarcina")+" în aceeași grupă"):"")
   +(gone.length?("\nSe șterg "+gone.length+" grupe: "+gone.map(function(g){return g.name;}).join(", ")):"")
   +(st.none?("\nRămân "+st.none+" nerepartizați"):"")
+  /* provizoriile rămân provizorii: aplicarea nu arhivează pe nimeni și nu deschide fișe noi */
+  +(st.out?("\nCei "+st.out+" scoși provizoriu rămân în grupele lor de acum — dacă chiar pleacă, îi arhivezi din fișă"):"")
+  +(st.add?("\nCele "+st.add+" persoane adăugate provizoriu NU se creează ca vestitori — rămân doar în schiță"):"")
   +"\n\nSchița rămâne în listă, ca urmă a ce s-a hotărât.";
  if(!(await uiConfirm(msg)))return;
- S.grps=(p.grps||[]).map(function(g){return {id:g.id,name:g.name,sup:g.sup||"",asis:g.asis||""};});
- gpRoster().forEach(function(b){b.grp=gpOf(p,b.id)||"";});
+ S.grps=(p.grps||[]).map(function(g){var sup=g.sup||"",asis=g.asis||"";
+  /* un provizoriu pus supraveghetor sau asistent nu poate ajunge în grupele reale */
+  if(gpProv(p,sup))sup="";if(gpProv(p,asis))asis="";
+  return {id:g.id,name:g.name,sup:sup,asis:asis};});
+ gpRoster().forEach(function(b){if(gpIsOut(p,b.id))return;b.grp=gpOf(p,b.id)||"";});
  /* supraveghetorul și asistentul trebuie să fie și membri, ca la editarea unei grupe */
  S.grps.forEach(function(g){[g.sup,g.asis].forEach(function(bid){if(!bid)return;
   var b=(S.bros||[]).find(function(x){return x.id===bid;});if(b)b.grp=g.id;});});
