@@ -621,7 +621,7 @@ Object.assign(IC,{
  box:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h18v13H3z"/><path d="M3 7l2-4h14l2 4"/><path d="M10 11h4"/></svg>',
  mark:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15.5 4.5l4 4-9.5 9.5H6v-4z"/><path d="M12.5 7.5l4 4M5 21h14"/></svg>'
 });
-const VERSION="3.5.1";
+const VERSION="3.6.0";
 /* Versiunea minima care are voie sa SCRIE in cloud. Se trece in gist la fiecare trimitere;
    un dispozitiv ramas pe un build mai vechi decat atat nu mai poate suprascrie datele —
    doar citeste si se actualizeaza singur. Asa nu mai poate un singur telefon uitat deschis
@@ -4967,6 +4967,12 @@ function startApp(){_dirty=computeDirty();applyTheme();try{bkpMigrate();}catch(e
    `v` = cheia de „văzut deja"; `label` = versiunea afișată.
    ============================================================================ */
 var NEWS=[
+ {v:"3.6.0",label:"3.6",d:"02.09.2026",t:"Fiecare secțiune își arată singură cum se face",items:[
+  ["info","Semnul „?” din antet","Stă lângă rotiță, în toate secțiunile, în același loc. Îl apeși și se deschide tutorialul secțiunii ÎN CARE TE AFLI — nu tot manualul. Din „Mărturia publică” vezi cum se pun turele; din „Rapoarte”, cum se completează un raport."],
+  ["book","Tutoriale cu telefonul desenat","Fiecare tutorial arată pașii pe un telefon desenat, cu un deget care apasă exact unde trebuie: se deschide foaia, se scrie în câmp, se apasă „Salvează”. Le dai mai departe cu degetul, ca pe o prezentare, și le poți relua oricând."],
+  ["sheep","Un tutorial numai pentru vestitori","Scris din partea vestitorului obișnuit: ce are de făcut o dată pe lună și ce doar vede. Cu întrebările care se pun cel mai des — „n-am fost în predicare luna asta”, „nu văd câmpul de ore”."],
+  ["check","Toate, la un loc, în Setări","Setări → Tutoriale ține lista completă, pe grupuri. Semnul „?” rămâne scurtătura către secțiunea deschisă."]
+ ]},
  {v:"3.5.0",label:"3.5",d:"02.09.2026",t:"Schița se împacă cu lista de vestitori, bifă cu bifă",items:[
   ["star","Persoanele provizorii au acum toate atributele","La cine urmează să vină pui gen (frate/soră), rol (bătrân, slujitor auxiliar) și privilegiu (PR, PA, PS, misionar, vestitor nebotezat) — exact ca la un vestitor adevărat. Vezi pe loc cum va arăta rândul pe foaie, cu etichetele lui, iar cifrele grupei îl socotesc la fel ca pe ceilalți."],
   ["info","Ești atenționat ce nu se potrivește","Cât timp schița socotește oameni pe care aplicația nu-i are, sau nu-i mai socotește pe unii pe care aplicația încă îi are, deasupra tabelului stă o bandă care spune câți sunt de adăugat și câți de scos. O apeși și vezi lista pe nume."],
@@ -11421,4 +11427,1579 @@ window.arhRenderPDF=function(html,filename,selector){
    snapTo((off>H*0.5&&bd.scrollTop>24)?H:0);
   },120);},{passive:true});})();
 </script>
+<script>
+/* ============================================================================
+   TUTORIALE — semnul întrebării din antet
+   ----------------------------------------------------------------------------
+   Fiecare secțiune are tutorialul ei. Semnul „?" din antet deschide DOAR
+   tutorialul secțiunii deschise în acel moment, nu tot manualul: cine stă în
+   „Mărturia publică" vede cum se pun turele, nu cum se trimit rapoartele.
+
+   Un tutorial e un mic teanc de ecrane („slide-uri") care se dau la dreapta cu
+   degetul, în limbajul vizual al prezentărilor aplicației: titluri care urcă
+   pe rând, un telefon desenat în care un deget arată exact unde se apasă, și
+   o recapitulare la final. Totul e încadrat pentru telefon — telefonul desenat
+   are 232×446 puncte fixe, ca poziția degetului (în procente) să nimerească
+   la fel pe orice ecran.
+
+   Cum se adaugă un tutorial nou:
+     TUT.D["cheia"] = {t:"Titlu", s:[ …slide-uri… ]}
+   Cheia vine din `tutKey()`, care citește tabul curent și subsecțiunea lui.
+   Aliasurile (TUT.A) leagă secțiunile vestitorilor de tutorialele deja scrise.
+
+   Tipurile de slide:
+     {k:"intro", eb, h, p, ic}                      — coperta secțiunii
+     {k:"cards", eb, h, items:[[ic,titlu,text],…]}  — ce ține secțiunea
+     {k:"demo",  eb, h, steps:[[titlu,sub],…],
+                 sc:[ecrane], run:[[ms,comandă,…],…]} — telefonul animat
+     {k:"rules", eb, h, items:[["ok|no|tip",t,p],…]} — ce se poate / ce nu
+     {k:"faq",   eb, h, items:[[întrebare,răspuns],…]}
+     {k:"recap", h, chips:[…], p}                    — încheierea
+   ============================================================================ */
+var TUT={D:{},A:{}};
+var _tutT=[],_tutI=0,_tutK="",_tutSl=[],_tutRun=false,_tutBack=null;
+
+function tutCSS(){if(document.getElementById("tutcss"))return;
+ var s=document.createElement("style");s.id="tutcss";s.textContent=
+ /* ---- învelișul ---- */
+ ".tutov{position:fixed;inset:0;z-index:120;background:var(--bg);display:none;flex-direction:column;"
++"align-items:center;color:var(--ink);font-family:inherit}"
++".tutov.on{display:flex}"
++".tutbox{width:100%;max-width:720px;height:100%;display:flex;flex-direction:column;position:relative;overflow:hidden}"
++".tutpb{flex:0 0 auto;height:3px;background:var(--surf2)}"
++".tutpb i{display:block;height:100%;width:0;background:var(--acc);border-radius:0 3px 3px 0;transition:width .4s ease}"
++".tuthd{flex:0 0 auto;display:flex;align-items:center;gap:10px;padding:calc(env(safe-area-inset-top) + 10px) 13px 10px;border-bottom:1px solid var(--bd);background:var(--surf)}"
++".tuthd .tth{flex:1;min-width:0;font-size:14.5px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}"
++".tuthd .ttn{font-size:11px;color:var(--ink3);font-variant-numeric:tabular-nums;flex:0 0 auto}"
++".tutx{width:34px;height:34px;flex:0 0 auto;border:0;border-radius:10px;background:var(--surf2);color:var(--ink2);"
++"font-size:20px;line-height:1;cursor:pointer;display:grid;place-items:center;padding:0}"
++".tutx:hover{color:var(--ink)}"
++".tutdeck{flex:1;position:relative;overflow:hidden}"
++".tsl{position:absolute;inset:0;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:16px 15px 20px;"
++"opacity:0;visibility:hidden;transform:translateX(5%);transition:opacity .34s ease,transform .34s ease,visibility 0s .34s}"
++".tsl.on{opacity:1;visibility:visible;transform:none;transition:opacity .34s ease,transform .34s ease}"
++".tsl.pre{transform:translateX(-5%)}"
++".tutft{flex:0 0 auto;display:flex;align-items:center;gap:10px;padding:9px 13px calc(env(safe-area-inset-bottom) + 11px);"
++"border-top:1px solid var(--bd);background:var(--surf)}"
++".tutdots{flex:1;display:flex;gap:6px;justify-content:center;flex-wrap:wrap}"
++".tutdots button{width:7px;height:7px;border-radius:50%;border:0;padding:0;background:var(--bd);cursor:pointer;transition:.22s}"
++".tutdots button.on{background:var(--acc);transform:scale(1.4)}"
++".tutnb{width:42px;height:38px;flex:0 0 auto;border:1px solid var(--bd);border-radius:11px;background:var(--surf2);"
++"color:var(--ink2);cursor:pointer;display:grid;place-items:center;padding:0;font-size:19px;line-height:1}"
++".tutnb:disabled{opacity:.35;cursor:default}"
++".tutnb:not(:disabled):hover{border-color:var(--acc);color:var(--acc)}"
++".tutnb.pri{background:var(--acc);border-color:var(--acc);color:#1c1200;font-weight:800;font-size:13.5px;width:auto;padding:0 15px}"
+ /* ---- animația de intrare, în trepte ---- */
++".ta{opacity:0;transform:translateY(14px)}"
++".tsl.on .ta{animation:tarise .5s cubic-bezier(.2,.7,.2,1) forwards}"
++".tsl.on .ta1{animation-delay:.04s}.tsl.on .ta2{animation-delay:.13s}.tsl.on .ta3{animation-delay:.22s}"
++".tsl.on .ta4{animation-delay:.31s}.tsl.on .ta5{animation-delay:.40s}.tsl.on .ta6{animation-delay:.49s}"
++".tsl.on .ta7{animation-delay:.58s}.tsl.on .ta8{animation-delay:.67s}"
++"@keyframes tarise{to{opacity:1;transform:none}}"
+ /* ---- tipografie ---- */
++".teb{display:flex;align-items:center;gap:8px;font-size:10.5px;font-weight:800;letter-spacing:.12em;"
++"text-transform:uppercase;color:var(--acc);margin-bottom:9px}"
++".teb::before{content:'';width:20px;height:3px;border-radius:2px;background:var(--acc);flex:0 0 auto}"
++".th1{font-size:27px;font-weight:800;line-height:1.12;letter-spacing:-.4px;margin:0 0 9px}"
++".th2{font-size:21px;font-weight:800;line-height:1.18;letter-spacing:-.2px;margin:0 0 9px}"
++".tp{font-size:14px;line-height:1.55;color:var(--ink2);margin:0}"
++".tp b{color:var(--ink);font-weight:700}"
++".thl{color:var(--acc)}"
+ /* ---- coperta ---- */
++".tintro{display:flex;flex-direction:column;min-height:100%;justify-content:center;padding-bottom:14px}"
++".tbig{width:74px;height:74px;border-radius:21px;background:var(--accsoft);color:var(--acc);display:grid;"
++"place-items:center;margin-bottom:18px}"
++".tbig svg{width:36px;height:36px}"
++".tsl.on .tbig{animation:tapop .55s .1s cubic-bezier(.2,1.4,.4,1) both}"
++"@keyframes tapop{from{opacity:0;transform:scale(.7)}to{opacity:1;transform:none}}"
++".thint{margin-top:22px;display:flex;align-items:center;gap:9px;color:var(--ink3);font-size:12px}"
++".thint .tk{border:1px solid var(--bd);background:var(--surf);border-radius:7px;padding:2px 9px;font-size:11px;font-weight:700}"
++".tsl.on .thint svg{animation:tanudge 1.7s ease infinite}"
++"@keyframes tanudge{50%{transform:translateX(5px)}}"
+ /* ---- carduri ---- */
++".tcards{display:flex;flex-direction:column;gap:10px;margin-top:14px}"
++".tcard{display:flex;gap:12px;align-items:flex-start;background:var(--surf);border:1px solid var(--bd);"
++"border-radius:15px;padding:14px 14px}"
++".tcard .tci{flex:0 0 auto;width:38px;height:38px;border-radius:11px;background:var(--accsoft);color:var(--acc);display:grid;place-items:center}"
++".tcard .tci svg{width:19px;height:19px}"
++".tcard b{display:block;font-size:14.5px;font-weight:800;line-height:1.3}"
++".tcard p{margin:3px 0 0;font-size:12.5px;line-height:1.5;color:var(--ink2)}"
+ /* ---- reguli ---- */
++".trules{display:flex;flex-direction:column;gap:9px;margin-top:14px}"
++".trule{background:var(--surf);border:1px solid var(--bd);border-left:4px solid var(--bd);border-radius:12px;padding:12px 14px}"
++".trule.ok{border-left-color:var(--teal)}.trule.no{border-left-color:var(--maroon)}.trule.tip{border-left-color:var(--acc)}"
++".trule b{display:block;font-size:14px;font-weight:800}"
++".trule p{margin:3px 0 0;font-size:12.5px;line-height:1.5;color:var(--ink2)}"
+ /* ---- întrebări ---- */
++".tfaq{display:flex;flex-direction:column;gap:10px;margin-top:14px}"
++".tqa{background:var(--surf);border:1px solid var(--bd);border-radius:14px;padding:13px 14px}"
++".tqa .tq{display:flex;gap:9px;font-size:14px;font-weight:800;line-height:1.35}"
++".tqa .tq::before{content:'?';flex:0 0 auto;width:22px;height:22px;border-radius:7px;background:var(--accsoft);"
++"color:var(--acc);display:grid;place-items:center;font-size:13px;font-weight:800}"
++".tqa .tr{margin:7px 0 0 31px;font-size:12.5px;line-height:1.55;color:var(--ink2)}"
++".tqa .tr b{color:var(--ink)}"
+ /* ---- recapitulare ---- */
++".trecap{display:flex;flex-direction:column;min-height:100%;justify-content:center;text-align:center;padding-bottom:14px}"
++".tchips{display:flex;flex-direction:column;gap:9px;margin:18px 0 4px}"
++".tchip{display:flex;align-items:center;gap:11px;background:var(--surf);border:1.5px solid var(--bd);"
++"border-radius:999px;padding:11px 16px;text-align:left;font-size:14px;font-weight:700;line-height:1.3}"
++".tchip .tn{flex:0 0 auto;width:25px;height:25px;border-radius:50%;background:var(--acc);color:#1c1200;"
++"display:grid;place-items:center;font-size:12.5px;font-weight:800}"
++".tdone{width:64px;height:64px;margin:0 auto 14px}"
++".tdone circle{fill:none;stroke:var(--teal);stroke-width:5;stroke-dasharray:245;stroke-dashoffset:245;"
++"transform:rotate(-90deg);transform-origin:center}"
++".tdone path{fill:none;stroke:var(--teal);stroke-width:7;stroke-linecap:round;stroke-linejoin:round;"
++"stroke-dasharray:60;stroke-dashoffset:60}"
++".tsl.on .tdone circle{animation:tdraw245 .6s ease forwards}"
++".tsl.on .tdone path{animation:tdraw60 .4s .45s ease forwards}"
++"@keyframes tdraw245{to{stroke-dashoffset:0}}@keyframes tdraw60{to{stroke-dashoffset:0}}"
++".tall{margin-top:18px;display:inline-flex;align-items:center;gap:8px;align-self:center;border:1px solid var(--bd);"
++"background:var(--surf);color:var(--ink2);border-radius:11px;padding:10px 15px;font-size:13px;font-weight:700;cursor:pointer}"
++".tall:hover{border-color:var(--acc);color:var(--acc)}"
+ /* ---- demonstrația: pașii ---- */
++".tdemo{display:flex;flex-direction:column;align-items:center;gap:14px;margin-top:12px}"
++"@media(min-width:700px){.tdemo{flex-direction:row-reverse;align-items:flex-start;justify-content:center;gap:26px}"
++" .tdemo .tsteps{flex:1;max-width:340px;margin-top:6px}}"
++".tsteps{width:100%;display:flex;flex-direction:column;gap:7px}"
++".tstep{display:flex;gap:11px;align-items:flex-start;background:var(--surf);border:1px solid var(--bd);"
++"border-radius:12px;padding:9px 12px;transition:border-color .3s,box-shadow .3s,transform .3s}"
++".tstep .tsn{flex:0 0 auto;width:25px;height:25px;border-radius:50%;background:var(--surf2);color:var(--ink3);"
++"font-size:12.5px;font-weight:800;display:grid;place-items:center;transition:.3s}"
++".tstep b{display:block;font-size:13.5px;font-weight:800;line-height:1.3}"
++".tstep p{margin:1px 0 0;font-size:11.5px;line-height:1.45;color:var(--ink2)}"
++".tstep.on{border-color:var(--acc);box-shadow:0 4px 16px var(--accsoft);transform:translateX(4px)}"
++".tstep.on .tsn{background:var(--acc);color:#1c1200}"
++".tstep.dn .tsn{background:var(--teal);color:#04211d}"
++".treplay{align-self:flex-start;display:inline-flex;align-items:center;gap:7px;border:1px solid var(--bd);"
++"background:var(--surf);color:var(--ink2);border-radius:10px;padding:7px 12px;font-size:12.5px;font-weight:700;cursor:pointer}"
++".treplay:hover{border-color:var(--acc);color:var(--acc)}.treplay svg{width:14px;height:14px}"
+ /* ---- telefonul desenat ---- */
++".tphone{position:relative;width:232px;height:446px;flex:0 0 auto;background:#0b0c10;border-radius:30px;padding:7px;"
++"box-shadow:0 16px 40px rgba(0,0,0,.28)}"
++".tphone::after{content:'';position:absolute;top:14px;left:50%;transform:translateX(-50%);width:62px;height:5px;"
++"border-radius:5px;background:#0b0c10;z-index:8}"
++".tphs{position:relative;width:100%;height:100%;border-radius:24px;overflow:hidden;background:var(--bg);"
++"font-size:9.5px;line-height:1.4;color:var(--ink);display:block}"
++".tscr{position:absolute;inset:0;background:var(--bg);display:flex;flex-direction:column;opacity:0;"
+/* ecranul care iese își pierde opacitatea abia după ce cel nou l-a acoperit —
+   altfel, două ecrane cu fundal plin se văd unul prin altul o treime de secundă */
++"transform:translateX(9%);transition:opacity .01s .3s,transform .32s ease;pointer-events:none}"
++".tscr.on{opacity:1;transform:none;z-index:2;transition:opacity .3s ease,transform .32s ease}"
+ /* antetul și bara de jos, ca în aplicație */
++".tp-hd{flex:0 0 auto;display:flex;align-items:center;gap:6px;background:var(--surf);border-bottom:1px solid var(--bd);padding:15px 8px 7px}"
++".tp-lg{width:17px;height:17px;border-radius:5px;background:linear-gradient(135deg,#2f6f8f,#e07b39);flex:0 0 auto}"
++".tp-ht{flex:1;min-width:0}"
++".tp-ht b{display:block;font-size:8.5px;font-weight:800;line-height:1.2}"
++".tp-ht i{display:block;font-style:normal;font-size:7px;color:var(--ink3)}"
++".tp-ic{width:13px;height:13px;border-radius:4px;background:var(--surf2);flex:0 0 auto}"
++".tp-ic.q{background:var(--accsoft);color:var(--acc);font-size:8.5px;font-weight:800;display:grid;place-items:center}"
++".tp-bd{flex:1;overflow:hidden;padding:8px 8px 6px;display:flex;flex-direction:column;gap:6px}"
++".tp-nv{flex:0 0 auto;display:flex;background:var(--surf);border-top:1px solid var(--bd);padding:5px 2px 7px}"
++".tp-nv span{flex:1;text-align:center;font-size:6.5px;color:var(--ink3);display:flex;flex-direction:column;align-items:center;gap:2px}"
++".tp-nv span i{width:11px;height:11px;border-radius:3px;background:var(--bd);display:block}"
++".tp-nv span.on{color:var(--acc);font-weight:800}.tp-nv span.on i{background:var(--acc)}"
+ /* piese de conținut în telefon */
++".tp-seg{display:flex;background:var(--surf2);border-radius:9px;padding:2px;gap:2px;flex:0 0 auto}"
++".tp-seg b{flex:1;text-align:center;font-size:7.5px;font-weight:700;color:var(--ink3);padding:5px 2px;border-radius:7px}"
++".tp-seg b.on{background:var(--surf);color:var(--acc);box-shadow:0 1px 3px rgba(0,0,0,.12)}"
++".tp-t{font-size:12px;font-weight:800;line-height:1.25}"
++".tp-m{font-size:8px;color:var(--ink3);line-height:1.4}"
++".tp-c{background:var(--surf);border:1px solid var(--bd);border-radius:10px;padding:8px 9px;display:flex;"
++"flex-direction:column;gap:4px;transition:border-color .25s,box-shadow .25s}"
++".tp-c.sel{border-color:var(--acc);box-shadow:0 0 0 2px var(--accsoft)}"
++".tp-c.warm{background:var(--accsoft)}"
++".tp-c b{font-size:9px;font-weight:800;line-height:1.3}"
++".tp-c .tp-m{margin-top:1px}"
++".tp-row{display:flex;align-items:center;gap:6px}"
++".tp-row .sp{flex:1;min-width:0}"
++".tp-tag{font-size:6.5px;font-weight:800;background:var(--surf2);color:var(--ink2);border-radius:4px;padding:2px 5px;flex:0 0 auto}"
++".tp-tag.a{background:var(--accsoft);color:var(--acc)}"
++".tp-tag.t{background:rgba(53,195,179,.18);color:var(--tealtx)}"
++".tp-b{display:inline-flex;align-items:center;justify-content:center;gap:4px;border-radius:8px;padding:6px 10px;"
++"font-size:8.5px;font-weight:800;border:1px solid var(--bd);background:var(--surf);color:var(--ink2);"
++"transition:transform .15s,box-shadow .15s,background .15s}"
++".tp-b.pri{background:var(--acc);border-color:var(--acc);color:#1c1200}"
++".tp-b.wide{width:100%}"
++".tp-b.prs{transform:scale(.94);box-shadow:0 0 0 4px var(--accsoft)}"
++".tp-f{background:var(--surf);border:1px solid var(--bd);border-radius:7px;padding:5px 7px;font-size:8.5px;min-height:22px;color:var(--ink)}"
++".tp-f.fc{border-color:var(--acc);box-shadow:0 0 0 2px var(--accsoft)}"
++".tp-f .cr{display:inline-block;width:1.2px;height:9px;background:var(--ink);vertical-align:-1px;opacity:0}"
++".tp-f.fc .cr{opacity:1;animation:tblink 1s steps(1) infinite}"
++"@keyframes tblink{50%{opacity:0}}"
++".tp-l{font-size:7.5px;font-weight:800;color:var(--ink2)}"
++".tp-ck{display:flex;align-items:center;gap:6px;font-size:8.5px}"
++".tp-ck i{width:11px;height:11px;border-radius:3px;border:1.5px solid var(--ink3);flex:0 0 auto;position:relative}"
++".tp-ck.on i{border-color:var(--acc);background:var(--acc)}"
++".tp-ck.on i::after{content:'';position:absolute;left:3px;top:.5px;width:3px;height:6px;border:solid #1c1200;"
++"border-width:0 1.5px 1.5px 0;transform:rotate(42deg)}"
++".tp-fab{position:absolute;right:9px;bottom:34px;width:26px;height:26px;border-radius:50%;background:var(--acc);"
++"color:#1c1200;display:grid;place-items:center;font-size:14px;font-weight:800;z-index:5;box-shadow:0 3px 10px rgba(0,0,0,.3)}"
++".tp-fab.prs{transform:scale(.9);box-shadow:0 0 0 5px var(--accsoft)}"
+ /* foaia de jos, ca „sheet"-ul aplicației, cu umbra ei peste ecran */
++".tp-dim{position:absolute;inset:0;background:rgba(8,9,14,.55);opacity:0;visibility:hidden;"
++"transition:opacity .3s ease;z-index:5}"
++".tp-dim.on{opacity:1;visibility:visible}"
+/* foaia crește cât îi trebuie conținutului și se oprește la 82% din ecran, ca
+   în aplicație — nu ține o jumătate de telefon goală sub ultimul rând */
++".tp-sh{position:absolute;left:0;right:0;bottom:0;min-height:34%;max-height:82%;overflow:hidden;"
++"background:var(--surf);border:1px solid var(--bd);"
++"border-radius:16px 16px 0 0;padding:9px 10px;z-index:6;display:flex;flex-direction:column;gap:5px;"
++"transform:translateY(102%);transition:transform .36s cubic-bezier(.25,.9,.3,1)}"
++".tp-sh.on{transform:none}"
++".tp-sh .shd{display:flex;align-items:center;gap:6px;font-size:10px;font-weight:800;padding-bottom:5px}"
++".tp-sh .shd .sx{margin-left:auto;color:var(--ink3);font-size:12px}"
++".tp-ov{position:absolute;inset:0;background:var(--bg);opacity:0;visibility:hidden;transition:opacity .34s;"
++"display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;z-index:7;text-align:center;padding:16px}"
++".tp-ov.on{opacity:.97;visibility:visible}"
++".tp-ov b{font-size:12px;font-weight:800;color:var(--tealtx)}"
++".tp-ov span{font-size:8.5px;color:var(--ink2)}"
++".tp-ov svg{width:44px;height:44px}"
++".tp-ov svg circle{fill:none;stroke:var(--teal);stroke-width:5;stroke-dasharray:245;stroke-dashoffset:245;transform:rotate(-90deg);transform-origin:center}"
++".tp-ov svg path{fill:none;stroke:var(--teal);stroke-width:7;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:60;stroke-dashoffset:60}"
++".tp-ov.on svg circle{animation:tdraw245 .55s ease forwards}.tp-ov.on svg path{animation:tdraw60 .35s .4s ease forwards}"
+ /* degetul */
++".tcur{position:absolute;z-index:9;width:24px;height:24px;border-radius:50%;background:var(--accsoft);"
++"border:2px solid var(--acc);transform:translate(-50%,-50%);left:50%;top:90%;opacity:0;pointer-events:none;"
++"transition:left .72s cubic-bezier(.3,.7,.3,1),top .72s cubic-bezier(.3,.7,.3,1),opacity .25s}"
++".tcur.on{opacity:1}"
++".tcur.tap{animation:ttap .34s ease}"
++"@keyframes ttap{40%{transform:translate(-50%,-50%) scale(.6)}}"
++".tcur::after{content:'';position:absolute;inset:-2px;border-radius:50%;border:2px solid var(--acc);opacity:0}"
++".tcur.tap::after{animation:tripple .5s ease}"
++"@keyframes tripple{from{opacity:.8;transform:scale(1)}to{opacity:0;transform:scale(2.2)}}"
+ /* semnul întrebării din antet, cu pulsul lui de prima dată */
++".icon.qbtn{position:relative}"
++".icon.qbtn.nu::after{content:'';position:absolute;top:5px;right:5px;width:7px;height:7px;border-radius:50%;"
++"background:var(--acc);box-shadow:0 0 0 2px var(--surf);animation:tpulse 2.4s ease infinite}"
++"@keyframes tpulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.35);opacity:.65}}"
+ /* Cu al patrulea buton în antet, pe ecranele foarte înguste numele congregației
+    ajungea tăiat după două litere. Sub 360 px strângem puțin butoanele — atât. */
++"@media(max-width:359px){.head{gap:7px;padding-left:11px;padding-right:11px}"
++" .head .icon{width:32px;height:32px}.head .icon svg{width:18px;height:18px}}"
++"@media(prefers-reduced-motion:reduce){.tsl .ta{opacity:1;transform:none;animation:none}"
++" .tcur,.tp-sh,.tscr{transition:none}.icon.qbtn.nu::after{animation:none}}";
+ document.head.appendChild(s);}
+
+/* Trei iconițe proprii: `IC.gem`, `IC.sheep` și `IC.wheat` sunt goale în setul
+   aplicației (se folosesc doar ca nume de categorie la importul caietului), iar
+   un tutorial fără iconiță ar cădea toate pe carte. */
+var TIC={
+ user:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>',
+ hand:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11V5.5a1.5 1.5 0 0 1 3 0V11"/><path d="M12 11V4.5a1.5 1.5 0 0 1 3 0V11"/><path d="M15 11V6.5a1.5 1.5 0 0 1 3 0V14a7 7 0 0 1-7 7h-1a6 6 0 0 1-5-2.7L3.6 15a1.6 1.6 0 0 1 2.5-2L9 16"/></svg>',
+ quest:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9.2"/><path d="M9.2 9.3a2.9 2.9 0 0 1 5.6 1c0 1.9-2.8 2.4-2.8 4"/><path d="M12 17.4h.01"/></svg>'};
+
+/* ---------------------------------------------------------------------------
+   Piesele din care se construiește ecranul telefonului desenat. Sunt mici
+   funcții care scot bucăți de HTML, ca fiecare tutorial să se scrie în câteva
+   rânduri, nu într-o pagină de marcaj copiat.
+   --------------------------------------------------------------------------- */
+var TP={
+ /* antetul aplicației, cu semnul întrebării la vedere */
+ hd:function(sub){return '<div class="tp-hd"><span class="tp-lg"></span><span class="tp-ht"><b>ArhiLink</b><i>'
+   +esc(sub||"Bucurestii Noi")+'</i></span><span class="tp-ic q">?</span><span class="tp-ic"></span><span class="tp-ic"></span></div>';},
+ /* bara de jos; `on` e unul din meu|prog|bros|arh */
+ nv:function(on){var L=[["meu","Profil"],["prog","Programări"],["bros","Vestitori"],["arh","Arhivă"]];
+  return '<div class="tp-nv">'+L.map(function(x){return '<span class="'+(x[0]===on?"on":"")+'"><i></i>'+x[1]+'</span>';}).join("")+'</div>';},
+ bd:function(h){return '<div class="tp-bd">'+h+'</div>';},
+ seg:function(a,i){return '<div class="tp-seg">'+a.map(function(t,j){return '<b class="'+(j===i?"on":"")+'">'+esc(t)+'</b>';}).join("")+'</div>';},
+ /* rândul cu săptămâna și cele două săgeți — se țintește cu `.wkp` / `.wkn` */
+ wk:function(t){return '<div class="tp-row" style="justify-content:center;gap:8px">'
+   +'<span class="tp-tag wkp">‹</span><b style="font-size:9px">'+esc(t)+'</b><span class="tp-tag wkn">›</span></div>';},
+ /* rândul cu anul de serviciu și luna — se țintește cu `.ymy` / `.ymm` */
+ ym:function(y,m){return '<div class="tp-row"><span class="tp-tag sp ymy">'+esc(y)+'</span>'
+   +(m?('<span class="tp-tag ymm">'+esc(m)+'</span>'):'')+'</div>';},
+ /* firimitura de sus din Arhivă: butonul de întors și titlul secțiunii */
+ bc:function(back,title){return '<div class="tp-row"><span class="tp-tag bck">‹ '+esc(back)+'</span>'
+   +'<b style="font-size:9.5px">'+esc(title)+'</b></div>';},
+ t:function(s){return '<div class="tp-t">'+esc(s)+'</div>';},
+ m:function(s){return '<div class="tp-m">'+s+'</div>';},
+ /* un card: titlu, rânduri „etichetă · valoare", eventual o etichetă colorată */
+ c:function(o){o=o||{};var h='<div class="tp-c'+(o.cls?(" "+o.cls):"")+'"'+(o.id?(' id="'+o.id+'"'):"")+'>';
+  if(o.t)h+='<div class="tp-row"><b class="sp">'+esc(o.t)+'</b>'+(o.tag?('<span class="tp-tag '+(o.tagc||"")+'">'+esc(o.tag)+'</span>'):"")+'</div>';
+  (o.rows||[]).forEach(function(r){h+='<div class="tp-row"><span class="tp-m sp">'+esc(r[0])+'</span><span class="tp-tag">'+esc(r[1])+'</span></div>';});
+  if(o.sub)h+='<div class="tp-m">'+o.sub+'</div>';
+  if(o.body)h+=o.body;
+  return h+'</div>';},
+ /* rând simplu de listă: nume în stânga, ceva scurt în dreapta */
+ li:function(a,b,cls,id){return '<div class="tp-c'+(cls?(" "+cls):"")+'" style="padding:6px 9px"'+(id?(' id="'+id+'"'):"")
+   +'><div class="tp-row"><b class="sp">'+esc(a)+'</b>'+(b?('<span class="tp-tag">'+esc(b)+'</span>'):"")+'</div></div>';},
+ b:function(txt,o){o=o||{};return '<span class="tp-b'+(o.pri?" pri":"")+(o.wide?" wide":"")+'"'+(o.id?(' id="'+o.id+'"'):"")+'>'+esc(txt)+'</span>';},
+ /* câmp de scris; textul se bate literă cu literă din script */
+ f:function(id,ph){return '<div class="tp-f" id="'+id+'"><span id="'+id+'_t">'+esc(ph||"")+'</span><span class="cr"></span></div>';},
+ l:function(s){return '<div class="tp-l">'+esc(s)+'</div>';},
+ ck:function(txt,on,id){return '<div class="tp-ck'+(on?" on":"")+'"'+(id?(' id="'+id+'"'):"")+'><i></i>'+esc(txt)+'</div>';},
+ fab:function(ch,id){return '<div class="tp-fab" id="'+(id||"tfab")+'">'+(ch||"+")+'</div>';},
+ /* foaia care urcă de jos — acolo se fac aproape toate modificările în aplicație.
+    Umbra de deasupra ecranului vine cu ea, ca în aplicația adevărată. */
+ sh:function(id,titlu,h){return '<div class="tp-dim" id="'+id+'_d"></div><div class="tp-sh" id="'+id+'">'
+   +'<div class="shd">'+esc(titlu)+'<span class="sx">×</span></div>'+h+'</div>';},
+ ok:function(id,t,s){return '<div class="tp-ov" id="'+id+'"><svg viewBox="0 0 90 90"><circle cx="45" cy="45" r="39"/>'
+   +'<path d="M30 46 41 57 61 35"/></svg><b>'+esc(t)+'</b><span>'+esc(s||"")+'</span></div>';},
+ sp:function(n){return '<div style="height:'+(n||4)+'px"></div>';}
+};
+
+/* ---------------------------------------------------------------------------
+   Randarea slide-urilor
+   --------------------------------------------------------------------------- */
+function _tutHead(o,n){var h="";
+ if(o.eb)h+='<div class="teb ta ta1">'+esc(o.eb)+'</div>';
+ if(o.h)h+='<h2 class="'+(n?"th1":"th2")+' ta ta2">'+o.h+'</h2>';
+ if(o.p)h+='<p class="tp ta ta3">'+o.p+'</p>';
+ return h;}
+
+function _tutSlide(o,idx){
+ if(o.k==="intro")return '<div class="tsl" data-i="'+idx+'"><div class="tintro">'
+   +'<div class="tbig">'+(o.ic||IC.info)+'</div>'+_tutHead(o,1)
+   +'<div class="thint ta ta5"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg> Trage cu degetul spre stânga sau apasă <span class="tk">Mai departe</span></div></div></div>';
+ if(o.k==="cards")return '<div class="tsl" data-i="'+idx+'">'+_tutHead(o)+'<div class="tcards">'
+   +(o.items||[]).map(function(it,i){return '<div class="tcard ta ta'+Math.min(8,i+3)+'"><span class="tci">'+(it[0]||IC.info)+'</span>'
+     +'<span style="flex:1;min-width:0"><b>'+esc(it[1])+'</b><p>'+it[2]+'</p></span></div>';}).join("")+'</div></div>';
+ if(o.k==="rules")return '<div class="tsl" data-i="'+idx+'">'+_tutHead(o)+'<div class="trules">'
+   +(o.items||[]).map(function(it,i){return '<div class="trule '+it[0]+' ta ta'+Math.min(8,i+3)+'"><b>'+esc(it[1])+'</b><p>'+it[2]+'</p></div>';}).join("")+'</div></div>';
+ if(o.k==="faq")return '<div class="tsl" data-i="'+idx+'">'+_tutHead(o)+'<div class="tfaq">'
+   +(o.items||[]).map(function(it,i){return '<div class="tqa ta ta'+Math.min(8,i+3)+'"><div class="tq">'+esc(it[0])+'</div><div class="tr">'+it[1]+'</div></div>';}).join("")+'</div></div>';
+ if(o.k==="recap")return '<div class="tsl" data-i="'+idx+'"><div class="trecap">'
+   +'<svg class="tdone" viewBox="0 0 90 90"><circle cx="45" cy="45" r="39"/><path d="M30 46 41 57 61 35"/></svg>'
+   +'<h2 class="th2 ta ta1">'+(o.h||"Atât e tot")+'</h2>'
+   +(o.p?('<p class="tp ta ta2">'+o.p+'</p>'):"")
+   +'<div class="tchips">'+(o.chips||[]).map(function(c,i){return '<div class="tchip ta ta'+Math.min(8,i+3)+'"><span class="tn">'+(i+1)+'</span>'+c+'</div>';}).join("")+'</div>'
+   +'<button class="tall ta ta8" onclick="tutIndex()">'+IC.book+' Toate tutorialele</button></div></div>';
+ /* demonstrația: pașii + telefonul */
+ var st=(o.steps||[]).map(function(s,i){return '<div class="tstep" data-s="'+(i+1)+'"><span class="tsn">'+(i+1)+'</span>'
+   +'<span style="flex:1;min-width:0"><b>'+esc(s[0])+'</b>'+(s[1]?('<p>'+s[1]+'</p>'):"")+'</span></div>';}).join("");
+ var scr=(o.sc||[]).map(function(h,i){return '<div class="tscr'+(i===0?" on":"")+'" data-c="'+i+'">'+h+'</div>';}).join("");
+ return '<div class="tsl" data-i="'+idx+'">'+_tutHead(o)
+   +'<div class="tdemo ta ta3"><div class="tphone"><div class="tphs">'+scr
+   +(o.ov||"")+'<div class="tcur"></div></div></div>'
+   +'<div class="tsteps">'+st
+   +'<button class="treplay" onclick="tutReplay()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg> Reia demonstrația</button></div></div></div>';}
+
+/* ---------------------------------------------------------------------------
+   Motorul demonstrației. Scriptul e o listă de [milisecunde, comandă, …]:
+     ["scr",i]  arată ecranul i        ["step",n] pasul n activ (0 = niciunul)
+     ["cur",x,y] mută degetul (procente) ["curEl",id] îl mută PESTE un element
+     ["tap"] apasă                       ["show"] / ["hide"]  degetul
+     ["prs",id] butonul apăsat           ["cls",id,c] / ["rm",id,c]  clase
+     ["type",id,text,viteză] scrie       ["sh",id] / ["shx",id] foaia de jos
+     ["ok",id] ecranul „gata"            ["loop"] o ia de la capăt
+
+   `cur` e pentru cromul telefonului (bara de sus, butonul rotund, bara de jos),
+   care stă în același loc oriunde. Pentru conținut se folosește `curEl`: degetul
+   se așază singur peste element, deci nu se dezlipește dacă textul se schimbă.
+   Într-o foaie de jos, `curEl` se dă DUPĂ ce foaia a terminat de urcat (~400 ms).
+   --------------------------------------------------------------------------- */
+function _tutStop(){_tutT.forEach(clearTimeout);_tutT=[];_tutRun=false;}
+function _tutAt(t,fn){_tutT.push(setTimeout(fn,t));}
+function _tutEl(sl,id){return sl.querySelector("#"+id)||sl.querySelector('[id="'+id+'"]');}
+/* ținta degetului: sau un id, sau un selector (căutat întâi în ecranul vizibil,
+   ca aceeași clasă să meargă pe toate ecranele demonstrației) */
+function _tutTarget(sl,q){try{
+ if(q&&(q.charAt(0)==="."||q.charAt(0)==="[")) return sl.querySelector(".tscr.on "+q)||sl.querySelector(q);
+ return _tutEl(sl,q);}catch(e){return null;}}
+/* Poziția țintei, în procente din ecranul telefonului, socotită din `offsetTop`,
+   nu din dreptunghiul de pe ecran: foaia de jos și ecranele care alunecă sunt
+   mutate cu `transform`, iar dreptunghiul lor e cel de la mijlocul alunecării.
+   Cu telefonul într-o filă ascunsă, ceasurile se adună și degetul ar fi ajuns
+   după o foaie încă necoborâtă. `offsetTop` spune unde AJUNGE lucrul, nu unde
+   se află în clipa aceea. */
+function _tutPos(el,root){try{
+ if(!el||!root||!root.offsetWidth)return null;
+ var x=0,y=0,n=el;
+ while(n&&n!==root){x+=n.offsetLeft;y+=n.offsetTop;n=n.offsetParent;}
+ if(n!==root)return null;/* ținta nu e în telefonul acesta */
+ return {x:(x+el.offsetWidth/2)/root.offsetWidth*100,y:(y+el.offsetHeight/2)/root.offsetHeight*100};
+}catch(e){return null;}}
+
+function _tutPlay(sl,o,delay){
+ var sc=o.run||[];if(!sc.length)return;
+ var cur=sl.querySelector(".tcur");
+ var scrs=[].slice.call(sl.querySelectorAll(".tscr"));
+ var steps=[].slice.call(sl.querySelectorAll(".tstep"));
+ var reduced=false;try{reduced=window.matchMedia("(prefers-reduced-motion: reduce)").matches;}catch(e){}
+ function reset(){
+  scrs.forEach(function(s,i){s.classList.toggle("on",i===0);});
+  steps.forEach(function(s){s.classList.remove("on","dn");});
+  [].forEach.call(sl.querySelectorAll(".tp-sh,.tp-dim"),function(x){x.classList.remove("on");});
+  [].forEach.call(sl.querySelectorAll(".tp-ov"),function(x){x.classList.remove("on");});
+  [].forEach.call(sl.querySelectorAll(".prs"),function(x){x.classList.remove("prs");});
+  [].forEach.call(sl.querySelectorAll(".tp-f"),function(x){x.classList.remove("fc");});
+  [].forEach.call(sl.querySelectorAll("[data-t0]"),function(x){x.textContent=x.getAttribute("data-t0");});
+  if(cur){cur.classList.remove("on","tap");cur.style.left="50%";cur.style.top="92%";}}
+ /* la prima rulare ținem minte textul de pornire al câmpurilor, ca reluarea să pornească curat */
+ [].forEach.call(sl.querySelectorAll(".tp-f span[id]"),function(x){if(!x.hasAttribute("data-t0"))x.setAttribute("data-t0",x.textContent);});
+ reset();
+ /* Cine a cerut „fără animații" primește tot rezultatul, dintr-odată: parcurgem
+    scriptul până la capăt fără ceasuri, sărind peste deget și peste reluare.
+    Așa rămâne pe ecran exact ce s-ar fi văzut la final — câmpuri completate,
+    bife puse, ecranul de „gata" — nu doar ultimul ecran gol. */
+ if(reduced&&!sl._tforce){
+  steps.forEach(function(s){s.classList.add("dn");});
+  sc.forEach(function(c){var a=c[1];try{
+   if(a==="scr")scrs.forEach(function(s,i){s.classList.toggle("on",i===c[2]);});
+   else if(a==="prs"){var b1=_tutEl(sl,c[2]);if(b1)b1.classList.add("prs");}
+   else if(a==="cls"){var e1=_tutEl(sl,c[2]);if(e1)e1.classList.add(c[3]);}
+   else if(a==="rm"){var e2=_tutEl(sl,c[2]);if(e2)e2.classList.remove(c[3]);}
+   else if(a==="sh"){var s1=_tutEl(sl,c[2]);if(s1)s1.classList.add("on");
+    var d1=_tutEl(sl,c[2]+"_d");if(d1)d1.classList.add("on");}
+   else if(a==="shx"){var s2=_tutEl(sl,c[2]);if(s2)s2.classList.remove("on");
+    var d2=_tutEl(sl,c[2]+"_d");if(d2)d2.classList.remove("on");}
+   else if(a==="ok"){var o1=_tutEl(sl,c[2]);if(o1)o1.classList.add("on");}
+   else if(a==="type"){var t1=_tutEl(sl,c[2]+"_t");if(t1)t1.textContent=c[3]||"";}
+  }catch(e){}});
+  return;}
+ _tutRun=true;
+ var t0=delay||500;
+ sc.forEach(function(c){
+  var t=t0+(c[0]||0),a=c[1];
+  _tutAt(t,function(){
+   try{
+    if(a==="scr"){scrs.forEach(function(s,i){s.classList.toggle("on",i===c[2]);});}
+    else if(a==="step"){steps.forEach(function(s,i){s.classList.toggle("on",i+1===c[2]);s.classList.toggle("dn",i+1<c[2]||c[2]===99);});}
+    else if(a==="cur"&&cur){cur.style.left=c[2]+"%";cur.style.top=c[3]+"%";}
+    else if(a==="curEl"&&cur){var te=_tutTarget(sl,c[2]),tph=sl.querySelector(".tphs");
+     var tp=_tutPos(te,tph);
+     if(tp){cur.style.left=tp.x.toFixed(2)+"%";cur.style.top=tp.y.toFixed(2)+"%";}}
+    else if(a==="tap"&&cur){cur.classList.remove("tap");void cur.offsetWidth;cur.classList.add("tap");}
+    else if(a==="show"&&cur){cur.classList.add("on");}
+    else if(a==="hide"&&cur){cur.classList.remove("on");}
+    else if(a==="prs"){var b=_tutEl(sl,c[2]);if(b)b.classList.add("prs");}
+    else if(a==="cls"){var e1=_tutEl(sl,c[2]);if(e1)e1.classList.add(c[3]);}
+    else if(a==="rm"){var e2=_tutEl(sl,c[2]);if(e2)e2.classList.remove(c[3]);}
+    else if(a==="sh"){var s1=_tutEl(sl,c[2]);if(s1)s1.classList.add("on");
+     var d1=_tutEl(sl,c[2]+"_d");if(d1)d1.classList.add("on");}
+    else if(a==="shx"){var s2=_tutEl(sl,c[2]);if(s2)s2.classList.remove("on");
+     var d2=_tutEl(sl,c[2]+"_d");if(d2)d2.classList.remove("on");}
+    else if(a==="ok"){var o1=_tutEl(sl,c[2]);if(o1)o1.classList.add("on");}
+    else if(a==="loop"){if(_tutRun)_tutPlay(sl,o,600);}
+   }catch(e){}
+  });
+  /* scrisul are nevoie de un fir propriu de ceasuri, literă cu literă */
+  if(a==="type"){var id=c[2],txt=c[3]||"",sp=c[4]||55;
+   _tutAt(t,function(){var f=_tutEl(sl,id);if(f)f.classList.add("fc");});
+   for(var i=0;i<txt.length;i++)(function(i){_tutAt(t+i*sp,function(){
+     var e=_tutEl(sl,id+"_t");if(e)e.textContent=txt.slice(0,i+1);});})(i);
+   _tutAt(t+txt.length*sp+420,function(){var f=_tutEl(sl,id);if(f)f.classList.remove("fc");});}
+ });}
+
+function tutReplay(){var sl=_tutCurSlide();if(!sl)return;sl._tforce=1;_tutStop();
+ var o=_tutSl[+sl.getAttribute("data-i")];if(o&&o.k==="demo")_tutPlay(sl,o,250);}
+function _tutCurSlide(){return document.querySelector(".tsl.on");}
+
+/* ---------------------------------------------------------------------------
+   Deschidere, închidere, navigare
+   --------------------------------------------------------------------------- */
+function _tutMount(){var o=document.getElementById("tutov");if(o)return o;
+ o=document.createElement("div");o.id="tutov";o.className="tutov";
+ o.innerHTML='<div class="tutbox">'
+  +'<div class="tutpb"><i id="tutpb"></i></div>'
+  +'<div class="tuthd"><span class="tth" id="tutTtl"></span><span class="ttn" id="tutNum"></span>'
+  +'<button class="tutx" id="tutX" aria-label="Închide tutorialul">×</button></div>'
+  +'<div class="tutdeck" id="tutdeck"></div>'
+  +'<div class="tutft"><button class="tutnb" id="tutPrev" aria-label="Înapoi">‹</button>'
+  +'<div class="tutdots" id="tutdots"></div>'
+  +'<button class="tutnb pri" id="tutNext">Mai departe</button></div></div>';
+ /* îl punem lângă `.app`, ca variabilele de temă (`.app.light`) să ajungă și la el */
+ var ap=document.querySelector(".app");(ap||document.body).appendChild(o);
+ o.querySelector("#tutX").onclick=tutClose;
+ o.querySelector("#tutPrev").onclick=function(){tutGo(_tutI-1);};
+ o.querySelector("#tutNext").onclick=function(){if(_tutI>=_tutSl.length-1)tutClose();else tutGo(_tutI+1);};
+ /* trasul cu degetul, ca în prezentări */
+ var x0=null,y0=null;
+ o.addEventListener("touchstart",function(e){x0=e.touches[0].clientX;y0=e.touches[0].clientY;},{passive:true});
+ o.addEventListener("touchend",function(e){if(x0===null)return;
+  var dx=e.changedTouches[0].clientX-x0,dy=e.changedTouches[0].clientY-y0;x0=null;
+  if(Math.abs(dx)>55&&Math.abs(dx)>Math.abs(dy)*1.4)tutGo(_tutI+(dx<0?1:-1));},{passive:true});
+ return o;}
+
+function tutOpen(key,back){
+ tutCSS();var d=TUT.D[TUT.A[key]||key]||TUT.D[TUT.A[_tutFallback(key)]||_tutFallback(key)]||TUT.D.start;
+ if(!d)return;
+ _tutK=key;_tutSl=d.s||[];_tutBack=back||null;
+ var o=_tutMount();
+ document.getElementById("tutTtl").textContent=d.t||"Tutorial";
+ var dk=document.getElementById("tutdeck");
+ dk.innerHTML=_tutSl.map(function(s,i){return _tutSlide(s,i);}).join("");
+ var dots=document.getElementById("tutdots");
+ dots.innerHTML=_tutSl.map(function(s,i){return '<button aria-label="Pasul '+(i+1)+'"></button>';}).join("");
+ [].forEach.call(dots.children,function(b,i){b.onclick=function(){tutGo(i);};});
+ o.classList.add("on");document.documentElement.style.overflow="hidden";
+ _tutI=-1;tutGo(0,true);
+ try{_tutSeen(key);}catch(e){}}
+
+/* dacă secțiunea n-are încă tutorial propriu, urcăm la părintele ei */
+function _tutFallback(k){var i=String(k).indexOf(".");return i>0?k.slice(0,i):"start";}
+
+function tutGo(n,first){
+ if(n<0||n>=_tutSl.length)return;if(n===_tutI&&!first)return;
+ var sls=[].slice.call(document.querySelectorAll(".tsl"));
+ _tutStop();
+ sls.forEach(function(s,i){s.classList.toggle("on",i===n);s.classList.toggle("pre",i<n);
+  if(i!==n)s.scrollTop=0;});
+ _tutI=n;
+ var dots=document.getElementById("tutdots");
+ if(dots)[].forEach.call(dots.children,function(b,i){b.classList.toggle("on",i===n);});
+ var pb=document.getElementById("tutpb");if(pb)pb.style.width=((n+1)/_tutSl.length*100)+"%";
+ var nm=document.getElementById("tutNum");if(nm)nm.textContent=(n+1)+" / "+_tutSl.length;
+ var pv=document.getElementById("tutPrev");if(pv)pv.disabled=(n===0);
+ var nx=document.getElementById("tutNext");if(nx)nx.textContent=(n===_tutSl.length-1)?"Am înțeles":"Mai departe";
+ var o=_tutSl[n];
+ if(o&&o.k==="demo"&&sls[n])_tutAt(0,function(){_tutPlay(sls[n],o,900);});}
+
+function tutClose(){_tutStop();
+ var o=document.getElementById("tutov");if(o)o.classList.remove("on");
+ document.documentElement.style.overflow="";
+ if(_tutBack){var f=_tutBack;_tutBack=null;setTimeout(f,60);}}
+
+/* ---------------------------------------------------------------------------
+   Ce tutorial se potrivește cu ecranul deschis acum
+   --------------------------------------------------------------------------- */
+function tutKey(){try{
+ var t=(typeof tab!=="undefined")?tab:"prog";
+ if(t==="prog")return "prog."+((typeof progSub!=="undefined"&&progSub)||"vcp");
+ if(t==="meu")return "meu";
+ if(t==="bros")return "bros";
+ if(t==="set")return "set";
+ if(t==="arh"){
+  if(typeof _arhFull==="function"&&!_arhFull())
+   return (typeof arhLiteSub!=="undefined"&&arhLiteSub)?("lite."+arhLiteSub):"vestitor";
+  var s=(typeof arhSub!=="undefined")?arhSub:"";
+  if(!s)return (typeof arhGrp!=="undefined"&&arhGrp)?("arhg."+arhGrp):"arh";
+  return "arh."+s;}
+ return "start";}catch(e){return "start";}}
+
+function tutHere(){tutOpen(tutKey());}
+
+/* eticheta secțiunii, pentru titlul butonului și pentru lista cu toate */
+function _tutTitle(k){var d=TUT.D[TUT.A[k]||k];return d?d.t:"";}
+
+/* ---------------------------------------------------------------------------
+   Lista cu toate tutorialele — se ajunge la ea din ultimul slide sau din Setări.
+   Semnul „?" NU o deschide: el arată doar secțiunea în care ești.
+   --------------------------------------------------------------------------- */
+function tutIndex(){tutCSS();_tutStop();
+ var o=document.getElementById("tutov");if(o)o.classList.remove("on");
+ document.documentElement.style.overflow="";
+ ensureArhHomeCSS();try{arhEnsureCSS();}catch(e){}/* „a-hd", capul de grupă, stă în foaia Arhivei */
+ var groups=[
+  ["Pentru toți",["start","vestitor","meu","prog.vcp","prog.wm","prog.sarc"]],
+  ["Planificări",["arh","arh.vcped","arh.wm","arh.mp","arh.teren","arh.sarc","arh.cur"]],
+  ["Rapoarte și evidențe",["arh.sumar","arh.rap","arh.pio600","arh.prez","arh.grp","arh.resp","arh.arhv","arh.scr","arh.exp"]],
+  ["Administrare",["bros","set"]]];
+ var h="";
+ groups.forEach(function(g){
+  var items=g[1].filter(function(k){return !!TUT.D[k];});if(!items.length)return;
+  h+='<div class="a-hd" style="margin:16px 2px 8px">'+esc(g[0])+'</div><div class="ahome">'
+   +items.map(function(k){var d=TUT.D[k];
+     return _ahCard('tutOpen(\''+k+'\',tutIndex)',d.ic||IC.book,d.t,d.sub||"");}).join("")+'</div>';});
+ sheet("","Tutoriale",'<div class="muted" style="margin:0 2px 4px">Semnul <b>?</b> din antet deschide de fiecare dată tutorialul secțiunii în care te afli. Aici le găsești pe toate.</div>'+h);}
+
+/* ---------------------------------------------------------------------------
+   Semnul întrebării din antet
+   ----------------------------------------------------------------------------
+   Bulina portocalie de lângă el stă până când omul deschide primul tutorial —
+   pe urmă butonul rămâne acolo, liniștit, în același loc, în toate secțiunile.
+   --------------------------------------------------------------------------- */
+var TUT_SEEN="planintr_v1_tut";
+function _tutSeenSet(){try{var raw=localStorage.getItem(TUT_SEEN);return raw?JSON.parse(raw):{};}catch(e){return {};}}
+function _tutSeen(k){try{var o=_tutSeenSet();o[k]=1;o._any=1;localStorage.setItem(TUT_SEEN,JSON.stringify(o));
+ var b=document.getElementById("btnHelp");if(b)b.classList.remove("nu");}catch(e){}}
+function _tutBtnSync(){var b=document.getElementById("btnHelp");if(!b)return;
+ tutCSS();
+ b.classList.toggle("nu",!_tutSeenSet()._any);
+ var t=_tutTitle(tutKey());
+ b.title=t?("Tutorial — "+t):"Tutorial pentru secțiunea deschisă";
+ b.setAttribute("aria-label",b.title);}
+
+(function(){
+ var IChelp='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9.2"/><path d="M9.2 9.3a2.9 2.9 0 0 1 5.6 1c0 1.9-2.8 2.4-2.8 4"/><path d="M12 17.4h.01"/></svg>';
+ function mount(){
+  var hd=document.querySelector(".head");if(!hd||document.getElementById("btnHelp"))return;
+  var b=document.createElement("button");
+  b.id="btnHelp";b.className="icon qbtn";b.innerHTML=IChelp;
+  b.onclick=function(){tutHere();};
+  var first=hd.querySelector("#btnSet");
+  if(first)hd.insertBefore(b,first);else hd.appendChild(b);
+  _tutBtnSync();}
+ if(document.readyState==="loading")window.addEventListener("DOMContentLoaded",mount);else mount();
+ /* titlul butonului urmărește secțiunea deschisă — verificăm din când în când,
+    fără să ne legăm de fiecare funcție de randare din aplicație */
+ setInterval(function(){try{if(document.getElementById("btnHelp"))_tutBtnSync();}catch(e){}},1200);
+ document.addEventListener("keydown",function(e){
+  var on=document.getElementById("tutov");if(!on||!on.classList.contains("on"))return;
+  if(e.key==="Escape"){e.preventDefault();tutClose();}
+  if(e.key==="ArrowRight"){e.preventDefault();tutGo(_tutI+1);}
+  if(e.key==="ArrowLeft"){e.preventDefault();tutGo(_tutI-1);}});
+})();
+
+/* ===========================================================================
+   TUTORIALELE
+   ---------------------------------------------------------------------------
+   Ordinea din fiecare tutorial e mereu aceeași: ce e secțiunea, cum se face
+   lucrul principal (arătat pe telefon), ce e bine de știut, recapitulare.
+
+   Degetul se mută în două feluri: `cur` cu procente pentru cromul telefonului
+   (bara de sus, butonul rotund, bara de jos — stau mereu în același loc) și
+   `curEl` peste un element anume, pentru conținut. Așa nu se dezlipește dacă
+   se schimbă un text.
+
+   Foaia de jos (`TP.sh`) stă în ACELAȘI ecran cu lista peste care se ridică —
+   nu pe un ecran gol al ei — ca telefonul să arate ca aplicația adevărată.
+   =========================================================================== */
+
+/* ---- coordonatele cromului, ca să nu le tot rescriem ---- */
+var _Q=[76,6];            /* semnul întrebării din antet */
+var _FAB=[90,89];         /* butonul rotund din colț */
+var _NAV=[[12,96],[37,96],[62,96],[87,96]]; /* Profil · Programări · Vestitori · Arhivă */
+var _SEG=[[22,13],[50,13],[78,13]];         /* cele trei foi din bara de sus */
+
+TUT.D["start"]={t:"Bun venit în ArhiLink",sub:"ce e aplicația și cum e împărțită",ic:IC.book,s:[
+ {k:"intro",ic:IC.book,eb:"ArhiLink",h:'Tot ce ține de congregație, <span class="thl">într-un singur loc</span>',
+  p:"Programul întrunirilor, sarcinile de pe avizier, rapoartele lunare și evidențele — pe telefon, la îndemână, și în aceeași formă pentru toată lumea."},
+ {k:"cards",eb:"Cele patru butoane de jos",h:"Cum e împărțită aplicația",items:[
+  [TIC.user,"Profilul meu","Fișa ta: raportul lunar de trimis, atribuirile tale din săptămânile care vin și evenimentele congregației."],
+  [IC.cal,"Programări","Ce se ține pe avizier: programul întrunirii din timpul săptămânii, întrunirea publică și sarcinile. Toată lumea le vede."],
+  [IC.ppl,"Vestitori","Fișele vestitorilor: grupa, privilegiile, la ce poate fi pus fiecare. Se modifică doar cu drept de editare."],
+  [IC.arch,"Arhivă","Unde se face treaba: planificările și evidențele — rapoarte, prezență, grupe, responsabilități."]]},
+ {k:"demo",eb:"Semnul întrebării",h:"Ajutorul e mereu la un deget distanță",
+  steps:[["Deschizi o secțiune","Oricare — Programări, Arhivă, Profilul meu."],
+         ["Apeși pe „?” din antet","Stă în același loc în toate secțiunile."],
+         ["Vezi tutorialul acelei secțiuni","Doar al ei, nu tot manualul."]],
+  sc:[TP.hd()+TP.bd(TP.seg(["Viața creștină","Întrunirea publică","Sarcini"],0)
+      +TP.t("31 August – 6 Septembrie")+TP.m("IEREMIA 31")
+      +TP.c({t:"7:00 Cântarea 27",rows:[["Rugăciune","STAN Daniel"]],id:"stC"})
+      +TP.c({t:"7:05 Cuvinte introductive",rows:[["Președinte","TATAR Silviu"]]})
+      +TP.c({t:"7:06  1. „Voi încheia… un legământ nou”",rows:[["10 min.","NEDELEA Antonio"]]}))+TP.nv("prog"),
+      TP.hd()+'<div class="tp-bd" style="justify-content:center;text-align:center;gap:9px">'
+      +'<div style="width:38px;height:38px;border-radius:11px;background:var(--accsoft);color:var(--acc);display:grid;place-items:center;margin:0 auto;font-size:19px;font-weight:800">?</div>'
+      +'<div class="tp-t">Programări · Viața creștină</div>'
+      +'<div class="tp-m">Cum citești programul săptămânii și cum îl descarci</div>'
+      +'<div style="display:flex;gap:4px;justify-content:center;margin-top:6px"><span style="width:6px;height:6px;border-radius:50%;background:var(--acc)"></span><span style="width:6px;height:6px;border-radius:50%;background:var(--bd)"></span><span style="width:6px;height:6px;border-radius:50%;background:var(--bd)"></span></div>'
+      +'</div>'+TP.nv("prog")],
+  run:[[0,"step",1],[0,"show"],[200,"curEl","stC"],
+       [1300,"step",2],[1400,"cur",_Q[0],_Q[1]],[2200,"tap"],
+       [2600,"scr",1],[2700,"step",3],[2800,"hide"],
+       [5600,"loop"]]},
+ {k:"recap",h:"Ai găsit ajutorul",p:"Fiecare secțiune are tutorialul ei. Îl deschizi de unde te afli.",
+  chips:["Patru butoane jos — patru zone ale aplicației","„?” din antet = tutorialul secțiunii deschise","Aici, la final, găsești lista cu toate tutorialele"]}
+]};
+
+/* ------------------------------------------------------------------ vestitor */
+TUT.D["vestitor"]={t:"Pentru vestitori",sub:"ce faci tu în aplicație, pas cu pas",ic:TIC.hand,s:[
+ {k:"intro",ic:TIC.hand,eb:"Vestitorul obișnuit",h:'Ai de făcut <span class="thl">un singur lucru</span> în fiecare lună',
+  p:"Îți treci raportul. Restul — programul întrunirilor, sarcinile, curățenia, mărturia publică — le <b>vezi</b>, nu le completezi. Nimic din ce faci aici nu strică munca altcuiva."},
+ {k:"cards",eb:"Ce ai la îndemână",h:"Ce vezi tu în aplicație",items:[
+  [IC.edit,"Raportul tău lunar","Din „Profilul meu”. Îl completezi o dată pe lună și pleacă singur mai departe."],
+  [IC.cal,"Atribuirile tale","Tot în „Profilul meu”: partea ta din program, tura ta de mărturie publică, sarcina ta de la întrunire."],
+  [IC.book,"Programul întrunirilor","În „Programări” — aceeași foaie ca pe avizier, cu tot cu ora fiecărei părți."],
+  [IC.check,"Curățenia și celelalte foi","În „Arhivă”: curățenia generală, mărturia publică, întrunirile de teren."]]},
+ {k:"demo",eb:"Pas cu pas",h:"Cum îți trimiți raportul lunii",
+  steps:[["Deschizi „Profilul meu”","Primul buton din bara de jos."],
+         ["Apeși „Completează raportul”","Pe cardul lunii de raportat."],
+         ["Bifezi și scrii ce ai","Activ, studiile conduse, orele — dacă e cazul."],
+         ["Apeși „Trimite raportul”","Gata. Pleacă singur, fără e-mail și fără mesaj."]],
+  sc:[TP.hd()+TP.bd(TP.seg(["Viața creștină","Întrunirea publică","Sarcini"],0)
+      +TP.t("31 August – 6 Septembrie")
+      +TP.c({t:"7:00 Cântarea 27",rows:[["Rugăciune","STAN Daniel"]]})
+      +TP.c({t:"7:05 Cuvinte introductive",rows:[["Președinte","TATAR Silviu"]]}))+TP.nv("prog"),
+      TP.hd()+TP.bd('<div class="tp-c" style="flex-direction:row;align-items:center;gap:7px"><span style="width:22px;height:22px;border-radius:50%;background:var(--accsoft);color:var(--acc);display:grid;place-items:center;font-size:8px;font-weight:800">PA</span><b class="sp" style="font-size:9.5px">POPESCU Andrei</b><span class="tp-tag t">Grupa 3</span></div>'
+      +TP.c({cls:"warm",t:"De raportat acum",sub:'<span style="font-size:11px;font-weight:800">August 2026</span>',
+             body:'<div class="tp-m" style="color:var(--maroon);font-weight:800">încă neraportat</div>'
+                 +'<div style="margin-top:5px">'+TP.b("Completează raportul",{pri:1,wide:1,id:"bRep"})+'</div>'})
+      +TP.c({t:"Sarcinile mele",sub:"3–9 Septembrie · Citirea Bibliei"})
+      +TP.c({t:"Istoric — an 2026/2027",sub:"lunile anterioare"}))
+      +TP.sh("shRep","Raport — August 2026",
+        TP.ck("Activ",1)+TP.sp(3)
+        +TP.l("Studii biblice conduse")+TP.f("fSt","")
+        +TP.ck("Pionier auxiliar",0)+TP.sp(3)
+        +TP.l("Observații")+TP.f("fObs","")
+        +'<div style="display:flex;gap:5px;margin-top:8px">'+TP.b("Anulează")+TP.b("Trimite raportul",{pri:1,id:"bSave"})+'</div>')
+      +TP.ok("okRep","Raportul tău a fost trimis","August 2026 · mulțumim!")
+      +TP.nv("meu")],
+  run:[[0,"step",1],[0,"show"],[200,"cur",_NAV[0][0],_NAV[0][1]],
+       [1100,"tap"],[1400,"scr",1],
+       [2100,"step",2],[2200,"curEl","bRep"],[3100,"tap"],[3150,"prs","bRep"],
+       [3500,"sh","shRep"],
+       [4200,"step",3],[4300,"curEl","fSt"],[5100,"tap"],
+       [5300,"type","fSt","2",240],
+       [6300,"curEl","fObs"],[7100,"tap"],[7300,"type","fObs","Am fost la adunarea de circumscripție",42],
+       [9700,"step",4],[9800,"curEl","bSave"],[10600,"tap"],[10650,"prs","bSave"],
+       [11100,"shx","shRep"],[11200,"ok","okRep"],[11250,"step",99],[11300,"hide"],
+       [14900,"loop"]]},
+ {k:"rules",eb:"Bine de știut",h:"Ce se întâmplă cu raportul tău",items:[
+  ["ok","Nu trebuie internet chiar atunci","Dacă ești fără semnal, raportul se salvează pe telefon și pleacă singur când revii în rețea."],
+  ["ok","Poți completa și pe parcursul lunii","Alegi din listă „luna în curs”, salvezi, și revii mai târziu să adaugi. Se trimite la fel."],
+  ["ok","Îl poți corecta","Intri din nou pe aceeași lună, schimbi și trimiți iar. Ultima variantă rămâne."],
+  ["no","Nu completezi raportul altcuiva","Vezi doar fișa ta. Restul e doar de citit — nu ai cum să strici ceva."]]},
+ {k:"faq",eb:"Întrebări",h:"Ce se mai întreabă",items:[
+  ["Nu am fost în predicare luna asta.",'Scoate bifa <b>Activ</b> și trimite raportul așa. E important să ajungă și asta, ca să nu te caute nimeni.'],
+  ["Nu văd câmpul de ore.",'Vestitorul obișnuit nu trece ore. Apar doar dacă bifezi <b>Pionier auxiliar</b> pentru luna aceea, sau dacă ești pionier.'],
+  ["Unde îmi văd atribuirile?",'În <b>Profilul meu</b>, sub raport: săptămânile care vin, cu partea ta, tura ta și sarcina ta.'],
+  ["Cum îmi iau fișa S-21?",'Tot din <b>Profilul meu</b> — butonul de descărcare de la capătul listei de luni.']]},
+ {k:"recap",h:"Atât ai de făcut",p:"O dată pe lună, două minute.",
+  chips:["Profilul meu","Completează raportul","Trimite — pleacă singur"]}
+]};
+
+/* ------------------------------------------------------------------ Profilul meu */
+TUT.D["meu"]={t:"Profilul meu",sub:"raportul, atribuirile și evenimentele tale",ic:TIC.user,s:[
+ {k:"intro",ic:TIC.user,eb:"Profilul meu",h:'Fișa ta, <span class="thl">numai a ta</span>',
+  p:"Aici stă tot ce te privește direct: raportul de trimis luna asta, ce ai de făcut în săptămânile care vin și evenimentele congregației."},
+ {k:"cards",eb:"Ce găsești pe ecran",h:"De sus în jos",items:[
+  [TIC.user,"Cartea ta de identitate","Numele, grupa și privilegiile. Din cele trei puncte din dreapta intri la datele tale de contact."],
+  [IC.clock,"Bara pionierului","Dacă ești pionier regular: cât ai strâns din cele 600 de ore și câte îți mai trebuie pe lună."],
+  [IC.edit,"Raport lunar","Cardul cu luna de raportat. Din lista de sub el poți alege și luna în curs, sau o lună trecută."],
+  [IC.cal,"Sarcinile mele","Săptămânile care vin, cu partea ta din program, tura ta și sarcina ta de la întrunire."],
+  [IC.hist,"Istoric","Lunile dinainte, cele mai recente primele. De acolo completezi o lună scăpată."]]},
+ {k:"demo",eb:"Pas cu pas",h:"Cum completezi o lună trecută",
+  steps:[["Deschizi „Istoric”","Cardul de sub raportul lunii."],
+         ["Alegi luna","Cele mai recente sunt primele."],
+         ["Apeși „Completează”","Se deschide aceeași foaie de raport."],
+         ["Trimiți","Se salvează exact ca raportul lunii curente."]],
+  sc:[TP.hd()+TP.bd(TP.c({cls:"warm",t:"De raportat acum",sub:'<span style="font-size:11px;font-weight:800">August 2026</span>'})
+      +TP.c({t:"Sarcinile mele",sub:"3–9 Septembrie · Citirea Bibliei"})
+      +TP.c({t:"Istoric — an 2026/2027",sub:"lunile anterioare, cele mai recente primele",id:"cIst",tag:"3",tagc:"a"}))+TP.nv("meu"),
+      TP.hd()+TP.bd(TP.c({cls:"warm",t:"De raportat acum",sub:'<span style="font-size:11px;font-weight:800">August 2026</span>'})
+      +TP.c({t:"Istoric — an 2026/2027",tag:"3",tagc:"a",id:"cIst2",
+        body:TP.sp(3)+TP.li("Iulie 2026","Completează","","rIul")+TP.li("Iunie 2026","Editează")+TP.li("Mai 2026","Editează")}))
+      +TP.sh("shR2","Raport — Iulie 2026",
+        TP.ck("Activ",1)+TP.sp(3)+TP.l("Studii biblice conduse")+TP.f("fSt2","")
+        +TP.sp(3)+TP.l("Observații")+TP.f("fOb2","")
+        +'<div style="display:flex;gap:5px;margin-top:8px">'+TP.b("Anulează")+TP.b("Trimite raportul",{pri:1,id:"bSv2"})+'</div>')
+      +TP.ok("okR2","Raportul tău a fost trimis","Iulie 2026 · mulțumim!")+TP.nv("meu")],
+  run:[[0,"step",1],[0,"show"],[200,"curEl","cIst"],[1100,"tap"],[1400,"scr",1],
+       [2100,"step",2],[2200,"curEl","rIul"],[3100,"tap"],
+       [3500,"step",3],[3600,"tap"],[3650,"cls","rIul","sel"],
+       [4000,"sh","shR2"],
+       [4700,"curEl","fSt2"],[5500,"tap"],[5700,"type","fSt2","1",240],
+       [6700,"step",4],[6800,"curEl","bSv2"],[7600,"tap"],[7650,"prs","bSv2"],
+       [8100,"shx","shR2"],[8200,"ok","okR2"],[8250,"step",99],[8350,"hide"],
+       [12000,"loop"]]},
+ {k:"rules",eb:"Bine de știut",h:"Câteva lucruri care ajută",items:[
+  ["tip","Luna de raportat e cea trecută","În septembrie raportezi august. Cardul de sus îți spune mereu care e."],
+  ["ok","Poți raporta și pe parcurs","Alegi „luna în curs” din listă. Salvezi acum, completezi mai târziu — se trimite la fel."],
+  ["tip","Fișa S-21 se descarcă de aici","Butonul de la capătul listei de luni scoate PDF-ul anului tău de serviciu."],
+  ["no","Nu vezi rapoartele altora","Profilul e strict al tău, chiar dacă ai și alte drepturi în aplicație."]]},
+ {k:"recap",h:"Profilul meu, pe scurt",p:"Un card pentru raport, unul pentru ce ai de făcut.",
+  chips:["Cardul de sus — luna de raportat","„Sarcinile mele” — ce urmează","„Istoric” — lunile scăpate"]}
+]};
+
+/* ------------------------------------------------------------------ Programări · Viața creștină */
+TUT.D["prog.vcp"]={t:"Programări · Viața creștină",sub:"programul întrunirii din timpul săptămânii",ic:IC.book,s:[
+ {k:"intro",ic:IC.book,eb:"Programări",h:'Foaia săptămânii, <span class="thl">așa cum e pe avizier</span>',
+  p:"Programul întrunirii din timpul săptămânii: temele, orele, cântările și cine are fiecare parte. Toată congregația o vede la fel."},
+ {k:"demo",eb:"Pas cu pas",h:"Cum umbli prin săptămâni",
+  steps:[["Alegi foaia de sus","Viața creștină, Întrunirea publică sau Sarcini."],
+         ["Treci de la o săptămână la alta","Săgețile din rândul cu data."],
+         ["Deschizi detaliile unei teme","Apeși pe rândul temei."],
+         ["Descarci PDF-ul","Butonul rotund din colț."]],
+  sc:[TP.hd()+TP.bd(TP.seg(["Viața creștină","Întrunirea publică","Sarcini"],0)
+      +TP.wk("31 August – 6 Septembrie")
+      +TP.c({t:"31 August – 6 Septembrie",sub:"IEREMIA 31"})
+      +TP.c({t:"7:06  1. „Voi încheia… un legământ nou”",rows:[["10 min.","NEDELEA Antonio"]],id:"cT1"})
+      +TP.c({t:"7:16  2. Nestemate spirituale",rows:[["10 min.","COMANACHE Raymond"]]}))
+      +TP.sh("shPdf","Săptămâna — opțiuni",
+        TP.li("Detalii săptămână","")+TP.li("Descarcă săptămâna","PDF")
+        +TP.li("Foaia completă","")+TP.li("Două săptămâni pe o coală",""))
+      +TP.fab("↓","fabV")+TP.nv("prog"),
+      TP.hd()+TP.bd(TP.seg(["Viața creștină","Întrunirea publică","Sarcini"],0)
+      +TP.wk("7 – 13 Septembrie")
+      +TP.c({t:"7 – 13 Septembrie",sub:"IEREMIA 32-33"})
+      +TP.c({t:"7:06  1. Iehova își ține promisiunile",rows:[["10 min.","TATAR Silviu"]]})
+      +TP.c({t:"7:16  2. Nestemate spirituale",rows:[["10 min.","STAN Daniel"]]}))
+      +TP.fab("↓","fabV2")+TP.nv("prog"),
+      TP.hd()+TP.bd(TP.t("Detalii temă")+TP.m("„Voi încheia… un legământ nou” (10 min.)")
+      +TP.c({sub:"Iehova a promis un legământ nou.<br>Legământul nou a intrat în vigoare la Penticosta.<br>Ce înseamnă asta pentru noi azi."})
+      +TP.b("Închide",{wide:1}))+TP.nv("prog")],
+  run:[[0,"step",1],[0,"show"],[200,"cur",_SEG[0][0],_SEG[0][1]],[1000,"tap"],
+       [1700,"step",2],[1800,"curEl",".wkn"],[2700,"tap"],[2900,"scr",1],
+       [3600,"curEl",".wkp"],[4400,"tap"],[4600,"scr",0],
+       [5300,"step",3],[5400,"curEl","cT1"],[6300,"tap"],[6350,"cls","cT1","sel"],[6600,"scr",2],
+       [8100,"step",4],[8200,"scr",0],[8250,"rm","cT1","sel"],[8300,"cur",_FAB[0],_FAB[1]],
+       [9100,"tap"],[9150,"prs","fabV"],[9400,"sh","shPdf"],[9500,"step",99],[9600,"hide"],
+       [13100,"loop"]]},
+ {k:"cards",eb:"Ce mai poți face",h:"Din butonul rotund",items:[
+  [IC.pdf,"Descarcă săptămâna","PDF-ul foii, exact cum se pune pe avizier."],
+  [IC.print,"Foaia completă","Programul + sarcinile + întrunirea de la sfârșit de săptămână, într-un singur PDF."],
+  [IC.cal,"Pe perioadă","Mai multe săptămâni deodată — util înainte de a tipări pentru toată luna."],
+  [IC.edit,"Detalii săptămână","Eveniment special (adunare, vizita supraveghetorului) și textul săptămânii."]]},
+ {k:"rules",eb:"Bine de știut",h:"De unde vin datele",items:[
+  ["tip","Temele vin din caiet","Se importă o dată pe lună, din Setări → Import caiet (.epub din JW Library)."],
+  ["tip","Numele se pun în Arhivă","Aici doar se citesc. Creionul din rândul datei te duce direct la locul unde se modifică — dacă ai dreptul."],
+  ["ok","Orele se calculează singure","Se pornește de la ora întrunirii din Setări și se adună duratele părților."]]},
+ {k:"recap",h:"Foaia săptămânii",p:"Se citește de oriunde, se descarcă dintr-un buton.",
+  chips:["Bara de sus — cele trei foi","Săgețile — săptămâna dinainte / următoarea","Butonul rotund — PDF-urile"]}
+]};
+
+/* ------------------------------------------------------------------ Programări · Întrunirea publică */
+TUT.D["prog.wm"]={t:"Programări · Întrunirea publică",sub:"sfârșitul de săptămână, pe scurt",ic:IC.star,s:[
+ {k:"intro",ic:IC.star,eb:"Programări",h:'Sfârșitul de săptămână, <span class="thl">într-un tabel</span>',
+  p:"Vorbitorul și congregația lui, titlul discursului, președintele, cititorul, rugăciunile și ospitalitatea — săptămână de săptămână."},
+ {k:"demo",eb:"Pas cu pas",h:"Cum citești foaia",
+  steps:[["Apeși „Întrunirea publică”","A doua foaie din bara de sus."],
+         ["Alegi săptămâna","Săgețile din rândul cu data."],
+         ["Citești tabelul","Vorbitor, titlu și posturile, unul sub altul."],
+         ["Descarci PDF-ul","O săptămână, o lună sau două."]],
+  sc:[TP.hd()+TP.bd(TP.seg(["Viața creștină","Întrunirea publică","Sarcini"],0)
+      +TP.wk("31 August – 6 Septembrie")
+      +TP.c({t:"31 August – 6 Septembrie",sub:"IEREMIA 31"})
+      +TP.c({t:"7:00 Cântarea 27",rows:[["Rugăciune","STAN Daniel"]]}))+TP.nv("prog"),
+      TP.hd()+TP.bd(TP.seg(["Viața creștină","Întrunirea publică","Sarcini"],1)
+      +TP.wk("Duminică, 6 Septembrie")
+      +TP.c({t:"Discursul public",rows:[["Vorbitor","MOISE Ionuț"],["Congregația","Pajura"],["Titlu","Cine îți conduce viața?"]],id:"wDisc"})
+      +TP.c({t:"Posturi",rows:[["Președinte","TATAR Silviu"],["Cititor","STAN Daniel"],["Ospitalitate","NEDELEA Antonio"]]}))
+      +TP.sh("shW","Întrunirea publică",TP.li("Descarcă PDF","o săptămână, o lună sau două")
+        +TP.li("Titlul și posturile","adaugă, redenumește"))
+      +TP.fab("↓","fabW")+TP.nv("prog")],
+  run:[[0,"step",1],[0,"show"],[200,"cur",_SEG[1][0],_SEG[1][1]],[1000,"tap"],[1300,"scr",1],
+       [2000,"step",2],[2100,"curEl",".wkn"],[3000,"tap"],
+       [3600,"step",3],[3700,"curEl","wDisc"],[4600,"tap"],[4650,"cls","wDisc","sel"],
+       [5600,"step",4],[5700,"rm","wDisc","sel"],[5750,"cur",_FAB[0],_FAB[1]],[6600,"tap"],[6650,"prs","fabW"],
+       [6900,"sh","shW"],[7000,"step",99],[7100,"hide"],
+       [10600,"loop"]]},
+ {k:"rules",eb:"Bine de știut",h:"Cum se citește",items:[
+  ["ok","Săptămânile fără întrunire se văd așa","Adunarea de circumscripție sau congresul apar scrise peste tot tabelul, nu ca posturi goale."],
+  ["tip","Posturile pot fi altele la voi","Președinte, cititor, rugăciuni — lista se potrivește din Arhivă, de către cine ține foaia."],
+  ["tip","Vorbitorul din altă congregație","Apare cu numele congregației lui alături, ca să se știe pe cine se anunță."]]},
+ {k:"recap",h:"Sfârșitul de săptămână",p:"Aceeași foaie pentru toată lumea.",
+  chips:["A doua foaie din bara de sus","Săgețile pentru altă săptămână","Butonul rotund pentru PDF"]}
+]};
+
+/* ------------------------------------------------------------------ Programări · Sarcini */
+TUT.D["prog.sarc"]={t:"Programări · Sarcini",sub:"audio-video, ordine, podium, curățenie",ic:IC.mark,s:[
+ {k:"intro",ic:IC.mark,eb:"Programări",h:'Cine e <span class="thl">de serviciu</span> în fiecare săptămână',
+  p:"Foaia de pe avizier cu posturile: audio, video, microfoane, oamenii de ordine, podiumul și grupa care face curățenie."},
+ {k:"demo",eb:"Pas cu pas",h:"Cum îți găsești sarcina",
+  steps:[["Apeși „Sarcini”","A treia foaie din bara de sus."],
+         ["Alegi săptămâna","Săgețile din rândul cu data."],
+         ["Cauți-ți numele","Posturile sunt grupate: întrunirea din săptămână și cea de la sfârșit."],
+         ["Descarci foaia","O săptămână, două sau o lună."]],
+  sc:[TP.hd()+TP.bd(TP.seg(["Viața creștină","Întrunirea publică","Sarcini"],0)
+      +TP.wk("31 August – 6 Septembrie")
+      +TP.c({t:"31 August – 6 Septembrie",sub:"IEREMIA 31"})
+      +TP.c({t:"7:00 Cântarea 27",rows:[["Rugăciune","STAN Daniel"]]}))+TP.nv("prog"),
+      TP.hd()+TP.bd(TP.seg(["Viața creștină","Întrunirea publică","Sarcini"],2)
+      +TP.wk("31 August – 6 Septembrie")
+      +TP.c({t:"Marți — Viața creștină",rows:[["Audio","STAN Daniel"],["Video","MOISE Ionuț"],["Ordine","TATAR Silviu"]]})
+      +TP.c({t:"Duminică — Întrunirea publică",rows:[["Audio","NEDELEA Antonio"],["Microfon","POPESCU Andrei"]],id:"cSarc"})
+      +TP.c({t:"Curățenia săptămânii",rows:[["Grupa","Grupa 3"]],cls:"warm"}))
+      +TP.sh("shS","Sarcini",TP.li("Descarcă PDF","o săptămână, două sau o lună")
+        +TP.li("Titlul și posturile","adaugă, redenumește, reordonează"))
+      +TP.fab("↓","fabS")+TP.nv("prog")],
+  run:[[0,"step",1],[0,"show"],[200,"cur",_SEG[2][0],_SEG[2][1]],[1000,"tap"],[1300,"scr",1],
+       [2000,"step",2],[2100,"curEl",".wkn"],[3000,"tap"],
+       [3600,"step",3],[3700,"curEl","cSarc"],[4600,"tap"],[4650,"cls","cSarc","sel"],
+       [5600,"step",4],[5700,"rm","cSarc","sel"],[5750,"cur",_FAB[0],_FAB[1]],[6600,"tap"],[6650,"prs","fabS"],
+       [6900,"sh","shS"],[7000,"step",99],[7100,"hide"],
+       [10600,"loop"]]},
+ {k:"rules",eb:"Bine de știut",h:"Cum se ține foaia",items:[
+  ["tip","Posturile se potrivesc pe congregație","Se adaugă, se redenumesc și se reordonează din Arhivă → Sarcini."],
+  ["tip","Cine poate fi pus la ce","Se bifează în fișa vestitorului. Fără bifă, numele nu apare în lista de alegere."],
+  ["ok","Curățenia săptămânii se vede aici","Grupa de serviciu apare pe aceeași foaie, nu într-un loc separat."]]},
+ {k:"recap",h:"Sarcinile săptămânii",p:"O foaie, toate posturile.",
+  chips:["A treia foaie din bara de sus","Săptămâna se schimbă din săgeți","PDF-ul, din butonul rotund"]}
+]};
+
+/* ------------------------------------------------------------------ Arhiva, ecranul de pornire */
+TUT.D["arh"]={t:"Arhivă",sub:"cele două grupuri și cum umbli prin ele",ic:IC.arch,s:[
+ {k:"intro",ic:IC.arch,eb:"Arhivă",h:'Aici se <span class="thl">face</span> treaba',
+  p:"„Programări” arată foile gata făcute. În Arhivă se scriu: planificările pe de o parte, evidențele congregației pe de alta."},
+ {k:"cards",eb:"Două grupuri",h:"Ce ține fiecare",items:[
+  [IC.cal,"Planificări","Programul întrunirii din timpul săptămânii, întrunirea publică, mărturia publică, întrunirile de teren, sarcinile și curățenia."],
+  [IC.arch,"Rapoarte și evidențe","Sumarul S-1, rapoartele lunare, pionierii, prezența, grupele, responsabilitățile, arhivații și exporturile."]]},
+ {k:"demo",eb:"Pas cu pas",h:"Cum ajungi la o secțiune",
+  steps:[["Apeși „Arhivă”","Ultimul buton din bara de jos."],
+         ["Alegi grupul","Planificări sau Rapoarte și evidențe."],
+         ["Alegi secțiunea","Fiecare card îți spune ce ține."],
+         ["Te întorci de sus","Butonul din stânga titlului urcă un nivel."]],
+  sc:[TP.hd()+TP.bd(TP.seg(["Viața creștină","Întrunirea publică","Sarcini"],0)
+      +TP.wk("31 August – 6 Septembrie")+TP.c({t:"31 August – 6 Septembrie",sub:"IEREMIA 31"}))+TP.nv("prog"),
+      TP.hd()+TP.bd(TP.c({t:"Planificări",sub:"programul întrunirilor, teren, mărturia publică, sarcinile și curățenia",tag:"6 SECȚIUNI",tagc:"a",id:"gPlan"})
+      +TP.c({t:"Rapoarte și evidențe",sub:"S-1, fișele S-21, prezența, pionierii, grupele",tag:"9 SECȚIUNI",tagc:"a"}))+TP.nv("arh"),
+      TP.hd()+TP.bd(TP.bc("Arhivă","Planificări")
+      +TP.c({t:"Viața creștină",sub:"teme, cântări, atribuiri"})
+      +TP.c({t:"Întrunirea publică",sub:"vorbitor, titlu, președinte, cititor",id:"sWm"})
+      +TP.c({t:"Mărturia publică",sub:"locațiile și turele"})
+      +TP.c({t:"Sarcini",sub:"audio-video, ordine, podium"}))+TP.nv("arh"),
+      TP.hd()+TP.bd(TP.bc("Planificări","Întrunirea publică")+TP.wk("Duminică, 6 Septembrie")
+      +TP.c({t:"Discursul public",rows:[["Vorbitor","MOISE Ionuț"],["Titlu","Cine îți conduce viața?"]]})
+      +TP.c({t:"Posturi",rows:[["Președinte","TATAR Silviu"],["Cititor","STAN Daniel"]]}))
+      +TP.fab("⋮","fabA")+TP.nv("arh")],
+  run:[[0,"step",1],[0,"show"],[200,"cur",_NAV[3][0],_NAV[3][1]],[1100,"tap"],[1400,"scr",1],
+       [2100,"step",2],[2200,"curEl","gPlan"],[3100,"tap"],[3150,"cls","gPlan","sel"],[3500,"scr",2],
+       [4200,"step",3],[4300,"curEl","sWm"],[5200,"tap"],[5250,"cls","sWm","sel"],[5600,"scr",3],
+       [6400,"step",4],[6500,"curEl",".bck"],[7400,"tap"],[7700,"scr",2],[7750,"rm","sWm","sel"],
+       [7800,"step",99],[7900,"hide"],
+       [11400,"loop"]]},
+ {k:"rules",eb:"Bine de știut",h:"Cine ce poate",items:[
+  ["ok","Toată lumea vede ceva aici","Curățenia, mărturia publică și întrunirile de teren se văd de oricine."],
+  ["tip","Drepturile se dau din Setări","Setări → Utilizatori: cine poate modifica programul, sarcinile, curățenia sau rapoartele."],
+  ["no","Nu se pierde nimic din greșeală","Ieșirea dintr-o foaie cu modificări nesalvate întreabă întâi. Istoricul din Setări arată cine a schimbat ce."]]},
+ {k:"recap",h:"Arhiva, pe scurt",p:"Două grupuri, carduri care spun ce țin.",
+  chips:["Planificări — ce se pregătește","Rapoarte și evidențe — ce se ține minte","Butonul de sus urcă un nivel"]}
+]};
+TUT.D["arhg.plan"]=TUT.D["arh"];TUT.D["arhg.rap"]=TUT.D["arh"];
+
+/* ------------------------------------------------------------------ Viața creștină (editare) */
+TUT.D["arh.vcped"]={t:"Viața creștină",sub:"temele săptămânii și cine are fiecare parte",ic:IC.book,s:[
+ {k:"intro",ic:IC.book,eb:"Planificări",h:'Aici se <span class="thl">pun numele</span> pe program',
+  p:"Caietul aduce temele, cântările și duratele. Tu pui oamenii: cine are fiecare parte, cine e președinte, cine citește, cine se roagă."},
+ {k:"demo",eb:"Pas cu pas",h:"Cum atribui o parte",
+  steps:[["Deschizi săptămâna","Din lista de săptămâni."],
+         ["Apeși pe partea de atribuit","Rândul temei, oriunde pe el."],
+         ["Alegi numele","Lista arată doar cine poate avea partea și când a mai avut-o."],
+         ["Salvezi","Se vede imediat în „Programări”, la toată congregația."]],
+  sc:[TP.hd()+TP.bd(TP.bc("Planificări","Viața creștină")
+      +TP.li("31 August – 6 Septembrie","IEREMIA 31","","wA")
+      +TP.li("7 – 13 Septembrie","IEREMIA 32-33")
+      +TP.li("14 – 20 Septembrie","IEREMIA 34-36"))+TP.nv("arh"),
+      TP.hd()+TP.bd(TP.bc("Săptămâni","31 Aug – 6 Sep")
+      +TP.c({t:"Comori din Cuvântul lui Dumnezeu",cls:"warm"})
+      +TP.c({t:"1. „Voi încheia… un legământ nou” (10 min.)",rows:[["Temă","— alege —"]],id:"pT1"})
+      +TP.c({t:"2. Nestemate spirituale (10 min.)",rows:[["Temă","COMANACHE Raymond"]]})
+      +TP.c({t:"3. Citirea Bibliei (4 min.)",rows:[["Elev","PRICHINDEL Marius"]]}))
+      +TP.sh("shPick","Cine are partea",
+        TP.f("fQ","Caută…")+TP.sp(3)
+        +TP.li("NEDELEA Antonio","ultima dată: 12 Iulie","","nA")
+        +TP.li("TATAR Silviu","ultima dată: 2 August")
+        +TP.li("STAN Daniel","ultima dată: 19 Iulie")
+        +'<div style="margin-top:7px">'+TP.b("Salvează",{pri:1,wide:1,id:"bPick"})+'</div>')
+      +TP.fab("⋮","fabE")+TP.nv("arh"),
+      TP.hd()+TP.bd(TP.bc("Săptămâni","31 Aug – 6 Sep")
+      +TP.c({t:"Comori din Cuvântul lui Dumnezeu",cls:"warm"})
+      +TP.c({t:"1. „Voi încheia… un legământ nou” (10 min.)",rows:[["Temă","NEDELEA Antonio"]],cls:"sel"})
+      +TP.c({t:"2. Nestemate spirituale (10 min.)",rows:[["Temă","COMANACHE Raymond"]]})
+      +TP.c({t:"3. Citirea Bibliei (4 min.)",rows:[["Elev","PRICHINDEL Marius"]]}))
+      +TP.fab("⋮","fabE2")+TP.nv("arh")],
+  run:[[0,"step",1],[0,"show"],[200,"curEl","wA"],[1100,"tap"],[1150,"cls","wA","sel"],[1500,"scr",1],
+       [2200,"step",2],[2300,"curEl","pT1"],[3200,"tap"],[3250,"cls","pT1","sel"],[3600,"sh","shPick"],
+       [4300,"step",3],[4400,"curEl","nA"],[5300,"tap"],[5350,"cls","nA","sel"],
+       [6000,"step",4],[6100,"curEl","bPick"],[7000,"tap"],[7050,"prs","bPick"],
+       [7400,"shx","shPick"],[7600,"scr",2],[7650,"step",99],[7750,"hide"],
+       [11300,"loop"]]},
+ {k:"cards",eb:"Ce te ajută",h:"Uneltele săptămânii",items:[
+  [IC.auto,"Auto-atribuire","Umple într-o singură apăsare părțile libere, ținând cont de cine a mai avut și când. Rezultatul se vede întâi — îl salvezi sau îl anulezi."],
+  [IC.arch,"Import caiet (.epub)","Din Setări. Aduce temele, cântările, duratele și detaliile fiecărei teme, pentru toată luna."],
+  [IC.edit,"Import plan (text)","Lipești textul unei foi deja făcute. Se verifică întâi și ți se spune ce nu s-a potrivit — nimic nu intră până nu confirmi."],
+  [IC.print,"Foaia completă","PDF cu programul + sarcinile + întrunirea de la sfârșit de săptămână, pentru avizier."]]},
+ {k:"rules",eb:"Bine de știut",h:"Ce e bine de reținut",items:[
+  ["ok","Lista de nume nu e la întâmplare","Apar doar cei bifați în fișa vestitorului pentru acel fel de parte, cu data când au avut-o ultima oară."],
+  ["tip","Săptămânile speciale se marchează","Adunare de circumscripție, congres, vizita supraveghetorului — din „Detalii săptămână”. Foaia se schimbă singură."],
+  ["no","Nu ieși din săptămână cu lucruri nesalvate","Aplicația te întreabă întâi. Dacă spui „ieși”, modificările se pierd."]]},
+ {k:"recap",h:"Programul săptămânii",p:"Caietul aduce temele, tu pui oamenii.",
+  chips:["Deschizi săptămâna","Apeși partea, alegi numele","Auto-atribuirea face restul"]}
+]};
+
+/* ------------------------------------------------------------------ Întrunirea publică (editare) */
+TUT.D["arh.wm"]={t:"Întrunirea publică",sub:"vorbitor, titlu și posturile de sfârșit de săptămână",ic:IC.star,s:[
+ {k:"intro",ic:IC.star,eb:"Planificări",h:'Foaia de <span class="thl">duminică</span>',
+  p:"Vorbitorul și congregația lui, titlul discursului, președintele, cititorul, rugăciunile și ospitalitatea — pentru fiecare sfârșit de săptămână."},
+ {k:"demo",eb:"Pas cu pas",h:"Cum completezi o duminică",
+  steps:[["Alegi săptămâna","Săgețile din rândul cu data."],
+         ["Apeși pe „Vorbitor”","Se deschide foaia cu numele și congregația."],
+         ["Scrii titlul discursului","Rândul de sub vorbitor."],
+         ["Pui posturile","Președinte, cititor, rugăciune, ospitalitate."]],
+  sc:[TP.hd()+TP.bd(TP.bc("Planificări","Întrunirea publică")+TP.wk("Duminică, 6 Septembrie")
+      +TP.c({t:"Discursul public",rows:[["Vorbitor","— alege —"],["Titlu","—"]],id:"wCard"})
+      +TP.c({t:"Posturi",rows:[["Președinte","—"],["Cititor","—"],["Ospitalitate","—"]],id:"wPost"}))
+      +TP.sh("shSp","Vorbitor",
+        TP.l("Numele")+TP.f("fSp","")+TP.sp(3)+TP.l("Congregația")+TP.f("fCg","")
+        +'<div style="margin-top:7px">'+TP.b("Salvează",{pri:1,wide:1,id:"bSp"})+'</div>')
+      +TP.fab("⋮","fabW3")+TP.nv("arh"),
+      TP.hd()+TP.bd(TP.bc("Planificări","Întrunirea publică")+TP.wk("Duminică, 6 Septembrie")
+      +TP.c({t:"Discursul public",rows:[["Vorbitor","MOISE Ionuț"],["Congregația","Pajura"]],
+             body:TP.sp(2)+TP.l("Titlu")+TP.f("fTt","")})
+      +TP.c({t:"Posturi",rows:[["Președinte","TATAR Silviu"],["Cititor","STAN Daniel"],["Ospitalitate","NEDELEA Antonio"]],id:"wPost2"}))
+      +TP.fab("⋮","fabW4")+TP.nv("arh")],
+  run:[[0,"step",1],[0,"show"],[200,"curEl",".wkn"],[1100,"tap"],
+       [1800,"step",2],[1900,"curEl","wCard"],[2800,"tap"],[2850,"cls","wCard","sel"],[3100,"sh","shSp"],
+       [3800,"curEl","fSp"],[4600,"tap"],[4750,"type","fSp","MOISE Ionuț",60],
+       [6000,"curEl","fCg"],[6800,"tap"],[6950,"type","fCg","Pajura",70],
+       [7900,"curEl","bSp"],[8700,"tap"],[8750,"prs","bSp"],[9100,"shx","shSp"],[9300,"scr",1],
+       [9800,"step",3],[9900,"curEl","fTt"],[10700,"tap"],[10850,"type","fTt","Cine îți conduce viața?",48],
+       [12300,"step",4],[12400,"curEl","wPost2"],[13300,"tap"],[13350,"cls","wPost2","sel"],
+       [13900,"step",99],[14000,"hide"],
+       [17500,"loop"]]},
+ {k:"rules",eb:"Bine de știut",h:"Cum se ține foaia",items:[
+  ["tip","Posturile se potrivesc pe congregație","Din butonul rotund → „Titlul și posturile”: adaugi, redenumești, alegi din ce categorie se aleg numele."],
+  ["ok","Cine poate fi pus la ce","Se bifează în fișa vestitorului. Fără bifă, numele nu apare deloc în lista de alegere."],
+  ["tip","Import plan","Dacă foaia e deja făcută în altă parte, lipești textul ei și se completează singură — după ce îți arată ce nu s-a potrivit."],
+  ["ok","Vorbitorul din altă congregație","Îi scrii numele și congregația; apar împreună pe foaie și în PDF."]]},
+ {k:"recap",h:"Foaia de duminică",p:"Vorbitor, titlu, posturi.",
+  chips:["Alegi săptămâna","Completezi vorbitorul și titlul","Pui posturile și descarci PDF-ul"]}
+]};
+
+/* ------------------------------------------------------------------ Mărturia publică */
+TUT.D["arh.mp"]={t:"Mărturia publică",sub:"locațiile, turele și cine e la fiecare",ic:IC.ppl,s:[
+ {k:"intro",ic:IC.ppl,eb:"Planificări",h:'Turele de la <span class="thl">standuri</span>',
+  p:"Locațiile, zilele și orele fiecărei ture, cu numele celor care le acoperă. Foaia se vede de toată congregația și se descarcă pentru avizier."},
+ {k:"demo",eb:"Pas cu pas",h:"Cum pui pe cineva la o tură",
+  steps:[["Alegi săptămâna","Săgețile din rândul cu data."],
+         ["Apeși pe tura liberă","Ziua, ora și locația scriu deja pe rând."],
+         ["Alegi numele","Doar cei bifați pentru mărturia publică."],
+         ["Salvezi","Fiecare își vede tura în „Profilul meu”."]],
+  sc:[TP.hd()+TP.bd(TP.bc("Planificări","Mărturia publică")+TP.wk("31 Aug – 6 Sep")
+      +TP.c({t:"Piața Bucureștii Noi",rows:[["Marți 10:00","STAN Daniel"],["Marți 12:00","— liber —"]],id:"mpC"})
+      +TP.c({t:"Parc Bazilescu",rows:[["Joi 17:00","TATAR Silviu"],["Sâmbătă 11:00","MOISE Ionuț"]]}))
+      +TP.sh("shMp","Cine e la tură",
+        TP.f("fMq","Caută…")+TP.sp(3)
+        +TP.li("POPESCU Andrei","ultima dată: 20 August","","mA")
+        +TP.li("NEDELEA Antonio","ultima dată: 6 August")
+        +TP.li("COMANACHE Raymond","ultima dată: 13 August")
+        +'<div style="margin-top:7px">'+TP.b("Salvează",{pri:1,wide:1,id:"bMp"})+'</div>')
+      +TP.fab("⋮","fabM")+TP.nv("arh"),
+      TP.hd()+TP.bd(TP.bc("Planificări","Mărturia publică")+TP.wk("31 Aug – 6 Sep")
+      +TP.c({t:"Piața Bucureștii Noi",rows:[["Marți 10:00","STAN Daniel"],["Marți 12:00","POPESCU Andrei"]],cls:"sel"})
+      +TP.c({t:"Parc Bazilescu",rows:[["Joi 17:00","TATAR Silviu"],["Sâmbătă 11:00","MOISE Ionuț"]]}))
+      +TP.fab("⋮","fabM2")+TP.nv("arh")],
+  run:[[0,"step",1],[0,"show"],[200,"curEl",".wkn"],[1100,"tap"],
+       [1800,"step",2],[1900,"curEl","mpC"],[2800,"tap"],[2850,"cls","mpC","sel"],[3200,"sh","shMp"],
+       [3900,"step",3],[4000,"curEl","mA"],[4900,"tap"],[4950,"cls","mA","sel"],
+       [5600,"step",4],[5700,"curEl","bMp"],[6600,"tap"],[6650,"prs","bMp"],
+       [7000,"shx","shMp"],[7200,"scr",1],[7250,"step",99],[7350,"hide"],
+       [10900,"loop"]]},
+ {k:"rules",eb:"Bine de știut",h:"Cum se ține foaia",items:[
+  ["tip","Locațiile și turele se schimbă din butonul rotund","„Titlul, locațiile și turele” — adaugi un stand, o zi sau o oră nouă."],
+  ["ok","Import plan","Dacă foaia vine din altă parte, lipești textul ei; se verifică întâi și îți spune ce nume nu s-a potrivit."],
+  ["tip","Cine poate fi pus","Se bifează în fișa vestitorului. Cine a mai fost pus în trecut e deja bifat."]]},
+ {k:"recap",h:"Turele de mărturie",p:"Locație, zi, oră, nume.",
+  chips:["Alegi săptămâna","Apeși tura liberă","Alegi numele și salvezi"]}
+]};
+
+/* ------------------------------------------------------------------ Întrunirile de teren */
+TUT.D["arh.teren"]={t:"Întrunirile de teren",sub:"ziua, ora, locul și cine conduce",ic:IC.clock,s:[
+ {k:"intro",ic:IC.clock,eb:"Planificări",h:'Întrunirile <span class="thl">pentru predicare</span>',
+  p:"Pentru fiecare zi din săptămână: ora, locul de întâlnire și fratele care conduce. Foaia se vede de toată congregația."},
+ {k:"demo",eb:"Pas cu pas",h:"Cum pui cine conduce",
+  steps:[["Alegi săptămâna","Săgețile din rândul cu data."],
+         ["Apeși pe ziua liberă","Ora și locul sunt deja scrise pe rând."],
+         ["Alegi fratele","Lista arată când a condus ultima dată."],
+         ["Salvezi","Apare pe foaie și în „Profilul meu” al lui."]],
+  sc:[TP.hd()+TP.bd(TP.bc("Planificări","Întrunirile de teren")+TP.wk("31 Aug – 6 Sep")
+      +TP.c({t:"Marți · 9:30 · Sala Regatului",rows:[["Conduce","STAN Daniel"]]})
+      +TP.c({t:"Joi · 9:30 · Piața Bucureștii Noi",rows:[["Conduce","— liber —"]],id:"ftC"})
+      +TP.c({t:"Sâmbătă · 10:00 · Sala Regatului",rows:[["Conduce","TATAR Silviu"]]}))
+      +TP.sh("shFt","Cine conduce",
+        TP.f("fFq","Caută…")+TP.sp(3)
+        +TP.li("NEDELEA Antonio","ultima dată: 14 August","","fA")
+        +TP.li("MOISE Ionuț","ultima dată: 21 August")
+        +'<div style="margin-top:7px">'+TP.b("Salvează",{pri:1,wide:1,id:"bFt"})+'</div>')
+      +TP.fab("⋮","fabF")+TP.nv("arh"),
+      TP.hd()+TP.bd(TP.bc("Planificări","Întrunirile de teren")+TP.wk("31 Aug – 6 Sep")
+      +TP.c({t:"Marți · 9:30 · Sala Regatului",rows:[["Conduce","STAN Daniel"]]})
+      +TP.c({t:"Joi · 9:30 · Piața Bucureștii Noi",rows:[["Conduce","NEDELEA Antonio"]],cls:"sel"})
+      +TP.c({t:"Sâmbătă · 10:00 · Sala Regatului",rows:[["Conduce","TATAR Silviu"]]}))
+      +TP.fab("⋮","fabF2")+TP.nv("arh")],
+  run:[[0,"step",1],[0,"show"],[200,"curEl",".wkn"],[1100,"tap"],
+       [1800,"step",2],[1900,"curEl","ftC"],[2800,"tap"],[2850,"cls","ftC","sel"],[3200,"sh","shFt"],
+       [3900,"step",3],[4000,"curEl","fA"],[4900,"tap"],[4950,"cls","fA","sel"],
+       [5600,"step",4],[5700,"curEl","bFt"],[6600,"tap"],[6650,"prs","bFt"],
+       [7000,"shx","shFt"],[7200,"scr",1],[7250,"step",99],[7350,"hide"],
+       [10900,"loop"]]},
+ {k:"rules",eb:"Bine de știut",h:"Ce se poate schimba",items:[
+  ["tip","Zilele, orele și locurile","Din butonul rotund → „Titlul, locurile și zilele”. Se potrivesc pe cum se ține la voi."],
+  ["ok","Foaia se descarcă","PDF pe o săptămână sau pe o lună, pentru avizier."],
+  ["tip","Istoricul contează","La alegere se vede cine a condus ultima dată, ca să nu cadă mereu pe aceiași."]]},
+ {k:"recap",h:"Întrunirile de teren",p:"Zi, oră, loc, cine conduce.",
+  chips:["Alegi săptămâna","Apeși ziua","Alegi fratele și salvezi"]}
+]};
+
+/* ------------------------------------------------------------------ Sarcini (editare) */
+TUT.D["arh.sarc"]={t:"Sarcini",sub:"audio-video, oameni de ordine, podium, curățenie",ic:IC.mark,s:[
+ {k:"intro",ic:IC.mark,eb:"Planificări",h:'Posturile de la <span class="thl">fiecare întrunire</span>',
+  p:"Audio, video, microfoane, oameni de ordine, podium — plus grupa de curățenie a săptămânii. Aceeași foaie pe care o vede toată congregația în „Programări”."},
+ {k:"demo",eb:"Pas cu pas",h:"Cum pui pe cineva la un post",
+  steps:[["Alegi săptămâna","Săgețile din rândul cu data."],
+         ["Apeși pe postul liber","Marți sau duminică, după caz."],
+         ["Alegi numele","Doar cei bifați pentru acel fel de sarcină."],
+         ["Salvezi","Se vede imediat în „Programări → Sarcini”."]],
+  sc:[TP.hd()+TP.bd(TP.bc("Planificări","Sarcini")+TP.wk("31 Aug – 6 Sep")
+      +TP.c({t:"Marți — Viața creștină",rows:[["Audio","STAN Daniel"],["Video","— liber —"],["Ordine","TATAR Silviu"]],id:"dC"})
+      +TP.c({t:"Duminică — Întrunirea publică",rows:[["Audio","NEDELEA Antonio"],["Microfon","POPESCU Andrei"]]}))
+      +TP.sh("shD","Cine e la post",
+        TP.f("fDq","Caută…")+TP.sp(3)
+        +TP.li("MOISE Ionuț","ultima dată: 17 August","","dA")
+        +TP.li("POPESCU Andrei","ultima dată: 10 August")
+        +TP.m("Cine mai are ceva în săptămâna asta e însemnat, ca să nu se încarce aceeași persoană.")
+        +'<div style="margin-top:7px">'+TP.b("Salvează",{pri:1,wide:1,id:"bD"})+'</div>')
+      +TP.fab("⋮","fabD")+TP.nv("arh"),
+      TP.hd()+TP.bd(TP.bc("Planificări","Sarcini")+TP.wk("31 Aug – 6 Sep")
+      +TP.c({t:"Marți — Viața creștină",rows:[["Audio","STAN Daniel"],["Video","MOISE Ionuț"],["Ordine","TATAR Silviu"]],cls:"sel"})
+      +TP.c({t:"Duminică — Întrunirea publică",rows:[["Audio","NEDELEA Antonio"],["Microfon","POPESCU Andrei"]]}))
+      +TP.fab("⋮","fabD2")+TP.nv("arh")],
+  run:[[0,"step",1],[0,"show"],[200,"curEl",".wkn"],[1100,"tap"],
+       [1800,"step",2],[1900,"curEl","dC"],[2800,"tap"],[2850,"cls","dC","sel"],[3200,"sh","shD"],
+       [3900,"step",3],[4000,"curEl","dA"],[4900,"tap"],[4950,"cls","dA","sel"],
+       [5600,"step",4],[5700,"curEl","bD"],[6600,"tap"],[6650,"prs","bD"],
+       [7000,"shx","shD"],[7200,"scr",1],[7250,"step",99],[7350,"hide"],
+       [10900,"loop"]]},
+ {k:"rules",eb:"Bine de știut",h:"Cum se potrivesc posturile",items:[
+  ["tip","Titlul și posturile","Din butonul rotund: adaugi un post, îl redenumești sau îi schimbi locul pe foaie."],
+  ["ok","Fiecare post are o categorie","Audio, Video, Microfon, Ordine, Podium. Din ea se ia lista de nume."],
+  ["tip","La alegere se vede încărcarea","Cine mai are ceva în aceeași săptămână — sarcină sau parte din program — e însemnat."]]},
+ {k:"recap",h:"Sarcinile săptămânii",p:"Post cu post, săptămână cu săptămână.",
+  chips:["Alegi săptămâna","Apeși postul","Alegi numele și salvezi"]}
+]};
+
+/* ------------------------------------------------------------------ Curățenie generală */
+TUT.D["arh.cur"]={t:"Curățenie generală",sub:"congregația de serviciu și bifa lunară",ic:IC.check,s:[
+ {k:"intro",ic:IC.check,eb:"Planificări",h:'Tabelul de <span class="thl">curățenie</span>',
+  p:"Douăsprezece luni, congregațiile pe rând, fratele responsabil și bifa care spune că s-a făcut. Îl vede toată lumea, îl bifează cine are dreptul."},
+ {k:"demo",eb:"Pas cu pas",h:"Cum bifezi o lună",
+  steps:[["Găsești luna","Tabelul are un rând pe lună."],
+         ["Apeși pe rând","Se deschide foaia lui."],
+         ["Completezi și bifezi","Fratele responsabil, observații, bifa de făcut."],
+         ["Salvezi","Rândul se însemnează în tabel."]],
+  sc:[TP.hd()+TP.bd(TP.bc("Planificări","Curățenie generală")
+      +TP.c({t:"Septembrie 2026",rows:[["Congregația","Bucureștii Noi"],["Responsabil","—"]],id:"clC"})
+      +TP.c({t:"Octombrie 2026",rows:[["Congregația","Pajura"],["Responsabil","—"]]})
+      +TP.c({t:"Noiembrie 2026",rows:[["Congregația","Damaroaia"],["Responsabil","—"]]}))
+      +TP.sh("shCl","Rândul lunii",
+        TP.l("Fratele responsabil")+TP.f("fCl","")+TP.sp(3)
+        +TP.ck("S-a făcut",0,"ckCl")+TP.sp(3)
+        +'<div style="margin-top:5px">'+TP.b("Salvează",{pri:1,wide:1,id:"bCl"})+'</div>')
+      +TP.fab("⋮","fabC")+TP.nv("arh"),
+      TP.hd()+TP.bd(TP.bc("Planificări","Curățenie generală")
+      +TP.c({t:"Septembrie 2026",rows:[["Congregația","Bucureștii Noi"],["Responsabil","TATAR Silviu"]],tag:"✓ făcut",tagc:"t",cls:"sel"})
+      +TP.c({t:"Octombrie 2026",rows:[["Congregația","Pajura"],["Responsabil","—"]]})
+      +TP.c({t:"Noiembrie 2026",rows:[["Congregația","Damaroaia"],["Responsabil","—"]]}))
+      +TP.fab("⋮","fabC2")+TP.nv("arh")],
+  run:[[0,"step",1],[0,"show"],[200,"curEl","clC"],
+       [1300,"step",2],[1400,"tap"],[1450,"cls","clC","sel"],[1800,"sh","shCl"],
+       [2600,"step",3],[2700,"curEl","fCl"],[3500,"tap"],[3650,"type","fCl","TATAR Silviu",55],
+       [5200,"curEl","ckCl"],[6000,"tap"],[6050,"cls","ckCl","on"],
+       [6700,"step",4],[6800,"curEl","bCl"],[7700,"tap"],[7750,"prs","bCl"],
+       [8100,"shx","shCl"],[8300,"scr",1],[8350,"step",99],[8450,"hide"],
+       [12000,"loop"]]},
+ {k:"rules",eb:"Bine de știut",h:"Ce se poate schimba",items:[
+  ["tip","Coloanele tabelului","Din butonul rotund: adaugi, redenumești sau ștergi o coloană, ca tabelul să arate ca al vostru."],
+  ["ok","Titlul și data","Se schimbă tot de acolo, iar PDF-ul iese cu ele."],
+  ["tip","Refacerea tabelului standard","Dacă s-a încurcat ceva, „Refă tabelul standard” pune la loc cele 12 luni cu congregațiile pe rând."]]},
+ {k:"recap",h:"Curățenia generală",p:"Un rând pe lună, o bifă la final.",
+  chips:["Apeși rândul lunii","Completezi responsabilul","Bifezi și salvezi"]}
+]};
+
+/* ------------------------------------------------------------------ Sumar S-1 */
+TUT.D["arh.sumar"]={t:"Sumar S-1",sub:"raportul lunar al congregației",ic:IC.info,s:[
+ {k:"intro",ic:IC.info,eb:"Rapoarte și evidențe",h:'Luna congregației, <span class="thl">pe categorii</span>',
+  p:"Câți vestitori, câți pionieri auxiliari, câți regulari, câte ore și câte studii — adunate din rapoartele individuale, gata de trimis."},
+ {k:"demo",eb:"Pas cu pas",h:"Cum scoți S-1 pe o lună",
+  steps:[["Alegi luna","Cele două liste de sus: anul de serviciu și luna."],
+         ["Citești totalurile","Fiecare categorie cu numărul ei."],
+         ["Deschizi butonul rotund","Acolo stau descărcările."],
+         ["Descarci PDF-ul","S-1 singur, sau arhiva completă a lunii."]],
+  sc:[TP.hd()+TP.bd(TP.bc("Rapoarte","Sumar S-1")+TP.ym("An 2026/2027","August")
+      +TP.c({t:"Vestitori",rows:[["Raportat","74 / 89"],["Studii","31"]],id:"s1a"})
+      +TP.c({t:"Pionieri auxiliari",rows:[["Număr","9"],["Ore","263"]]})
+      +TP.c({t:"Pionieri regulari",rows:[["Număr","4"],["Ore","286"]]}))
+      +TP.sh("shS1","Sumar S-1 — descarcă",
+        TP.li("PDF S-1","sumarul lunii","","s1pdf")+TP.li("Arhivă completă","cuprins + fișe + S-1 + S-88")
+        +TP.li("Ani de serviciu","adaugă / șterge"))
+      +TP.fab("⋮","fabS1")+TP.nv("arh")],
+  run:[[0,"step",1],[0,"show"],[200,"curEl",".ymm"],[1100,"tap"],
+       [1900,"step",2],[2000,"curEl","s1a"],[2900,"tap"],[2950,"cls","s1a","sel"],
+       [3800,"step",3],[3900,"rm","s1a","sel"],[3950,"cur",_FAB[0],_FAB[1]],[4800,"tap"],[4850,"prs","fabS1"],
+       [5100,"sh","shS1"],
+       [5800,"step",4],[5900,"curEl","s1pdf"],[6800,"tap"],[6850,"cls","s1pdf","sel"],[6900,"step",99],[7000,"hide"],
+       [10500,"loop"]]},
+ {k:"rules",eb:"Bine de știut",h:"De unde vin cifrele",items:[
+  ["ok","Din rapoartele individuale","Sumarul nu se scrie de mână: se adună singur din ce a trimis fiecare."],
+  ["tip","Cine e considerat inactiv","Pragul se schimbă din butonul rotund — de câte luni fără raport se scoate cineva din numărul de vestitori."],
+  ["no","Creditele nu intră în totaluri","Orele de credit se văd pe fișa S-21, dar nu se adună în S-1."]]},
+ {k:"recap",h:"Sumarul lunii",p:"Se citește, se descarcă, gata.",
+  chips:["Alegi anul și luna","Citești categoriile","Descarci PDF-ul"]}
+]};
+
+/* ------------------------------------------------------------------ Rapoarte */
+TUT.D["arh.rap"]={t:"Rapoarte",sub:"rapoartele lunare ale vestitorilor",ic:IC.edit,s:[
+ {k:"intro",ic:IC.edit,eb:"Rapoarte și evidențe",h:'Cine a raportat și <span class="thl">cine nu</span>',
+  p:"Toate rapoartele lunii, pe grupe. Vezi dintr-o privire cine lipsește, completezi în locul cuiva dacă e nevoie și reamintești restului."},
+ {k:"demo",eb:"Pas cu pas",h:"Cum completezi raportul cuiva",
+  steps:[["Alegi luna","Din cele două liste de sus."],
+         ["Deschizi grupa","Grupele se desfac una câte una."],
+         ["Apeși „Completează”","Se deschide aceeași foaie ca la vestitor."],
+         ["Salvezi","Cardul de progres al lunii urcă."]],
+  sc:[TP.hd()+TP.bd(TP.bc("Rapoarte","Rapoarte")+TP.ym("An 2026/2027","August")
+      +TP.c({t:"74 din 89 au raportat",sub:"15 lipsesc",cls:"warm"})
+      +TP.c({t:"Grupa 3",rows:[["Raportat","9 / 11"]],id:"gr3"})
+      +TP.c({t:"Grupa 4",rows:[["Raportat","8 / 9"]]}))
+      +TP.fab("⋮","fabR")+TP.nv("arh"),
+      TP.hd()+TP.bd(TP.bc("Rapoarte","Rapoarte")+TP.ym("An 2026/2027","August")
+      +TP.c({t:"Grupa 3",rows:[["Raportat","9 / 11"]],
+        body:TP.sp(3)+TP.li("POPESCU Andrei","Completează","","rP")+TP.li("STAN Daniel","✓ activ")+TP.li("TATAR Silviu","✓ activ")}))
+      +TP.sh("shRp","Raport — August 2026",
+        TP.ck("Activ",1)+TP.sp(3)+TP.l("Studii biblice conduse")+TP.f("fRst","")
+        +TP.sp(3)+TP.l("Observații")+TP.f("fRo","")
+        +'<div style="display:flex;gap:5px;margin-top:8px">'+TP.b("Anulează")+TP.b("Salvează",{pri:1,id:"bRp"})+'</div>')
+      +TP.fab("⋮","fabR2")+TP.nv("arh"),
+      TP.hd()+TP.bd(TP.bc("Rapoarte","Rapoarte")+TP.ym("An 2026/2027","August")
+      +TP.c({t:"75 din 89 au raportat",sub:"14 lipsesc",cls:"sel"})
+      +TP.c({t:"Grupa 3",rows:[["Raportat","10 / 11"]]})
+      +TP.c({t:"Grupa 4",rows:[["Raportat","8 / 9"]]}))+TP.fab("⋮","fabR3")+TP.nv("arh")],
+  run:[[0,"step",1],[0,"show"],[200,"curEl",".ymm"],[1100,"tap"],
+       [1900,"step",2],[2000,"curEl","gr3"],[2900,"tap"],[2950,"cls","gr3","sel"],[3300,"scr",1],
+       [4000,"step",3],[4100,"curEl","rP"],[5000,"tap"],[5050,"cls","rP","sel"],[5400,"sh","shRp"],
+       [6100,"curEl","fRst"],[6900,"tap"],[7050,"type","fRst","2",240],
+       [8000,"step",4],[8100,"curEl","bRp"],[9000,"tap"],[9050,"prs","bRp"],
+       [9400,"shx","shRp"],[9600,"scr",2],[9650,"step",99],[9750,"hide"],
+       [13200,"loop"]]},
+ {k:"cards",eb:"Uneltele lunii",h:"Din butonul rotund",items:[
+  [IC.dl,"Import Excel","Fișierul de răspunsuri Microsoft Forms intră direct în rapoartele lunii."],
+  [IC.pdf,"Cine nu a raportat","PDF de bifat, pe grupă sau pe toată congregația, pentru supraveghetorii de grupă."],
+  [IC.info,"Reamintește-le tuturor","Un mesaj către toți cei care încă n-au trimis raportul."]]},
+ {k:"rules",eb:"Bine de știut",h:"Ce e important",items:[
+  ["ok","Raportul trimis de vestitor e protejat","Ce a scris el nu se suprascrie la sincronizare cu o variantă mai veche."],
+  ["tip","Categoria contează","Vestitor, pionier auxiliar, regular sau special — de ea depinde ce câmpuri apar în foaie."],
+  ["no","Nu se șterge din greșeală","Ștergerea unui raport cere confirmare și rămâne în istoricul din Setări."]]},
+ {k:"recap",h:"Rapoartele lunii",p:"Le vezi pe toate, completezi ce lipsește.",
+  chips:["Alegi luna","Deschizi grupa","Completezi și salvezi"]}
+]};
+
+/* ------------------------------------------------------------------ Pionieri */
+TUT.D["arh.pio600"]={t:"Pionieri",sub:"progresul spre cele 600 de ore",ic:IC.clock,s:[
+ {k:"intro",ic:IC.clock,eb:"Rapoarte și evidențe",h:'Cum stau <span class="thl">pionierii</span>',
+  p:"Pentru fiecare pionier regular: câte ore are strânse din cele 600 ale anului de serviciu și câte i-ar trebui pe lună ca să ajungă."},
+ {k:"demo",eb:"Pas cu pas",h:"Cum citești bara fiecăruia",
+  steps:[["Alegi anul de serviciu","Lista de sus."],
+         ["Citești barele","Fiecare pionier are bara lui, cu procentul."],
+         ["Apeși pe cineva","Se deschid lunile lui, una câte una."],
+         ["Descarci fișa","Butonul din foaie scoate PDF-ul anului."]],
+  sc:[TP.hd()+TP.bd(TP.bc("Rapoarte","Pionieri")+TP.ym("An 2026/2027","")
+      +TP.c({t:"STAN Daniel",rows:[["Ore","286 / 600"],["Ritm","necesar 45 h/lună"]],
+        body:'<div style="height:4px;border-radius:3px;background:var(--surf2);overflow:hidden"><div style="width:48%;height:100%;background:var(--acc)"></div></div>',id:"pi1"})
+      +TP.c({t:"TATAR Silviu",rows:[["Ore","612 / 600"],["Ritm","obiectiv atins"]],tag:"✓",tagc:"t",
+        body:'<div style="height:4px;border-radius:3px;background:var(--surf2);overflow:hidden"><div style="width:100%;height:100%;background:var(--teal)"></div></div>'}))
+      +TP.sh("shPi","Lunile pionierului",
+        TP.li("Septembrie","52 h")+TP.li("Octombrie","49 h")+TP.li("Noiembrie","46 h")
+        +'<div style="margin-top:7px">'+TP.b("Descarcă fișa S-21",{pri:1,wide:1,id:"bPi"})+'</div>')
+      +TP.fab("↓","fabP")+TP.nv("arh")],
+  run:[[0,"step",1],[0,"show"],[200,"curEl",".ymy"],[1100,"tap"],
+       [1900,"step",2],[2000,"curEl","pi1"],[2900,"tap"],
+       [3500,"step",3],[3600,"tap"],[3650,"cls","pi1","sel"],[4000,"sh","shPi"],
+       [4900,"step",4],[5000,"curEl","bPi"],[5900,"tap"],[5950,"prs","bPi"],[6000,"step",99],[6100,"hide"],
+       [9600,"loop"]]},
+ {k:"rules",eb:"Bine de știut",h:"Cum se socotesc",items:[
+  ["ok","Creditele se adaugă la progres","Orele de credit intră în cele 600, chiar dacă nu intră în totalurile S-1."],
+  ["tip","Ritmul se recalculează","„Necesar x h/lună” ține cont doar de lunile care au mai rămas din an."],
+  ["tip","Fiecare pionier își vede bara","În „Profilul meu”, fără să intre în Arhivă."]]},
+ {k:"recap",h:"Pionierii",p:"O bară, un procent, un ritm.",
+  chips:["Alegi anul","Citești barele","Descarci fișa"]}
+]};
+
+/* ------------------------------------------------------------------ Prezență */
+TUT.D["arh.prez"]={t:"Prezență",sub:"prezența la întruniri și foaia S-88",ic:IC.check,s:[
+ {k:"intro",ic:IC.check,eb:"Rapoarte și evidențe",h:'Câți au fost <span class="thl">la întrunire</span>',
+  p:"Pentru fiecare întrunire: câți fizic și câți prin Zoom. Din ele iese media lunară și foaia S-88 a anului de serviciu."},
+ {k:"demo",eb:"Pas cu pas",h:"Cum treci o întrunire",
+  steps:[["Deschizi butonul rotund","Acolo stă „Adaugă întrunire”."],
+         ["Alegi „Adaugă întrunire”","Tipul și data sunt deja pregătite."],
+         ["Scrii numerele","Câți fizic, câți prin Zoom."],
+         ["Salvezi","Media lunii se recalculează singură."]],
+  sc:[TP.hd()+TP.bd(TP.bc("Rapoarte","Prezență")+TP.ym("An 2026/2027","")
+      +TP.c({t:"August 2026",rows:[["Media din săptămână","68"],["Media de duminică","81"]],id:"pz1"})
+      +TP.c({t:"Iulie 2026",rows:[["Media din săptămână","64"],["Media de duminică","79"]]}))
+      +TP.sh("shZ1","Prezență — descarcă și unelte",
+        TP.li("Adaugă întrunire","tip + dată preselectată","","zAdd")
+        +TP.li("Import Excel","fișierul de răspunsuri Forms")
+        +TP.li("PDF S-88","prezența pe anul teocratic"))
+      +TP.sh("shZ2","Adaugă întrunire",
+        '<div class="tp-seg"><b class="on">Din săptămână</b><b>Sfârșit de săptămână</b></div>'
+        +TP.sp(3)+TP.l("Data")+TP.f("fZd","2 septembrie 2026")
+        +TP.sp(3)+TP.l("Fizic")+TP.f("fZf","")+TP.sp(3)+TP.l("Zoom")+TP.f("fZz","")
+        +'<div style="margin-top:7px">'+TP.b("Salvează",{pri:1,wide:1,id:"bZ"})+'</div>')
+      +TP.fab("⋮","fabZ")+TP.nv("arh"),
+      TP.hd()+TP.bd(TP.bc("Rapoarte","Prezență")+TP.ym("An 2026/2027","")
+      +TP.c({t:"Septembrie 2026",rows:[["Media din săptămână","71"],["Întruniri trecute","1"]],cls:"sel"})
+      +TP.c({t:"August 2026",rows:[["Media din săptămână","68"],["Media de duminică","81"]]}))
+      +TP.fab("⋮","fabZ3")+TP.nv("arh")],
+  run:[[0,"step",1],[0,"show"],[300,"cur",_FAB[0],_FAB[1]],[1200,"tap"],[1250,"prs","fabZ"],
+       [1500,"sh","shZ1"],
+       [2200,"step",2],[2300,"curEl","zAdd"],[3200,"tap"],[3250,"cls","zAdd","sel"],
+       [3600,"shx","shZ1"],[3700,"sh","shZ2"],
+       [4500,"step",3],[4600,"curEl","fZf"],[5400,"tap"],[5550,"type","fZf","64",230],
+       [6400,"curEl","fZz"],[7200,"tap"],[7350,"type","fZz","7",230],
+       [8100,"step",4],[8200,"curEl","bZ"],[9100,"tap"],[9150,"prs","bZ"],
+       [9500,"shx","shZ2"],[9700,"scr",1],[9750,"step",99],[9850,"hide"],
+       [13300,"loop"]]},
+ {k:"rules",eb:"Bine de știut",h:"Ce e bine de știut",items:[
+  ["ok","Se poate da și dreptul altcuiva","Setări → Utilizatori: cineva poate vedea sau completa prezența fără să aibă restul Arhivei."],
+  ["tip","Fereastra de completare","Cine are doar dreptul de prezență poate umbla la ultimele 60 de zile, nu la date viitoare."],
+  ["tip","S-88 iese dintr-un buton","PDF-ul anului de serviciu, gata de pus la dosar."]]},
+ {k:"recap",h:"Prezența",p:"Două numere pe întrunire, restul se calculează.",
+  chips:["Adaugi întrunirea","Scrii fizic și Zoom","Descarci S-88"]}
+]};
+
+/* ------------------------------------------------------------------ Grupe */
+TUT.D["arh.grp"]={t:"Grupe",sub:"grupele de serviciu, supraveghetori și asistenți",ic:IC.ppl,s:[
+ {k:"intro",ic:IC.ppl,eb:"Rapoarte și evidențe",h:'Cine e în <span class="thl">ce grupă</span>',
+  p:"Grupele de serviciu cu supraveghetorul și asistentul fiecăreia. De aici ies listele pentru avizier și, la nevoie, schița unei reorganizări."},
+ {k:"demo",eb:"Pas cu pas",h:"Cum muți pe cineva în altă grupă",
+  steps:[["Deschizi grupa","Fiecare grupă își arată oamenii."],
+         ["Apeși pe vestitor","Se deschide fișa lui."],
+         ["Alegi altă grupă","Din lista de grupe."],
+         ["Salvezi","Se schimbă peste tot, inclusiv pe foaia de curățenie."]],
+  sc:[TP.hd()+TP.bd(TP.bc("Rapoarte","Grupe")
+      +TP.c({t:"Grupa 3",rows:[["Supraveghetor","TATAR Silviu"],["Vestitori","11"]],id:"gG"})
+      +TP.c({t:"Grupa 4",rows:[["Supraveghetor","STAN Daniel"],["Vestitori","9"]]})
+      +TP.c({t:"Grupa 5",rows:[["Supraveghetor","MOISE Ionuț"],["Vestitori","10"]]}))
+      +TP.fab("⋮","fabG")+TP.nv("arh"),
+      TP.hd()+TP.bd(TP.bc("Rapoarte","Grupe")
+      +TP.c({t:"Grupa 3",rows:[["Supraveghetor","TATAR Silviu"]],
+        body:TP.sp(3)+TP.li("POPESCU Andrei","","","gP")+TP.li("NEDELEA Antonio","")+TP.li("MOISE Ionuț","")}))
+      +TP.sh("shG","Fișa vestitorului",
+        TP.l("Grupa")+'<div class="tp-f" id="fG"><span id="fG_t">Grupa 3</span></div>'
+        +TP.sp(3)+TP.li("Grupa 4","","","gN")+TP.li("Grupa 5","")
+        +'<div style="margin-top:7px">'+TP.b("Salvează",{pri:1,wide:1,id:"bG"})+'</div>')
+      +TP.fab("⋮","fabG2")+TP.nv("arh"),
+      TP.hd()+TP.bd(TP.bc("Rapoarte","Grupe")
+      +TP.c({t:"Grupa 3",rows:[["Supraveghetor","TATAR Silviu"],["Vestitori","10"]]})
+      +TP.c({t:"Grupa 4",rows:[["Supraveghetor","STAN Daniel"],["Vestitori","10"]],cls:"sel"})
+      +TP.c({t:"Grupa 5",rows:[["Supraveghetor","MOISE Ionuț"],["Vestitori","10"]]}))
+      +TP.fab("⋮","fabG3")+TP.nv("arh")],
+  run:[[0,"step",1],[0,"show"],[200,"curEl","gG"],[1100,"tap"],[1150,"cls","gG","sel"],[1500,"scr",1],
+       [2200,"step",2],[2300,"curEl","gP"],[3200,"tap"],[3250,"cls","gP","sel"],[3600,"sh","shG"],
+       [4300,"step",3],[4400,"curEl","gN"],[5300,"tap"],[5350,"cls","gN","sel"],
+       [6000,"step",4],[6100,"curEl","bG"],[7000,"tap"],[7050,"prs","bG"],
+       [7400,"shx","shG"],[7600,"scr",2],[7650,"step",99],[7750,"hide"],
+       [11300,"loop"]]},
+ {k:"cards",eb:"Ce mai poți face",h:"Din butonul rotund",items:[
+  [IC.cal,"Schiță de reorganizare","Un tabel de planificare pornit de la grupele de acum. Muți oamenii pe hârtie, vezi cifrele, și abia la final aplici."],
+  [IC.plus,"Grupă nouă","Cu numele, supraveghetorul și asistentul ei."],
+  [IC.pdf,"Grupele (PDF)","Lista pentru avizier."],
+  [IC.info,"Date de contact","Doar pentru administrator: telefoanele și contactul de urgență, pe grupă sau pe toți."]]},
+ {k:"recap",h:"Grupele de serviciu",p:"Cine unde e, dintr-o privire.",
+  chips:["Deschizi grupa","Apeși vestitorul","Îi schimbi grupa și salvezi"]}
+]};
+
+/* ------------------------------------------------------------------ Responsabilități */
+TUT.D["arh.resp"]={t:"Responsabilități",sub:"departamentele și cine răspunde de fiecare",ic:IC.mark,s:[
+ {k:"intro",ic:IC.mark,eb:"Rapoarte și evidențe",h:'Cine <span class="thl">răspunde</span> de ce',
+  p:"Departamentele congregației — literatură, teritoriu, sonorizare, curățenie — cu fratele responsabil și ajutoarele lui."},
+ {k:"demo",eb:"Pas cu pas",h:"Cum pui un responsabil",
+  steps:[["Apeși departamentul","Lista îi ține pe toate."],
+         ["Alegi responsabilul","Din lista de vestitori."],
+         ["Adaugi ajutoarele","Câți sunt nevoie."],
+         ["Salvezi","Lista pentru avizier iese dintr-un buton."]],
+  sc:[TP.hd()+TP.bd(TP.bc("Rapoarte","Responsabilități")
+      +TP.c({t:"Literatură",rows:[["Responsabil","STAN Daniel"]]})
+      +TP.c({t:"Teritoriu",rows:[["Responsabil","— nimeni —"]],id:"rD"})
+      +TP.c({t:"Sonorizare",rows:[["Responsabil","MOISE Ionuț"]]})
+      +TP.c({t:"Curățenie",rows:[["Responsabil","NEDELEA Antonio"]]}))
+      +TP.sh("shRs","Departament",
+        TP.l("Responsabil")+TP.f("fRs","")+TP.sp(3)
+        +TP.l("Ajutoare")+TP.li("NEDELEA Antonio","","","rH")+TP.li("POPESCU Andrei","")
+        +'<div style="margin-top:7px">'+TP.b("Salvează",{pri:1,wide:1,id:"bRs"})+'</div>')
+      +TP.fab("⋮","fabRs")+TP.nv("arh"),
+      TP.hd()+TP.bd(TP.bc("Rapoarte","Responsabilități")
+      +TP.c({t:"Literatură",rows:[["Responsabil","STAN Daniel"]]})
+      +TP.c({t:"Teritoriu",rows:[["Responsabil","TATAR Silviu"],["Ajutor","NEDELEA Antonio"]],cls:"sel"})
+      +TP.c({t:"Sonorizare",rows:[["Responsabil","MOISE Ionuț"]]})
+      +TP.c({t:"Curățenie",rows:[["Responsabil","NEDELEA Antonio"]]}))
+      +TP.fab("⋮","fabRs2")+TP.nv("arh")],
+  run:[[0,"step",1],[0,"show"],[200,"curEl","rD"],[1100,"tap"],[1150,"cls","rD","sel"],[1500,"sh","shRs"],
+       [2300,"step",2],[2400,"curEl","fRs"],[3200,"tap"],[3350,"type","fRs","TATAR Silviu",55],
+       [4900,"step",3],[5000,"curEl","rH"],[5900,"tap"],[5950,"cls","rH","sel"],
+       [6600,"step",4],[6700,"curEl","bRs"],[7600,"tap"],[7650,"prs","bRs"],
+       [8000,"shx","shRs"],[8200,"scr",1],[8250,"step",99],[8350,"hide"],
+       [11900,"loop"]]},
+ {k:"rules",eb:"Bine de știut",h:"Ce e util",items:[
+  ["ok","Departamentele se adaugă","Din butonul rotund → „Departament nou”, dacă la voi sunt și altele."],
+  ["tip","PDF pentru avizier","Lista completă, cu responsabili și ajutoare, într-o singură pagină."]]},
+ {k:"recap",h:"Responsabilitățile",p:"Un departament, un responsabil.",
+  chips:["Apeși departamentul","Pui responsabilul","Descarci lista"]}
+]};
+
+/* ------------------------------------------------------------------ Arhivați */
+TUT.D["arh.arhv"]={t:"Arhivați",sub:"cei mutați sau ieșiți din congregație",ic:IC.box,s:[
+ {k:"intro",ic:IC.box,eb:"Rapoarte și evidențe",h:'Cei care <span class="thl">nu mai sunt</span> în listă',
+  p:"Când cineva se mută sau nu mai e în congregație, fișa lui nu se șterge: trece aici, cu tot cu rapoartele lui. Lista de vestitori rămâne curată."},
+ {k:"cards",eb:"Ce ține secțiunea",h:"De ce există",items:[
+  [IC.box,"Fișa rămâne întreagă","Rapoartele, orele și fișa S-21 se păstrează — se pot scoate și după ce omul a plecat."],
+  [IC.hist,"Motivul și data","Se vede când a fost arhivat și de ce: mutat, ieșit, decedat."],
+  [IC.plus,"Se poate întoarce","Dacă revine, fișa se readuce în listă cu tot istoricul ei."]]},
+ {k:"rules",eb:"Bine de știut",h:"Cum se folosește",items:[
+  ["ok","Arhivarea se face din fișa vestitorului","Din „Vestitori” → fișa lui → arhivare, cu motiv și dată."],
+  ["no","Nu apar în numărătorile lunii","Un vestitor arhivat nu mai intră în S-1 și nu mai e căutat pentru raport."],
+  ["tip","Se pot scoate PDF-uri și pentru ei","Fișa S-21 a unui arhivat se descarcă la fel."]]},
+ {k:"recap",h:"Arhivații",p:"Nimic nu se pierde.",
+  chips:["Fișa trece aici, nu se șterge","Rapoartele rămân","Se poate readuce oricând"]}
+]};
+
+/* ------------------------------------------------------------------ Scrisori */
+TUT.D["arh.scr"]={t:"Scrisori",sub:"documente și anunțuri pentru avizier",ic:IC.book,s:[
+ {k:"intro",ic:IC.book,eb:"Rapoarte și evidențe",h:'Documentele <span class="thl">congregației</span>',
+  p:"Scrisori, anunțuri și documente puse pe luni, ca să fie găsite atunci când trebuie și să nu se caute prin telefoane."},
+ {k:"cards",eb:"Ce poți face",h:"Cum se ține",items:[
+  [IC.plus,"Adaugi un document","Cu luna de care ține și un titlu."],
+  [IC.search,"Le găsești pe luni","Cele mai noi primele."],
+  [IC.dl,"Le descarci","Se deschid așa cum au fost puse."]]},
+ {k:"rules",eb:"Bine de știut",h:"Cine are acces",items:[
+  ["tip","Doar administratorul","Secțiunea apare numai la administrator — restul congregației nu o vede."],
+  ["ok","Intră în arhiva lunii","Documentele lunii pot ajunge și în PDF-ul de arhivă completă."]]},
+ {k:"recap",h:"Scrisorile",p:"Puse pe luni, găsite ușor.",
+  chips:["Adaugi documentul","Îi pui luna","Îl găsești când trebuie"]}
+]};
+
+/* ------------------------------------------------------------------ Export */
+TUT.D["arh.exp"]={t:"Export",sub:"PDF-urile de scos din aplicație",ic:IC.dl,s:[
+ {k:"intro",ic:IC.dl,eb:"Rapoarte și evidențe",h:'Tot ce se poate <span class="thl">tipări</span>',
+  p:"Într-un singur loc: arhiva completă a lunii, sumarul S-1, foaia de prezență S-88 și fișele S-21 ale vestitorilor."},
+ {k:"demo",eb:"Pas cu pas",h:"Cum scoți arhiva unei luni",
+  steps:[["Alegi luna","Cele două liste de sus."],
+         ["Alegi ce PDF vrei","Fiecare rând spune ce conține."],
+         ["Aștepți puțin","PDF-ul se face chiar în telefon, fără internet."],
+         ["Îl salvezi sau îl trimiți","Ca orice fișier de pe telefon."]],
+  sc:[TP.hd()+TP.bd(TP.bc("Rapoarte","Export")+TP.ym("An 2026/2027","August")
+      +TP.li("Arhivă completă","cuprins + fișe + S-1 + S-88","","eA")
+      +TP.li("Sumar S-1","raportul lunii")
+      +TP.li("Prezență S-88","anul de serviciu")
+      +TP.li("Fișe S-21","toți vestitorii"))+TP.nv("arh"),
+      TP.hd()+'<div class="tp-bd" style="justify-content:center;text-align:center;gap:8px">'
+      +'<div class="tp-t">Se generează PDF…</div><div style="height:5px;border-radius:3px;background:var(--surf2);overflow:hidden"><div style="width:70%;height:100%;background:var(--acc)"></div></div>'
+      +'<div class="tp-m">Se face pe telefon, nu pe internet.</div></div>'+TP.nv("arh"),
+      TP.hd()+TP.bd(TP.t("Export"))+TP.ok("okE","PDF gata","ArhivaJW August 2026.pdf")+TP.nv("arh")],
+  run:[[0,"step",1],[0,"show"],[200,"curEl",".ymm"],[1100,"tap"],
+       [1900,"step",2],[2000,"curEl","eA"],[2900,"tap"],[2950,"cls","eA","sel"],
+       [3400,"step",3],[3500,"scr",1],[3600,"hide"],
+       [5800,"step",4],[5900,"scr",2],[6000,"ok","okE"],[6050,"step",99],
+       [9700,"loop"]]},
+ {k:"rules",eb:"Bine de știut",h:"Cum ies PDF-urile",items:[
+  ["ok","Se fac pe telefon","Nu pleacă nimic pe internet ca să se genereze un PDF."],
+  ["tip","Arhiva completă e cea mai mare","Cuprins, toate fișele S-21, S-1 și S-88 — durează câteva secunde bune."],
+  ["tip","Fiecare secțiune are și butonul ei","Nu trebuie să vii aici: butonul rotund din fiecare secțiune scoate PDF-ul ei."]]},
+ {k:"recap",h:"Exporturile",p:"Un buton, un PDF.",
+  chips:["Alegi luna","Alegi PDF-ul","Îl salvezi de pe telefon"]}
+]};
+
+/* ------------------------------------------------------------------ Vestitori */
+TUT.D["bros"]={t:"Vestitori",sub:"fișele, filtrele și la ce poate fi pus fiecare",ic:IC.ppl,s:[
+ {k:"intro",ic:IC.ppl,eb:"Vestitori",h:'Baza de date a <span class="thl">congregației</span>',
+  p:"O singură listă alfabetică, cu filtre deasupra. Din fișa fiecăruia se hotărăsc grupa, privilegiile și la ce poate fi pus în programe."},
+ {k:"demo",eb:"Pas cu pas",h:"Cum bifezi la ce poate fi pus cineva",
+  steps:[["Cauți numele","Scrii câteva litere în căutare."],
+         ["Deschizi fișa","Apeși pe rândul lui."],
+         ["Bifezi capacitățile","Ce parte poate avea, la ce post poate fi pus."],
+         ["Salvezi","Din acel moment apare în listele de alegere."]],
+  sc:[TP.hd()+TP.bd(TP.f("fBq","Caută vestitor…")
+      +'<div class="tp-row"><span class="tp-tag">Grupa</span><span class="tp-tag">Gen</span><span class="tp-tag">Privilegii</span></div>'
+      +TP.m("89 vestitori")
+      +TP.li("COMANACHE Raymond","Grupa 1")+TP.li("MOISE Ionuț","Grupa 2")+TP.li("NEDELEA Antonio","Grupa 3")
+      +TP.li("PRICHINDEL Marius","Grupa 1"))
+      +TP.fab("⋮","fabB")+TP.nv("bros"),
+      TP.hd()+TP.bd(TP.f("fBq2","POPESCU")
+      +'<div class="tp-row"><span class="tp-tag">Grupa</span><span class="tp-tag">Gen</span><span class="tp-tag">Privilegii</span></div>'
+      +TP.m("1 vestitor")+TP.li("POPESCU Andrei","Grupa 3","","bP"))
+      +TP.sh("shB","Fișa vestitorului",
+        TP.l("Poate fi pus la")
+        +TP.ck("Citirea Bibliei",1)+TP.ck("Discuție",0,"ckB1")
+        +TP.ck("Mărturia publică",1)+TP.ck("Audio-video",0,"ckB2")
+        +'<div style="margin-top:7px">'+TP.b("Salvează",{pri:1,wide:1,id:"bB"})+'</div>')
+      +TP.fab("⋮","fabB2")+TP.nv("bros")],
+  run:[[0,"step",1],[0,"show"],[200,"curEl","fBq"],[1000,"tap"],[1150,"type","fBq","POPESCU",70],
+       [2300,"scr",1],
+       [2900,"step",2],[3000,"curEl","bP"],[3900,"tap"],[3950,"cls","bP","sel"],[4300,"sh","shB"],
+       [5000,"step",3],[5100,"curEl","ckB1"],[5900,"tap"],[5950,"cls","ckB1","on"],
+       [6600,"curEl","ckB2"],[7400,"tap"],[7450,"cls","ckB2","on"],
+       [8100,"step",4],[8200,"curEl","bB"],[9100,"tap"],[9150,"prs","bB"],[9200,"step",99],[9300,"hide"],
+       [12800,"loop"]]},
+ {k:"rules",eb:"Bine de știut",h:"De ce contează bifele",items:[
+  ["ok","Fără bifă, numele nu apare","Listele de alegere din programe se fac din bifele fișei. Așa nu se pune nimeni unde nu trebuie."],
+  ["tip","Filtrele de sus se pot combina","Grupă, gen, privilegiu — și căutarea peste ele. „Șterge filtrele” le scoate pe toate."],
+  ["tip","Grupa se vede pe fiecare rând","Lista rămâne alfabetică pe toată congregația, ca să găsești un nume fără să știi grupa."],
+  ["no","Ștergerea nu e prima soluție","Cine pleacă din congregație se arhivează, nu se șterge — rapoartele lui rămân."]]},
+ {k:"recap",h:"Fișele vestitorilor",p:"O listă, filtre, o fișă pentru fiecare.",
+  chips:["Cauți numele","Deschizi fișa","Bifezi ce poate face"]}
+]};
+
+/* ------------------------------------------------------------------ Setări */
+TUT.D["set"]={t:"Setări",sub:"sincronizare, utilizatori, import, temă",ic:IC.gear,s:[
+ {k:"intro",ic:IC.gear,eb:"Setări",h:'De aici <span class="thl">se leagă</span> totul',
+  p:"Congregația și ora întrunirii, cine ce poate face, de unde vin caietul și rapoartele, cum se sincronizează telefoanele între ele."},
+ {k:"cards",eb:"Cardurile de pe ecran",h:"Ce ține fiecare",items:[
+  [IC.cal,"Congregație și întrunire","Numele congregației, ziua și ora fiecărei întruniri. De aici se calculează orele din program."],
+  [IC.ppl,"Utilizatori și distribuire","Cine intră în aplicație și cu ce drepturi. Tot de aici iese linkul de trimis congregației."],
+  [IC.sync,"Sincronizare GitHub","Legătura prin care telefoanele văd aceleași date. Se face o dată, pe dispozitivul administratorului."],
+  [IC.arch,"Import caiet (.epub)","Fișierul din JW Library aduce temele, cântările și detaliile pentru toată luna."],
+  [IC.info,"Notificări","Reamintirile care ajung pe telefon: raportul lunii, curățenia săptămânii, partea ta din program."],
+  [IC.box,"Backup","O copie a tuturor datelor, într-un fișier pe care îl ții deoparte."]]},
+ {k:"demo",eb:"Pas cu pas",h:"Cum dai cuiva drept de editare",
+  steps:[["Deschizi „Utilizatori”","Cardul „Utilizatori și distribuire”."],
+         ["Apeși pe om","Se deschide fișa lui de utilizator."],
+         ["Alegi rolul și modulele","Editor, cu ce anume poate modifica."],
+         ["Salvezi","Are drepturile de la următoarea sincronizare."]],
+  sc:[TP.hd()+TP.bd(TP.c({t:"Congregație și întrunire",sub:"nume, zile și ore"})
+      +TP.c({t:"Utilizatori și distribuire",sub:"cine intră și cu ce drepturi",id:"stU"})
+      +TP.c({t:"Sincronizare GitHub",sub:"legătura dintre telefoane"})
+      +TP.c({t:"Import caiet (.epub)",sub:"temele lunii, din JW Library"}))+TP.nv("arh"),
+      TP.hd()+TP.bd(TP.t("Utilizatori")
+      +TP.li("TATAR Silviu","Administrator")+TP.li("POPESCU Andrei","Vestitor","","uP")
+      +TP.li("STAN Daniel","Editor")+TP.li("MOISE Ionuț","Vestitor"))
+      +TP.sh("shU","Utilizator",
+        TP.l("Rol")+'<div class="tp-seg" id="rlSeg"><b>Vestitor</b><b class="on">Editor</b><b>Admin</b></div>'
+        +TP.sp(3)+TP.l("Ce poate modifica")
+        +TP.ck("Programul întrunirii",0,"ckU1")+TP.ck("Sarcinile și curățenia",0,"ckU2")
+        +'<div style="margin-top:7px">'+TP.b("Salvează",{pri:1,wide:1,id:"bU"})+'</div>')+TP.nv("arh")],
+  run:[[0,"step",1],[0,"show"],[200,"curEl","stU"],[1100,"tap"],[1150,"cls","stU","sel"],[1500,"scr",1],
+       [2200,"step",2],[2300,"curEl","uP"],[3200,"tap"],[3250,"cls","uP","sel"],[3600,"sh","shU"],
+       [4300,"step",3],[4400,"curEl","rlSeg"],[5200,"tap"],
+       [5800,"curEl","ckU1"],[6600,"tap"],[6650,"cls","ckU1","on"],
+       [7200,"curEl","ckU2"],[8000,"tap"],[8050,"cls","ckU2","on"],
+       [8700,"step",4],[8800,"curEl","bU"],[9700,"tap"],[9750,"prs","bU"],[9800,"step",99],[9900,"hide"],
+       [13400,"loop"]]},
+ {k:"rules",eb:"Bine de știut",h:"Ce e important",items:[
+  ["tip","Tema se schimbă din antet","Butonul cu luna / soarele. „Zi” și „Noapte” — alegerea rămâne pe telefonul fiecăruia."],
+  ["ok","Distribuirea se face cu un link","Congregația primește un link; la deschidere aplicația își ia singură datele, fără cod scris de mână."],
+  ["no","Tokenul de scriere nu se dă tuturor","Doar administratorii și editorii îl au. Restul primesc linkul de citire."],
+  ["tip","Istoricul spune cine ce a schimbat","Setări → Istoric activitate. Tot acolo stau erorile tehnice ale telefonului."]]},
+ {k:"recap",h:"Setările",p:"Se ating rar, dar de aici pornește tot.",
+  chips:["Congregația și orele","Utilizatorii și drepturile","Sincronizarea și importurile"]}
+]};
+
+/* ---------------------------------------------------------------------------
+   Aliasuri — secțiunile pe care le vede vestitorul duc la tutorialele scrise
+   --------------------------------------------------------------------------- */
+TUT.A["lite.meu"]="vestitor";
+TUT.A["lite.prez"]="arh.prez";
+TUT.A["lite.cur"]="arh.cur";
+TUT.A["lite.mp"]="arh.mp";
+TUT.A["lite.teren"]="arh.teren";
+TUT.A["lite.wm"]="arh.wm";
+TUT.A["lite.sarc"]="arh.sarc";
+TUT.A["arh.vcp"]="arh.vcped";
+TUT.A["prog.duty"]="prog.sarc";
+
+/* ---------------------------------------------------------------------------
+   Un card „Tutoriale" în Setări, ca lista completă să aibă și un loc al ei —
+   semnul „?" rămâne strict pentru secțiunea deschisă. Cardul se pune după ce
+   ecranul de Setări s-a scris, chiar înaintea rândului cu versiunea, ca să nu
+   atingem cele două funcții care îl construiesc.
+   --------------------------------------------------------------------------- */
+(function(){
+ function body(){
+  return '<div class="muted" style="margin:0 2px 10px;font-size:12px">'
+   +'Semnul <b>?</b> din antet deschide de fiecare dată tutorialul secțiunii în care te afli. '
+   +'De aici le poți deschide pe toate.</div>'
+   +'<button class="btn ghost sm" style="width:100%" onclick="tutIndex()">Vezi toate tutorialele</button>'
+   +'<button class="btn ghost sm" style="width:100%;margin-top:8px" onclick="tutOpen(\'start\')">Bun venit în ArhiLink</button>'
+   +'<button class="btn ghost sm" style="width:100%;margin-top:8px" onclick="tutOpen(\'vestitor\')">Pentru vestitori</button>';}
+ /* Setările administratorului sunt făcute din carduri „setcard" (cu stilul lor scris
+    chiar de `renderSet`); Setările celorlalți, din carduri „group gp", din foaia
+    principală. Ne îmbrăcăm după ecranul în care intrăm, altfel cardul ar ieși gol
+    de stil la vestitori. */
+ function card(setcard){
+  if(setcard)return '<details class="setcard"><summary><span class="sic">'+IC.book+'</span><span class="sinfo">'
+   +'<span class="stt">Tutoriale</span><span class="ssb">cum se face, secțiune cu secțiune</span></span></summary>'
+   +'<div class="setbody">'+body()+'</div></details>';
+  return '<div class="group gp"><h2>Tutoriale</h2>'
+   +'<div class="muted" style="font-size:12px;margin-bottom:10px">cum se face, secțiune cu secțiune</div>'
+   +body()+'</div>';}
+ function put(){try{
+   var b=document.getElementById("body");if(!b||b.querySelector(".tutsetcard"))return;
+   var v=b.querySelector(".ver");
+   var d=document.createElement("div");d.className="tutsetcard";d.innerHTML=card(!!b.querySelector(".setcard"));
+   if(v)b.insertBefore(d,v);else b.appendChild(d);}catch(e){}}
+ function wrap(n){var f=window[n];if(typeof f!=="function")return;
+  window[n]=function(){var r=f.apply(this,arguments);put();return r;};}
+ wrap("renderSet");wrap("renderSetLimited");
+})();
+</script>
+
 </body></html>
