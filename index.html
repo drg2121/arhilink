@@ -659,7 +659,7 @@ Object.assign(IC,{
  box:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h18v13H3z"/><path d="M3 7l2-4h14l2 4"/><path d="M10 11h4"/></svg>',
  mark:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15.5 4.5l4 4-9.5 9.5H6v-4z"/><path d="M12.5 7.5l4 4M5 21h14"/></svg>'
 });
-const VERSION="3.7.2";
+const VERSION="3.7.3";
 /* Versiunea minima care are voie sa SCRIE in cloud. Se trece in gist la fiecare trimitere;
    un dispozitiv ramas pe un build mai vechi decat atat nu mai poate suprascrie datele —
    doar citeste si se actualizeaza singur. Asa nu mai poate un singur telefon uitat deschis
@@ -2528,7 +2528,8 @@ function _edSec(ic,t,vid,body,open){return '<details class="edx"'+(open?" open":
  +'<span class="edxw"><span class="edxt">'+esc(t)+'</span><span class="edxv" id="'+vid+'">—</span></span>'
  +'<span class="edxch">'+IC.chev+'</span></summary><div class="edxb">'+body+'</div></details>';}
 /* rezumatele din antete se recalculează la fiecare modificare din fișă */
-function edSumAll(){try{
+function edSumAll(){try{_pioFromChg();}catch(e){}
+ try{
  var g=function(id){var e=document.getElementById(id);return e?String(e.value||"").trim():"";};
  var set=function(id,t){var e=document.getElementById(id);if(e)e.textContent=t||"";};
  var np=document.querySelectorAll("#edform .prv:checked").length;
@@ -2559,9 +2560,9 @@ function editBro(id,openSec){if(!_needEdit())return;ensureEdCSS();
    <div><label class="fl">Rol</label><select id="br" class="fld"><option value="Bătrân" ${b.rol==="Bătrân"?"selected":""}>Bătrân</option><option value="Slujitor" ${b.rol==="Slujitor"?"selected":""}>Slujitor auxiliar</option><option value="" ${(!b.rol||b.rol==="Vestitor")?"selected":""}>— (fără numire)</option></select></div></div>
   <div class="two" style="margin-top:8px"><div><label class="fl">Stare</label><select id="ba" class="fld"><option value="1" ${b.active!==false?"selected":""}>Activ</option><option value="0" ${b.active===false?"selected":""}>Inactiv</option></select></div>
    <div><label class="fl">Privilegiu</label><select id="bpio" class="fld"><option value="" ${(!b.pio&&b.isPub!==false)?"selected":""}>Vestitor</option><option value="Vestitor nebotezat" ${b.pio==="Vestitor nebotezat"?"selected":""}>Vestitor nebotezat</option><option value="Pionier" ${b.pio==="Pionier"?"selected":""}>Pionier regular</option><option value="Pionier auxiliar" ${b.pio==="Pionier auxiliar"?"selected":""}>Pionier auxiliar (permanent)</option><option value="Pionier special" ${b.pio==="Pionier special"?"selected":""}>Pionier special</option><option value="Misionar" ${b.pio==="Misionar"?"selected":""}>Misionar</option><option value="Cursant" ${(b.pio==="Cursant"||b.isPub===false)?"selected":""}>Cursant</option></select></div></div>
-  <div class="two" style="margin-top:8px"><div><label class="fl">Privilegiul e valabil din</label><select id="bpiofrom" class="fld" onchange="var p=document.getElementById('bpioprevw');if(p)p.style.display=this.value?'':'none'">${_pioFromOpts(b.pioFrom||"")}</select></div>
+  <div class="two" style="margin-top:8px"><div><label class="fl">Privilegiul e valabil din</label><select id="bpiofrom" class="fld" onchange="_pioFromChg()">${_pioFromOpts(b.pioFrom||"")}</select></div>
    <div id="bpioprevw" style="${b.pioFrom?"":"display:none"}"><label class="fl">Până atunci este</label><select id="bpioprev" class="fld">${_pioPrevOpts(b.pioPrev||"")}</select></div></div>
-  <div class="hint">Pentru o numire care intră în vigoare mai târziu: alegi luna, iar până atunci persoana rămâne ce era. Ex.: pionier regular din septembrie — raportul pe august o socotește vestitor, din septembrie intră la pionieri regulari.</div>
+  <div class="hint" id="bpiohint">Pentru o numire care intră în vigoare mai târziu: alegi luna, iar până atunci persoana rămâne ce era. Ex.: pionier regular din septembrie — raportul pe august o socotește vestitor, din septembrie intră la pionieri regulari.</div>
   <label class="fl">Grupa de serviciu</label><select id="bgrp" class="fld"><option value="">— fără grupă —</option>${grpsAll().map(g=>`<option value="${g.id}" ${grpOf(b)===g.id?"selected":""}>${esc(g.name)}</option>`).join("")}</select>`;
 
  const secFam=`<div class="muted" style="margin:11px 2px 9px">Membrii aceleiași familii pot fi parteneri de sex diferit la demonstrație.</div>
@@ -6001,10 +6002,27 @@ function pioRowOf(b,months){var h=0,cr=0,st=0,rep=0,prM=0,from="";
   var goal=prM>=12?600:Math.max(50,prM*50);
   return {b:b,h:Math.round(h),cr:Math.round(cr),st:st,rep:rep,total:Math.round(h+cr),prM:prM,goal:goal,from:(prM<12&&from&&from!==months[0].k)?from:""};}
 /* opțiunile pentru „valabil din" — un an în urmă, un an înainte */
-function _pioFromOpts(v){var d=new Date(),out=[["","deja valabil"]],seen={};
-  for(var i=-12;i<=12;i++){var x=new Date(d.getFullYear(),d.getMonth()+i,1);var k=ymOf(x.getFullYear(),x.getMonth());seen[k]=1;out.push([k,RO_MONTHS_CAP[x.getMonth()]+" "+x.getFullYear()]);}
-  if(v&&!seen[v])out.push([v,pioFromLabel(v)]);
-  return out.map(function(o){return '<option value="'+o[0]+'"'+(o[0]===(v||"")?' selected':'')+'>'+esc(o[1])+'</option>';}).join("");}
+function _pioFromOpts(v){var d=new Date(),now=ymOf(d.getFullYear(),d.getMonth()),fut=[],past=[],seen={};
+  for(var i=-12;i<=12;i++){var x=new Date(d.getFullYear(),d.getMonth()+i,1);var k=ymOf(x.getFullYear(),x.getMonth());seen[k]=1;
+    (k<now?past:fut).push([k,RO_MONTHS_CAP[x.getMonth()]+" "+x.getFullYear()]);}
+  if(v&&!seen[v])(v<now?past:fut).push([v,pioFromLabel(v)]);
+  past.sort(function(a,b){return a[0]<b[0]?1:-1;});
+  var opt=function(o){return '<option value="'+o[0]+'"'+(o[0]===(v||"")?' selected':'')+'>'+esc(o[1])+'</option>';};
+  return '<option value=""'+(v?'':' selected')+'>deja valabil</option>'
+   +'<optgroup label="De acum înainte">'+fut.map(opt).join("")+'</optgroup>'
+   +'<optgroup label="Luni trecute (retroactiv)">'+past.map(opt).join("")+'</optgroup>';}
+/* previzualizarea de sub „valabil din": se citește pe loc ce e persoana înainte și după luna
+   aleasă. Lista are câte două luni cu același nume (anul trecut și anul viitor), așa că fără
+   rândul acesta se putea alege septembrie din anul greșit fără să se vadă. */
+function _pioFromChg(){var f=document.getElementById("bpiofrom");if(!f)return;
+ var w=document.getElementById("bpioprevw");if(w)w.style.display=f.value?"":"none";
+ var e=document.getElementById("bpiohint");if(!e)return;
+ var pe=document.getElementById("bpio"),ve=document.getElementById("bpioprev");
+ var pio=pe?pe.value:"",prev=(ve&&f.value)?ve.value:"";
+ if(!f.value){e.innerHTML='Privilegiul e valabil de acum. Pentru o numire care intră în vigoare mai târziu alege luna de început — până atunci persoana rămâne ce era.';return;}
+ var k=f.value;
+ e.innerHTML='Până în <b>'+esc(pioFromLabel(ymShift(k,-1)))+'</b> inclusiv e <b>'+esc(_pioLong(prev))+'</b>, iar din <b>'+esc(pioFromLabel(k))+'</b> e <b>'+esc(_pioLong(pio))+'</b>.'
+  +(k<_nowK()?' <span class="warn">Lună trecută: se socotește retroactiv, inclusiv în rapoartele deja scrise.</span>':'');}
 function _pioPrevOpts(v){return [["","Vestitor"],["Vestitor nebotezat","Vestitor nebotezat"],["Pionier auxiliar","Pionier auxiliar (permanent)"],["Pionier","Pionier regular"],["Pionier special","Pionier special"]]
   .map(function(o){return '<option value="'+o[0]+'"'+(o[0]===(v||"")?' selected':'')+'>'+o[1]+'</option>';}).join("");}
 /* eticheta din lista de vestitori: privilegiul de acum + schimbarea programată, dacă e una */
