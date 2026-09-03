@@ -659,7 +659,7 @@ Object.assign(IC,{
  box:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h18v13H3z"/><path d="M3 7l2-4h14l2 4"/><path d="M10 11h4"/></svg>',
  mark:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15.5 4.5l4 4-9.5 9.5H6v-4z"/><path d="M12.5 7.5l4 4M5 21h14"/></svg>'
 });
-const VERSION="3.7.4";
+const VERSION="3.7.5";
 /* Versiunea minima care are voie sa SCRIE in cloud. Se trece in gist la fiecare trimitere;
    un dispozitiv ramas pe un build mai vechi decat atat nu mai poate suprascrie datele —
    doar citeste si se actualizeaza singur. Asa nu mai poate un singur telefon uitat deschis
@@ -4735,7 +4735,12 @@ function _mergeCloudReps(R){if(!R)return;
  /* 4) prezența: per dată+tip, câștigă t mai nou; înregistrările doar-din-cloud se păstrează */
  S.att=S.att||{recs:[]};S.att.recs=S.att.recs||[];var recs=S.att.recs,ix={};recs.forEach(function(r,i){if(r&&r.d)ix[r.d+"|"+r.k]=i;});
  (((R.att||{}).recs)||[]).forEach(function(r){if(!r||!r.d)return;var key=r.d+"|"+r.k;var i=ix[key];
-  if(i==null){ix[key]=recs.length;recs.push(r);}else if((r.t||0)>(recs[i].t||0))recs[i]=r;});}
+  if(i==null){ix[key]=recs.length;recs.push(r);}else if((r.t||0)>(recs[i].t||0))recs[i]=r;});
+ /* 5) excepțiile („nu s-a ținut"): tot per dată+tip, câștigă marcajul de timp mai nou. Scoaterea unei
+    excepții rămâne ca urmă (del:1), altfel s-ar întoarce de pe celălalt dispozitiv la prima sincronizare. */
+ var sk=S.att.skip=S.att.skip||{},rs=((R.att||{}).skip)||{};
+ Object.keys(rs).forEach(function(key){var inc=rs[key];if(!inc)return;var loc=sk[key];
+  if(!loc||((inc.t||0)>(loc.t||0)))sk[key]=inc;});}
 /* ============================================================================
    ÎMBINARE PE TREI CĂI (bază · local · cloud) — v2.63
    ----------------------------------------------------------------------------
@@ -6047,6 +6052,7 @@ function catHasHours(c){return c==="reg"||c==="aux"||c==="special";}
 function arhPrune(silent){var min=curTheoStart()-2,n=0;var R=arhRep();
   Object.keys(R).forEach(function(id){Object.keys(R[id]||{}).forEach(function(k){if(theoStartOf(k)<min){delete R[id][k];n++;}});if(R[id]&&!Object.keys(R[id]).length)delete R[id];});
   if(S.att&&S.att.recs){var before=S.att.recs.length;S.att.recs=S.att.recs.filter(function(r){return r&&r.d&&theoStartOf(r.d.slice(0,7))>=min;});n+=before-S.att.recs.length;}
+  if(S.att&&S.att.skip){Object.keys(S.att.skip).forEach(function(key){var d=String(key).split("|")[0];if(!d||theoStartOf(d.slice(0,7))<min){delete S.att.skip[key];n++;}});}
   if(n&&!silent){save();toast("Curățat: "+n+" înregistrări mai vechi de 3 ani");}
   return n;}
 
@@ -6735,12 +6741,13 @@ function arhPrezHtml(){var start=theoStartOf(arhYM);var years=theoYearsAvail();
   h+=_odSyncBar("prez");
   var months=theoMonths(start);
   /* lunile cu întruniri necompletate se văd din tabel, ca să nu fie nevoie să deschizi fiecare lună */
-  var missM={},missTot=0;months.forEach(function(m){var ms=attMissing(m.k);missM[m.k]=ms;missTot+=ms.length;});
+  var missM={},missTot=0,skipTot=0;months.forEach(function(m){var ms=attMissing(m.k);missM[m.k]=ms;missTot+=ms.length;skipTot+=attSkipsIn(m.k).length;});
   var miss=function(mk,kk){return missM[mk].filter(function(x){return x.k===kk;}).length;};
   var mtag=function(n){return n?' <span style="color:var(--maroon);font-weight:700;white-space:nowrap">· '+n+' lipsă</span>':'';};
   h+='<div class="muted" style="margin:0 2px 10px;font-size:12px">'+(missTot
-    ?('<b style="color:var(--maroon)">'+missTot+(missTot===1?' întrunire necompletată':' întruniri necompletate')+'</b> în anul acesta — apasă luna ca să vezi care.')
-    :('Toate întrunirile de până acum sunt completate. Se așteaptă câte una '+esc(RO_DAYS[meetDayVal()].toLowerCase())+' și una '+esc(RO_DAYS[meetDayWVal()].toLowerCase())+'.'))+'</div>';
+    ?('<b style="color:var(--maroon)">'+missTot+(missTot===1?' întrunire necompletată':' întruniri necompletate')+'</b> în anul acesta — apasă luna ca să vezi care. Ce n-a avut loc (congres, asamblee) se marchează acolo ca <b>excepție</b>.')
+    :('Toate întrunirile de până acum sunt completate. Se așteaptă câte una '+esc(RO_DAYS[meetDayVal()].toLowerCase())+' și una '+esc(RO_DAYS[meetDayWVal()].toLowerCase())+'.'))
+    +(skipTot?(' <span class="muted">'+skipTot+(skipTot===1?' excepție marcată':' excepții marcate')+'.</span>'):'')+'</div>';
   h+='<div class="group" style="overflow:hidden"><table class="arhtbl"><thead><tr><th>Luna</th><th>Mijloc<br><span class="muted">nr · medie</span></th><th>Weekend<br><span class="muted">nr · medie</span></th></tr></thead><tbody>';
   months.forEach(function(m){var mm=attMonth(m.k,"m"),ww=attMonth(m.k,"w");
     h+='<tr onclick="arhMonthAtt(\''+m.k+'\')" style="cursor:pointer"><td>'+m.name+'</td><td>'+(mm.meetings?mm.meetings+' · <b>'+mm.avg+'</b>':'—')+mtag(miss(m.k,"m"))+'</td><td>'+(ww.meetings?ww.meetings+' · <b>'+ww.avg+'</b>':'—')+mtag(miss(m.k,"w"))+'</td></tr>';});
@@ -6760,25 +6767,62 @@ function attExpected(k){var y=ymY(k),m0=ymM(k),out=[],md=meetDayVal(),mw=meetDay
     if(d.getDay()===md)out.push({d:_attS(d),k:"m"});
     if(d.getDay()===mw)out.push({d:_attS(d),k:"w"});}
   out.sort(function(a,b){return a.d<b.d?-1:(a.d>b.d?1:0);});return out;}
+/* ---- excepții: întruniri care n-au avut loc (congres, asamblee, altceva) ----
+   Stau în S.att.skip, sub cheia „data|tip", și nu mai sunt cerute ca lipsă. Rămân la vedere în
+   luna lor, cu motivul, ca să se știe de ce lipsește o întrunire din foaia S-88. */
+function attSkips(){S.att=S.att||{recs:[]};S.att.skip=S.att.skip||{};return S.att.skip;}
+function attSkipOf(d,kk){var m=(S.att&&S.att.skip)||{},x=m[d+"|"+kk];return (x&&!x.del)?x:null;}
+function attSkipsIn(k){var m=(S.att&&S.att.skip)||{},recs=arhRecs(),out=[];
+  Object.keys(m).forEach(function(key){var p=key.split("|"),d=p[0],kk=p[1];
+    if(!d||String(d).slice(0,7)!==k||(m[key]&&m[key].del))return;
+    /* dacă între timp s-a completat totuși o întrunire în acea săptămână, excepția nu mai are rost */
+    var t=_attD(d).getTime();
+    if(recs.some(function(r){return r&&r.d&&r.k===kk&&Math.abs(_attD(r.d).getTime()-t)<=3*86400000;}))return;
+    out.push({d:d,k:kk,x:m[key]||{}});});
+  return out.sort(function(a,b){return a.d<b.d?-1:(a.d>b.d?1:0);});}
 function attMissing(k){var recs=arhRecs().filter(function(r){return r&&r.d;});
   /* nimic înainte de prima prezență introdusă vreodată: lunile de dinainte să se folosească
      aplicația n-au cum să fie „necompletate" */
   var first="";recs.forEach(function(r){if(!first||r.d<first)first=r.d;});
   if(!first)return [];
-  return attExpected(k).filter(function(e){if(e.d<first)return false;var t=_attD(e.d).getTime();
+  return attExpected(k).filter(function(e){if(e.d<first)return false;if(attSkipOf(e.d,e.k))return false;
+    var t=_attD(e.d).getTime();
     return !recs.some(function(r){return r.k===e.k&&Math.abs(_attD(r.d).getTime()-t)<=3*86400000;});});}
 function attMissN(k){try{return attMissing(k).length;}catch(e){return 0;}}
 function _attKLbl(kk){return kk==="w"?"Weekend":"Mijloc";}
+var ATT_SKIP_WHY=["Congres regional","Asamblee de circumscripție","Zi specială de asamblee","Sala indisponibilă","Nu s-a ținut"];
+function attSkipAsk(k,d,kk){if(!_needEdit())return;
+  var H='<div class="muted" style="margin:0 2px 12px"><b>'+_attKLbl(kk)+' · '+esc(d)+'</b> — de ce n-a fost întrunire? Rândul rămâne la vedere în lună, cu motivul, dar nu mai e cerut ca lipsă.</div>';
+  H+=ATT_SKIP_WHY.map(function(o){return '<button class="pmrow" onclick="attSkipSet(\''+k+'\',\''+d+'\',\''+kk+'\',\''+o+'\')"><span>'+esc(o)+'</span></button>';}).join("");
+  H+='<label class="fl" style="margin-top:12px">Alt motiv</label><div class="rowflex" style="gap:9px"><input id="sk_w" class="fld" style="flex:1" placeholder="scrie motivul"><button class="btn pri sm" style="width:auto" onclick="attSkipSet(\''+k+'\',\''+d+'\',\''+kk+'\',null)">Salvează</button></div>';
+  H+='<div class="rowflex" style="margin-top:16px"><div class="spacer"></div><button class="btn ghost sm" style="width:auto" onclick="closeSheet();arhMonthAtt(\''+k+'\')">Înapoi</button></div>';
+  sheet("","Marchează ca excepție",H);}
+function attSkipSet(k,d,kk,why){if(!_needEdit())return;
+  if(why==null){var e=document.getElementById("sk_w");why=(e&&e.value||"").trim();if(!why){toast("Scrie motivul sau alege unul de mai sus");return;}}
+  attSkips()[d+"|"+kk]={w:why,t:Date.now(),by:(_curUser()&&_curUser().n)||""};
+  logAct("Prezență — excepție: "+(kk==="w"?"weekend":"mijloc")+" "+d+" ("+why+")");
+  save();closeSheet();renderArh();arhMonthAtt(k);toast("Marcat ca excepție");}
+function attSkipDel(k,d,kk){if(!_needEdit())return;
+  attSkips()[d+"|"+kk]={del:1,t:Date.now(),by:(_curUser()&&_curUser().n)||""};
+  logAct("Prezență — excepție scoasă: "+(kk==="w"?"weekend":"mijloc")+" "+d);
+  save();closeSheet();renderArh();arhMonthAtt(k);toast("Excepția a fost scoasă");}
 function arhMonthAtt(k){var recs=arhRecs().map(function(r,i){return {r:r,i:i};}).filter(function(o){return o.r.d.slice(0,7)===k;}).sort(function(a,b){return a.r.d<b.r.d?-1:1;});
-  var miss=attMissing(k);
-  var rows=recs.map(function(o){return {d:o.r.d,o:o};}).concat(miss.map(function(e){return {d:e.d,e:e};}))
+  var miss=attMissing(k),skips=attSkipsIn(k);
+  var rows=recs.map(function(o){return {d:o.r.d,o:o};})
+    .concat(miss.map(function(e){return {d:e.d,e:e};}))
+    .concat(skips.map(function(x){return {d:x.d,s:x};}))
     .sort(function(a,b){return a.d<b.d?-1:(a.d>b.d?1:0);});
   var H='<div class="muted" style="margin:0 2px 3px">'+monthName(k)+' · '+recs.length+' întruniri'
-   +(miss.length?(' · <b style="color:var(--maroon)">'+miss.length+(miss.length===1?' lipsă':' lipsă')+'</b>'):'')+'</div>';
-  H+='<div class="muted" style="margin:0 2px 12px;font-size:11.5px">Se așteaptă câte o întrunire '+esc(RO_DAYS[meetDayVal()].toLowerCase())+' și una '+esc(RO_DAYS[meetDayWVal()].toLowerCase())+'. Zilele se schimbă din <b>Setări → Congregație și întrunire</b>.</div>';
+   +(miss.length?(' · <b style="color:var(--maroon)">'+miss.length+' lipsă</b>'):'')
+   +(skips.length?(' · '+skips.length+(skips.length===1?' excepție':' excepții')):'')+'</div>';
+  H+='<div class="muted" style="margin:0 2px 12px;font-size:11.5px">Se așteaptă câte o întrunire '+esc(RO_DAYS[meetDayVal()].toLowerCase())+' și una '+esc(RO_DAYS[meetDayWVal()].toLowerCase())+'. Zilele se schimbă din <b>Setări → Congregație și întrunire</b>. O întrunire care n-a avut loc se marchează ca <b>excepție</b> și nu mai e cerută.</div>';
   if(!rows.length)H+='<div class="muted">Nicio întrunire. Adaugă manual sau importă din Excel.</div>';
   H+=rows.map(function(x){
-    if(x.e){var e=x.e;return '<div style="display:flex;align-items:center;gap:10px;padding:9px 2px;border-bottom:1px solid var(--bd);opacity:.95"><div style="flex:1"><b>'+_attKLbl(e.k)+'</b> · '+esc(e.d)+'<div style="font-size:12px;color:var(--maroon);font-weight:600">nu e completată</div></div><button class="btn pri sm" style="width:auto" onclick="closeSheet();arhAddAtt(\''+k+'\',\''+e.d+'\',\''+e.k+'\')">Completează</button></div>';}
+    if(x.e){var e=x.e;return '<div style="display:flex;align-items:center;gap:8px;padding:9px 2px;border-bottom:1px solid var(--bd)"><div style="flex:1;min-width:0"><b>'+_attKLbl(e.k)+'</b> · '+esc(e.d)+'<div style="font-size:12px;color:var(--maroon);font-weight:600">nu e completată</div></div>'
+      +'<button class="btn ghost sm" style="width:auto" onclick="closeSheet();attSkipAsk(\''+k+'\',\''+e.d+'\',\''+e.k+'\')">Nu s-a ținut</button>'
+      +'<button class="btn pri sm" style="width:auto" onclick="closeSheet();arhAddAtt(\''+k+'\',\''+e.d+'\',\''+e.k+'\')">Completează</button></div>';}
+    if(x.s){var t=x.s;return '<div style="display:flex;align-items:center;gap:8px;padding:9px 2px;border-bottom:1px solid var(--bd);opacity:.72"><div style="flex:1;min-width:0"><b>'+_attKLbl(t.k)+'</b> · '+esc(t.d)+'<div class="muted" style="font-size:12px">nu s-a ținut · '+esc((t.x&&t.x.w)||"excepție")+'</div></div>'
+      +'<button class="btn ghost sm" style="width:auto" onclick="attSkipDel(\''+k+'\',\''+t.d+'\',\''+t.k+'\')">Scoate</button></div>';}
     var o=x.o,r=o.r;return '<div style="display:flex;align-items:center;gap:10px;padding:9px 2px;border-bottom:1px solid var(--bd)"><div style="flex:1"><b>'+_attKLbl(r.k)+'</b> · '+esc(r.d)+'<div class="muted" style="font-size:12px">fizic '+(r.f||0)+' + zoom '+(r.z||0)+' = '+((+r.f||0)+(+r.z||0))+'</div></div><button class="btn ghost sm" style="width:auto" onclick="arhEditAtt('+o.i+')">Editează</button></div>';}).join("");
   H+='<button class="btn ghost sm" style="width:100%;margin-top:12px" onclick="closeSheet();arhAddAtt(\''+k+'\')">'+IC.plus+' Adaugă întrunire</button>';
   sheet("",("Prezență — "+monthName(k)),H);}
@@ -6793,6 +6837,7 @@ function arhAttForm(i,defDate,defK){var recs=arhRecs();var r=(i!=null)?recs[i]:{
 function arhSaveAtt(i){if(!_needEdit())return;var d=$("#at_d").value;if(!d){toast("Pune data");return;}var o={d:d,k:$("#at_k").value,f:numOrNull($("#at_f").value)||0,z:numOrNull($("#at_z").value)||0,src:"man",t:Date.now()};
   /* marcajul de timp t: editarea manuală a adminului nu mai e suprascrisă de mesaje vechi din cutia poștală sau la îmbinarea dintre dispozitive */
   var recs=arhRecs();if(i>=0){o.id=recs[i].id||("a"+Date.now());recs[i]=o;}else{o.id="a"+Date.now()+Math.random().toString(36).slice(2,6);recs.push(o);}
+  try{var _sk=attSkips();if(_sk[o.d+"|"+o.k])_sk[o.d+"|"+o.k]={del:1,t:o.t,by:(_curUser()&&_curUser().n)||""};}catch(e){}
   arhPrune(true);logAct("Prezență salvată: "+(o.k==="w"?"weekend":"mijloc")+" "+d);save();closeSheet();renderArh();toast("Salvat");}
 function arhDelAtt(i){if(!_needEdit())return;var recs=arhRecs();recs.splice(i,1);save();closeSheet();renderArh();}
 function arhImportAtt(){if(!_needEdit())return;arhPickFile(".xlsx,.xls,.csv").then(function(f){if(!f)return;toast("Citesc Excel…");return xlsxLoad().then(function(){return readSheetsAll(f);}).then(function(sheets){var pr=parseAttAny(sheets);var entries=pr.entries;if(!entries.length){toast("Nu am recunoscut coloanele de prezență"+(pr.hdrs?(" — antet găsit: „"+pr.hdrs+"”"):""),8000);return;}odLimitWarn(pr.count,"Prezența întruniri");
@@ -12909,6 +12954,7 @@ TUT.D["arh.prez"]={t:"Prezență",sub:"prezența la întruniri și foaia S-88",i
        [13300,"loop"]]},
  {k:"rules",eb:"Bine de știut",h:"Ce e bine de știut",items:[
   ["ok","Întrunirile lipsă se văd singure","Ce n-a fost completat apare cu roșu în tabel și în luna deschisă, cu buton de completare cu data și tipul deja puse."],
+  ["ok","Ce n-a avut loc se marchează ca excepție","Congres, asamblee, sala indisponibilă — alegi motivul, rândul rămâne la vedere cu el, dar nu mai e cerut ca lipsă. Se poate scoate oricând."],
   ["tip","Zilele se schimbă din Setări","Congregație și întrunire: ziua din timpul săptămânii și cea de weekend. Dacă se schimbă ziua, întrunirile de dinainte rămân cum au fost."],
   ["ok","Se poate da și dreptul altcuiva","Setări → Utilizatori: cineva poate vedea sau completa prezența fără să aibă restul Arhivei."],
   ["tip","Fereastra de completare","Cine are doar dreptul de prezență poate umbla la ultimele 60 de zile, nu la date viitoare."],
