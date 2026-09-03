@@ -659,7 +659,7 @@ Object.assign(IC,{
  box:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h18v13H3z"/><path d="M3 7l2-4h14l2 4"/><path d="M10 11h4"/></svg>',
  mark:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15.5 4.5l4 4-9.5 9.5H6v-4z"/><path d="M12.5 7.5l4 4M5 21h14"/></svg>'
 });
-const VERSION="3.7.1";
+const VERSION="3.7.2";
 /* Versiunea minima care are voie sa SCRIE in cloud. Se trece in gist la fiecare trimitere;
    un dispozitiv ramas pe un build mai vechi decat atat nu mai poate suprascrie datele —
    doar citeste si se actualizeaza singur. Asa nu mai poate un singur telefon uitat deschis
@@ -5064,6 +5064,11 @@ function startApp(){_dirty=computeDirty();applyTheme();try{bkpMigrate();}catch(e
    `v` = cheia de „văzut deja"; `label` = versiunea afișată.
    ============================================================================ */
 var NEWS=[
+ {v:"3.7.2",label:"3.7.2",d:"03.09.2026",t:"La prima deschidere, turul aplicației",items:[
+  ["star","Turul scurt, după rol","Cine intră prima dată nu mai primește „Ce e nou” (n-are ce compara), ci un tur scurt, animat: administratorii și editorii văd cele patru butoane, cum se pune un nume pe program, raportul și semnul „?”; vestitorii văd cele trei butoane ale lor, raportul lunar și semnul „?”. Cei vechi nu mai primesc tutorialul de la sine — au semnul „?” cu bulina."],
+  ["book","Din orice tutorial, la toate celelalte","Butonul „Toate” din antetul tutorialului deschide lista cu toate, pe grupuri; alegi altul și pornește direct, iar la închidere revii la listă."],
+  ["info","Sigla în telefonul desenat","Antetul din tutorial arată sigla adevărată a aplicației, nu un pătrat colorat."]
+ ]},
  {v:"3.7.1",label:"3.7.1",d:"03.09.2026",t:"Tutorialele arată cum se face, pe un telefon mare",items:[
   ["book","Doar demonstrația, fără pagini de citit","Fiecare tutorial e acum una sau mai multe demonstrații animate: telefonul desenat e mare, degetul apasă exact unde trebuie, foile urcă, câmpurile se completează. Sub telefon stă doar pasul curent — un titlu și o propoziție. Cardurile, regulile și întrebările au dispărut."],
   ["star","Vestitori: privilegiul care începe mai târziu","Demonstrație nouă: deschizi fișa, alegi „Pionier regular”, alegi luna din care e valabil, salvezi — și vezi cum apare „Regular din septembrie 2026” în listă."],
@@ -5199,7 +5204,22 @@ var NEWS=[
 function _newsKey(){var u=_curUser();var who=(u&&u.n)||_userGet()||"anon";return KEY+"_nou_"+String(who).toLowerCase();}
 function newsSeen(){try{return localStorage.getItem(_newsKey())||"";}catch(e){return "";}}
 function markNewsSeen(v){try{localStorage.setItem(_newsKey(),v);}catch(e){}}
-function maybeShowNews(){if(!NEWS.length)return;if(newsSeen()===NEWS[0].v)return;
+/* Prima deschidere pe dispozitivul acesta: omul n-a văzut nimic „vechi", deci „Ce e nou" n-are sens.
+   Primește turul scurt al aplicației, după rol (administrator/editor → „start", vestitor → „vestitor"),
+   iar noutățile se socotesc văzute. Turul așteaptă să treacă poarta și alegerea utilizatorului. */
+var _firstRun=false;
+function _isFirstRun(){try{if(newsSeen())return false;var t=JSON.parse(localStorage.getItem("planintr_v1_tut")||"{}");return !t._any;}catch(e){return true;}}
+function _firstRunTut(n){try{n=n||0;
+ if(typeof tutOpen!=="function")return;
+ var tv=document.getElementById("tutov");if(tv&&tv.classList.contains("on"))return;
+ var busy=document.querySelector(".gate")||document.getElementById("gate")||sheetOpen()
+  ||(typeof _users==="function"&&_users().length&&!_curUser());
+ if(busy){if(n<60)setTimeout(function(){_firstRunTut(n+1);},1500);return;}
+ tutOpen(_canEdit()?"start":"vestitor");}catch(e){}}
+function maybeShowNews(){if(!NEWS.length)return;
+ if(_firstRun)return;
+ if(_isFirstRun()){_firstRun=true;markNewsSeen(NEWS[0].v);setTimeout(function(){_firstRunTut(0);},1600);return;}
+ if(newsSeen()===NEWS[0].v)return;
  setTimeout(function(){if(sheetOpen()||document.getElementById("gate"))return;openNews(true);},1200);}
 function ensureNewsCSS(){if(document.getElementById("newscss"))return;var st=document.createElement("style");st.id="newscss";st.textContent=
  ".nwlead{background:linear-gradient(135deg,var(--accsoft),transparent);border:1px solid var(--bd);border-radius:14px;padding:13px 15px;margin:0 0 12px}"
@@ -11640,6 +11660,10 @@ function tutCSS(){if(document.getElementById("tutcss"))return;
 +".tuthd .ttn{font-size:12px;color:var(--ink3);font-variant-numeric:tabular-nums;flex:0 0 auto}"
 +".tutx{width:34px;height:34px;flex:0 0 auto;border:0;border-radius:10px;background:var(--surf2);color:var(--ink2);"
 +"font-size:20px;line-height:1;cursor:pointer;display:grid;place-items:center;padding:0}"
++".tutall{height:34px;flex:0 0 auto;border:1px solid var(--bd);border-radius:10px;background:var(--surf);color:var(--ink2);"
++"font-family:inherit;font-size:12.5px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:6px;padding:0 11px}"
++".tutall svg{width:15px;height:15px}.tutall:hover{border-color:var(--acc);color:var(--acc)}"
++"@media(max-width:359px){.tutall span{display:none}.tutall{padding:0 9px}}"
 +".tutpb{flex:0 0 auto;height:3px;background:var(--bd)}.tutpb i{display:block;height:100%;width:0;background:var(--acc);transition:width .35s ease}"
 +".tutdeck{flex:1;position:relative;overflow:hidden}"
  /* o demonstrație = un „slide"; intră din dreapta, iese spre stânga */
@@ -11696,9 +11720,9 @@ function tutCSS(){if(document.getElementById("tutcss"))return;
  /* ecranele: cel nou intră din dreapta; cel vechi se stinge abia după ce a fost acoperit */
 +".tscr{position:absolute;inset:0;background:var(--bg);display:flex;flex-direction:column;opacity:0;"
 +"transform:translateX(9%);transition:opacity .01s .3s,transform .32s ease;pointer-events:none}"
-+".tscr.on{opacity:1;transform:none;z-index:2;transition:opacity .3s ease,transform .32s ease}"
++".tscr.on{opacity:1;transform:none;z-index:2;transition:opacity .12s ease,transform .32s ease}"
 +".tp-hd{flex:0 0 auto;display:flex;align-items:center;gap:0.632em;background:var(--surf);border-bottom:0.105em solid var(--bd);padding:1.579em 0.842em 0.737em}"
-+".tp-lg{width:1.789em;height:1.789em;border-radius:0.526em;background:linear-gradient(135deg,#2f6f8f,#e07b39);flex:0 0 auto}"
++".tp-lg{width:1.789em;height:1.789em;border-radius:0.526em;background:#000;object-fit:cover;display:block;flex:0 0 auto}"
 +".tp-ht{flex:1;min-width:0}"
 +".tp-ht b{display:block;font-size:0.895em;font-weight:800;line-height:1.2}"
 +".tp-ht i{display:block;font-style:normal;font-size:0.737em;color:var(--ink3)}"
@@ -11853,7 +11877,9 @@ function tutTry(i){var o=_tutSl[i];if(!o||!o.go)return;_tutBack=null;tutClose();
  setTimeout(function(){try{o.go.run();}catch(e){}},80);}
 
 /* px → em: conținutul telefonului a fost scris la o bază de 9.5px; acum crește cu telefonul */
-function _tutEm(h){return String(h||"").replace(/(\d*\.?\d+)px/g,function(m,v){return (Math.round(v/9.5*1000)/1000)+"em";});}
+function _tutEm(h){var lg="";try{lg=_logo();}catch(e){}
+ return String(h||"").replace(/(\d*\.?\d+)px/g,function(m,v){return (Math.round(v/9.5*1000)/1000)+"em";})
+  .replace(/<span class="tp-lg"><\/span>/g,lg?('<img class="tp-lg" src="'+lg+'" alt="">'):'<span class="tp-lg"></span>');}
 function _tutSlide(o,idx){
  if(o.k!=="demo"){/* rezervă: tutorial fără demonstrație — câteva carduri, atât */
   return '<div class="tsl txt" data-i="'+idx+'">'+(o.h?'<h2 class="th2">'+o.h+'</h2>':'')+'<div class="tcards">'
@@ -11990,6 +12016,7 @@ function _tutMount(){var o=document.getElementById("tutov");if(o)return o;
  o=document.createElement("div");o.id="tutov";o.className="tutov";
  o.innerHTML='<div class="tutbox">'
   +'<div class="tuthd"><span class="tth" id="tutTtl"></span><span class="ttn" id="tutNum"></span>'
+  +'<button class="tutall" id="tutAll" title="Toate tutorialele">'+IC.book+'<span>Toate</span></button>'
   +'<button class="tutx" id="tutX" aria-label="Închide tutorialul">×</button></div>'
   +'<div class="tutpb"><i id="tutpb"></i></div>'
   +'<div class="tutdeck" id="tutdeck"></div>'
@@ -11999,6 +12026,7 @@ function _tutMount(){var o=document.getElementById("tutov");if(o)return o;
  /* îl punem lângă `.app`, ca variabilele de temă (`.app.light`) să ajungă și la el */
  var ap=document.querySelector(".app");(ap||document.body).appendChild(o);
  o.querySelector("#tutX").onclick=tutClose;
+ o.querySelector("#tutAll").onclick=function(){tutIndex();};
  o.querySelector("#tutPrev").onclick=function(){tutGo(_tutI-1);};
  o.querySelector("#tutNext").onclick=function(){if(_tutI>=_tutSl.length-1)tutClose();else tutGo(_tutI+1);};
  /* trasul cu degetul, ca în prezentări */
@@ -12094,6 +12122,7 @@ function tutGoProg(s){try{go("prog");if(typeof progGo==="function")progGo(s);}ca
    și rămâne semnul „?" din antet.
    --------------------------------------------------------------------------- */
 function maybeShowTut(){try{
+ if(typeof _firstRun!=="undefined"&&!_firstRun)return;/* nu mai sare singur peste cei vechi — ei au „?" cu bulina */
  if(_tutSeenSet()._any)return;
  if(document.querySelector(".gate"))return;
  var ov=document.getElementById("ov");if(ov&&ov.classList.contains("show"))return;
@@ -12184,36 +12213,8 @@ var _FAB=[90,89];         /* butonul rotund din colț */
 var _NAV=[[12,96],[37,96],[62,96],[87,96]]; /* Profil · Programări · Vestitori · Arhivă */
 var _SEG=[[22,13],[50,13],[78,13]];         /* cele trei foi din bara de sus */
 
-TUT.D["start"]={t:"Bun venit în ArhiLink",sub:"ce e aplicația și cum e împărțită",ic:IC.book,s:[
- {k:"intro",ic:IC.book,eb:"ArhiLink",h:'Tot ce ține de congregație, <span class="thl">într-un singur loc</span>',
-  p:"Programul întrunirilor, sarcinile de pe avizier, rapoartele lunare și evidențele — pe telefon, la îndemână, și în aceeași formă pentru toată lumea."},
- {k:"cards",eb:"Cele patru butoane de jos",h:"Cum e împărțită aplicația",items:[
-  [TIC.user,"Profilul meu","Fișa ta: raportul lunar de trimis, atribuirile tale din săptămânile care vin și evenimentele congregației."],
-  [IC.cal,"Programări","Ce se ține pe avizier: programul întrunirii din timpul săptămânii, întrunirea publică și sarcinile. Toată lumea le vede."],
-  [IC.ppl,"Vestitori","Fișele vestitorilor: grupa, privilegiile, la ce poate fi pus fiecare. Se modifică doar cu drept de editare."],
-  [IC.arch,"Arhivă","Unde se face treaba: planificările și evidențele — rapoarte, prezență, grupe, responsabilități."]]},
- {k:"demo",eb:"Semnul întrebării",h:"Ajutorul e mereu la un deget distanță",
-  steps:[["Deschizi o secțiune","Oricare — Programări, Arhivă, Profilul meu."],
-         ["Apeși pe „?” din antet","Stă în același loc în toate secțiunile."],
-         ["Vezi tutorialul acelei secțiuni","Doar al ei, nu tot manualul."]],
-  sc:[TP.hd()+TP.bd(TP.seg(["Viața creștină","Întrunirea publică","Sarcini"],0)
-      +TP.t("31 August – 6 Septembrie")+TP.m("IEREMIA 31")
-      +TP.c({t:"7:00 Cântarea 27",rows:[["Rugăciune","STAN Daniel"]],id:"stC"})
-      +TP.c({t:"7:05 Cuvinte introductive",rows:[["Președinte","TATAR Silviu"]]})
-      +TP.c({t:"7:06  1. „Voi încheia… un legământ nou”",rows:[["10 min.","NEDELEA Antonio"]]}))+TP.nv("prog"),
-      TP.hd()+'<div class="tp-bd" style="justify-content:center;text-align:center;gap:9px">'
-      +'<div style="width:38px;height:38px;border-radius:11px;background:var(--accsoft);color:var(--acc);display:grid;place-items:center;margin:0 auto;font-size:19px;font-weight:800">?</div>'
-      +'<div class="tp-t">Programări · Viața creștină</div>'
-      +'<div class="tp-m">Cum citești programul săptămânii și cum îl descarci</div>'
-      +'<div style="display:flex;gap:4px;justify-content:center;margin-top:6px"><span style="width:6px;height:6px;border-radius:50%;background:var(--acc)"></span><span style="width:6px;height:6px;border-radius:50%;background:var(--bd)"></span><span style="width:6px;height:6px;border-radius:50%;background:var(--bd)"></span></div>'
-      +'</div>'+TP.nv("prog")],
-  run:[[0,"step",1],[0,"show"],[200,"curEl","stC"],
-       [1300,"step",2],[1400,"cur",_Q[0],_Q[1]],[2200,"tap"],
-       [2600,"scr",1],[2700,"step",3],[2800,"hide"],
-       [5600,"loop"]]},
- {k:"recap",h:"Ai găsit ajutorul",p:"Fiecare secțiune are tutorialul ei. Îl deschizi de unde te afli.",
-  chips:["Patru butoane jos — patru zone ale aplicației","„?” din antet = tutorialul secțiunii deschise","Aici, la final, găsești lista cu toate tutorialele"]}
-]};
+/* „start" (turul de administrator) e definit la sfârșit, după toate celelalte,
+   pentru că împrumută demonstrații de la ele. */
 
 /* ------------------------------------------------------------------ vestitor */
 TUT.D["vestitor"]={t:"Pentru vestitori",sub:"ce faci tu în aplicație, pas cu pas",ic:TIC.hand,s:[
@@ -13169,6 +13170,96 @@ Object.keys(TUT_TOAST).forEach(function(k){var d=TUT.D[k];if(!d||!d.s)return;
 /* ---------------------------------------------------------------------------
    Aliasuri — secțiunile pe care le vede vestitorul duc la tutorialele scrise
    --------------------------------------------------------------------------- */
+
+/* ===========================================================================
+   TURURILE SCURTE DE LA PRIMA DESCHIDERE
+   ---------------------------------------------------------------------------
+   Cine intră prima dată nu primește „Ce e nou" (n-are ce compara), ci un tur:
+   administratorii și editorii văd „start", vestitorii văd „vestitor". Amândouă
+   sunt scurte — câteva demonstrații, nu toate secțiunile — și împrumută
+   demonstrații deja scrise mai sus (același obiect, nu copie).
+   =========================================================================== */
+/* bara de jos cu trei butoane, cum o vede un vestitor (fără „Vestitori") */
+function _tutNv3(on){var L=[["meu","Profil"],["prog","Programări"],["arh","Arhivă"]];
+ return '<div class="tp-nv">'+L.map(function(x){return '<span class="'+(x[0]===on?"on":"")+'"><i></i>'+x[1]+'</span>';}).join("")+'</div>';}
+var _NAV3=[[17,96],[50,96],[83,96]];
+/* ecranele pe care le arată turul: profilul, programul, lista de vestitori, arhiva */
+var _TS={
+ meu:TP.bd('<div class="tp-c" style="flex-direction:row;align-items:center;gap:7px"><span style="width:22px;height:22px;border-radius:50%;background:var(--accsoft);color:var(--acc);display:grid;place-items:center;font-size:8px;font-weight:800">PA</span><b class="sp" style="font-size:9.5px">POPESCU Andrei</b><span class="tp-tag t">Grupa 3</span></div>'
+  +TP.c({cls:"warm",t:"De raportat acum",sub:'<span style="font-size:11px;font-weight:800">August 2026</span>',
+   body:'<div style="margin-top:5px">'+TP.b("Completează raportul",{pri:1,wide:1,id:"tbRep"})+'</div>'})
+  +TP.c({t:"Sarcinile mele",sub:"3–9 Septembrie · Citirea Bibliei",tag:"2",tagc:"a"})
+  +TP.c({t:"Curățenia grupei mele",sub:"Grupa 3 · 14–20 Septembrie"})),
+ prog:TP.bd(TP.seg(["Viața creștină","Întrunirea publică","Sarcini"],0)
+  +TP.t("31 August – 6 Septembrie")+TP.m("IEREMIA 31")
+  +TP.c({t:"7:00 Cântarea 27",rows:[["Rugăciune","STAN Daniel"]]})
+  +TP.c({t:"7:05 Cuvinte introductive",rows:[["Președinte","TATAR Silviu"]]})
+  +TP.c({t:"7:06  1. „Voi încheia… un legământ nou”",rows:[["10 min.","NEDELEA Antonio"]]})),
+ bros:TP.bd(TP.f("tbQ","Caută vestitor…")
+  +'<div class="tp-row"><span class="tp-tag">Grupa</span><span class="tp-tag">Gen</span><span class="tp-tag">Privilegii</span></div>'
+  +TP.m("89 vestitori")
+  +TP.li("ARON Ionuț","Grupa 4")+TP.li("ARON Luminița","Grupa 4")+TP.li("BROTEA Teodora","Grupa 3")+TP.li("COMANACHE Raymond","Grupa 1")),
+ arh:TP.bd(TP.t("Arhivă")
+  +TP.c({t:"Planificări",sub:"programul întrunirilor, teren, mărturia publică, sarcinile și curățenia",tag:"6",tagc:"a"})
+  +TP.c({t:"Rapoarte și evidențe",sub:"S-1, fișele S-21, prezența, pionierii, grupele",tag:"9",tagc:"a"})),
+ arhLite:TP.bd(TP.t("Arhivă")
+  +TP.c({t:"Curățenie generală",sub:"congregația de serviciu și bifa lunară"})
+  +TP.c({t:"Mărturia publică",sub:"turele pe zile și ore, cu numele de la fiecare"})
+  +TP.c({t:"Întrunirile de teren",sub:"ziua, ora, locul și cine conduce"})
+  +TP.c({t:"Sarcini",sub:"audio-video, ordine, podium"}))};
+/* semnul „?" — la fel pentru toți, doar bara de jos diferă */
+function _tutHelpDemo(nv,q){return {k:"demo",eb:"Semnul întrebării",h:"Ajutorul e mereu la un deget distanță",
+  done:"Asta e tot",doneSub:"Din orice secțiune, „?” arată tutorialul ei.",
+  steps:[["Deschizi o secțiune","Oricare — Programări, Arhivă, Profilul meu."],
+         ["Apeși pe „?” din antet","Stă în același loc în toate secțiunile."],
+         ["Vezi tutorialul acelei secțiuni","Doar al ei, nu tot manualul."]],
+  sc:[TP.hd()+_TS.prog+nv("prog"),
+      TP.hd()+'<div class="tp-bd" style="justify-content:center;text-align:center;gap:9px">'
+      +'<div style="width:38px;height:38px;border-radius:11px;background:var(--accsoft);color:var(--acc);display:grid;place-items:center;margin:0 auto;font-size:19px;font-weight:800">?</div>'
+      +'<div class="tp-t">Programări · Viața creștină</div>'
+      +'<div class="tp-m">Cum citești programul săptămânii și cum îl descarci</div>'
+      +'<div style="display:flex;gap:4px;justify-content:center;margin-top:6px"><span style="width:6px;height:6px;border-radius:50%;background:var(--acc)"></span><span style="width:6px;height:6px;border-radius:50%;background:var(--bd)"></span><span style="width:6px;height:6px;border-radius:50%;background:var(--bd)"></span></div>'
+      +'</div>'+nv("prog")],
+  run:[[0,"step",1],[0,"show"],[200,"cur",50,40],
+       [1300,"step",2],[1400,"cur",q[0],q[1]],[2200,"tap"],
+       [2600,"scr",1],[2700,"step",3],[2800,"hide"],[3200,"step",99],
+       [6000,"loop"]]};}
+function _tutDemoOf(key){var d=TUT.D[key];return d?(d.s||[]).find(function(x){return x.k==="demo";}):null;}
+
+/* ---- administratori și editori ---- */
+TUT.D["start"]={t:"Bun venit în ArhiLink",sub:"turul scurt: butoanele, programul, raportul, ajutorul",ic:IC.book,s:[
+ {k:"demo",eb:"Cele patru butoane",h:"Cum e împărțită aplicația",
+  done:"Asta e toată aplicația",doneSub:"Patru butoane, patru zone. Restul se învață pe drum.",
+  steps:[["Profilul meu","Raportul tău și ce ai de făcut în săptămânile care vin."],
+         ["Programări","Programul întrunirilor, ca pe avizier. Toată lumea îl vede la fel."],
+         ["Vestitori","Fișele: grupa, privilegiile, la ce poate fi pus fiecare."],
+         ["Arhivă","Unde se face treaba: planificările și evidențele."]],
+  sc:[TP.hd()+_TS.meu+TP.nv("meu"),TP.hd()+_TS.prog+TP.nv("prog"),TP.hd()+_TS.bros+TP.nv("bros"),TP.hd()+_TS.arh+TP.nv("arh")],
+  run:[[0,"step",1],[0,"show"],[100,"cur",_NAV[0][0],_NAV[0][1]],[700,"tap"],
+       [2100,"step",2],[2200,"cur",_NAV[1][0],_NAV[1][1]],[2900,"tap"],[3100,"scr",1],
+       [4500,"step",3],[4600,"cur",_NAV[2][0],_NAV[2][1]],[5300,"tap"],[5500,"scr",2],
+       [6900,"step",4],[7000,"cur",_NAV[3][0],_NAV[3][1]],[7700,"tap"],[7900,"scr",3],
+       [9300,"step",99],[9400,"hide"],[12200,"loop"]]},
+ _tutDemoOf("arh.vcped"),
+ _tutDemoOf("vestitor"),
+ _tutHelpDemo(TP.nv,_Q)
+].filter(Boolean)};
+
+/* ---- vestitori: butoanele lor, raportul, ajutorul ---- */
+(function(){var d=TUT.D["vestitor"];if(!d)return;
+ d.sub="turul scurt: butoanele, raportul lunar, ajutorul";
+ d.s.unshift({k:"demo",eb:"Cele trei butoane",h:"Cum e împărțită aplicația",
+  done:"Asta e toată aplicația",doneSub:"Trei butoane. Tu completezi doar raportul; restul se citește.",
+  steps:[["Profilul meu","Raportul tău și sarcinile tale din săptămânile care vin."],
+         ["Programări","Programul întrunirilor, ca pe avizier."],
+         ["Arhivă","Curățenia, mărturia publică, întrunirile de teren, sarcinile."]],
+  sc:[TP.hd()+_TS.meu+_tutNv3("meu"),TP.hd()+_TS.prog+_tutNv3("prog"),TP.hd()+_TS.arhLite+_tutNv3("arh")],
+  run:[[0,"step",1],[0,"show"],[100,"cur",_NAV3[0][0],_NAV3[0][1]],[700,"tap"],
+       [2100,"step",2],[2200,"cur",_NAV3[1][0],_NAV3[1][1]],[2900,"tap"],[3100,"scr",1],
+       [4500,"step",3],[4600,"cur",_NAV3[2][0],_NAV3[2][1]],[5300,"tap"],[5500,"scr",2],
+       [6900,"step",99],[7000,"hide"],[9800,"loop"]]});
+ d.s.push(_tutHelpDemo(_tutNv3,_Q));})();
+
 TUT.A["lite.meu"]="vestitor";
 TUT.A["lite.prez"]="arh.prez";
 TUT.A["lite.cur"]="arh.cur";
