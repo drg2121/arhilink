@@ -659,7 +659,7 @@ Object.assign(IC,{
  box:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h18v13H3z"/><path d="M3 7l2-4h14l2 4"/><path d="M10 11h4"/></svg>',
  mark:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15.5 4.5l4 4-9.5 9.5H6v-4z"/><path d="M12.5 7.5l4 4M5 21h14"/></svg>'
 });
-const VERSION="3.7.5";
+const VERSION="3.8.0";
 /* Versiunea minima care are voie sa SCRIE in cloud. Se trece in gist la fiecare trimitere;
    un dispozitiv ramas pe un build mai vechi decat atat nu mai poate suprascrie datele —
    doar citeste si se actualizeaza singur. Asa nu mai poate un singur telefon uitat deschis
@@ -2865,7 +2865,20 @@ function ensureGrpCSS(){if(document.getElementById("grpcss"))return;var st=docum
 +".meucard{border:1px solid var(--bd);border-left:4px solid var(--acc);border-radius:16px;background:linear-gradient(135deg,var(--accsoft),var(--surf) 60%);padding:14px 16px;margin-bottom:12px}"
 +".meunext{border:1.5px solid var(--acc)!important}"
 +".meugear{width:38px;height:38px;flex:0 0 auto;display:flex;align-items:center;justify-content:center;border:0;border-radius:50%;background:transparent;color:var(--ink3);cursor:pointer;transition:background .15s,color .15s}"
-+".meugear:hover{background:var(--accsoft);color:var(--acc)}.meugear:active{transform:scale(.94)}.meugear svg{width:21px;height:21px}";
++".meugear:hover{background:var(--accsoft);color:var(--acc)}.meugear:active{transform:scale(.94)}.meugear svg{width:21px;height:21px}"
++".hlc{border:1px solid var(--bd);border-left:4px solid var(--teal);border-radius:16px;background:linear-gradient(135deg,rgba(53,195,179,.13),var(--surf) 60%);padding:14px 16px;margin-bottom:12px}"
++".hlhd{display:flex;align-items:center;gap:10px}.hlic{width:38px;height:38px;border-radius:12px;background:var(--teal);color:#fff;display:flex;align-items:center;justify-content:center;flex:0 0 auto}.hlic svg{width:20px;height:20px}"
++".hlttl{flex:1;min-width:0}.hlttl .a-hd{margin:0}.hlmon{display:block;font-size:19px;font-weight:800;color:var(--ink);line-height:1.15}"
++".hlnav{display:flex;gap:6px;flex:0 0 auto}.hlnb{width:34px;height:34px;border-radius:50%;border:1px solid var(--bd);background:var(--surf);color:var(--ink2);display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;font-size:18px;line-height:1}.hlnb:disabled{opacity:.35;cursor:default}.hlnb svg{width:16px;height:16px}"
++".hlbig{display:flex;align-items:baseline;gap:6px;flex-wrap:wrap;margin-top:12px;font-size:14px;color:var(--ink2)}.hlbig b{font-size:30px;font-weight:800;color:var(--ink);line-height:1}.hlbig .hlgoal{margin-left:auto;font-size:12.5px;color:var(--ink3)}"
++".hlgoal button{background:none;border:0;color:var(--acc);font-weight:700;cursor:pointer;font-size:12.5px;padding:0 2px;font-family:inherit}"
++".hlbtns{display:flex;gap:8px;margin-top:12px}.hlbtns .btn{flex:1;width:auto;display:flex;align-items:center;justify-content:center;gap:6px}.hlbtns .btn svg{width:16px;height:16px}"
++".hlrun{display:flex;align-items:center;gap:10px;margin-top:10px;padding:10px 12px;border-radius:12px;background:var(--surf);border:1px dashed var(--teal)}.hlrun .dot{width:9px;height:9px;border-radius:50%;background:var(--maroon);flex:0 0 auto;animation:hlblink 1.1s infinite}@keyframes hlblink{50%{opacity:.25}}.hlrun .tm{font-size:20px;font-weight:800;font-variant-numeric:tabular-nums;color:var(--ink);display:block;line-height:1.1}"
++".hlrow{display:flex;align-items:center;justify-content:space-between;gap:10px;padding-top:11px;margin-top:12px;border-top:1px solid var(--bd);font-size:13.5px;color:var(--ink)}"
++".hlctr{display:flex;align-items:center;gap:4px}.hlctr button{width:34px;height:34px;border-radius:50%;border:1px solid var(--bd);background:var(--surf);color:var(--ink);font-size:19px;font-weight:700;cursor:pointer;line-height:1;padding:0}.hlctr button:disabled{opacity:.35;cursor:default}.hlctr b{min-width:30px;text-align:center;font-size:17px}"
++".hlent{margin-top:11px}.hlent summary{cursor:pointer;font-size:12.5px;color:var(--ink2);font-weight:700;list-style:none;display:flex;align-items:center;gap:6px;padding:4px 0}.hlent summary::-webkit-details-marker{display:none}.hlent summary svg{width:15px;height:15px}.hlent summary .chev svg{transition:transform .15s}.hlent[open] summary .chev svg{transform:rotate(90deg)}"
++".hle{display:flex;align-items:center;gap:10px;padding:8px 2px;border:0;border-bottom:1px solid var(--bd);font-size:13px;width:100%;background:none;color:var(--ink);cursor:pointer;text-align:left;font-family:inherit}.hle:last-child{border-bottom:0}.hle .d{font-weight:700;min-width:44px}.hle .m{font-weight:800;color:var(--tealtx,var(--teal));min-width:64px}.hle .n{flex:1;min-width:0;color:var(--ink3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.hle svg{width:15px;height:15px;color:var(--ink3);flex:0 0 auto}"
++".hlfoot{margin-top:12px;padding-top:11px;border-top:1px solid var(--bd)}.hlchips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}";
  document.head.appendChild(st);}
 function grpsAll(){S.grps=S.grps||[];return S.grps;}
 function grpName(id){var g=grpsAll().find(function(x){return x.id===id;});return g?g.name:"";}
@@ -3154,7 +3167,8 @@ function pushIosHelp(){sheet("","Notificări pe iPhone",'<div class="muted" styl
  +'<b>2.</b> Alege <b>„Adaugă la ecranul principal"</b> → Adaugă<br>'
  +'<b>3.</b> Deschide <b>ArhiLink de pe iconița nouă</b><br>'
  +'<b>4.</b> Acolo: Setări → Notificări → <b>Activează</b> → Permite</div>'
- +'<div class="hint" style="margin-top:14px">Gata — temele și reamintirile vin apoi direct pe telefon, chiar și cu aplicația închisă.</div>');}
+ +'<div class="hint" style="margin-top:14px">Gata — temele și reamintirile vin apoi direct pe telefon, chiar și cu aplicația închisă.</div>'
+ +'<button class="btn pri sm" style="width:100%;margin-top:14px" onclick="closeSheet();tutInstall()">Vezi pașii animați, pentru telefonul tău</button>');}
 /* Diagnostic notificări — fiecare condiție care trebuie îndeplinită, cu starea ei.
    „Nu prea îmi vin notificări" devine astfel ceva ce se vede și se poate repara. */
 function _diagRow(ok,t,sub){
@@ -4189,6 +4203,7 @@ function _shareFilter(u){var full=JSON.parse(JSON.stringify(S));
  out.settings.users=(S.settings.users||[]).filter(function(x){return x.n===u.n;}).map(function(x){var y=Object.assign({},x);delete y.pin;return y;});/* fără PIN-ul în clar în fișierul trimis */
  delete out.settings.od;out.settings.passHash="";out.settings.gh=out.settings.gh||{};delete out.settings.gh.gist3;
  out.settings.gh={token:"",gist:""};out.settings.roGist=(S.settings.gh&&S.settings.gh.gist2)||"";
+ var _hl=full.hlog||{};out.hlog={};if(u.bro&&_hl[u.bro])out.hlog[u.bro]=_hl[u.bro];/* „Orele mele": doar ale lui */
  if(!canArh){var own=(u.r==="vestitor"&&u.bro)?full.reports[u.bro]:null;
   out.reports={};if(own)out.reports[u.bro]=own;
   out.repFlags=_repFlagsOf();
@@ -4206,7 +4221,7 @@ var PRIV_CF=["phone","email","addr","ecn","ecp","ec2n","ec2p","ec3n","ec3p"];
    „✓ raport trimis" fără nicio cifră. Felia personală a fiecăruia (raportul lui + contactele lui)
    pleacă criptată, în out.priv, cu o cheie derivată din PIN-ul lui. Vezi blocul de la _hash. */
 async function _roPayload(){var out=JSON.parse(JSON.stringify(S));out.log=[];out.files=[];out.anunt=[];out.repFlags=_repFlagsOf();
- out.reports={};out.repDel={};
+ out.reports={};out.repDel={};out.hlog={};/* carnetele de ore sunt personale */
  delete out.settings.od;out.settings.passHash="";out.settings.gh={token:"",gist:""};
  out.settings.users=(S.settings.users||[]).map(function(u){
   var o={n:u.n,r:u.r,mods:u.mods||null,bro:u.bro||null,attV:u.attV||0,attE:u.attE||0,curE:u.curE||0,sarE:u.sarE||0,wmE:u.wmE||0,mpE:u.mpE||0,ftE:u.ftE||0};
@@ -4267,11 +4282,13 @@ async function roSync(silent){if(!roOn()||_offline()||_busy)return;_roLast=Date.
   var myB=_myBro();var myOld=myB?(S.bros||[]).find(function(b){return b.id===myB;}):null;
   var cuN=_curUser()&&_curUser().n;var myUOld=cuN?(S.settings.users||[]).find(function(x){return x.n===cuN;}):null;
   var keep={theme:S.settings.theme,roGist:S.settings.roGist,myRep:S.reports,users:S.settings.users,myTomb:S.repDel||null,
+   myH:(myB&&S.hlog&&S.hlog[myB])?S.hlog[myB]:null,/* „Orele mele" — nu vine din cloud, deci nu trebuie să se piardă */
    myAtt:((S.att&&S.att.recs)||[]).filter(function(r){return r&&r.src==="me";}),
    myU:myUOld?{p:myUOld.p,p2:myUOld.p2,pin:myUOld.pin,pt:myUOld.pt||0}:null,
    myC:myOld?{t:myOld.cT||0,phone:myOld.phone,email:myOld.email,addr:myOld.addr,ecn:myOld.ecn,ecp:myOld.ecp,ec2n:myOld.ec2n,ec2p:myOld.ec2p,ec3n:myOld.ec3n,ec3p:myOld.ec3p}:null};
   _applying=true;S=Object.assign(blank(),R);
   S.settings.theme=keep.theme;S.settings.roGist=keep.roGist;S.settings.gh={token:"",gist:""};
+  if(keep.myH&&myB){S.hlog=S.hlog||{};S.hlog[myB]=keep.myH;}
   if(!(S.settings.users||[]).length)S.settings.users=keep.users;
   else{var me=_curUser();if(me){var still=(S.settings.users||[]).some(function(x){return x.n===me.n;});if(!still)S.settings.users=S.settings.users.concat((keep.users||[]).filter(function(x){return x.n===me.n;}));}}
   /* ștergerile făcute chiar de mine (tombstone pe propriul raport) nu se pierd la sincronizare —
@@ -5070,6 +5087,13 @@ function startApp(){_dirty=computeDirty();applyTheme();try{bkpMigrate();}catch(e
    `v` = cheia de „văzut deja"; `label` = versiunea afișată.
    ============================================================================ */
 var NEWS=[
+ {v:"3.8.0",label:"3.8",d:"05.09.2026",t:"Orele mele — carnetul de teren, în Profilul meu",items:[
+  ["clock","Orele mele","Un card nou în „Profilul meu”: notezi orele pe zile („Adaugă ore”) sau pornești cronometrul când ieși și îl oprești când termini. Vezi totalul lunii, obiectivul și cât îți mai trebuie pe zi."],
+  ["book","Aplicația pe ecranul principal — tutorial pentru toți","Îți recunoaște telefonul (iPhone sau Android, Safari, Chrome sau Samsung Internet, calculator) și arată pas cu pas, pe telefonul desenat, cum salvezi ArhiLink pe ecranul principal. Îl găsești în „Profilul meu”, în lista de tutoriale și în Setări. Unde browserul permite, „Instalează acum” face totul dintr-o apăsare."],
+  ["star","Pionier auxiliar cu o bifă","Vestitorul obișnuit bifează „Pionier auxiliar în luna…” și poate nota orele; fără bifă numără doar studiile biblice și participarea."],
+  ["edit","Raportul, completat din carnet","La sfârșitul lunii apeși „Completează raportul” chiar din card: orele întregi, studiile și bifa de auxiliar sunt deja trecute. Minutele rămase trec în luna următoare, ca la pionieri."],
+  ["check","Numele întregi pe foaia de Sarcini","Pe PDF-ul Audio-Video / Ordine / Curățenie numele lungi se tăiau („COMANACHE Ra”). Coloana numelor e mai lată, iar ce nu încape trece pe al doilea rând."]
+ ]},
  {v:"3.7.2",label:"3.7.2",d:"03.09.2026",t:"La prima deschidere, turul aplicației",items:[
   ["star","Turul scurt, după rol","Cine intră prima dată nu mai primește „Ce e nou” (n-are ce compara), ci un tur scurt, animat: administratorii și editorii văd cele patru butoane, cum se pune un nume pe program, raportul și semnul „?”; vestitorii văd cele trei butoane ale lor, raportul lunar și semnul „?”. Cei vechi nu mai primesc tutorialul de la sine — au semnul „?” cu bulina."],
   ["book","Din orice tutorial, la toate celelalte","Butonul „Toate” din antetul tutorialului deschide lista cu toate, pe grupuri; alegi altul și pornește direct, iar la închidere revii la listă."],
@@ -5311,7 +5335,7 @@ function renderArhRoute(){if(tab==="prog"){renderProg();return;}
  if(_arhFull())renderArh();else renderArhLite();
  try{setTimeout(_hscrollBind,0);}catch(e){}}
 function arhRerender(){if(tab==="meu"){renderMeu();return;}renderArhRoute();}
-function renderMeu(){$("#fab").style.display="none";$("#body").innerHTML='<div style="height:6px"></div>'+_pushNudge()+arhMeuHtml();}
+function renderMeu(){$("#fab").style.display="none";$("#body").innerHTML='<div style="height:6px"></div>'+((typeof _instNudge==="function"?_instNudge():"")||_pushNudge())+arhMeuHtml();}
 /* toate atribuirile unui vestitor, pe săptămâni (pt. rolul „vestitor") */
 function myAssignments(broId){var out=[];if(!broId)return out;
  var SPECIAL={cond:"Conducător studiu",cit:"Cititor",pres:"Președinte",open_pr:"Rugăciune (început)",close_pr:"Rugăciune (încheiere)",pray:"Rugăciune"};
@@ -6051,6 +6075,7 @@ function catHasHours(c){return c==="reg"||c==="aux"||c==="special";}
 /* ---- retenție 3 ani teocratici ---- */
 function arhPrune(silent){var min=curTheoStart()-2,n=0;var R=arhRep();
   Object.keys(R).forEach(function(id){Object.keys(R[id]||{}).forEach(function(k){if(theoStartOf(k)<min){delete R[id][k];n++;}});if(R[id]&&!Object.keys(R[id]).length)delete R[id];});
+  var HL=S.hlog||{};Object.keys(HL).forEach(function(id){Object.keys(HL[id]||{}).forEach(function(k){if(theoStartOf(k)<min){delete HL[id][k];n++;}});if(HL[id]&&!Object.keys(HL[id]).length)delete HL[id];});
   if(S.att&&S.att.recs){var before=S.att.recs.length;S.att.recs=S.att.recs.filter(function(r){return r&&r.d&&theoStartOf(r.d.slice(0,7))>=min;});n+=before-S.att.recs.length;}
   if(S.att&&S.att.skip){Object.keys(S.att.skip).forEach(function(key){var d=String(key).split("|")[0];if(!d||theoStartOf(d.slice(0,7))<min){delete S.att.skip[key];n++;}});}
   if(n&&!silent){save();toast("Curățat: "+n+" înregistrări mai vechi de 3 ani");}
@@ -6647,7 +6672,8 @@ function pdfMissing(gid){var k=arhYM;var act=(S.bros||[]).filter(function(b){ret
   +".mnm{font-size:9pt;color:#20242b;line-height:1.3}"
   +".mnote{margin:6mm 13mm 0;border:1px solid #eadfc8;border-left:3px solid #C77F1A;background:#fcf8ef;border-radius:2mm;padding:2.6mm 4mm;font-size:8pt;color:#5b626c;line-height:1.5}"
   +".ftt2{position:absolute;bottom:4mm;right:13mm;font-size:7pt;color:#8a929c;letter-spacing:.3px}");}
-function arhEditReport(id,k){if(!_canEditReport(id))return;window._afterRep=null;var b=S.bros.find(function(x){return x.id===id;});if(!b)return;var r=repOf(id,k)||{};var pio=pioAt(b,k);var c=broCat(b,k);
+/* `pre` (opțional): cifre precompletate din „Orele mele" — peste ce e deja în raport */
+function arhEditReport(id,k,pre){if(!_canEditReport(id))return;window._afterRep=null;var b=S.bros.find(function(x){return x.id===id;});if(!b)return;var r=Object.assign({},repOf(id,k)||{},pre||{});var pio=pioAt(b,k);var c=broCat(b,k);
   var isPubOnly=(pio==="");                 /* vestitor normal */
   var isPermAux=(pio==="Pionier auxiliar"); /* pionier auxiliar permanent */
   var canCredit=(pio==="Pionier"||pio==="Pionier special"||pio==="Misionar"); /* doar regulari și speciali au credit */
@@ -7136,6 +7162,8 @@ function arhMeuHtml(){ensureGrpCSS();var my=_myBro();var b=S.bros.find(function(
      +'<div class="pio-bar"><div class="pio-fill'+(pDone?' done':'')+'" style="width:'+pPct+'%"></div></div>'
      +'<div class="pio-sub"><span>'+pPct+'%</span>'+(pCr?'<span>credit '+Math.round(pCr)+' h</span>':'')+'<span>'+pRep+'/'+(pR.prM||12)+' luni</span>'+(pSt?'<span>'+pSt+' studii</span>':'')+'<span>'+pPace+'</span></div>'
      +'<div class="muted" style="font-size:11px;margin-top:8px">Apasă pentru rapoartele lunare și fișa S-21.</div></div>';}
+  /* Orele mele — carnetul de teren al lunii; de aici se completează și raportul */
+  h+=_meuHoursHtml(my,b);
   /* Raportul meu — cardul apare MEREU, pentru oricine are un vestitor asociat (administrator,
      editor sau vestitor). Nu mai depinde de anul teocratic ales: în septembrie, luna de raportat
      (august) ține de anul trecut, iar înainte cardul dispărea cu totul din "Profilul meu".
@@ -7149,7 +7177,7 @@ function arhMeuHtml(){ensureGrpCSS();var my=_myBro();var b=S.bros.find(function(
      +'<div style="display:flex;align-items:center;gap:8px;margin-top:11px"><span class="muted" style="font-size:11.5px;flex:0 0 auto">Luna</span><select class="fld" style="width:auto;flex:1" onchange="meuSetRep(this.value)">'
      +mopts.map(function(m){return '<option value="'+m.k+'" '+(m.k===meuK?"selected":"")+'>'+esc(m.name)+(m.k===repK?" — de raportat":(m.k===curK?" — luna în curs":""))+'</option>';}).join("")
      +'</select></div>'
-     +'<button class="btn '+(sent?'ghost':'pri')+' sm" style="width:100%;margin-top:11px" onclick="arhEditReport(\''+my+'\',\''+meuK+'\')">'+(sent?"Editează raportul":"Completează raportul")+'</button>'
+     +'<button class="btn '+(sent?'ghost':'pri')+' sm" style="width:100%;margin-top:11px" onclick="hlReport(\''+meuK+'\')">'+(sent?"Editează raportul":"Completează raportul")+'</button>'
      +(meuK===curK?'<div class="muted" style="font-size:11.5px;margin-top:9px">Luna nu s-a încheiat — poți salva acum și completa mai târziu; raportul se trimite oricum la fel.</div>':'')
      +'</div>';}
   /* istoric: lunile dinaintea celei de raportat, cele mai recente primele */
@@ -7208,6 +7236,175 @@ function meuMenu(){var my=_myBro();if(!my){toast("Contul nu e legat de un vestit
   '<button class="pmrow" onclick="closeSheet();pdfS21(\''+my+'\','+start+')">'+IC.pdf+'<span><b>Fișa mea S-21</b> — descarcă PDF-ul cu rapoartele anului</span></button>'
  +'<button class="pmrow" onclick="closeSheet();meContact()">'+IC.edit+'<span><b>Datele mele de contact</b> — telefon, e-mail, adresă, urgență</span></button>'
  +(_curUser()?('<button class="pmrow" onclick="closeSheet();mePinSheet()">'+IC.gear+'<span><b>Schimbă PIN-ul</b> — cu care intri în aplicație</span></button>'):''));}
+
+/* ============ ORELE MELE (Profilul meu) ============
+   Carnetul personal de teren: orele (notate pe zile sau cu cronometrul), studiile biblice și,
+   pentru vestitorul obișnuit, bifa „pionier auxiliar luna aceasta". La sfârșitul lunii raportul
+   se completează de aici, cu cifrele deja adunate — orele întregi intră în raport, minutele
+   rămase trec în luna următoare (regula pionierilor).
+   Stă în S.hlog[vestitor][lună] = {e:[{id,d,m,n,t}], st, aux, p, goal, t}. E al fiecăruia:
+   nu pleacă pe canalul public al vestitorilor (_roPayload) și nici în fișierul altcuiva
+   (_shareFilter), iar la sincronizarea doar-citire rămâne pe telefon (roSync). */
+var hlK=null;/* luna deschisă în card (null = cea potrivită de la sine) */
+function hlogD(){S.hlog=S.hlog||{};return S.hlog;}
+function hlogOf(id,k,make){var H=hlogD();
+ if(make){H[id]=H[id]||{};H[id][k]=H[id][k]||{e:[]};H[id][k].e=H[id][k].e||[];return H[id][k];}
+ var m=H[id]&&H[id][k];if(m&&!m.e)m.e=[];return m||null;}
+function hlogHasAny(id,k){var L=hlogOf(id,k);return !!(L&&((L.e&&L.e.length)||L.st!=null||L.aux||L.p===0));}
+function _hlId(){return "h"+Date.now().toString(36)+Math.random().toString(36).slice(2,6);}
+function _hlToday(){var d=new Date();return d.getFullYear()+"-"+_pad2(d.getMonth()+1)+"-"+_pad2(d.getDate());}
+/* pionierii (regulari, speciali, auxiliari permanenți, misionari) au mereu ore de notat */
+function hlPio(b,k){var p=pioAt(b,k);return p==="Pionier"||p==="Pionier special"||p==="Misionar"||p==="Pionier auxiliar";}
+/* vestitorul obișnuit (botezat) poate bifa că e pionier auxiliar în luna respectivă */
+function hlCanAux(b,k){return pioAt(b,k)==="";}
+function hlAuxOn(b,k){if(pioAt(b,k)==="Pionier auxiliar")return true;var L=hlogOf(b.id,k);
+ if(L&&L.aux!=null)return !!L.aux;var r=repOf(b.id,k);return !!(r&&r.aux);}
+function hlHoursOn(b,k){return hlPio(b,k)||(hlCanAux(b,k)&&hlAuxOn(b,k));}
+function hlGoal(b,k){var L=hlogOf(b.id,k);if(L&&L.goal)return +L.goal;var p=pioAt(b,k);
+ if(p==="Pionier")return 50;if(p==="Pionier special"||p==="Misionar")return 100;return 30;}
+function hlSumE(L){var n=0;((L&&L.e)||[]).forEach(function(e){n+=(+e.m||0);});return n;}
+/* minutele rămase din luna trecută: raportul merge pe ore întregi, restul trece mai departe */
+function hlCarry(b,k,depth){depth=depth||0;if(depth>24)return 0;var pk=ymShift(k,-1);var L=hlogOf(b.id,pk);
+ if(!L||!(L.e&&L.e.length)||!hlHoursOn(b,pk))return 0;
+ return (hlSumE(L)+hlCarry(b,pk,depth+1))%60;}
+function hlTotal(b,k){return hlSumE(hlogOf(b.id,k))+hlCarry(b,k);}
+function hlFmt(min){min=Math.max(0,Math.round(min||0));var h=Math.floor(min/60),m=min%60;
+ if(!h)return m+" min";return h+" h"+(m?(" "+m+" min"):"");}
+function _hlMonthLc(k){return RO_MONTHS[ymM(k)];}
+function _hlDMY(d){var p=String(d||"").split("-");return p.length===3?(p[2]+"."+p[1]):d;}
+/* lunile din card: luna în curs + 12 în urmă (aceleași ca în selectorul raportului) */
+function hlKeys(){return _meuRepOpts().map(function(m){return m.k;});}
+function hlCurK(b,ks,nowK){if(hlK&&ks.indexOf(hlK)>=0)return hlK;
+ /* la început de lună, dacă luna trecută are notări și încă nu e raportată, pe ea o arătăm */
+ var pk=ymShift(nowK,-1);if(ks.indexOf(pk)>=0&&hlogHasAny(b.id,pk)&&!repHas(b.id,pk))return pk;
+ return nowK;}
+function hlGo(k){hlK=k;renderMeu();}
+
+/* --- cardul din „Profilul meu" --- */
+function _meuHoursHtml(my,b){if(!my||!b||b.active===false)return "";
+ var nowK=_nowK(),ks=hlKeys(),k=hlCurK(b,ks,nowK),L=hlogOf(my,k)||{e:[]};
+ var isPio=hlPio(b,k),canAux=hlCanAux(b,k),auxOn=canAux&&hlAuxOn(b,k),hoursOn=isPio||auxOn;
+ var i=ks.indexOf(k),prevK=ks[i+1]||null,nextK=(i>0)?ks[i-1]:null;
+ var r=repOf(my,k),sent=!!(r||repHas(my,k)),ended=k<nowK,ent=(L.e||[]).slice().sort(function(a,c){return a.d<c.d?1:(a.d>c.d?-1:0);});
+ var run=_hrunGet();if(run&&run.bro!==my)run=null;
+ var h='<div class="hlc"><div class="hlhd"><span class="hlic">'+IC.clock+'</span>'
+  +'<span class="hlttl"><span class="a-hd">Orele mele</span><span class="hlmon">'+esc(monthName(k))+'</span></span>'
+  +'<span class="hlnav"><button class="hlnb" '+(prevK?('onclick="hlGo(\''+prevK+'\')"'):'disabled')+' title="Luna anterioară">'+IC.back+'</button>'
+  +'<button class="hlnb" '+(nextK?('onclick="hlGo(\''+nextK+'\')"'):'disabled')+' title="Luna următoare">'+IC.fwd+'</button></span></div>';
+ if(canAux){h+='<label class="ckrow2" style="margin:12px 0 0"><input type="checkbox" '+(auxOn?"checked":"")+' onchange="hlAuxTog(\''+k+'\',this.checked)"> Pionier auxiliar în '+esc(_hlMonthLc(k))+'</label>'
+  +(auxOn?'':'<div class="muted" style="font-size:11.5px;margin:3px 0 0 27px">Bifezi și poți nota orele; altfel se numără doar studiile.</div>');}
+ if(hoursOn){var tot=hlTotal(b,k),carry=hlCarry(b,k),goal=hlGoal(b,k),gm=goal*60,pct=Math.min(100,Math.round(tot/gm*100)),done=tot>=gm;
+  var tH=Math.floor(tot/60),tM=tot%60;
+  h+='<div class="hlbig"><span><b>'+tH+'</b> h '+(tM?('<b>'+tM+'</b> min'):'')+'</span><span class="hlgoal">din '+goal+' h · <button onclick="hlGoalSheet(\''+k+'\')">schimbă</button></span></div>'
+   +'<div class="pio-bar" style="margin:8px 0 6px"><div class="pio-fill'+(done?' done':'')+'" style="width:'+pct+'%"></div></div>';
+  var sub=['<span>'+pct+'%</span>'];
+  if(carry)sub.push('<span>+ '+carry+' min din luna trecută</span>');
+  sub.push('<span>'+ent.length+(ent.length===1?' notare':' notări')+'</span>');
+  if(done)sub.push('<span class="ok">✓ obiectiv atins</span>');
+  else if(!ended){var last=new Date(ymY(k),ymM(k)+1,0).getDate(),left=Math.max(1,last-new Date().getDate()+1);sub.push('<span>≈ '+hlFmt(Math.ceil((gm-tot)/left))+' pe zi până la obiectiv</span>');}
+  else sub.push('<span>au lipsit '+hlFmt(gm-tot)+'</span>');
+  h+='<div class="pio-sub">'+sub.join("")+'</div>';
+  h+='<div class="hlbtns"><button class="btn pri sm" onclick="hlAddSheet(\''+k+'\')">'+IC.plus+' Adaugă ore</button>'
+   +(run?'':'<button class="btn ghost sm" onclick="hlRunStart()">▶ Cronometru</button>')+'</div>';
+  if(run){var s0=new Date(run.t0);
+   h+='<div class="hlrun"><span class="dot"></span><span style="flex:1;min-width:0"><span class="tm" id="hrunEl">'+_hrunTxt(run)+'</span><span class="muted" style="display:block;font-size:11px">pornit la '+_pad2(s0.getHours())+':'+_pad2(s0.getMinutes())+(s0.toDateString()!==new Date().toDateString()?(' · '+_hlDMY(s0.getFullYear()+"-"+_pad2(s0.getMonth()+1)+"-"+_pad2(s0.getDate()))):'')+'</span></span>'
+    +'<button class="btn pri sm" style="width:auto;padding:9px 12px" onclick="hlRunStop()">■ Oprește</button><button class="hlnb" title="Renunță, fără să notez" onclick="hlRunCancel()">×</button></div>';
+   _hrunArm();}}
+ else if(run){/* cronometrul merge, dar luna deschisă n-are ore — îl arătăm oricum, ca să nu rămână uitat */
+  h+='<div class="hlrun" style="margin-top:12px"><span class="dot"></span><span style="flex:1"><span class="tm" id="hrunEl">'+_hrunTxt(run)+'</span></span><button class="btn pri sm" style="width:auto;padding:9px 12px" onclick="hlRunStop()">■ Oprește</button><button class="hlnb" title="Renunță" onclick="hlRunCancel()">×</button></div>';_hrunArm();}
+ /* studiile biblice — pentru toți */
+ var st=L.st!=null?+L.st:0;
+ h+='<div class="hlrow"><span>Studii biblice conduse</span><span class="hlctr"><button onclick="hlSt(\''+k+'\',-1)" '+(st<=0?'disabled':'')+' aria-label="Mai puțin">−</button><b>'+st+'</b><button onclick="hlSt(\''+k+'\',1)" aria-label="Mai mult">+</button></span></div>';
+ if(!hoursOn){h+='<label class="ckrow2" style="margin:10px 0 0"><input type="checkbox" '+(L.p===0?"":"checked")+' onchange="hlPart(\''+k+'\',this.checked)"> Am participat la predicare în '+esc(_hlMonthLc(k))+'</label>';
+  /* ore notate cât timp era bifat auxiliar, apoi bifa scoasă: nu se pierd, dar nu intră în raport */
+  if(ent.length)h+='<div class="muted" style="font-size:11.5px;margin:8px 0 0">Ai '+hlFmt(hlSumE(L))+' notate în această lună — intră în raport doar dacă bifezi „Pionier auxiliar”.</div>';}
+ /* notările lunii */
+ if(hoursOn&&ent.length){h+='<details class="hlent"><summary>'+IC.hist+' Notările lunii · '+hlFmt(hlSumE(L))+'<span class="chev" style="margin-left:auto">'+IC.chev+'</span></summary><div>'
+  +ent.map(function(e){return '<button class="hle" onclick="hlAddSheet(\''+k+'\',\''+e.id+'\')"><span class="d">'+esc(_hlDMY(e.d))+'</span><span class="m">'+hlFmt(e.m)+'</span><span class="n">'+esc(e.n||"")+'</span>'+IC.edit+'</button>';}).join("")
+  +'</div></details>';}
+ /* raportul lunii, din cifrele adunate */
+ var rep=[];if(hoursOn)rep.push('<b>'+Math.floor(hlTotal(b,k)/60)+' h</b>');else rep.push(L.p===0?'fără participare':'✓ participare');
+ if(st)rep.push(st+(st===1?' studiu':' studii'));if(canAux&&auxOn)rep.push('pionier auxiliar');
+ var rest=hoursOn?(hlTotal(b,k)%60):0;
+ h+='<div class="hlfoot">';
+ if(sent)h+='<div style="font-size:12.5px;color:var(--ink2)"><span style="color:var(--tealtx,var(--teal));font-weight:700">✓ raport trimis</span>'+(r?(' · '+_meuInfo(r,b,k)):'')+'</div>'
+  +'<button class="btn ghost sm" style="width:100%;margin-top:10px" onclick="hlReport(\''+k+'\',1)">Actualizează raportul din orele notate</button>';
+ else h+='<div style="font-size:12.5px;color:var(--ink2)">Raportul pe '+esc(_hlMonthLc(k))+': '+rep.join(' · ')+(rest?(' <span class="muted">· '+rest+' min trec în '+esc(_hlMonthLc(ymShift(k,1)))+'</span>'):'')+'</div>'
+  +'<button class="btn '+(ended?'pri':'ghost')+' sm" style="width:100%;margin-top:10px" onclick="hlReport(\''+k+'\',1)">Completează raportul pe '+esc(_hlMonthLc(k))+'</button>'
+  +(ended?'':'<div class="muted" style="font-size:11.5px;margin-top:8px">Luna nu s-a încheiat — poți trimite și acum, cifrele de până azi intră în raport.</div>');
+ h+='</div></div>';
+ return h;}
+
+/* --- acțiunile cardului --- */
+function _hlL(k){var my=_myBro();if(!my)return null;return hlogOf(my,k,true);}
+function hlAuxTog(k,on){var L=_hlL(k);if(!L)return;L.aux=on?1:0;L.t=Date.now();save();hlK=k;renderMeu();}
+function hlPart(k,on){var L=_hlL(k);if(!L)return;L.p=on?1:0;L.t=Date.now();save();hlK=k;renderMeu();}
+function hlSt(k,d){var L=_hlL(k);if(!L)return;L.st=Math.max(0,(+L.st||0)+d);L.t=Date.now();save();hlK=k;renderMeu();}
+function hlGoalSheet(k){var my=_myBro(),b=(S.bros||[]).find(function(x){return x.id===my;});if(!b)return;var cur=hlGoal(b,k);
+ var opts=[[15,"15 h","pionier auxiliar, în lunile cu obiectiv redus"],[30,"30 h","pionier auxiliar"],[50,"50 h","pionier regular (600 h pe an)"],[100,"100 h","pionier special"]];
+ var H='<div class="muted" style="margin:0 2px 10px">Obiectivul pe '+esc(monthName(k))+'. Bara și „pe zi până la obiectiv” se socotesc după el.</div>'
+  +opts.map(function(o){return '<button class="pmrow" onclick="hlGoalSet(\''+k+'\','+o[0]+')"><span><b>'+o[1]+'</b> — '+o[2]+(cur===o[0]?' <span class="dtag g">ales</span>':'')+'</span></button>';}).join("")
+  +'<div class="pmlbl" style="margin-top:12px">Sau alt număr de ore</div>'
+  +'<div class="rowflex" style="gap:8px"><input class="fld" id="hlGo" type="number" min="1" max="300" inputmode="numeric" style="flex:1;margin:0" value="'+cur+'"><button class="btn pri sm" style="width:auto" onclick="hlGoalSet(\''+k+'\',null)">Pune</button></div>';
+ sheet("","Obiectivul lunii",H);}
+function hlGoalSet(k,v){var L=_hlL(k);if(!L)return;if(v==null){var el=document.getElementById("hlGo");v=el?parseInt(el.value,10):0;}
+ if(!(v>0)){toast("Pune un număr de ore");return;}L.goal=v;L.t=Date.now();save();closeSheet();hlK=k;renderMeu();}
+function hlAddSheet(k,eid){var my=_myBro();if(!my)return;var L=hlogOf(my,k)||{e:[]};var e=eid?(L.e||[]).find(function(x){return x.id===eid;}):null;
+ var today=_hlToday(),first=k+"-01",last=k+"-"+_pad2(new Date(ymY(k),ymM(k)+1,0).getDate()),max=(today<last)?today:last;
+ var d=e?e.d:((today>=first&&today<=last)?today:max);
+ var hh=e?Math.floor(e.m/60):"",mm=e?(e.m%60):"";
+ var H='<label class="fl">Ziua</label><input class="fld" type="date" id="hlD" value="'+d+'" min="'+first+'" max="'+max+'">'
+  +'<div class="two" style="margin-top:12px"><div><label class="fl">Ore</label><input class="fld" type="number" id="hlH" min="0" max="24" inputmode="numeric" placeholder="0" value="'+hh+'"></div>'
+  +'<div><label class="fl">Minute</label><input class="fld" type="number" id="hlM" min="0" max="59" step="5" inputmode="numeric" placeholder="0" value="'+mm+'"></div></div>'
+  +'<div class="hlchips">'+[[15,"+15 min"],[30,"+30 min"],[60,"+1 h"],[120,"+2 h"]].map(function(c){return '<button class="fchip" onclick="hlBump('+c[0]+')">'+c[1]+'</button>';}).join("")+'</div>'
+  +'<label class="fl" style="margin-top:12px">Notă (opțional)</label><input class="fld" id="hlN" value="'+esc(e?(e.n||""):"")+'" placeholder="ex. din casă în casă, mărturie publică, vizite">'
+  +'<div class="rowflex" style="gap:9px;margin-top:18px">'+(e?('<button class="btn danger sm" onclick="hlDel(\''+k+'\',\''+eid+'\')">Șterge</button>'):'')
+  +'<div class="spacer"></div><button class="btn ghost sm" style="width:auto" onclick="closeSheet()">Anulează</button><button class="btn pri sm" style="width:auto" onclick="hlSave(\''+k+'\',\''+(eid||"")+'\')">Salvează</button></div>';
+ sheet("",e?"Modifică notarea":"Adaugă ore",H);}
+function hlBump(min){var h=document.getElementById("hlH"),m=document.getElementById("hlM");if(!h||!m)return;
+ var tot=(parseInt(h.value,10)||0)*60+(parseInt(m.value,10)||0)+min;h.value=Math.floor(tot/60);m.value=tot%60;}
+function hlSave(k,eid){var my=_myBro();if(!my)return;
+ var d=(document.getElementById("hlD")||{}).value||"";if(!/^\d{4}-\d{2}-\d{2}$/.test(d)||!_isoDate(d)){toast("Alege ziua");return;}
+ var tot=(parseInt((document.getElementById("hlH")||{}).value,10)||0)*60+(parseInt((document.getElementById("hlM")||{}).value,10)||0);
+ if(tot<=0){toast("Pune orele sau minutele");return;}if(tot>24*60){toast("Mai mult de 24 de ore într-o zi?");return;}
+ var n=((document.getElementById("hlN")||{}).value||"").trim(),mk=d.slice(0,7);
+ /* notarea mutată pe altă lună pleacă din luna veche */
+ if(eid){var L0=hlogOf(my,k);if(L0)L0.e=(L0.e||[]).filter(function(x){return x.id!==eid;});}
+ var L=hlogOf(my,mk,true);L.e.push({id:eid||_hlId(),d:d,m:tot,n:n,t:Date.now()});L.e.sort(function(a,b){return a.d<b.d?-1:(a.d>b.d?1:0);});L.t=Date.now();
+ save();closeSheet();hlK=mk;renderMeu();toast((eid?"Modificat: ":"Notat: ")+hlFmt(tot));}
+async function hlDel(k,eid){var my=_myBro();if(!my)return;var L=hlogOf(my,k);if(!L)return;var e=(L.e||[]).find(function(x){return x.id===eid;});if(!e)return;
+ if(!(await uiConfirm("Ștergi notarea din "+_hlDMY(e.d)+" ("+hlFmt(e.m)+")?",{title:"Ștergi?",yes:"Șterge",no:"Înapoi",danger:true})))return;
+ L.e=L.e.filter(function(x){return x.id!==eid;});L.t=Date.now();save();closeSheet();hlK=k;renderMeu();toast("Șters");}
+
+/* --- cronometrul: pornit/oprit; ora de început stă pe dispozitiv, ca să meargă și după închiderea aplicației --- */
+function _hrunGet(){try{var o=JSON.parse(localStorage.getItem(KEY+"_hrun")||"null");return (o&&o.t0&&o.bro)?o:null;}catch(e){return null;}}
+function _hrunSet(o){try{if(o)localStorage.setItem(KEY+"_hrun",JSON.stringify(o));else localStorage.removeItem(KEY+"_hrun");}catch(e){}}
+function _hrunTxt(r){var s=Math.max(0,Math.floor((Date.now()-r.t0)/1000));return _pad2(Math.floor(s/3600))+":"+_pad2(Math.floor(s%3600/60))+":"+_pad2(s%60);}
+var _hrunIv=null;
+function _hrunTick(){var el=document.getElementById("hrunEl"),r=_hrunGet();if(!el||!r){if(_hrunIv){clearInterval(_hrunIv);_hrunIv=null;}return;}el.textContent=_hrunTxt(r);}
+function _hrunArm(){if(_hrunIv)return;_hrunIv=setInterval(_hrunTick,1000);}
+function hlRunStart(){var my=_myBro();if(!my)return;if(_hrunGet()){toast("Cronometrul merge deja");return;}
+ _hrunSet({bro:my,t0:Date.now()});hlK=_nowK();renderMeu();toast("Cronometrul a pornit — apasă „Oprește” când termini");}
+async function hlRunCancel(){var r=_hrunGet();if(!r)return;
+ if(!(await uiConfirm("Timpul cronometrat ("+_hrunTxt(r)+") nu se notează nicăieri.",{title:"Renunți la cronometru?",yes:"Renunț",no:"Înapoi",danger:true})))return;
+ _hrunSet(null);renderMeu();}
+function hlRunStop(){var r=_hrunGet();if(!r)return;var my=_myBro();if(!my){_hrunSet(null);renderMeu();return;}
+ var mins=Math.round((Date.now()-r.t0)/60000);
+ if(mins<1){_hrunSet(null);renderMeu();toast("Sub un minut — nu s-a notat nimic");return;}
+ var d0=new Date(r.t0),d=d0.getFullYear()+"-"+_pad2(d0.getMonth()+1)+"-"+_pad2(d0.getDate()),mk=d.slice(0,7);
+ var L=hlogOf(my,mk,true);L.e.push({id:_hlId(),d:d,m:mins,n:"",t:Date.now()});L.e.sort(function(a,b){return a.d<b.d?-1:(a.d>b.d?1:0);});L.t=Date.now();
+ _hrunSet(null);save();hlK=mk;renderMeu();toast("Notat: "+hlFmt(mins));}
+
+/* --- raportul lunii, precompletat din carnet --- */
+function hlPre(b,k){var L=hlogOf(b.id,k);if(!L)return null;var pre={};
+ if(hlCanAux(b,k))pre.aux=hlAuxOn(b,k)?1:0;
+ if(hlHoursOn(b,k))pre.h=Math.floor(hlTotal(b,k)/60);
+ if(L.st!=null)pre.st=+L.st;
+ pre.p=(L.p===0)?0:1;
+ return pre;}
+/* din „Raportul meu": precompletat doar dacă luna încă n-are raport; din „Orele mele" (force): mereu */
+function hlReport(k,force){var my=_myBro(),b=(S.bros||[]).find(function(x){return x.id===my;});if(!my||!b)return;
+ var pre=(force||!repOf(my,k))?hlPre(b,k):null;arhEditReport(my,k,pre);}
 
 /* ---------- GRUPE (arhivă) ---------- */
 function _grpMemberRow(b,g){var tg=g?grpTags(b,g):"";var parts=tg?tg.split("/"):[];
@@ -8584,7 +8781,9 @@ function pdfDuty(list){var D=dutyD(),posts=dutyPosts();
     +(p2?('<td class="dl">'+esc(p2.n)+'</td><td class="dv">'+esc(o[p2.id]?expNameS(o[p2.id]):"")+'</td>')
         :'<td class="dl"></td><td class="dv"></td>')+'</tr>';}
   rows+='<tr class="grp"><td class="dl">Grupă (curățenie)</td><td class="dv" colspan="3">'+esc(_grpCell(dutyGrpShort(o)))+'</td></tr>';
-  return '<table class="dutb"><thead><tr><th colspan="4">Săptămâna '+esc(tc(w.date))+'</th></tr></thead><tbody>'+rows+'</tbody></table>';};
+  /* lățimile coloanelor se dau prin <colgroup>: cu table-layout:fixed browserul le ia din primul
+     rând, iar primul rând e titlul pe 4 coloane — de aceea etichetele și numele ieșeau egale (25%) */
+  return '<table class="dutb"><colgroup><col class="cl"><col class="cv"><col class="cl"><col class="cv"></colgroup><thead><tr><th colspan="4">Săptămâna '+esc(tc(w.date))+'</th></tr></thead><tbody>'+rows+'</tbody></table>';};
  var fn=D.title+" — "+tc(S.weeks[list[0]].date)+(list.length>1?(" … "+tc(S.weeks[list[list.length-1]].date)):"");
  /* cel mult două săptămâni pe pagină: tabelele nu se mai rup la schimbarea de foaie
     și rămâne loc ca fiecare să fie mare și aerisită */
@@ -8605,9 +8804,11 @@ function pdfDuty(list){var D=dutyD(),posts=dutyPosts();
  +".dutb{width:100%;border-collapse:collapse;border:2px solid #C77F1A;table-layout:fixed;margin-bottom:12mm;page-break-inside:avoid;break-inside:avoid}"
  +".dutb:last-child{margin-bottom:0}"
  +".dutb thead th{background:#f3e6cd;color:#5d3d06;font-size:13.5pt;font-weight:700;letter-spacing:.6px;text-align:center;padding:4.2mm 2mm 3.8mm;border-bottom:2.4px solid #C77F1A}"
- +".dutb td{padding:3.9mm 4mm;font-size:12.5pt;line-height:1.2;border:1px solid #dcc9a3;color:#14171c;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}"
- +".dutb .dl{font-weight:700;color:#5d3d06;background:#fbf5e9;width:26%;font-size:11.5pt}"
- +".dutb .dv{width:24%;font-weight:700;color:#14171c;letter-spacing:.2px}"
+  /* numele stă întreg: coloana lui e mai lată decât a etichetei, iar ce tot nu încape trece pe
+     rândul al doilea — înainte se tăia („COMANACHE Ra”), fără ca cineva să vadă asta în aplicație */
+ +".dutb td{padding:3.6mm 2.6mm;font-size:12pt;line-height:1.18;border:1px solid #dcc9a3;color:#14171c;vertical-align:middle;overflow-wrap:anywhere;word-break:break-word}"
+ +".dutb .dl{font-weight:700;color:#5d3d06;background:#fbf5e9;width:21%;font-size:10.5pt}"
+ +".dutb .dv{width:29%;font-weight:700;color:#14171c}.dutb col.cl{width:21%}.dutb col.cv{width:29%}"
  +".dutb .grp td{background:#f3e6cd;border-top:2px solid #C77F1A}"
  +".dutb .grp .dl{background:#f3e6cd}.dutb .grp .dv{font-size:13.5pt;color:#5d3d06}"
  +".ftt2{position:absolute;bottom:5mm;right:12mm;font-size:7.5pt;color:#8a929c;letter-spacing:.3px}");}
@@ -11895,6 +12096,33 @@ function tutCSS(){if(document.getElementById("tutcss"))return;
 +".icon.qbtn{position:relative}"
 +".icon.qbtn.nu::after{content:'';position:absolute;top:6px;right:6px;width:7px;height:7px;border-radius:50%;"
 +"background:var(--acc);box-shadow:0 0 0 2px var(--surf)}"
+ /* ---- tutorialul „pe ecranul principal”: barele browserelor, meniurile lor, ecranul telefonului ---- */
++".tp-brw{flex:0 0 auto;background:var(--surf);font-size:0.842em;color:var(--ink2);position:relative;z-index:4}"
++".tp-brw.top{border-bottom:0.105em solid var(--bd);padding:0.6em 0.7em}.tp-brw.bot{border-top:0.105em solid var(--bd);padding:0.55em 0.7em 0.8em}"
++".tp-url{display:flex;align-items:center;gap:0.5em;background:var(--surf2);border-radius:0.9em;padding:0.55em 0.8em;font-weight:700;color:var(--ink);font-size:1em;flex:1;min-width:0}"
++".tp-url .sp{flex:1;min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}"
++".tp-tb{display:flex;justify-content:space-around;align-items:center;margin-top:0.65em;font-size:1.35em;color:#2f7cf6}"
++".tp-tbi{display:inline-flex;align-items:center;justify-content:center;width:1.9em;height:1.9em;border-radius:0.5em;color:inherit;flex:0 0 auto}.tp-tbi svg{width:1.3em;height:1.3em}"
++".tp-tbi.tabs{border:0.16em solid currentColor;border-radius:0.35em;font-size:0.72em;font-weight:800;width:1.7em;height:1.7em}"
++".tp-menu{position:absolute;top:3.4em;right:0.6em;width:64%;background:var(--surf);border:0.105em solid var(--bd);border-radius:0.9em;box-shadow:0 0.6em 1.8em rgba(0,0,0,.3);padding:0.5em 0;z-index:6;opacity:0;visibility:hidden;transform:scale(.92);transform-origin:top right;transition:opacity .22s,transform .22s,visibility 0s .22s;font-size:0.842em;color:var(--ink)}"
++".tp-menu.on{opacity:1;visibility:visible;transform:none;transition:opacity .22s,transform .22s,visibility 0s}"
++".tp-menu.tl{right:auto;left:0.6em;top:2.6em;transform-origin:top left}"
++".tp-menu .mi{padding:0.55em 1em;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}"
++".tp-menu .mi.sel,.tp-shl .r.sel,.tp-grid3 .g.sel,b.sel,span.sel{background:var(--accsoft)!important}"
++".tp-shl .r{display:flex;align-items:center;justify-content:space-between;gap:0.6em;padding:0.65em 0.3em;border-bottom:0.105em solid var(--bd);font-size:0.895em;color:var(--ink);font-weight:600;border-radius:0.4em}"
++".tp-shl .r i{font-style:normal;color:var(--ink2);display:inline-flex;flex:0 0 auto}.tp-shl .r i svg{width:1.3em;height:1.3em}"
++".tp-apps{display:flex;gap:1em;padding:0.7em 0.3em 0.8em;border-bottom:0.105em solid var(--bd)}.tp-apps i{width:3em;height:3em;border-radius:50%;display:block;opacity:.85}"
++".tp-home{position:absolute;inset:0;background:linear-gradient(160deg,#1c3f7a,#5a8bd6 55%,#c9d9f3);display:flex;flex-direction:column;padding:2.6em 1.2em 1em;color:#fff}"
++".tp-time{text-align:center;font-size:2.3em;font-weight:300;letter-spacing:.02em;margin-bottom:1.2em}"
++".tp-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1.3em 0.6em;text-align:center;font-size:0.68em;text-shadow:0 0.1em 0.3em rgba(0,0,0,.4)}"
++".tp-grid span{display:flex;flex-direction:column;align-items:center;gap:0.4em}.tp-grid span.me{font-weight:800}"
++".tp-grid i,.tp-grid .tp-lg{width:3.7em;height:3.7em;border-radius:1em;display:block;box-shadow:0 0.2em 0.5em rgba(0,0,0,.25)}"
++".tp-dock{margin-top:auto;background:rgba(255,255,255,.28);border-radius:1.6em;padding:0.7em;display:flex;justify-content:space-around}.tp-dock i{width:3.2em;height:3.2em;border-radius:0.9em;display:block;background:rgba(255,255,255,.75)}"
++".tp-grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:0.5em;font-size:0.79em;text-align:center}.tp-grid3 .g{padding:0.7em 0.3em;border-radius:0.7em;color:var(--ink);font-weight:600}.tp-grid3 .g i{display:block;width:1.9em;height:1.9em;border-radius:0.5em;background:var(--surf2);margin:0 auto 0.4em}"
++".tp-mac{flex:0 0 auto;display:flex;gap:0.9em;background:var(--surf);border-bottom:0.105em solid var(--bd);padding:0.6em 0.8em;font-size:0.79em;color:var(--ink);white-space:nowrap;overflow:hidden;position:relative;z-index:4}"
++".tp-win{flex:0 0 auto;display:flex;align-items:center;gap:0.5em;background:var(--surf2);padding:0.5em 0.8em;font-size:0.79em;font-weight:700;color:var(--ink2)}.tp-win .dts{display:flex;gap:0.3em}.tp-win .dts i{width:0.8em;height:0.8em;border-radius:50%;display:block}"
++".tp-desk{position:absolute;inset:0;background:linear-gradient(160deg,#2b1055,#7597de);display:flex;flex-direction:column;padding:1.6em 1em 1em}"
++".tp-dockm{margin-top:auto;align-self:center;background:rgba(255,255,255,.35);border-radius:1.2em;padding:0.6em;display:flex;gap:0.6em;align-items:flex-end}.tp-dockm i,.tp-dockm .tp-lg{width:2.7em;height:2.7em;border-radius:0.7em;display:block;background:rgba(255,255,255,.8)}"
 +"@media(max-width:359px){.head{gap:7px;padding-left:11px;padding-right:11px}"
 +" .head .icon{width:32px;height:32px}.head .icon svg{width:18px;height:18px}}";
  document.head.appendChild(s);}
@@ -12038,7 +12266,7 @@ function _tutPlay(sl,o,delay){
  var reduced=false;try{reduced=window.matchMedia("(prefers-reduced-motion: reduce)").matches;}catch(e){}
  function reset(){
   scrs.forEach(function(s,i){s.classList.toggle("on",i===0);});
-  [].forEach.call(sl.querySelectorAll(".tp-sh,.tp-dim,.tp-ov,.tp-toast"),function(x){x.classList.remove("on");});
+  [].forEach.call(sl.querySelectorAll(".tp-sh,.tp-dim,.tp-ov,.tp-toast,.tp-menu"),function(x){x.classList.remove("on");});
   [].forEach.call(sl.querySelectorAll(".prs"),function(x){x.classList.remove("prs");});
   [].forEach.call(sl.querySelectorAll(".tp-f"),function(x){x.classList.remove("fc");});
   [].forEach.call(sl.querySelectorAll(".tgt"),function(x){x.classList.remove("tgt");});
@@ -12150,7 +12378,8 @@ function _tutHide(){var o=document.getElementById("tutov");if(o)o.classList.remo
  document.documentElement.style.overflow="";}
 
 function tutOpen(key,back){
- tutCSS();var d=TUT.D[TUT.A[key]||key]||TUT.D[TUT.A[_tutFallback(key)]||_tutFallback(key)]||TUT.D.start;
+ tutCSS();if(key==="install"&&typeof _instPrep==="function")_instPrep();
+ var d=TUT.D[TUT.A[key]||key]||TUT.D[TUT.A[_tutFallback(key)]||_tutFallback(key)]||TUT.D.start;
  if(!d)return;
  _tutK=key;_tutSl=_tutSlidesOf(d);_tutBack=back||null;
  if(!_tutSl.length)return;
@@ -12240,7 +12469,7 @@ function _tutTitle(k){var d=TUT.D[TUT.A[k]||k];return d?d.t:"";}
 function tutIndex(){tutCSS();_tutStop();_tutHide();
  ensureArhHomeCSS();try{arhEnsureCSS();}catch(e){}/* „a-hd", capul de grupă, stă în foaia Arhivei */
  var groups=[
-  ["Pentru toți",["start","vestitor","meu","prog.vcp","prog.wm","prog.sarc"]],
+  ["Pentru toți",["start","install","vestitor","meu","prog.vcp","prog.wm","prog.sarc"]],
   ["Planificări",["arh","arh.vcped","arh.wm","arh.mp","arh.teren","arh.sarc","arh.cur"]],
   ["Rapoarte și evidențe",["arh.sumar","arh.rap","arh.pio600","arh.prez","arh.grp","arh.resp","arh.arhv","arh.scr","arh.exp"]],
   ["Administrare",["bros","set"]]];
@@ -12379,6 +12608,7 @@ TUT.D["meu"]={t:"Profilul meu",sub:"raportul, atribuirile și evenimentele tale"
  {k:"cards",eb:"Ce găsești pe ecran",h:"De sus în jos",items:[
   [TIC.user,"Cartea ta de identitate","Numele, grupa și privilegiile. Din cele trei puncte din dreapta intri la datele tale de contact."],
   [IC.clock,"Bara pionierului","Dacă ești pionier regular: cât ai strâns din cele 600 de ore și câte îți mai trebuie pe lună."],
+  [IC.clock,"Orele mele","Carnetul tău de teren: notezi orele pe zile sau cu cronometrul, numeri studiile, iar la sfârșitul lunii completezi raportul de acolo, cu cifrele gata adunate."],
   [IC.edit,"Raport lunar","Cardul cu luna de raportat. Din lista de sub el poți alege și luna în curs, sau o lună trecută."],
   [IC.cal,"Sarcinile mele","Săptămânile care vin, cu partea ta din program, tura ta și sarcina ta de la întrunire."],
   [IC.hist,"Istoric","Lunile dinainte, cele mai recente primele. De acolo completezi o lună scăpată."]]},
@@ -12409,6 +12639,7 @@ TUT.D["meu"]={t:"Profilul meu",sub:"raportul, atribuirile și evenimentele tale"
  {k:"rules",eb:"Bine de știut",h:"Câteva lucruri care ajută",items:[
   ["tip","Luna de raportat e cea trecută","În septembrie raportezi august. Cardul de sus îți spune mereu care e."],
   ["ok","Poți raporta și pe parcurs","Alegi „luna în curs” din listă. Salvezi acum, completezi mai târziu — se trimite la fel."],
+  ["ok","Orele se adună singure în raport","Din „Orele mele” apeși „Completează raportul”: orele întregi și studiile sunt deja trecute, iar minutele rămase trec în luna următoare."],
   ["tip","Fișa S-21 se descarcă de aici","Butonul de la capătul listei de luni scoate PDF-ul anului tău de serviciu."],
   ["no","Nu vezi rapoartele altora","Profilul e strict al tău, chiar dacă ai și alte drepturi în aplicație."]]},
  {k:"recap",h:"Profilul meu, pe scurt",p:"Un card pentru raport, unul pentru ce ai de făcut.",
@@ -13363,6 +13594,203 @@ TUT.D["start"]={t:"Bun venit în ArhiLink",sub:"turul scurt: butoanele, programu
        [6900,"step",99],[7000,"hide"],[9800,"loop"]]});
  d.s.push(_tutHelpDemo(_tutNv3,_Q));})();
 
+/* ===========================================================================
+   APLICAȚIA PE ECRANUL PRINCIPAL — tutorial pentru toți
+   ---------------------------------------------------------------------------
+   ArhiLink își recunoaște dispozitivul (iPhone sau Android; Safari, Chrome sau
+   Samsung Internet; calculator sau Mac) și arată ÎNTÂI pașii pentru el; celelalte
+   urmează, pentru cine ajută pe altcineva. Pe Android/Chrome și pe calculator,
+   unde browserul ne dă voie (beforeinstallprompt), „Instalează acum” pornește
+   instalarea direct, fără meniuri.
+   Se deschide din: cardul din „Profilul meu” (până e instalată sau închisă cu ×),
+   lista de tutoriale („Pentru toți”), Setări → Tutoriale, turul de la prima
+   deschidere și „Cum le activez pe iPhone” de la notificări.
+   =========================================================================== */
+function _platInfo(){var ua=navigator.userAgent||"",p={os:"other",br:"other",installed:false};
+ try{p.installed=_isInstalled();}catch(e){}
+ var ios=false;try{ios=/iPhone|iPad|iPod/i.test(ua)||(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1);}catch(e){}
+ if(ios){p.os="ios";p.br=/CriOS/i.test(ua)?"chrome":/FxiOS/i.test(ua)?"firefox":/EdgiOS/i.test(ua)?"edge":"safari";}
+ else if(/Android/i.test(ua)){p.os="android";p.br=/SamsungBrowser/i.test(ua)?"samsung":/EdgA/i.test(ua)?"edge":/Firefox/i.test(ua)?"firefox":/Chrome/i.test(ua)?"chrome":"other";}
+ else{p.os=/Mac/i.test(ua)?"mac":/Win/i.test(ua)?"win":"other";
+  p.br=/Edg\//i.test(ua)?"edge":/Firefox/i.test(ua)?"firefox":/Chrome\//i.test(ua)?"chrome":/Safari\//i.test(ua)?"safari":"other";}
+ return p;}
+var _PLAT_LBL={ios_saf:"Safari pe iPhone",ios_chr:"Chrome pe iPhone",and_chr:"Chrome pe Android",and_sam:"Samsung Internet pe Android",desk_chr:"Chrome sau Edge pe calculator",mac_saf:"Safari pe Mac"};
+/* demonstrația potrivită întâi, restul după */
+function _instOrder(p){var all=["ios_saf","ios_chr","and_chr","and_sam","desk_chr","mac_saf"],first;
+ if(p.os==="ios")first=(p.br==="chrome"||p.br==="edge")?"ios_chr":"ios_saf";
+ else if(p.os==="android")first=(p.br==="samsung")?"and_sam":"and_chr";
+ else if(p.os==="mac")first=(p.br==="safari")?"mac_saf":"desk_chr";
+ else first="desk_chr";
+ return [first].concat(all.filter(function(k){return k!==first;}));}
+function _instNote(p){
+ if(p.installed)return "Ești deja în aplicația instalată ✓ — pașii sunt pentru alt telefon sau pentru cineva pe care îl ajuți.";
+ if(p.os==="ios")return "Dacă ai deschis linkul din WhatsApp sau din alt program, apasă întâi „Deschide în Safari”.";
+ if(p.os==="android"&&p.br==="firefox")return "În Firefox: meniul cu trei puncte → „Instalează” sau „Adaugă pe ecranul de pornire”.";
+ if(p.os!=="android"&&p.br==="firefox")return "Firefox nu știe să salveze aplicații pe calculator — deschide linkul în Chrome sau Edge.";
+ return "";}
+
+/* --- instalarea directă, unde browserul o oferă (Chrome/Edge pe Android și pe calculator) --- */
+var _bipEvt=null;
+try{window.addEventListener("beforeinstallprompt",function(e){try{e.preventDefault();}catch(_){}_bipEvt=e;});
+ window.addEventListener("appinstalled",function(){_bipEvt=null;try{localStorage.setItem(KEY+"_instX","1");}catch(_){}
+  try{toast("ArhiLink e pe ecranul principal ✓");}catch(_){}try{if(typeof tab!=="undefined"&&tab==="meu")renderMeu();}catch(_){}});}catch(e){}
+function _instPrompt(){var ev=_bipEvt;if(!ev){tutInstall();return;}_bipEvt=null;
+ try{ev.prompt();(ev.userChoice||Promise.resolve({})).then(function(r){if(!(r&&r.outcome==="accepted"))_bipEvt=ev;}).catch(function(){_bipEvt=ev;});}
+ catch(e){_bipEvt=ev;tutInstall();}}
+function tutInstall(back){tutOpen("install",back);}
+
+/* --- cardul din „Profilul meu”: până e instalată sau până îl închide omul --- */
+function _instX(){try{return localStorage.getItem(KEY+"_instX")==="1";}catch(e){return false;}}
+function instNudgeHide(){try{localStorage.setItem(KEY+"_instX","1");}catch(e){}renderMeu();}
+function _instNudge(){try{if(_isInstalled()||_instX())return "";var p=_platInfo(),lbl=_PLAT_LBL[_instOrder(p)[0]];
+ return '<div class="group gp" style="position:relative;padding-right:44px"><button class="hlnb" style="position:absolute;top:9px;right:9px;width:30px;height:30px;font-size:16px" title="Nu mai arăta" aria-label="Nu mai arăta" onclick="instNudgeHide()">×</button>'
+  +'<div class="rowflex" style="gap:10px;align-items:center"><span style="font-size:22px">📲</span><div style="min-width:0"><b>Pune ArhiLink pe ecranul principal</b><div class="muted" style="font-size:12px">Se deschide ca o aplicație, pe tot ecranul, fără browser. Pașii pentru '+esc(lbl)+'.</div></div></div>'
+  +'<div class="rowflex" style="gap:8px;margin-top:10px">'+(_bipEvt?'<button class="btn pri sm" style="flex:1;width:auto" onclick="_instPrompt()">Instalează acum</button>':'')
+  +'<button class="btn '+(_bipEvt?'ghost':'pri')+' sm" style="flex:1;width:auto" onclick="tutInstall()">Arată-mi cum</button></div></div>';}catch(e){return "";}}
+
+/* --- piesele desenate: barele browserelor, meniurile, ecranul principal --- */
+var _IS={
+ share:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M8 7l4-4 4 4"/><path d="M5 12v7a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-7"/></svg>',
+ add:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M12 9v6M9 12h6"/></svg>',
+ inst:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M12 7v6M9.5 10.5 12 13l2.5-2.5"/><path d="M8 20h8"/></svg>',
+ dots:'<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>',
+ menu:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>',
+ book:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>',
+ tabs:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="7" y="3" width="14" height="14" rx="2"/><path d="M17 17v2a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h2"/></svg>'};
+var TI={
+ url:function(txt,extra){return '<div class="tp-url"><span>🔒</span><span class="sp">'+esc(txt)+'</span>'+(extra||"")+'</div>';},
+ /* Safari pe iPhone: adresa jos, sub ea bara cu „Partajează” la mijloc */
+ saf:function(){return '<div class="tp-brw bot"><div class="tp-url"><span style="font-weight:800">AA</span><span class="sp" style="text-align:center">drg2121.github.io</span><span>↻</span></div>'
+  +'<div class="tp-tb"><span>‹</span><span style="opacity:.4">›</span><span class="tp-tbi" id="sShare">'+_IS.share+'</span><span class="tp-tbi">'+_IS.book+'</span><span class="tp-tbi">'+_IS.tabs+'</span></div></div>';},
+ /* Chrome pe iPhone: adresa sus, cu „Partajează” în dreapta ei; bara de jos cu „⋯” */
+ chrI:function(){return '<div class="tp-brw top">'+TI.url("drg2121.github.io",'<span class="tp-tbi" id="cShare">'+_IS.share+'</span>')+'</div>';},
+ chrIbot:function(){return '<div class="tp-brw bot"><div class="tp-tb" style="margin-top:0"><span>‹</span><span style="opacity:.4">›</span><span>＋</span><span class="tp-tbi">'+_IS.tabs+'</span><span>⋯</span></div></div>';},
+ /* Chrome pe Android: adresa sus, cele trei puncte în dreapta */
+ chrA:function(){return '<div class="tp-brw top"><div class="tp-row" style="gap:5px"><span class="tp-tbi">⌂</span>'+TI.url("drg2121.github.io")+'<span class="tp-tbi tabs">1</span><span class="tp-tbi" id="cDots">'+_IS.dots+'</span></div></div>';},
+ /* Samsung Internet: bara jos, meniul (≡) în dreapta */
+ sam:function(){return '<div class="tp-brw bot"><div class="tp-url"><span>🔒</span><span class="sp" style="text-align:center">drg2121.github.io</span><span>↻</span></div>'
+  +'<div class="tp-tb" style="color:var(--ink2)"><span>‹</span><span style="opacity:.4">›</span><span>⌂</span><span class="tp-tbi">'+_IS.tabs+'</span><span class="tp-tbi" id="sMenu">'+_IS.menu+'</span></div></div>';},
+ /* calculator: bara de adresă cu iconița de instalare la capătul ei */
+ desk:function(){return '<div class="tp-brw top"><div class="tp-row" style="gap:5px"><span>←</span><span style="opacity:.4">→</span><span>↻</span>'
+  +TI.url("drg2121.github.io/arhilink",'<span class="tp-tbi" id="dInst" style="color:var(--acc)">'+_IS.inst+'</span><span>☆</span>')+'<span class="tp-tbi">'+_IS.dots+'</span></div></div>';},
+ /* Mac: bara de meniu de sus a lui Safari */
+ mac:function(){return '<div class="tp-mac"><span style="font-weight:800">Safari</span><span id="mFile">Fișier</span><span>Editare</span><span>Vizualizare</span><span>Istoric</span><span>Marcaje</span></div>';},
+ /* foaia „Partajează” din iOS, cu „Adaugă la ecranul principal” în listă */
+ shareSheet:function(id,addId){return '<div class="tp-dim" id="'+id+'_d"></div><div class="tp-sh" id="'+id+'" style="padding:8px 10px 10px">'
+  +'<div class="tp-row"><span class="tp-lg"></span><span class="sp"><b style="font-size:9px;display:block">ArhiLink</b><span class="tp-m" style="font-size:7.5px">drg2121.github.io</span></span><span style="color:var(--ink3);font-size:12px">×</span></div>'
+  +'<div class="tp-apps"><i style="background:#25D366"></i><i style="background:#0a84ff"></i><i style="background:#ff9f0a"></i><i style="background:#bf5af2"></i><i style="background:#8e8e93"></i></div>'
+  +'<div class="tp-shl"><div class="r"><span>Copiază</span><i>⧉</i></div><div class="r"><span>Adaugă la lista de lecturi</span><i>≣</i></div><div class="r"><span>Adaugă un semn de carte</span><i>'+_IS.book+'</i></div>'
+  +'<div class="r"><span>Adaugă la Favorite</span><i>☆</i></div><div class="r"><span>Caută în pagină</span><i>⌕</i></div><div class="r" id="'+addId+'"><span>Adaugă la ecranul principal</span><i>'+_IS.add+'</i></div></div></div>';},
+ /* fereastra iOS „Adaugă la ecranul principal”, cu „Adaugă” sus în dreapta */
+ iosAdd:function(id,okId){return '<div class="tp-dim" id="'+id+'_d"></div><div class="tp-sh" id="'+id+'">'
+  +'<div class="tp-row" style="font-size:8.5px"><span style="color:#2f7cf6">Anulează</span><b class="sp" style="text-align:center;font-size:9px">Adaugă la ecranul principal</b><b id="'+okId+'" style="color:#2f7cf6;padding:3px 4px;border-radius:5px">Adaugă</b></div>'
+  +'<div class="tp-row" style="margin-top:9px"><span class="tp-lg"></span><span class="sp"><div class="tp-f" style="padding:4px 7px;min-height:0">ArhiLink</div><div class="tp-m" style="font-size:7px;margin-top:2px">https://drg2121.github.io/arhilink/</div></span></div>'
+  +'<div class="tp-m" style="font-size:7.5px;margin-top:8px">Se adaugă o iconiță pe ecranul principal, ca să deschizi repede acest site.</div></div>';},
+ /* meniul Chrome pe Android (cele trei puncte) */
+ chrMenu:function(id,addId){return '<div class="tp-dim" id="'+id+'_d"></div><div class="tp-menu" id="'+id+'">'
+  +'<div class="tp-row" style="justify-content:space-around;padding:2px 6px 6px;border-bottom:1px solid var(--bd);font-size:10px"><span>→</span><span>☆</span><span>⤓</span><span>ⓘ</span><span>↻</span></div>'
+  +['Filă nouă','Filă incognito nouă','Istoric','Descărcări','Marcaje','Partajează…','Caută în pagină'].map(function(t){return '<div class="mi">'+t+'</div>';}).join("")
+  +'<div class="mi" id="'+addId+'">Adaugă pe ecranul de pornire</div><div class="mi">Site pentru desktop</div></div>';},
+ /* fereastra Android „Adaugă pe ecranul de pornire” */
+ andAdd:function(id,okId,t,ok,no){return '<div class="tp-dim" id="'+id+'_d"></div><div class="tp-sh" id="'+id+'"><b style="font-size:9.5px">'+esc(t||"Adaugă pe ecranul de pornire")+'</b>'
+  +'<div class="tp-row" style="margin-top:8px"><span class="tp-lg"></span><span class="sp"><b style="font-size:9px;display:block">ArhiLink</b><span class="tp-m" style="font-size:7.5px">drg2121.github.io</span></span></div>'
+  +'<div class="tp-row" style="justify-content:flex-end;gap:16px;margin-top:12px;font-size:8.5px;font-weight:800;color:#1a73e8"><span>'+esc(no||"Anulează")+'</span><span id="'+okId+'" style="padding:3px 5px;border-radius:5px">'+esc(ok||"Adaugă")+'</span></div></div>';},
+ /* meniul Samsung Internet, pe grilă, apoi lista „Adaugă pagina la” */
+ samMenu:function(id,addId){var it=[['Descărcări'],['Istoric'],['Marcaje'],['Salvează pagina'],['Partajează'],['Adaugă pagina la',addId],['Setări'],['Mod întunecat'],['Text mare']];
+  return '<div class="tp-dim" id="'+id+'_d"></div><div class="tp-sh" id="'+id+'"><div class="tp-grid3">'+it.map(function(x){return '<div class="g"'+(x[1]?(' id="'+x[1]+'"'):'')+'><i></i>'+x[0]+'</div>';}).join("")+'</div></div>';},
+ samSub:function(id,homeId){return '<div class="tp-dim" id="'+id+'_d"></div><div class="tp-sh" id="'+id+'"><b style="font-size:9.5px">Adaugă pagina la</b><div class="tp-shl" style="margin-top:4px">'
+  +'<div class="r"><span>Marcaje</span><i>☆</i></div><div class="r"><span>Comenzi rapide</span><i>⚡</i></div><div class="r" id="'+homeId+'"><span>Ecranul de pornire</span><i>'+_IS.add+'</i></div><div class="r"><span>Salvează pagina web</span><i>⤓</i></div></div></div>';},
+ /* fereastra de instalare din Chrome / Edge pe calculator */
+ deskPop:function(id,okId){return '<div class="tp-dim" id="'+id+'_d"></div><div class="tp-menu" id="'+id+'" style="width:74%;padding:9px 10px"><b style="font-size:9px">Instalezi aplicația?</b>'
+  +'<div class="tp-row" style="margin-top:7px"><span class="tp-lg"></span><span class="sp"><b style="font-size:9px;display:block">ArhiLink</b><span class="tp-m" style="font-size:7.5px">drg2121.github.io</span></span></div>'
+  +'<div class="tp-row" style="justify-content:flex-end;gap:6px;margin-top:9px">'+TP.b("Anulează")+TP.b("Instalează",{pri:1,id:okId})+'</div></div>';},
+ /* meniul „Fișier” din Safari pe Mac */
+ macMenu:function(id,dockId){return '<div class="tp-dim" id="'+id+'_d"></div><div class="tp-menu tl" id="'+id+'">'
+  +['Fereastră nouă','Fereastră privată nouă','Filă nouă','Deschide fișierul…','Închide fereastra'].map(function(t){return '<div class="mi">'+t+'</div>';}).join("")
+  +'<div class="mi" style="border-top:1px solid var(--bd);margin-top:3px;padding-top:6px">Salvează ca…</div><div class="mi" id="'+dockId+'">Adaugă în Dock…</div><div class="mi">Exportă ca PDF…</div><div class="mi">Tipărește…</div></div>';},
+ /* ecranul principal al telefonului, cu iconița nouă între celelalte */
+ home:function(iconId){var apps=[["#34c759","Mesaje"],["#0a84ff","Telefon"],["#ff9f0a","Poze"],["#5856d6","Calendar"],["#ff375f","Muzică"],["#30b0c7","Hărți"],["#8e8e93","Setări"]];
+  return '<div class="tp-home"><div class="tp-time">9:41</div><div class="tp-grid">'+apps.map(function(a){return '<span><i style="background:'+a[0]+'"></i>'+a[1]+'</span>';}).join("")
+  +'<span class="me" id="'+iconId+'"><span class="tp-lg"></span>ArhiLink</span></div><div class="tp-dock"><i></i><i></i><i></i><i></i></div></div>';},
+ /* biroul Mac-ului, cu Dock-ul jos */
+ macDesk:function(iconId){return '<div class="tp-desk"><div class="tp-mac" style="border-radius:6px;font-size:7px;padding:4px 7px"><span style="font-weight:800">Finder</span><span>Fișier</span><span>Editare</span><span>Vizualizare</span></div>'
+  +'<div class="tp-dockm"><i></i><i></i><i style="background:#ff9f0a"></i><i style="background:#0a84ff"></i><span id="'+iconId+'" style="display:flex;flex-direction:column;align-items:center;gap:2px;font-size:6.5px;color:#fff;font-weight:800"><span class="tp-lg"></span>ArhiLink</span><i style="background:#34c759"></i></div></div>';},
+ /* fereastra aplicației instalate pe calculator: fără bară de adresă */
+ win:function(){return '<div class="tp-win"><span class="dts"><i style="background:#ff5f57"></i><i style="background:#febc2e"></i><i style="background:#28c840"></i></span><span class="sp" style="text-align:center">ArhiLink</span><span class="tp-tbi">'+_IS.dots+'</span></div>';}
+};
+
+/* --- cele șase demonstrații --- */
+var _INST_DONE="ArhiLink e pe ecranul principal",_INST_DONE_SUB="Se deschide pe tot ecranul, fără bara browserului, ca o aplicație.";
+function _instDemo(k){var app=TP.hd()+_TS.prog,H="Cum pui ArhiLink pe ecranul principal",D={k:"demo",h:H,plat:_PLAT_LBL[k],done:_INST_DONE,doneSub:_INST_DONE_SUB};
+ if(k==="ios_saf"||k==="ios_chr"){var saf=(k==="ios_saf"),sid=saf?"sShare":"cShare";
+  D.steps=[["Apasă „Partajează”",saf?"Pătratul cu săgeată în sus, în bara de jos a lui Safari.":"Pătratul cu săgeată în sus, în dreapta barei de adresă."],
+   ["Alege „Adaugă la ecranul principal”","Derulează lista în jos dacă nu o vezi imediat."],
+   ["Apasă „Adaugă”","Sus, în dreapta. Numele poate rămâne ArhiLink."],
+   ["Gata — iconița e pe ecran","De acum deschizi ArhiLink de acolo, ca pe orice aplicație."]];
+  D.sc=[saf?(app+TI.saf()):(TI.chrI()+app+TI.chrIbot()),TI.home("hIcon")];
+  D.ov=TI.shareSheet("shS","shAdd")+TI.iosAdd("shA","shOk");
+  D.run=[[0,"step",1],[0,"show"],[200,"curEl",sid],[1200,"tap"],[1400,"sh","shS"],
+   [2300,"step",2],[2500,"curEl","shAdd"],[3500,"tap"],[3550,"cls","shAdd","sel"],[3800,"shx","shS"],[3900,"sh","shA"],
+   [4700,"step",3],[4900,"curEl","shOk"],[5800,"tap"],[5850,"cls","shOk","sel"],[6100,"shx","shA"],[6200,"scr",1],
+   [6900,"step",4],[7100,"curEl","hIcon"],[8000,"tap"],[8600,"step",99],[8700,"hide"],[12200,"loop"]];}
+ else if(k==="and_chr"){
+  D.steps=[["Apasă pe cele trei puncte","Sus, în dreapta barei de adresă."],
+   ["Alege „Adaugă pe ecranul de pornire”","La unele telefoane scrie „Instalează aplicația” — e același lucru."],
+   ["Confirmă cu „Adaugă” sau „Instalează”","Uneori Chrome întreabă încă o dată; apasă tot „Adaugă”."],
+   ["Gata — iconița e pe ecran","De acum deschizi ArhiLink de acolo, ca pe orice aplicație."]];
+  D.sc=[TI.chrA()+app+TP.nv("prog"),TI.home("hIcon")];
+  D.ov=TI.chrMenu("cM","mAdd")+TI.andAdd("aA","aOk");
+  D.run=[[0,"step",1],[0,"show"],[200,"curEl","cDots"],[1200,"tap"],[1400,"sh","cM"],
+   [2300,"step",2],[2500,"curEl","mAdd"],[3500,"tap"],[3550,"cls","mAdd","sel"],[3800,"shx","cM"],[3900,"sh","aA"],
+   [4700,"step",3],[4900,"curEl","aOk"],[5800,"tap"],[5850,"cls","aOk","sel"],[6100,"shx","aA"],[6200,"scr",1],
+   [6900,"step",4],[7100,"curEl","hIcon"],[8000,"tap"],[8600,"step",99],[8700,"hide"],[12200,"loop"]];}
+ else if(k==="and_sam"){
+  D.steps=[["Apasă pe meniu (cele trei linii)","Jos, în dreapta."],
+   ["Alege „Adaugă pagina la”","E printre pătrățelele meniului."],
+   ["Alege „Ecranul de pornire”, apoi „Adăugare”","Numele poate rămâne ArhiLink."],
+   ["Gata — iconița e pe ecran","De acum deschizi ArhiLink de acolo, ca pe orice aplicație."]];
+  D.sc=[app+TI.sam(),TI.home("hIcon")];
+  D.ov=TI.samMenu("sM","sAdd")+TI.samSub("sM2","sHome")+TI.andAdd("sA","sOk","Adaugă la ecranul de pornire","Adăugare","Anulare");
+  D.run=[[0,"step",1],[0,"show"],[200,"curEl","sMenu"],[1200,"tap"],[1400,"sh","sM"],
+   [2300,"step",2],[2500,"curEl","sAdd"],[3500,"tap"],[3550,"cls","sAdd","sel"],[3800,"shx","sM"],[3900,"sh","sM2"],
+   [4700,"step",3],[4900,"curEl","sHome"],[5800,"tap"],[5850,"cls","sHome","sel"],[6100,"shx","sM2"],[6200,"sh","sA"],
+   [6900,"curEl","sOk"],[7800,"tap"],[7850,"cls","sOk","sel"],[8100,"shx","sA"],[8200,"scr",1],
+   [8900,"step",4],[9100,"curEl","hIcon"],[10000,"tap"],[10600,"step",99],[10700,"hide"],[14200,"loop"]];}
+ else if(k==="desk_chr"){
+  D.steps=[["Apasă pe iconița de instalare","În bara de adresă, la capătul din dreapta: un ecran cu o săgeată în jos."],
+   ["Apasă „Instalează”","Dacă nu vezi iconița: meniul cu trei puncte → „Salvează și partajează” → „Instalează pagina ca aplicație”."],
+   ["Gata — ArhiLink se deschide ca o aplicație","În fereastra ei, fără bara de adresă; o găsești în Start, în Dock sau pe desktop."]];
+  D.sc=[TI.desk()+app+TP.nv("prog"),TI.win()+app+TP.nv("prog")];
+  D.ov=TI.deskPop("dP","dOk");
+  D.run=[[0,"step",1],[0,"show"],[200,"curEl","dInst"],[1200,"tap"],[1400,"sh","dP"],
+   [2300,"step",2],[2500,"curEl","dOk"],[3500,"tap"],[3550,"prs","dOk"],[3900,"shx","dP"],[4000,"scr",1],
+   [4700,"step",3],[4800,"hide"],[5600,"step",99],[9200,"loop"]];}
+ else{/* mac_saf */
+  D.steps=[["Deschide meniul „Fișier”","În bara de sus a lui Safari (macOS Sonoma sau mai nou)."],
+   ["Alege „Adaugă în Dock…”","Numele poate rămâne ArhiLink."],
+   ["Apasă „Adaugă”",""],
+   ["Gata — ArhiLink e în Dock","Se deschide în fereastra ei, ca o aplicație."]];
+  D.sc=[TI.mac()+app+TP.nv("prog"),TI.macDesk("mIcon")];
+  D.ov=TI.macMenu("mM","mDock")+TI.andAdd("mA","mOk","Adaugă în Dock","Adaugă","Anulează");
+  D.run=[[0,"step",1],[0,"show"],[200,"curEl","mFile"],[1200,"tap"],[1400,"sh","mM"],
+   [2300,"step",2],[2500,"curEl","mDock"],[3500,"tap"],[3550,"cls","mDock","sel"],[3800,"shx","mM"],[3900,"sh","mA"],
+   [4700,"step",3],[4900,"curEl","mOk"],[5800,"tap"],[5850,"cls","mOk","sel"],[6100,"shx","mA"],[6200,"scr",1],
+   [6900,"step",4],[7100,"curEl","mIcon"],[8000,"tap"],[8600,"step",99],[8700,"hide"],[12200,"loop"]];}
+ return D;}
+
+/* tutorialul: la fiecare deschidere se rearanjează după dispozitivul de acum (vezi tutOpen) */
+TUT.D["install"]={t:"Aplicația pe ecranul principal",sub:"cum salvezi ArhiLink ca aplicație — pe iPhone, Android sau calculator",ic:_IS.add,s:[]};
+function _instPrep(){var d=TUT.D.install;if(!d)return;var p=_platInfo(),ord=_instOrder(p);
+ d.s=ord.map(function(k,i){var s=_instDemo(k);s.eb=(i===0?"Pe dispozitivul tău · ":"Alt dispozitiv · ")+_PLAT_LBL[k];
+  if(i===0){var n=_instNote(p);if(n)s.p=n;if(_bipEvt&&!p.installed)s.go={label:"instalarea directă",run:_instPrompt};}
+  return s;});}
+/* turul de la prima deschidere primește și el demonstrația potrivită, înaintea celei cu „?” —
+   dar nu și pe telefonul unde aplicația e deja pe ecranul principal */
+(function(){try{if(_isInstalled())return;var p=_platInfo(),k=_instOrder(p)[0];
+ ["start","vestitor"].forEach(function(t){var d=TUT.D[t];if(!d||!d.s||!d.s.length)return;
+  var s=_instDemo(k);s.eb="Pe dispozitivul tău · "+_PLAT_LBL[k];var n=_instNote(p);if(n)s.p=n;
+  d.s.splice(d.s.length-1,0,s);});}catch(e){}})();
+
 TUT.A["lite.meu"]="vestitor";
 TUT.A["lite.prez"]="arh.prez";
 TUT.A["lite.cur"]="arh.cur";
@@ -13386,7 +13814,8 @@ TUT.A["prog.duty"]="prog.sarc";
    +'De aici le poți deschide pe toate.</div>'
    +'<button class="btn ghost sm" style="width:100%" onclick="tutIndex()">Vezi toate tutorialele</button>'
    +'<button class="btn ghost sm" style="width:100%;margin-top:8px" onclick="tutOpen(\'start\')">Bun venit în ArhiLink</button>'
-   +'<button class="btn ghost sm" style="width:100%;margin-top:8px" onclick="tutOpen(\'vestitor\')">Pentru vestitori</button>';}
+   +'<button class="btn ghost sm" style="width:100%;margin-top:8px" onclick="tutOpen(\'vestitor\')">Pentru vestitori</button>'
+   +'<button class="btn ghost sm" style="width:100%;margin-top:8px" onclick="tutInstall()">Aplicația pe ecranul principal</button>';}
  /* Setările administratorului sunt făcute din carduri „setcard" (cu stilul lor scris
     chiar de `renderSet`); Setările celorlalți, din carduri „group gp", din foaia
     principală. Ne îmbrăcăm după ecranul în care intrăm, altfel cardul ar ieși gol
