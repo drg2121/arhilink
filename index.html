@@ -2869,7 +2869,10 @@ function ensureGrpCSS(){if(document.getElementById("grpcss"))return;var st=docum
 +".hlgav{color:var(--tealtx,var(--teal))!important;background:linear-gradient(135deg,rgba(53,195,179,.18),transparent)!important}.hlgav svg{width:19px;height:19px}"
 +".hlbar{display:flex;align-items:center;gap:8px;padding:8px 2px 4px}.hlbar .hlmon{flex:1;text-align:center;font-size:16px;font-weight:800;color:var(--ink);line-height:1.2}.hlbar .gtag{vertical-align:2px}"
 +".hlnb{width:34px;height:34px;border-radius:50%;border:1px solid var(--bd);background:var(--surf);color:var(--ink2);display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;font-size:18px;line-height:1;flex:0 0 auto}.hlnb:disabled{opacity:.35;cursor:default}.hlnb svg{width:16px;height:16px}"
-+".hlaux{display:flex;align-items:flex-start;gap:10px;padding:8px 4px 10px;cursor:pointer;font-size:13.5px;color:var(--ink)}.hlaux input{margin-top:1px;flex:0 0 auto}.hlaux .muted{display:block;font-size:11.5px;margin-top:2px}"
++".hlrow{position:relative}.hlsw{cursor:pointer;user-select:none}.hlsw input{position:absolute;opacity:0;width:0;height:0;margin:0}"
++".hlsw i{position:relative;width:46px;height:28px;border-radius:999px;background:var(--surf2);border:1px solid var(--bd);flex:0 0 auto;transition:background .2s,border-color .2s}"
++".hlsw i::after{content:'';position:absolute;top:2px;left:2px;width:22px;height:22px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.3);transition:transform .2s}"
++".hlsw input:checked+i{background:var(--acc);border-color:var(--acc)}.hlsw input:checked+i::after{transform:translateX(18px)}"
 +".hlstats{display:flex;gap:8px;margin:4px 0 10px}.hlstats .ps-cell{padding:11px 6px;min-width:0}.hlstats .ps-cell.act{cursor:pointer}.hlstats .ps-cell.act:active{transform:scale(.98)}.hlstats .ps-v{font-size:23px;line-height:1.1;white-space:nowrap}.hlstats .ps-v small{font-size:11.5px;font-weight:700;color:var(--ink3);margin-left:2px}.hlstats .ps-k{margin-top:3px}.hlstats .ps-k b{color:var(--acc)}"
 +".hlbtns{display:flex;gap:8px;margin-top:12px}.hlbtns .btn{flex:1;width:auto;display:flex;align-items:center;justify-content:center;gap:6px}.hlbtns .btn svg{width:16px;height:16px}"
 +".hlrun{display:flex;align-items:center;gap:10px;margin-top:10px;padding:10px 12px;border-radius:12px;background:var(--surf2);border:1px dashed var(--teal)}.hlrun .dot{width:9px;height:9px;border-radius:50%;background:var(--maroon);flex:0 0 auto;animation:hlblink 1.1s infinite}@keyframes hlblink{50%{opacity:.25}}.hlrun .tm{font-size:20px;font-weight:800;font-variant-numeric:tabular-nums;color:var(--ink);display:block;line-height:1.1}"
@@ -7238,8 +7241,6 @@ function arhMeuHtml(){ensureGrpCSS();var my=_myBro();var b=S.bros.find(function(
      +'<div class="pio-bar"><div class="pio-fill'+(pDone?' done':'')+'" style="width:'+pPct+'%"></div></div>'
      +'<div class="pio-sub"><span>'+pPct+'%</span>'+(pCr?'<span>credit '+Math.round(pCr)+' h</span>':'')+'<span>'+pRep+'/'+(pR.prM||12)+' luni</span>'+(pSt?'<span>'+pSt+' studii</span>':'')+'<span>'+pPace+'</span></div>'
      +'<div class="muted" style="font-size:11px;margin-top:8px">Apasă pentru rapoartele lunare și fișa S-21.</div></div>';}
-  /* Orele mele — carnetul de teren al lunii; de aici se completează și raportul */
-  h+=_meuHoursHtml(my,b);
   /* Raportul meu — cardul apare MEREU, pentru oricine are un vestitor asociat (administrator,
      editor sau vestitor). Nu mai depinde de anul teocratic ales: în septembrie, luna de raportat
      (august) ține de anul trecut, iar înainte cardul dispărea cu totul din "Profilul meu".
@@ -7256,6 +7257,8 @@ function arhMeuHtml(){ensureGrpCSS();var my=_myBro();var b=S.bros.find(function(
      +'<button class="btn '+(sent?'ghost':'pri')+' sm" style="width:100%;margin-top:11px" onclick="hlReport(\''+meuK+'\')">'+(sent?"Editează raportul":"Completează raportul")+'</button>'
      +(meuK===curK?'<div class="muted" style="font-size:11.5px;margin-top:9px">Luna nu s-a încheiat — poți salva acum și completa mai târziu; raportul se trimite oricum la fel.</div>':'')
      +'</div>';}
+  /* Orele mele — carnetul de teren al lunii, sub raport; de aici se completează și raportul */
+  h+=_meuHoursHtml(my,b);
   /* istoric: lunile dinaintea celei de raportat, cele mai recente primele */
   var past=months.filter(function(m){return cur?m.k<repK:m.k<=repK;}).reverse();
   if(past.length||av.length>1){
@@ -7345,7 +7348,7 @@ function hlCarry(b,k,depth){depth=depth||0;if(depth>24)return 0;var pk=ymShift(k
  return (hlSumE(L)+hlCarry(b,pk,depth+1))%60;}
 function hlTotal(b,k){return hlSumE(hlogOf(b.id,k))+hlCarry(b,k);}
 function hlFmt(min){min=Math.max(0,Math.round(min||0));var h=Math.floor(min/60),m=min%60;
- if(!h)return m+" min";return h+" h"+(m?(" "+m+" min"):"");}
+ if(!min)return "0 h";if(!h)return m+" min";return h+" h"+(m?(" "+m+" min"):"");}
 function _hlMonthLc(k){return RO_MONTHS[ymM(k)];}
 function _hlDMY(d){var p=String(d||"").split("-");return p.length===3?(p[2]+"."+p[1]):d;}
 /* lunile din card: luna în curs + 12 în urmă (aceleași ca în selectorul raportului) */
@@ -7358,6 +7361,8 @@ function hlGo(k){hlK=k;renderMeu();}
 
 /* --- secțiunea din „Profilul meu": pliată la început, ca celelalte; rămâne deschisă cât lucrezi în ea --- */
 var hlOpen=false,hlEntOpen=false;
+/* comutator (în loc de bifă): eticheta în stânga, butonul glisant în dreapta */
+function _hlSw(lbl,on,onchange){return '<label class="hlrow hlsw"><span>'+lbl+'</span><input type="checkbox" '+(on?"checked":"")+' onchange="'+onchange+'"><i></i></label>';}
 function _meuHoursHtml(my,b){if(!my||!b||b.active===false)return "";try{arhEnsureCSS();}catch(e){}
  var nowK=_nowK(),ks=hlKeys(),k=hlCurK(b,ks,nowK),L=hlogOf(my,k)||{e:[]};
  var isPio=hlPio(b,k),canAux=hlCanAux(b,k),auxOn=canAux&&hlAuxOn(b,k),hoursOn=isPio||auxOn;
@@ -7380,7 +7385,6 @@ function _meuHoursHtml(my,b){if(!my||!b||b.active===false)return "";try{arhEnsur
  h+='<div class="hlbar"><button class="hlnb" '+(prevK?('onclick="hlGo(\''+prevK+'\')"'):'disabled')+' title="Luna anterioară">'+IC.back+'</button>'
   +'<span class="hlmon">'+esc(monthName(k))+tag+'</span>'
   +'<button class="hlnb" '+(nextK?('onclick="hlGo(\''+nextK+'\')"'):'disabled')+' title="Luna următoare">'+IC.fwd+'</button></div>';
- if(canAux)h+='<label class="hlaux"><input type="checkbox" '+(auxOn?"checked":"")+' onchange="hlAuxTog(\''+k+'\',this.checked)"><span><b>Pionier auxiliar în '+esc(_hlMonthLc(k))+'</b><span class="muted">'+(auxOn?'orele de mai jos intră în raport, împreună cu bifa de auxiliar':'bifezi și poți nota orele; altfel se numără doar studiile și participarea')+'</span></span></label>';
  if(hoursOn){var tH=Math.floor(tot/60),tM=tot%60,pct=Math.min(100,Math.round(tot/gm*100)),rem=Math.max(0,gm-tot);
   h+='<div class="hlstats"><div class="ps-cell"><div class="ps-v">'+tH+'<small>h</small>'+(tM?(' '+tM+'<small>min</small>'):'')+'</div><div class="ps-k">ore în lună</div></div>'
    +'<div class="ps-cell act" onclick="hlGoalSheet(\''+k+'\')" title="Schimbă obiectivul"><div class="ps-v">'+goal+'<small>h</small></div><div class="ps-k">obiectiv · <b>schimbă</b></div></div>'
@@ -7390,7 +7394,7 @@ function _meuHoursHtml(my,b){if(!my||!b||b.active===false)return "";try{arhEnsur
   if(carry)sub.push('<span>+ '+carry+' min din luna trecută</span>');
   sub.push('<span>'+ent.length+(ent.length===1?' notare':' notări')+'</span>');
   if(done)sub.push('<span class="ok">✓ obiectiv atins</span>');
-  else if(!ended){var last=new Date(ymY(k),ymM(k)+1,0).getDate(),left=Math.max(1,last-new Date().getDate()+1);sub.push('<span>≈ '+hlFmt(Math.ceil(rem/left))+' pe zi până la obiectiv</span>');}
+  else if(!ended){var last=new Date(ymY(k),ymM(k)+1,0).getDate(),left=Math.max(1,last-new Date().getDate()+1);sub.push('<span>≈ '+hlFmt(Math.ceil(rem/left))+' pe zi</span>');}
   else sub.push('<span>au lipsit '+hlFmt(rem)+'</span>');
   h+='<div class="pio-sub" style="padding:0 2px">'+sub.join("")+'</div>';
   h+='<div class="hlbtns"><button class="btn pri sm" onclick="hlAddSheet(\''+k+'\')">'+IC.plus+' Adaugă ore</button>'
@@ -7399,12 +7403,11 @@ function _meuHoursHtml(my,b){if(!my||!b||b.active===false)return "";try{arhEnsur
   h+='<div class="hlrun"><span class="dot"></span><span style="flex:1;min-width:0"><span class="tm" id="hrunEl">'+_hrunTxt(run)+'</span><span class="muted" style="display:block;font-size:11px">pornit la '+_pad2(s0.getHours())+':'+_pad2(s0.getMinutes())+(s0.toDateString()!==new Date().toDateString()?(' · '+_hlDMY(s0.getFullYear()+"-"+_pad2(s0.getMonth()+1)+"-"+_pad2(s0.getDate()))):'')+'</span></span>'
    +'<button class="btn pri sm" style="width:auto;padding:9px 12px" onclick="hlRunStop()">■ Oprește</button><button class="hlnb" title="Renunță, fără să notez" onclick="hlRunCancel()">×</button></div>';
   _hrunArm();}
- /* studiile — pentru toți; participarea — pentru cine nu are ore */
- h+='<div class="hlrows'+((hoursOn||run)?' sep':'')+'">'
-  +'<div class="hlrow"><span>Studii biblice conduse</span><span class="hlctr"><button onclick="hlSt(\''+k+'\',-1)" '+(st<=0?'disabled':'')+' aria-label="Mai puțin">−</button><b>'+st+'</b><button onclick="hlSt(\''+k+'\',1)" aria-label="Mai mult">+</button></span></div>';
- if(!hoursOn){h+='<div class="hlrow"><span>Am participat la predicare în '+esc(_hlMonthLc(k))+'</span><input type="checkbox" '+(L.p===0?"":"checked")+' onchange="hlPart(\''+k+'\',this.checked)" aria-label="Am participat la predicare"></div>';
-  /* ore notate cât timp era bifat auxiliar, apoi bifa scoasă: nu se pierd, dar nu intră în raport */
-  if(ent.length)h+='<div class="muted" style="font-size:11.5px;padding:0 4px 8px">Ai '+hlFmt(hlSumE(L))+' notate în această lună — intră în raport doar dacă bifezi „Pionier auxiliar”.</div>';}
+ /* rândurile: auxiliar (comutator), studii (contor), participare (comutator, doar fără ore) */
+ h+='<div class="hlrows'+((hoursOn||run)?' sep':'')+'">';
+ if(canAux)h+=_hlSw('Pionier auxiliar',auxOn,'hlAuxTog(\''+k+'\',this.checked)');
+ h+='<div class="hlrow"><span>Studii biblice</span><span class="hlctr"><button onclick="hlSt(\''+k+'\',-1)" '+(st<=0?'disabled':'')+' aria-label="Mai puțin">−</button><b>'+st+'</b><button onclick="hlSt(\''+k+'\',1)" aria-label="Mai mult">+</button></span></div>';
+ if(!hoursOn)h+=_hlSw('Am participat la predicare',L.p!==0,'hlPart(\''+k+'\',this.checked)');
  h+='</div>';
  /* notările lunii */
  if(hoursOn&&ent.length){h+='<details class="hlent"'+(hlEntOpen?' open':'')+' ontoggle="hlEntOpen=this.open"><summary>'+IC.hist+' Notările lunii · '+hlFmt(hlSumE(L))+'<span class="chev" style="margin-left:auto">'+IC.chev+'</span></summary><div>'
@@ -7416,10 +7419,9 @@ function _meuHoursHtml(my,b){if(!my||!b||b.active===false)return "";try{arhEnsur
  var rest=hoursOn?(tot%60):0;
  h+='<div class="hlfoot">';
  if(sent)h+='<div style="font-size:12.5px;color:var(--ink2)"><span style="color:var(--tealtx,var(--teal));font-weight:700">✓ raport trimis</span>'+(r?(' · '+_meuInfo(r,b,k)):'')+'</div>'
-  +'<button class="btn ghost sm" style="width:100%;margin-top:10px" onclick="hlReport(\''+k+'\',1)">Actualizează raportul din orele notate</button>';
- else h+='<div style="font-size:12.5px;color:var(--ink2)">Raportul pe '+esc(_hlMonthLc(k))+': '+rep.join(' · ')+(rest?(' <span class="muted">· '+rest+' min trec în '+esc(_hlMonthLc(ymShift(k,1)))+'</span>'):'')+'</div>'
-  +'<button class="btn '+(ended?'pri':'ghost')+' sm" style="width:100%;margin-top:10px" onclick="hlReport(\''+k+'\',1)">Completează raportul pe '+esc(_hlMonthLc(k))+'</button>'
-  +(ended?'':'<div class="muted" style="font-size:11.5px;margin-top:8px">Luna nu s-a încheiat — poți trimite și acum, cifrele de până azi intră în raport.</div>');
+  +'<button class="btn ghost sm" style="width:100%;margin-top:10px" onclick="hlReport(\''+k+'\',1)">Actualizează raportul</button>';
+ else h+='<div style="font-size:12.5px;color:var(--ink2)">Raport: '+rep.join(' · ')+(rest?(' <span class="muted">· '+rest+' min trec în '+esc(_hlMonthLc(ymShift(k,1)))+'</span>'):'')+'</div>'
+  +'<button class="btn '+(ended?'pri':'ghost')+' sm" style="width:100%;margin-top:10px" onclick="hlReport(\''+k+'\',1)">Completează raportul</button>';
  h+='</div></div></details>';
  return h;}
 
