@@ -2866,19 +2866,18 @@ function ensureGrpCSS(){if(document.getElementById("grpcss"))return;var st=docum
 +".meunext{border:1.5px solid var(--acc)!important}"
 +".meugear{width:38px;height:38px;flex:0 0 auto;display:flex;align-items:center;justify-content:center;border:0;border-radius:50%;background:transparent;color:var(--ink3);cursor:pointer;transition:background .15s,color .15s}"
 +".meugear:hover{background:var(--accsoft);color:var(--acc)}.meugear:active{transform:scale(.94)}.meugear svg{width:21px;height:21px}"
-+".hlc{border:1px solid var(--bd);border-left:4px solid var(--teal);border-radius:16px;background:linear-gradient(135deg,rgba(53,195,179,.13),var(--surf) 60%);padding:14px 16px;margin-bottom:12px}"
-+".hlhd{display:flex;align-items:center;gap:10px}.hlic{width:38px;height:38px;border-radius:12px;background:var(--teal);color:#fff;display:flex;align-items:center;justify-content:center;flex:0 0 auto}.hlic svg{width:20px;height:20px}"
-+".hlttl{flex:1;min-width:0}.hlttl .a-hd{margin:0}.hlmon{display:block;font-size:19px;font-weight:800;color:var(--ink);line-height:1.15}"
-+".hlnav{display:flex;gap:6px;flex:0 0 auto}.hlnb{width:34px;height:34px;border-radius:50%;border:1px solid var(--bd);background:var(--surf);color:var(--ink2);display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;font-size:18px;line-height:1}.hlnb:disabled{opacity:.35;cursor:default}.hlnb svg{width:16px;height:16px}"
-+".hlbig{display:flex;align-items:baseline;gap:6px;flex-wrap:wrap;margin-top:12px;font-size:14px;color:var(--ink2)}.hlbig b{font-size:30px;font-weight:800;color:var(--ink);line-height:1}.hlbig .hlgoal{margin-left:auto;font-size:12.5px;color:var(--ink3)}"
-+".hlgoal button{background:none;border:0;color:var(--acc);font-weight:700;cursor:pointer;font-size:12.5px;padding:0 2px;font-family:inherit}"
++".hlgav{color:var(--tealtx,var(--teal))!important;background:linear-gradient(135deg,rgba(53,195,179,.18),transparent)!important}.hlgav svg{width:19px;height:19px}"
++".hlbar{display:flex;align-items:center;gap:8px;padding:8px 2px 4px}.hlbar .hlmon{flex:1;text-align:center;font-size:16px;font-weight:800;color:var(--ink);line-height:1.2}.hlbar .gtag{vertical-align:2px}"
++".hlnb{width:34px;height:34px;border-radius:50%;border:1px solid var(--bd);background:var(--surf);color:var(--ink2);display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;font-size:18px;line-height:1;flex:0 0 auto}.hlnb:disabled{opacity:.35;cursor:default}.hlnb svg{width:16px;height:16px}"
++".hlaux{display:flex;align-items:flex-start;gap:10px;padding:8px 4px 10px;cursor:pointer;font-size:13.5px;color:var(--ink)}.hlaux input{margin-top:1px;flex:0 0 auto}.hlaux .muted{display:block;font-size:11.5px;margin-top:2px}"
++".hlstats{display:flex;gap:8px;margin:4px 0 10px}.hlstats .ps-cell{padding:11px 6px;min-width:0}.hlstats .ps-cell.act{cursor:pointer}.hlstats .ps-cell.act:active{transform:scale(.98)}.hlstats .ps-v{font-size:23px;line-height:1.1;white-space:nowrap}.hlstats .ps-v small{font-size:11.5px;font-weight:700;color:var(--ink3);margin-left:2px}.hlstats .ps-k{margin-top:3px}.hlstats .ps-k b{color:var(--acc)}"
 +".hlbtns{display:flex;gap:8px;margin-top:12px}.hlbtns .btn{flex:1;width:auto;display:flex;align-items:center;justify-content:center;gap:6px}.hlbtns .btn svg{width:16px;height:16px}"
-+".hlrun{display:flex;align-items:center;gap:10px;margin-top:10px;padding:10px 12px;border-radius:12px;background:var(--surf);border:1px dashed var(--teal)}.hlrun .dot{width:9px;height:9px;border-radius:50%;background:var(--maroon);flex:0 0 auto;animation:hlblink 1.1s infinite}@keyframes hlblink{50%{opacity:.25}}.hlrun .tm{font-size:20px;font-weight:800;font-variant-numeric:tabular-nums;color:var(--ink);display:block;line-height:1.1}"
-+".hlrow{display:flex;align-items:center;justify-content:space-between;gap:10px;padding-top:11px;margin-top:12px;border-top:1px solid var(--bd);font-size:13.5px;color:var(--ink)}"
++".hlrun{display:flex;align-items:center;gap:10px;margin-top:10px;padding:10px 12px;border-radius:12px;background:var(--surf2);border:1px dashed var(--teal)}.hlrun .dot{width:9px;height:9px;border-radius:50%;background:var(--maroon);flex:0 0 auto;animation:hlblink 1.1s infinite}@keyframes hlblink{50%{opacity:.25}}.hlrun .tm{font-size:20px;font-weight:800;font-variant-numeric:tabular-nums;color:var(--ink);display:block;line-height:1.1}"
++".hlrows{margin-top:2px}.hlrows.sep{margin-top:12px;border-top:1px solid var(--bd)}.hlrow{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 4px;font-size:13.5px;color:var(--ink)}.hlrow+.hlrow{border-top:1px solid var(--bd)}.hlrow input[type=checkbox]{flex:0 0 auto}"
 +".hlctr{display:flex;align-items:center;gap:4px}.hlctr button{width:34px;height:34px;border-radius:50%;border:1px solid var(--bd);background:var(--surf);color:var(--ink);font-size:19px;font-weight:700;cursor:pointer;line-height:1;padding:0}.hlctr button:disabled{opacity:.35;cursor:default}.hlctr b{min-width:30px;text-align:center;font-size:17px}"
-+".hlent{margin-top:11px}.hlent summary{cursor:pointer;font-size:12.5px;color:var(--ink2);font-weight:700;list-style:none;display:flex;align-items:center;gap:6px;padding:4px 0}.hlent summary::-webkit-details-marker{display:none}.hlent summary svg{width:15px;height:15px}.hlent summary .chev svg{transition:transform .15s}.hlent[open] summary .chev svg{transform:rotate(90deg)}"
-+".hle{display:flex;align-items:center;gap:10px;padding:8px 2px;border:0;border-bottom:1px solid var(--bd);font-size:13px;width:100%;background:none;color:var(--ink);cursor:pointer;text-align:left;font-family:inherit}.hle:last-child{border-bottom:0}.hle .d{font-weight:700;min-width:44px}.hle .m{font-weight:800;color:var(--tealtx,var(--teal));min-width:64px}.hle .n{flex:1;min-width:0;color:var(--ink3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.hle svg{width:15px;height:15px;color:var(--ink3);flex:0 0 auto}"
-+".hlfoot{margin-top:12px;padding-top:11px;border-top:1px solid var(--bd)}.hlchips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}";
++".hlent{margin-top:4px;border-top:1px solid var(--bd)}.hlent summary{cursor:pointer;font-size:12.5px;color:var(--ink2);font-weight:700;list-style:none;display:flex;align-items:center;gap:6px;padding:10px 4px}.hlent summary::-webkit-details-marker{display:none}.hlent summary svg{width:15px;height:15px}.hlent summary .chev svg{transition:transform .15s}.hlent[open] summary .chev svg{transform:rotate(90deg)}"
++".hle{display:flex;align-items:center;gap:10px;padding:8px 4px;border:0;border-top:1px solid var(--bd);font-size:13px;width:100%;background:none;color:var(--ink);cursor:pointer;text-align:left;font-family:inherit}.hle .d{font-weight:700;min-width:44px}.hle .m{font-weight:800;color:var(--tealtx,var(--teal));min-width:64px}.hle .n{flex:1;min-width:0;color:var(--ink3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.hle svg{width:15px;height:15px;color:var(--ink3);flex:0 0 auto}"
++".hlfoot{margin-top:4px;padding:11px 4px 2px;border-top:1px solid var(--bd)}.hlchips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}";
  document.head.appendChild(st);}
 function grpsAll(){S.grps=S.grps||[];return S.grps;}
 function grpName(id){var g=grpsAll().find(function(x){return x.id===id;});return g?g.name:"";}
@@ -4083,10 +4082,14 @@ function renderSet(){if(!_isAdmin()){renderSetLimited();return;}$("#fab").style.
     ${_curUser()?`<button class="btn ghost sm" style="width:100%;margin-top:6px" onclick="userLogout()">Schimbă utilizatorul / Ieși (${esc(_curUser().n)})</button>`:''}`)
  +_setCard(IC.auto,"Microsoft Forms — rapoarte & prezență",
    odSet?`<span class="on">activ</span>${(st.od.tRap||st.od.tPrez)?` · Raport <b${(st.od.nRap||0)>=180?' class="warn"':''}>${st.od.nRap||0}${st.od.clr?'/200':''}</b> · Prezență <b>${st.od.nPrez||0}${st.od.clr?'/200':''}</b>`:''}`:`<span class="off">nesetat</span> — lipește linkurile OneDrive`,
-   `<div class="muted" style="margin:0 0 10px">Aduce automat răspunsurile din fișierele Excel ale formularelor. Linkul: Forms → <b>Răspunsuri → Deschide în Excel</b>, apoi în OneDrive: <b>Partajare → Oricine are linkul poate vizualiza</b> (fără parolă) → lipește aici.</div>
-    <label class="fl">Link „Raport de activitate"</label><input class="fld" value="${esc((st.od&&st.od.rap)||'')}" placeholder="https://1drv.ms/…" onchange="_od().rap=this.value.trim();save()">
-    <label class="fl" style="margin-top:8px">Link „Prezența întruniri"</label><input class="fld" value="${esc((st.od&&st.od.prez)||'')}" placeholder="https://1drv.ms/…" onchange="_od().prez=this.value.trim();save()">
-    <div class="two" style="margin-top:12px"><button class="btn ghost sm" onclick="odPullRap()">${IC.dl} Adu rapoartele</button><button class="btn ghost sm" onclick="odPullPrez()">${IC.dl} Adu prezența</button></div>
+   `<div class="muted" style="margin:0 0 10px">Aduce răspunsurile din fișierele Excel ale formularelor. Linkul: Forms → <b>Răspunsuri → Deschide în Excel</b>, apoi în OneDrive: <b>Partajare → Oricine are linkul poate vizualiza</b> (fără parolă) → lipește aici.<br><b>Important:</b> la OneDrive personal, Forms scrie în Excel doar când fișierul e deschis în Excel pentru web (cel mai sigur, deschis <b>din Forms</b>: Răspunsuri → „Deschide în Excel”) — „Adu” singur găsește fișierul vechi. Butoanele <b>Excel →</b> deschid Forms sau fișierul, așteaptă răspunsurile noi și importă la final.</div>
+    <label class="fl">Link OneDrive „Raport de activitate"</label><input class="fld" value="${esc((st.od&&st.od.rap)||'')}" placeholder="https://1drv.ms/…" onchange="_od().rap=this.value.trim();save()">
+    <label class="fl" style="margin-top:8px">Link OneDrive „Prezența întruniri"</label><input class="fld" value="${esc((st.od&&st.od.prez)||'')}" placeholder="https://1drv.ms/…" onchange="_od().prez=this.value.trim();save()">
+    <div class="muted" style="margin:12px 0 4px;font-size:12px">Opțional, dar recomandat: linkul paginii <b>Forms → Răspunsuri</b> al fiecărui formular (adresa din bara browserului). Cu el, „Excel →” deschide Forms, iar tu apeși acolo „Deschide în Excel” — singurul mod care trage sigur răspunsurile noi.</div>
+    <label class="fl">Link Forms — răspunsuri „Raport de activitate"</label><input class="fld" value="${esc((st.od&&st.od.frap)||'')}" placeholder="https://forms.office.com/…" onchange="_od().frap=this.value.trim();save()">
+    <label class="fl" style="margin-top:8px">Link Forms — răspunsuri „Prezența întruniri"</label><input class="fld" value="${esc((st.od&&st.od.fprez)||'')}" placeholder="https://forms.office.com/…" onchange="_od().fprez=this.value.trim();save()">
+    <div class="two" style="margin-top:12px"><button class="btn pri sm" onclick="odRefresh('rap')">${IC.auto} Excel → rapoarte</button><button class="btn pri sm" onclick="odRefresh('prez')">${IC.auto} Excel → prezență</button></div>
+    <div class="two" style="margin-top:8px"><button class="btn ghost sm" onclick="odPullRap()">${IC.dl} Adu rapoartele</button><button class="btn ghost sm" onclick="odPullPrez()">${IC.dl} Adu prezența</button></div>
     <button class="btn ghost sm" style="width:100%;margin-top:8px" onclick="odCheckClear()">Verifică dacă poți goli Forms</button>
     <label class="aow" style="margin-top:12px"><input type="checkbox" ${(st.od&&st.od.auto===false)?"":"checked"} onchange="_od().auto=this.checked;save()"><span><b>Adu automat</b> — la deschidere și la fiecare <input type="number" min="10" value="${Math.max(10,(st.od&&+st.od.every)||60)}" class="fld" style="width:64px;display:inline-block;padding:4px 6px;margin:0 3px" onchange="_od().every=Math.max(10,(+this.value)||60);this.value=_od().every;save()"> minute</span></label>
     ${(st.od&&(st.od.tRap||st.od.tPrez))?`<div class="muted" style="margin-top:9px;font-size:11.5px">${st.od.clr?`Se numără doar răspunsurile de după golirea Forms (${fmtDT(st.od.clr)}) · limita: 200/formular.`:`Numerele arată rândurile din fișier (includ și ce ai șters din Forms — contorul real de 200 îl vezi în Forms).`}</div>`:''}`+`<button class="btn ghost sm" style="width:100%;margin-top:8px" onclick="formsSheet()">Lista de nume pentru Forms</button>`)
@@ -5092,6 +5095,7 @@ var NEWS=[
   ["book","Aplicația pe ecranul principal — tutorial pentru toți","Îți recunoaște telefonul (iPhone sau Android, Safari, Chrome sau Samsung Internet, calculator) și arată pas cu pas, pe telefonul desenat, cum salvezi ArhiLink pe ecranul principal. Îl găsești în „Profilul meu”, în lista de tutoriale și în Setări. Unde browserul permite, „Instalează acum” face totul dintr-o apăsare."],
   ["star","Pionier auxiliar cu o bifă","Vestitorul obișnuit bifează „Pionier auxiliar în luna…” și poate nota orele; fără bifă numără doar studiile biblice și participarea."],
   ["edit","Raportul, completat din carnet","La sfârșitul lunii apeși „Completează raportul” chiar din card: orele întregi, studiile și bifa de auxiliar sunt deja trecute. Minutele rămase trec în luna următoare, ca la pionieri."],
+  ["sync","Microsoft Forms: „Actualizează din Excel”","La OneDrive personal, Forms scrie răspunsurile în fișierul Excel doar când fișierul e deschis în Excel pentru web — de aceea trebuia să intri tu în Excel înainte de sincronizare. Acum butonul „Actualizează din Excel” (Rapoarte, Prezență, Setări) deschide Forms sau fișierul pentru tine, urmărește OneDrive până apar rândurile noi și pornește importul singur. Pune în Setări și linkul paginii Forms → Răspunsuri: deschis de acolo, Excel trage sigur răspunsurile."],
   ["check","Numele întregi pe foaia de Sarcini","Pe PDF-ul Audio-Video / Ordine / Curățenie numele lungi se tăiau („COMANACHE Ra”). Coloana numelor e mai lată, iar ce nu încape trece pe al doilea rând."]
  ]},
  {v:"3.7.2",label:"3.7.2",d:"03.09.2026",t:"La prima deschidere, turul aplicației",items:[
@@ -6587,7 +6591,9 @@ function arhRapHtml(){ensureGrpCSS();var h=arhMonthPicker();
    +'<div style="display:flex;align-items:center;gap:9px">'
     +'<div style="flex:1;min-width:0"><div style="height:8px;border-radius:99px;background:var(--surf2);border:1px solid var(--bd);overflow:hidden"><div style="width:'+pct+'%;height:100%;background:var(--acc);border-radius:99px"></div></div></div>'
     +'<span style="font-size:12.5px;font-weight:800;white-space:nowrap">'+done+'/'+active.length+'</span>'
-    +(showSync?('<button class="arh-yrmng" style="width:40px;height:36px" onclick="odPullRap()" title="Sincronizează cu Forms">'+IC.sync+'</button>'):'')
+    +(showSync?('<button class="arh-yrmng" style="width:40px;height:36px" onclick="odPullRap()" title="Sincronizează cu Forms (fișierul cum e acum)">'+IC.sync+'</button>'
+      /* Forms scrie în Excel doar când fișierul e deschis în Excel pentru web — butonul acesta face pasul și importă */
+      +(od.rap?('<button class="arh-yrmng" style="width:40px;height:36px;border-color:var(--acc);color:var(--acc)" onclick="odRefresh(\'rap\')" title="Actualizează din Excel — deschide fișierul, așteaptă răspunsurile noi și importă">'+IC.auto+'</button>'):'')):'')
    +'</div>'/* sincronizarea rămâne în pagină (ușor de accesat); restul uneltelor sunt în butonul plutitor ⋮ */
    +'<div class="muted" style="margin-top:7px;font-size:11.5px">'+monthName(arhYM)+(arhGrpF?(' · '+esc(arhGrpF==="-"?"Fără grupă":grpName(arhGrpF))):'')+' — '+(miss.length?('<b style="color:var(--maroon)">'+miss.length+' fără raport</b>'):'<b style="color:var(--tealtx,var(--teal))">toate rapoartele introduse ✓</b>')+(showSync&&od.tRap?(' · Forms '+fmtDT(od.tRap)):'')+'</div>'
    +(grpsAll().length?('<select class="fld" style="margin-top:10px" onchange="arhGrpF=this.value;renderArh()"><option value="">Toate grupele</option>'+grpsAll().map(function(g){return '<option value="'+g.id+'" '+(arhGrpF===g.id?"selected":"")+'>'+esc(g.name)+'</option>';}).join("")+'<option value="-" '+(arhGrpF==="-"?"selected":"")+'>Fără grupă</option></select>'):'')
@@ -6723,7 +6729,10 @@ function arhDelReport(id,k){if(!_canEditReport(id))return;var _ex=repOf(id,k);re
 function _odSyncBar(kind){var od=(S.settings&&S.settings.od)||{};if(!_isAdmin())return "";
   var link=kind==="rap"?od.rap:od.prez;var t=kind==="rap"?od.tRap:od.tPrez;
   var info=link?(t?("ultima actualizare: "+fmtDT(t)):"încă nesincronizat"):"linkul OneDrive nu e setat — Setări → Microsoft Forms";
-  return '<div class="rowflex" style="gap:9px;align-items:center;margin:0 2px 12px"><button class="miniact" style="justify-content:center" onclick="'+(kind==="rap"?"odPullRap()":"odPullPrez()")+'">'+IC.sync+' Sincronizează</button><span class="muted" style="font-size:11.5px">'+info+'</span></div>';}
+  return '<div style="margin:0 2px 12px"><div class="rowflex" style="gap:8px;align-items:center;flex-wrap:wrap"><button class="miniact" style="justify-content:center" onclick="'+(kind==="rap"?"odPullRap()":"odPullPrez()")+'">'+IC.sync+' Sincronizează</button>'
+   +(link?('<button class="miniact" style="justify-content:center;border-color:var(--acc);color:var(--acc)" onclick="odRefresh(\''+kind+'\')">'+IC.auto+' Actualizează din Excel</button>'):'')
+   +'<span class="muted" style="font-size:11.5px">'+info+'</span></div>'
+   +(link?'<div class="muted" style="font-size:11px;margin-top:6px">Forms pune răspunsurile noi în fișierul Excel doar când fișierul e deschis în Excel pentru web. „Actualizează din Excel” îl deschide pentru tine, așteaptă și importă la final.</div>':'')+'</div>';}
 /* import rapoarte */
 function arhImportReports(){if(!_needEdit())return;arhPickFile(".xlsx,.xls,.csv").then(function(f){if(!f)return;toast("Citesc Excel…");return xlsxLoad().then(function(){return readSheetsAll(f);}).then(function(sheets){var pr=parseReportAny(sheets);if(!pr.entries.length){toast(pr.why?("Rapoarte: "+pr.why):("Nu am recunoscut coloanele de raport"+(pr.hdrs?(" — antet găsit: „"+pr.hdrs+"”"):"")),8000);return;}odLimitWarn(pr.count,"Raport de activitate");arhReportPreview(pr.entries);});}).catch(function(e){toast("Nu am putut citi fișierul");});}
 function arhReportPreview(entries){var months={};entries.forEach(function(e){e.match=matchBro(e.name);months[e.k]=(months[e.k]||0)+1;});
@@ -7029,6 +7038,73 @@ async function odPullPrez(silent){var od=_od();if(!od.prez){if(!silent)toast("Li
   if(!silent)toast(add.length?("Adăugate "+add.length+" prezențe noi"):"Nimic nou — totul era deja adus");}catch(e){if(!silent)toast("OneDrive: "+odErr(e),5000);}}
 function odAuto(){var od=(S.settings&&S.settings.od)||null;if(!od||!od.auto||!_isAdmin())return;if(!od.rap&&!od.prez)return;var t=Date.now();var min=Math.max(10,(+od.every)||60);if(od.last&&t-od.last<min*60000)return;od.last=t;try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){}/* doar throttle local — fără push */
  if(od.rap)odPullRap(true);if(od.prez)odPullPrez(true);}
+/* ===== „Actualizează din Excel” — pasul pe care îl făceai de mână =====
+   La OneDrive personal (linkuri 1drv.ms), Microsoft Forms scrie răspunsurile noi în fișierul Excel
+   DOAR când fișierul e deschis în Excel pentru web de proprietar. De aici „intru în Excel, abia apoi
+   aplicația vede rândurile noi”. Facem noi pasul: deschidem fișierul într-o filă (contul e deja
+   intrat acolo), urmărim fișierul din OneDrive până se schimbă și pornim importul obișnuit. */
+var _odRef=null;
+function _odSigOf(buf){var u=new Uint8Array(buf),h=5381,n=u.length;for(var i=0;i<n;i+=3){h=(((h<<5)+h)^u[i])>>>0;}return n+":"+h.toString(36);}
+async function _odSig(link){var urls=odCandidates(link),err=null;
+ for(var i=0;i<urls.length;i++){try{var r=await _gfetch(urls[i],{cache:"no-store"},0);
+   if(r.ok){var buf=await r.arrayBuffer();var h=new Uint8Array(buf.slice(0,2));
+    if(h[0]!==0x50||h[1]!==0x4b){err=new Error("răspunsul nu e fișier Excel — dacă linkul are parolă, scoate parola de pe link");continue;}
+    return _odSigOf(buf);}
+   err=new Error(r.status+"");}catch(e){err=e;}}
+ throw err||new Error("necunoscut");}
+function _odRefLbl(kind){return kind==="prez"?"Prezența întruniri":"Raport de activitate";}
+function odRefresh(kind){var od=_od();var link=kind==="prez"?od.prez:od.rap;var fl=String((kind==="prez"?od.fprez:od.frap)||"").trim();
+ if(!link){toast("Lipsește linkul pentru „"+_odRefLbl(kind)+"” — Setări → Microsoft Forms");return;}
+ if(_odRef){odRefreshSheet();toast("Deja urmăresc un fișier — oprește-l întâi dacă vrei altul");return;}
+ /* Uneori fișierul deschis direct din OneDrive nu trage răspunsurile; sigur le trage când e deschis
+    DIN Forms (Răspunsuri → „Deschide în Excel”). Dacă avem linkul paginii Forms, deschidem Forms.
+    Fereastra se deschide chiar la apăsare — altfel browserul o blochează ca pop-up. */
+ var target=fl||link,win=null;try{win=window.open(target,"_blank");}catch(e){win=null;}
+ _odRef={kind:kind,link:link,open:target,viaForms:!!fl,sig0:null,tries:0,max:fl?30:20,every:12000,st:"sig0",win:!!win,t:null,err:""};
+ odRefreshSheet();_odRefRun();}
+async function _odRefRun(){var R=_odRef;if(!R)return;
+ try{R.sig0=await _odSig(R.link);}
+ catch(e){if(_odRef!==R)return;R.st="err";R.err=odErr(e);_odRefPaint();return;}
+ if(_odRef!==R)return;R.st="wait";_odRefPaint();
+ var tick=async function(){if(_odRef!==R)return;R.tries++;_odRefPaint();
+  var sig=null;try{sig=await _odSig(R.link);}catch(e){}
+  if(_odRef!==R)return;
+  if(sig&&sig!==R.sig0){R.st="changed";_odRefPaint();toast("Fișierul Excel s-a actualizat — import…",4000);
+   /* Excel salvează uneori de mai multe ori la rând — lăsăm fișierul să se așeze */
+   R.t=setTimeout(function(){if(_odRef!==R)return;_odRef=null;closeSheet();
+    if(R.kind==="prez")odPullPrez(false);else odPullRap(false);},4000);return;}
+  if(R.tries>=R.max){R.st="timeout";_odRefPaint();return;}
+  R.t=setTimeout(tick,R.every);};
+ R.t=setTimeout(tick,R.every);}
+function odRefreshStop(){var R=_odRef;if(R&&R.t)clearTimeout(R.t);_odRef=null;closeSheet();}
+/* linkul paginii Forms cu răspunsurile: se cere o singură dată, apoi „Actualizează din Excel” deschide Forms */
+async function odFormsLinkAsk(kind){var R=_odRef;if(R&&R.t)clearTimeout(R.t);_odRef=null;closeSheet();
+ var v=await uiPrompt("Linkul paginii Forms cu răspunsurile",(kind==="prez"?_od().fprez:_od().frap)||"",{msg:"În Forms, la formularul „"+_odRefLbl(kind)+"”, deschide fila Răspunsuri și copiază adresa din bara browserului. De aici înainte „Actualizează din Excel” deschide Forms, iar tu apeși acolo „Deschide în Excel”.",attrs:'placeholder="https://forms.office.com/…" inputmode="url" autocapitalize="off"'});
+ if(v==null)return;v=String(v).trim();if(v&&!/^https?:\/\//i.test(v)){toast("Pune un link care începe cu https://");return;}
+ var od=_od();if(kind==="prez")od.fprez=v;else od.frap=v;save();
+ if(v)odRefresh(kind);}
+function odRefreshSheet(){var R=_odRef;if(!R)return;
+ sheet("","Actualizare din Excel — "+_odRefLbl(R.kind),'<div id="odrBody"></div>');_odRefPaint();}
+function _odRefPaint(){var el=document.getElementById("odrBody"),R=_odRef;if(!el||!R)return;
+ var done=(R.st==="changed"||R.st==="timeout"),wait=(R.st==="wait");
+ var H=R.viaForms
+  ?'<div class="muted" style="margin:0 2px 12px">Am deschis <b>Forms</b> într-o filă nouă. Acolo: fila <b>Răspunsuri</b> → <b>Deschide în Excel</b> — așa Forms trage sigur răspunsurile noi în fișier. Aici urmăresc fișierul din OneDrive și pornesc importul de îndată ce se schimbă; poți reveni oricând.</div>'
+  :'<div class="muted" style="margin:0 2px 12px">Forms scrie răspunsurile noi în fișierul Excel <b>doar când fișierul e deschis în Excel pentru web</b>, cu contul congregației. L-am deschis într-o filă nouă; aici urmăresc fișierul din OneDrive și pornesc importul de îndată ce se schimbă. Poți lăsa fila cu Excel deschisă și reveni aici.</div>';
+ H+=_diagRow(R.win?true:false,R.viaForms?"Forms deschis într-o filă nouă":"Excel deschis într-o filă nouă",R.win?(R.viaForms?"acolo: Răspunsuri → „Deschide în Excel”":"dacă cere autentificare, intră cu contul congregației"):("browserul a blocat fereastra — apasă „Deschide "+(R.viaForms?"Forms":"Excel")+"” de mai jos"));
+ H+=_diagRow(R.st==="sig0"?null:(R.st==="err"?false:true),"Fișierul de acum, ținut minte",R.st==="sig0"?"descarc…":(R.st==="err"?R.err:""));
+ H+=_diagRow(wait?null:(R.st==="changed"?true:(R.st==="timeout"?false:null)),"Aștept să apară răspunsurile noi în fișier",wait?("verificarea "+R.tries+" din "+R.max+" · o dată la "+(R.every/1000)+" secunde"):(R.st==="timeout"?"fișierul nu s-a schimbat în 4 minute":""));
+ H+=_diagRow(R.st==="changed"?true:null,"Import în aplicație",R.st==="changed"?"fișierul s-a schimbat — pornesc importul…":"");
+ H+='<div class="rowflex" style="gap:8px;margin-top:16px;flex-wrap:wrap">';
+ if(!R.win)H+='<a class="btn pri sm" style="flex:1;text-align:center;text-decoration:none" href="'+esc(R.open)+'" target="_blank" rel="noopener">Deschide '+(R.viaForms?"Forms":"Excel")+'</a>';
+ if(R.st==="timeout"){H+='<button class="btn pri sm" style="flex:1" onclick="_odRef=null;odRefresh(\''+R.kind+'\')">Mai încearcă</button>'
+  +'<button class="btn ghost sm" style="flex:1" onclick="odRefreshStop();'+(R.kind==="prez"?"odPullPrez()":"odPullRap()")+'">Importă oricum</button>';
+  H+='</div><div class="muted" style="font-size:11.5px;margin-top:10px">Dacă nu au venit răspunsuri noi, fișierul rămâne la fel și nu e nimic de importat.'
+   +(R.viaForms?' Dacă n-ai apucat să apeși „Deschide în Excel” în Forms, fă-o și apasă „Mai încearcă”.':' Uneori fișierul deschis direct nu trage răspunsurile — trebuie deschis <b>din Forms</b> (Răspunsuri → „Deschide în Excel”). Pune linkul paginii Forms și de aici înainte deschidem Forms.')+'</div>';
+  if(!R.viaForms)H+='<button class="btn ghost sm" style="width:100%;margin-top:10px" onclick="odFormsLinkAsk(\''+R.kind+'\')">Pune linkul Forms și reia</button>';}
+ else if(R.st==="err")H+='<button class="btn ghost sm" style="flex:1" onclick="odRefreshStop()">Închide</button></div>';
+ else H+='<button class="btn ghost sm" style="flex:1" onclick="odRefreshStop()">Oprește</button></div>';
+ el.innerHTML=H;}
+
 
 /* ---------- DATELE MELE DE CONTACT (orice rol, doar pe propriul vestitor) ---------- */
 function meContact(){var my=_myBro();var b=S.bros.find(function(x){return x.id===my;});if(!b){toast("Contul nu e legat de un vestitor");return;}
@@ -7280,59 +7356,71 @@ function hlCurK(b,ks,nowK){if(hlK&&ks.indexOf(hlK)>=0)return hlK;
  return nowK;}
 function hlGo(k){hlK=k;renderMeu();}
 
-/* --- cardul din „Profilul meu" --- */
-function _meuHoursHtml(my,b){if(!my||!b||b.active===false)return "";
+/* --- secțiunea din „Profilul meu": pliată la început, ca celelalte; rămâne deschisă cât lucrezi în ea --- */
+var hlOpen=false,hlEntOpen=false;
+function _meuHoursHtml(my,b){if(!my||!b||b.active===false)return "";try{arhEnsureCSS();}catch(e){}
  var nowK=_nowK(),ks=hlKeys(),k=hlCurK(b,ks,nowK),L=hlogOf(my,k)||{e:[]};
  var isPio=hlPio(b,k),canAux=hlCanAux(b,k),auxOn=canAux&&hlAuxOn(b,k),hoursOn=isPio||auxOn;
  var i=ks.indexOf(k),prevK=ks[i+1]||null,nextK=(i>0)?ks[i-1]:null;
  var r=repOf(my,k),sent=!!(r||repHas(my,k)),ended=k<nowK,ent=(L.e||[]).slice().sort(function(a,c){return a.d<c.d?1:(a.d>c.d?-1:0);});
  var run=_hrunGet();if(run&&run.bro!==my)run=null;
- var h='<div class="hlc"><div class="hlhd"><span class="hlic">'+IC.clock+'</span>'
-  +'<span class="hlttl"><span class="a-hd">Orele mele</span><span class="hlmon">'+esc(monthName(k))+'</span></span>'
-  +'<span class="hlnav"><button class="hlnb" '+(prevK?('onclick="hlGo(\''+prevK+'\')"'):'disabled')+' title="Luna anterioară">'+IC.back+'</button>'
-  +'<button class="hlnb" '+(nextK?('onclick="hlGo(\''+nextK+'\')"'):'disabled')+' title="Luna următoare">'+IC.fwd+'</button></span></div>';
- if(canAux){h+='<label class="ckrow2" style="margin:12px 0 0"><input type="checkbox" '+(auxOn?"checked":"")+' onchange="hlAuxTog(\''+k+'\',this.checked)"> Pionier auxiliar în '+esc(_hlMonthLc(k))+'</label>'
-  +(auxOn?'':'<div class="muted" style="font-size:11.5px;margin:3px 0 0 27px">Bifezi și poți nota orele; altfel se numără doar studiile.</div>');}
- if(hoursOn){var tot=hlTotal(b,k),carry=hlCarry(b,k),goal=hlGoal(b,k),gm=goal*60,pct=Math.min(100,Math.round(tot/gm*100)),done=tot>=gm;
-  var tH=Math.floor(tot/60),tM=tot%60;
-  h+='<div class="hlbig"><span><b>'+tH+'</b> h '+(tM?('<b>'+tM+'</b> min'):'')+'</span><span class="hlgoal">din '+goal+' h · <button onclick="hlGoalSheet(\''+k+'\')">schimbă</button></span></div>'
-   +'<div class="pio-bar" style="margin:8px 0 6px"><div class="pio-fill'+(done?' done':'')+'" style="width:'+pct+'%"></div></div>';
+ var st=L.st!=null?+L.st:0,tot=hoursOn?hlTotal(b,k):0,carry=hoursOn?hlCarry(b,k):0,goal=hlGoal(b,k),gm=goal*60,done=hoursOn&&tot>=gm;
+ /* capul pliat: ce contează, dintr-o privire */
+ var sa=[esc(monthName(k))];
+ if(hoursOn)sa.push(hlFmt(tot)+" din "+goal+" h");
+ if(st)sa.push(st+(st===1?" studiu":" studii"));
+ if(canAux&&auxOn)sa.push("pionier auxiliar");
+ sa.push(sent?'<span style="color:var(--tealtx,var(--teal));font-weight:700">✓ raport trimis</span>':(ended?'<span style="color:var(--maroon);font-weight:700">raport de completat</span>':'luna în curs'));
+ var cnt=hoursOn?(Math.floor(tot/60)+" h"):(st?(st+(st===1?" studiu":" studii")):"");
+ var h='<details class="gcard"'+(hlOpen?' open':'')+' ontoggle="hlOpen=this.open"><summary><span class="gav hlgav">'+IC.clock+'</span>'
+  +'<span class="ginfo"><span class="gnm">Orele mele'+(cnt?('<span class="gcnt">'+cnt+'</span>'):'')+(run?'<span class="gcnt" style="background:rgba(244,124,124,.16);color:var(--maroon)">● cronometru</span>':'')+'</span>'
+  +'<span class="gsa">'+sa.join(" · ")+'</span></span></summary><div class="gbody">';
+ /* luna deschisă și starea raportului ei */
+ var tag=sent?'<span class="gtag t2">✓ trimis</span>':(k===nowK?'<span class="gtag">luna în curs</span>':'<span class="gtag" style="background:rgba(244,124,124,.16);color:var(--maroon)">de raportat</span>');
+ h+='<div class="hlbar"><button class="hlnb" '+(prevK?('onclick="hlGo(\''+prevK+'\')"'):'disabled')+' title="Luna anterioară">'+IC.back+'</button>'
+  +'<span class="hlmon">'+esc(monthName(k))+tag+'</span>'
+  +'<button class="hlnb" '+(nextK?('onclick="hlGo(\''+nextK+'\')"'):'disabled')+' title="Luna următoare">'+IC.fwd+'</button></div>';
+ if(canAux)h+='<label class="hlaux"><input type="checkbox" '+(auxOn?"checked":"")+' onchange="hlAuxTog(\''+k+'\',this.checked)"><span><b>Pionier auxiliar în '+esc(_hlMonthLc(k))+'</b><span class="muted">'+(auxOn?'orele de mai jos intră în raport, împreună cu bifa de auxiliar':'bifezi și poți nota orele; altfel se numără doar studiile și participarea')+'</span></span></label>';
+ if(hoursOn){var tH=Math.floor(tot/60),tM=tot%60,pct=Math.min(100,Math.round(tot/gm*100)),rem=Math.max(0,gm-tot);
+  h+='<div class="hlstats"><div class="ps-cell"><div class="ps-v">'+tH+'<small>h</small>'+(tM?(' '+tM+'<small>min</small>'):'')+'</div><div class="ps-k">ore în lună</div></div>'
+   +'<div class="ps-cell act" onclick="hlGoalSheet(\''+k+'\')" title="Schimbă obiectivul"><div class="ps-v">'+goal+'<small>h</small></div><div class="ps-k">obiectiv · <b>schimbă</b></div></div>'
+   +'<div class="ps-cell"><div class="ps-v">'+(done?'✓':(Math.floor(rem/60)+'<small>h</small>'+(rem%60?(' '+(rem%60)+'<small>min</small>'):'')))+'</div><div class="ps-k">'+(done?'obiectiv atins':'mai trebuie')+'</div></div></div>';
+  h+='<div class="pio-bar" style="margin:0 0 6px"><div class="pio-fill'+(done?' done':'')+'" style="width:'+pct+'%"></div></div>';
   var sub=['<span>'+pct+'%</span>'];
   if(carry)sub.push('<span>+ '+carry+' min din luna trecută</span>');
   sub.push('<span>'+ent.length+(ent.length===1?' notare':' notări')+'</span>');
   if(done)sub.push('<span class="ok">✓ obiectiv atins</span>');
-  else if(!ended){var last=new Date(ymY(k),ymM(k)+1,0).getDate(),left=Math.max(1,last-new Date().getDate()+1);sub.push('<span>≈ '+hlFmt(Math.ceil((gm-tot)/left))+' pe zi până la obiectiv</span>');}
-  else sub.push('<span>au lipsit '+hlFmt(gm-tot)+'</span>');
-  h+='<div class="pio-sub">'+sub.join("")+'</div>';
+  else if(!ended){var last=new Date(ymY(k),ymM(k)+1,0).getDate(),left=Math.max(1,last-new Date().getDate()+1);sub.push('<span>≈ '+hlFmt(Math.ceil(rem/left))+' pe zi până la obiectiv</span>');}
+  else sub.push('<span>au lipsit '+hlFmt(rem)+'</span>');
+  h+='<div class="pio-sub" style="padding:0 2px">'+sub.join("")+'</div>';
   h+='<div class="hlbtns"><button class="btn pri sm" onclick="hlAddSheet(\''+k+'\')">'+IC.plus+' Adaugă ore</button>'
-   +(run?'':'<button class="btn ghost sm" onclick="hlRunStart()">▶ Cronometru</button>')+'</div>';
-  if(run){var s0=new Date(run.t0);
-   h+='<div class="hlrun"><span class="dot"></span><span style="flex:1;min-width:0"><span class="tm" id="hrunEl">'+_hrunTxt(run)+'</span><span class="muted" style="display:block;font-size:11px">pornit la '+_pad2(s0.getHours())+':'+_pad2(s0.getMinutes())+(s0.toDateString()!==new Date().toDateString()?(' · '+_hlDMY(s0.getFullYear()+"-"+_pad2(s0.getMonth()+1)+"-"+_pad2(s0.getDate()))):'')+'</span></span>'
-    +'<button class="btn pri sm" style="width:auto;padding:9px 12px" onclick="hlRunStop()">■ Oprește</button><button class="hlnb" title="Renunță, fără să notez" onclick="hlRunCancel()">×</button></div>';
-   _hrunArm();}}
- else if(run){/* cronometrul merge, dar luna deschisă n-are ore — îl arătăm oricum, ca să nu rămână uitat */
-  h+='<div class="hlrun" style="margin-top:12px"><span class="dot"></span><span style="flex:1"><span class="tm" id="hrunEl">'+_hrunTxt(run)+'</span></span><button class="btn pri sm" style="width:auto;padding:9px 12px" onclick="hlRunStop()">■ Oprește</button><button class="hlnb" title="Renunță" onclick="hlRunCancel()">×</button></div>';_hrunArm();}
- /* studiile biblice — pentru toți */
- var st=L.st!=null?+L.st:0;
- h+='<div class="hlrow"><span>Studii biblice conduse</span><span class="hlctr"><button onclick="hlSt(\''+k+'\',-1)" '+(st<=0?'disabled':'')+' aria-label="Mai puțin">−</button><b>'+st+'</b><button onclick="hlSt(\''+k+'\',1)" aria-label="Mai mult">+</button></span></div>';
- if(!hoursOn){h+='<label class="ckrow2" style="margin:10px 0 0"><input type="checkbox" '+(L.p===0?"":"checked")+' onchange="hlPart(\''+k+'\',this.checked)"> Am participat la predicare în '+esc(_hlMonthLc(k))+'</label>';
+   +(run?'':'<button class="btn ghost sm" onclick="hlRunStart()">▶ Cronometru</button>')+'</div>';}
+ if(run){var s0=new Date(run.t0);
+  h+='<div class="hlrun"><span class="dot"></span><span style="flex:1;min-width:0"><span class="tm" id="hrunEl">'+_hrunTxt(run)+'</span><span class="muted" style="display:block;font-size:11px">pornit la '+_pad2(s0.getHours())+':'+_pad2(s0.getMinutes())+(s0.toDateString()!==new Date().toDateString()?(' · '+_hlDMY(s0.getFullYear()+"-"+_pad2(s0.getMonth()+1)+"-"+_pad2(s0.getDate()))):'')+'</span></span>'
+   +'<button class="btn pri sm" style="width:auto;padding:9px 12px" onclick="hlRunStop()">■ Oprește</button><button class="hlnb" title="Renunță, fără să notez" onclick="hlRunCancel()">×</button></div>';
+  _hrunArm();}
+ /* studiile — pentru toți; participarea — pentru cine nu are ore */
+ h+='<div class="hlrows'+((hoursOn||run)?' sep':'')+'">'
+  +'<div class="hlrow"><span>Studii biblice conduse</span><span class="hlctr"><button onclick="hlSt(\''+k+'\',-1)" '+(st<=0?'disabled':'')+' aria-label="Mai puțin">−</button><b>'+st+'</b><button onclick="hlSt(\''+k+'\',1)" aria-label="Mai mult">+</button></span></div>';
+ if(!hoursOn){h+='<div class="hlrow"><span>Am participat la predicare în '+esc(_hlMonthLc(k))+'</span><input type="checkbox" '+(L.p===0?"":"checked")+' onchange="hlPart(\''+k+'\',this.checked)" aria-label="Am participat la predicare"></div>';
   /* ore notate cât timp era bifat auxiliar, apoi bifa scoasă: nu se pierd, dar nu intră în raport */
-  if(ent.length)h+='<div class="muted" style="font-size:11.5px;margin:8px 0 0">Ai '+hlFmt(hlSumE(L))+' notate în această lună — intră în raport doar dacă bifezi „Pionier auxiliar”.</div>';}
+  if(ent.length)h+='<div class="muted" style="font-size:11.5px;padding:0 4px 8px">Ai '+hlFmt(hlSumE(L))+' notate în această lună — intră în raport doar dacă bifezi „Pionier auxiliar”.</div>';}
+ h+='</div>';
  /* notările lunii */
- if(hoursOn&&ent.length){h+='<details class="hlent"><summary>'+IC.hist+' Notările lunii · '+hlFmt(hlSumE(L))+'<span class="chev" style="margin-left:auto">'+IC.chev+'</span></summary><div>'
+ if(hoursOn&&ent.length){h+='<details class="hlent"'+(hlEntOpen?' open':'')+' ontoggle="hlEntOpen=this.open"><summary>'+IC.hist+' Notările lunii · '+hlFmt(hlSumE(L))+'<span class="chev" style="margin-left:auto">'+IC.chev+'</span></summary><div>'
   +ent.map(function(e){return '<button class="hle" onclick="hlAddSheet(\''+k+'\',\''+e.id+'\')"><span class="d">'+esc(_hlDMY(e.d))+'</span><span class="m">'+hlFmt(e.m)+'</span><span class="n">'+esc(e.n||"")+'</span>'+IC.edit+'</button>';}).join("")
   +'</div></details>';}
  /* raportul lunii, din cifrele adunate */
- var rep=[];if(hoursOn)rep.push('<b>'+Math.floor(hlTotal(b,k)/60)+' h</b>');else rep.push(L.p===0?'fără participare':'✓ participare');
+ var rep=[];if(hoursOn)rep.push('<b>'+Math.floor(tot/60)+' h</b>');else rep.push(L.p===0?'fără participare':'✓ participare');
  if(st)rep.push(st+(st===1?' studiu':' studii'));if(canAux&&auxOn)rep.push('pionier auxiliar');
- var rest=hoursOn?(hlTotal(b,k)%60):0;
+ var rest=hoursOn?(tot%60):0;
  h+='<div class="hlfoot">';
  if(sent)h+='<div style="font-size:12.5px;color:var(--ink2)"><span style="color:var(--tealtx,var(--teal));font-weight:700">✓ raport trimis</span>'+(r?(' · '+_meuInfo(r,b,k)):'')+'</div>'
   +'<button class="btn ghost sm" style="width:100%;margin-top:10px" onclick="hlReport(\''+k+'\',1)">Actualizează raportul din orele notate</button>';
  else h+='<div style="font-size:12.5px;color:var(--ink2)">Raportul pe '+esc(_hlMonthLc(k))+': '+rep.join(' · ')+(rest?(' <span class="muted">· '+rest+' min trec în '+esc(_hlMonthLc(ymShift(k,1)))+'</span>'):'')+'</div>'
   +'<button class="btn '+(ended?'pri':'ghost')+' sm" style="width:100%;margin-top:10px" onclick="hlReport(\''+k+'\',1)">Completează raportul pe '+esc(_hlMonthLc(k))+'</button>'
   +(ended?'':'<div class="muted" style="font-size:11.5px;margin-top:8px">Luna nu s-a încheiat — poți trimite și acum, cifrele de până azi intră în raport.</div>');
- h+='</div></div>';
+ h+='</div></div></details>';
  return h;}
 
 /* --- acțiunile cardului --- */
