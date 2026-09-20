@@ -659,7 +659,7 @@ Object.assign(IC,{
  box:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h18v13H3z"/><path d="M3 7l2-4h14l2 4"/><path d="M10 11h4"/></svg>',
  mark:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15.5 4.5l4 4-9.5 9.5H6v-4z"/><path d="M12.5 7.5l4 4M5 21h14"/></svg>'
 });
-const VERSION="3.9.0";
+const VERSION="3.9.1";
 /* Versiunea minima care are voie sa SCRIE in cloud. Se trece in gist la fiecare trimitere;
    un dispozitiv ramas pe un build mai vechi decat atat nu mai poate suprascrie datele —
    doar citeste si se actualizeaza singur. Asa nu mai poate un singur telefon uitat deschis
@@ -5095,11 +5095,11 @@ function startApp(){_dirty=computeDirty();applyTheme();try{bkpMigrate();}catch(e
 var NEWS=[
  {v:"3.9.0",label:"3.9",d:"20.09.2026",t:"Caută orice, vezi luna întreagă, analizează anul",items:[
   ["search","Caută în toată aplicația","Lupa din antet deschide un singur câmp care caută peste tot: vestitori, săptămâni, părți de program, sarcini, ture de la mărturia publică, grupe, responsabilități, cântări, tutoriale și ecranele aplicației. Diacriticele nu contează — „bratu” îl găsește pe „Brațu”. Apeși rezultatul și ajungi fix acolo. De la tastatură: Ctrl/Cmd+K sau „/”."],
-  ["cal","Calendarul lunii, în Programări","A patra foaie: luna întreagă pe o pagină, cu un punct colorat pe fiecare zi — întrunirea din timpul săptămânii, cea de la sfârșit, întrunirile de teren, turele de la mărturia publică și evenimentele. Zilele în care ai TU ceva de făcut sunt colorate. Apeși o zi și dedesubt scrie tot ce e în ea, cu ora."],
+  ["cal","Calendarul lunii, în Programări","A patra foaie. Se deschide pe „Ale mele”: luna cu zilele în care ești TU programat și, dedesubt, ce ai de făcut, cu ora. „Toate” arată luna congregației întregi — întrunirile, terenul, turele de la mărturia publică și evenimentele, fiecare cu punctul lui colorat. Apeși o zi și vezi tot ce e în ea, oricare din cele două ar fi ales."],
   ["chart","Statistici pe anul de serviciu","Secțiune nouă în „Rapoarte și evidențe”: orele pe lună față de anul trecut, vestitorii activi, prezența la cele două întruniri și studiile biblice, în grafice. Plus câți sunt în fiecare categorie. Se descarcă și ca PDF."],
   ["form","Analiza congregației (S-10)","Formularul anual, completat de aplicație acolo unde are de unde: media prezenței, vestitorii activi, cine a devenit inactiv și cine a redevenit activ — cu numele și luna. Teritoriile și celelalte se scriu de mână și rămân salvate pe an. PDF-ul are și o a doua pagină în care scrie de unde vine fiecare cifră."],
   ["check","Săptămâna cerută nu se mai pierde","Din „Profilul meu”, apăsarea pe o sarcină, pe o cuvântare sau pe curățenia grupei ducea în „Programări”, dar pe săptămâna în curs, nu pe cea pe care ai apăsat-o. Acum deschide exact săptămâna aceea."],
-  ["info","Butonul rotund se dă la o parte","Cât derulezi în jos se retrage, ca să nu mai acopere numele scris la capătul rândului („PRICHINDEL Filip” la Citirea Bibliei); la prima mișcare înapoi în sus revine. Antetul strânge iconurile pe telefoanele înguste, ca numele congregației să încapă."]
+  ["info","Mai încăpător pe telefon","Bara celor patru foi arată iconul fiecăreia și numele celei deschise — patru nume întregi nu încăpeau pe un ecran de telefon. Antetul strânge iconurile, ca numele congregației să nu se mai taie. Butonul rotund se retrage cât derulezi în jos, ca să nu mai acopere numele scris la capătul rândului, și revine la prima mișcare în sus."]
  ]},
  {v:"3.8.0",label:"3.8",d:"05.09.2026",t:"Orele mele — carnetul de teren, în Profilul meu",items:[
   ["clock","Orele mele","Un card nou în „Profilul meu”: notezi orele pe zile („Adaugă ore”) sau pornești cronometrul când ieși și îl oprești când termini. Vezi totalul lunii, obiectivul și cât îți mai trebuie pe zi."],
@@ -6280,7 +6280,7 @@ var _arhLastSub=null;
    Așa e la fel pentru toți: se citește într-un loc, se scrie în altul.
    ============================================================================ */
 var progSub="vcp";
-function _progTabs(){return [["vcp","Viața creștină"],["wm","Întrunirea publică"],["sarc","Sarcini"],["cal","Calendar"]];}
+function _progTabs(){return [["vcp","Viața creștină",IC.book],["wm","Întrunirea publică",IC.star],["sarc","Sarcini",IC.mark],["cal","Calendar",IC.cal]];}
 /* O SINGURĂ săptămână pentru tot ecranul: cele trei foi sunt trei fețe ale aceleiași
    săptămâni, deci schimbată pe una, e schimbată pe toate. Înainte fiecare foaie își ținea
    săptămâna ei și o uita la ieșire: treceai de pe „Viața creștină" pe „Întrunirea publică"
@@ -6318,7 +6318,8 @@ function renderProg(){
    scrie direct în #body și nu știe nimic de el. Punerea e idempotentă: dacă bara e deja
    acolo, nu se mai adaugă a doua oară. */
 function _progNavHtml(){return '<div class="segbar">'+_progTabs().map(function(t){
-  return '<button class="seg'+(progSub===t[0]?" on":"")+'" onclick="progGo(\''+t[0]+'\')">'+t[1]+'</button>';}).join("")+'</div>';}
+  return '<button class="seg'+(progSub===t[0]?" on":"")+'" onclick="progGo(\''+t[0]+'\')" title="'+esc(t[1])+'" aria-label="'+esc(t[1])+'">'
+   +'<span class="segic">'+(t[2]||"")+'</span><span class="segtx">'+esc(t[1])+'</span></button>';}).join("")+'</div>';}
 function _progNavFix(){if(tab!=="prog")return;
  var b=$("#body");if(!b||b.querySelector(".segbar"))return;
  b.insertAdjacentHTML("afterbegin",_progNavHtml());}
@@ -14013,31 +14014,61 @@ function ensureAlk39CSS(){if(document.getElementById("alk39css"))return;
 +".fndchip{border:1px solid var(--bd);background:var(--surf);color:var(--ink2);border-radius:999px;font:inherit;font-size:12px;font-weight:600;padding:6px 11px;cursor:pointer}"
 +".fndchip:hover{color:var(--acc);border-color:var(--acc)}"
 /* ---- calendarul lunar ---- */
-+".calhd{display:flex;align-items:center;justify-content:center;gap:10px;margin:2px 0 12px}"
-+".calhd .calnm{font-size:16.5px;font-weight:800;min-width:9.5em;text-align:center}"
-+".calnav{width:34px;height:34px;border-radius:11px;border:1px solid var(--bd);background:var(--surf);color:var(--ink2);display:grid;place-items:center;cursor:pointer;flex:0 0 auto}"
++".calfilt{display:flex;gap:4px;background:var(--surf2);border:1px solid var(--bd);border-radius:12px;padding:3px;margin:0 0 12px}"
++".calfx{flex:1;border:0;background:transparent;color:var(--ink2);border-radius:9px;padding:8px 6px;font:inherit;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}"
++".calfx.on{background:var(--surf);color:var(--acc);box-shadow:0 1px 5px rgba(0,0,0,.10)}"
++".calhd{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:2px 0 10px}"
++".calhd .calnm{flex:1;min-width:0;border:0;background:transparent;color:var(--ink);font:inherit;font-size:16.5px;font-weight:800;text-align:center;cursor:pointer;padding:6px 2px;border-radius:10px}"
++".calhd .calnm:hover{background:var(--surf2)}"
++".calnav{width:36px;height:36px;border-radius:11px;border:1px solid var(--bd);background:var(--surf);color:var(--ink2);display:grid;place-items:center;cursor:pointer;flex:0 0 auto}"
 +".calnav:hover{color:var(--acc);border-color:var(--acc)}.calnav svg{width:16px;height:16px}"
 +".calgrid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}"
 +".caldow{font-size:10.5px;font-weight:800;color:var(--ink3);text-align:center;padding:2px 0 4px;text-transform:uppercase;letter-spacing:.3px}"
-+".calcell{aspect-ratio:1/1;min-height:40px;border:1px solid var(--bd);background:var(--surf);border-radius:11px;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:3px;padding:5px 2px 3px;color:var(--ink2);font:inherit;font-size:13px;font-weight:700;cursor:pointer;overflow:hidden}"
-+".calcell.off{background:transparent;border-color:transparent;color:var(--ink3);opacity:.45;cursor:default}"
-+".calcell.today{border-color:var(--acc);color:var(--acc)}"
++".calcell{aspect-ratio:1/1;min-height:44px;border:1px solid var(--bd);background:var(--surf);border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:2px;color:var(--ink2);font:inherit;cursor:pointer;overflow:hidden}"
++".calcell .cald{font-size:14px;font-weight:700;line-height:1}"
++".calcell.off{background:transparent;border-color:transparent;opacity:0;pointer-events:none}"
++".calcell.today .cald{color:var(--acc)}"
++".calcell.today{border-color:var(--acc)}"
 +".calcell.has{color:var(--ink)}"
 +".calcell.mine{background:var(--accsoft);border-color:var(--acc)}"
++".calcell.pick{background:var(--acc);border-color:var(--acc)}.calcell.pick .cald{color:#fff}"
++".calcell.pick .caldot{background:#fff !important}"
 +".calcell:hover:not(.off){border-color:var(--acc)}"
-+"@media(min-width:560px){.calcell{aspect-ratio:auto;height:62px;min-height:62px;font-size:14px}}"
-+".caldots{display:flex;gap:2.5px;height:6px;align-items:center}"
-+".caldot{width:5px;height:5px;border-radius:50%;flex:0 0 auto}"
-+".calleg{display:flex;flex-wrap:wrap;gap:10px 14px;margin:13px 2px 2px;font-size:11.5px;color:var(--ink3)}"
++"@media(min-width:560px){.calcell{aspect-ratio:auto;height:62px;min-height:62px}.calcell .cald{font-size:15px}}"
++".caldots{display:flex;gap:3px;height:6px;align-items:center}"
++".caldot{width:5.5px;height:5.5px;border-radius:50%;flex:0 0 auto}"
++".calleg{display:flex;flex-wrap:wrap;gap:7px 13px;margin:12px 2px 2px;font-size:11.5px;color:var(--ink3)}"
 +".calleg span{display:inline-flex;align-items:center;gap:6px}"
-+".callist{margin-top:14px}"
-+".caldayh{font-size:12.5px;font-weight:800;color:var(--ink2);margin:14px 2px 7px;text-transform:uppercase;letter-spacing:.3px}"
++".calhint{font-size:12px;color:var(--ink3);line-height:1.5;margin:12px 2px 2px}"
++".calhint b{color:var(--ink2)}"
++".callist{margin-top:16px}"
++".calsec{font-size:10.5px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;color:var(--acc);margin:0 2px 4px}"
++".caldayh{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:12.5px;font-weight:800;color:var(--ink2);margin:14px 2px 7px;text-transform:uppercase;letter-spacing:.3px}"
++".calclr{flex:0 0 auto;border:1px solid var(--bd);background:var(--surf);color:var(--ink2);border-radius:9px;font:inherit;font-size:11px;font-weight:700;text-transform:none;letter-spacing:0;padding:5px 9px;cursor:pointer}"
++".calclr:hover{color:var(--acc);border-color:var(--acc)}"
++".calnone{text-align:center;color:var(--ink3);font-size:13px;padding:22px 14px;line-height:1.6}"
 +".calit{display:flex;gap:10px;align-items:flex-start;background:var(--surf);border:1px solid var(--bd);border-radius:13px;padding:11px 13px;margin-bottom:7px}"
 +".calit .cbar{flex:0 0 auto;width:4px;align-self:stretch;border-radius:2px;min-height:26px}"
 +".calit .ctx{flex:1;min-width:0}"
 +".calit b{display:block;font-size:14px;line-height:1.3}"
 +".calit small{display:block;font-size:11.5px;color:var(--ink3);margin-top:2px;line-height:1.45}"
-+".calit .chh{flex:0 0 auto;font-size:12px;font-weight:800;color:var(--acc)}";
++".calit .chh{flex:0 0 auto;font-size:12px;font-weight:800;color:var(--acc)}"
++".calmy{font-size:10px;font-weight:800;letter-spacing:.4px;text-transform:uppercase;color:var(--acc);background:var(--accsoft);border-radius:5px;padding:1px 5px;margin-left:5px;vertical-align:1px}"
++".segbar .seg .segic{display:none}"
++".segbar .seg svg{width:18px;height:18px}"
++"@media(max-width:470px){"
++".segbar{gap:3px;padding:3px}"
++".segbar .seg{flex:0 0 auto;display:flex;align-items:center;justify-content:center;gap:6px;min-height:42px;padding:8px 11px;white-space:nowrap;font-size:13px}"
++".segbar .seg .segtx{display:none}"
++".segbar .seg.on{flex:1 1 auto;min-width:0}"
++".segbar .seg.on .segtx{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}"
++".segbar .seg .segic{display:flex;flex:0 0 auto}"
++".segbar .seg svg{width:19px;height:19px}"
++"}"
++"@media(max-width:360px){"
++".app .segbar .seg{padding:8px 9px;gap:5px}"
++".app .segbar .seg.on .segtx{font-size:12.5px}"
++"}";
  document.head.appendChild(st);}
 
 function ensureStatCSS(){if(document.getElementById("stcss"))return;
@@ -14474,56 +14505,93 @@ function _calMap(y,m){
  return map;}
 
 var CAL_DOW=["L","Ma","Mi","J","V","S","D"];
+/* Calendarul pornește cu ce te privește pe TINE. Cu toate cele patru feluri deodată,
+   fiecare zi avea trei-patru puncte, legenda ocupa două rânduri, iar lista de dedesubt
+   era a congregației întregi — în ea nu se găsea ce ai TU de făcut, adică tocmai motivul
+   pentru care deschizi calendarul pe telefon. Acum „Ale mele" (pornit din start, dacă ai
+   contul legat de un vestitor) arată doar zilele tale, iar „Toate" arată tot, ca până
+   acum. Apăsarea pe o zi arată ÎNTOTDEAUNA tot ce e în ea, în oricare din cele două. */
+var calMine=null;
+function _calHasMe(){try{return !!_myBro();}catch(e){return false;}}
+function _calMineOn(){if(!_calHasMe())return false;if(calMine==null)calMine=true;return !!calMine;}
+function calSetMine(v){calMine=!!v;calPick=null;renderProg();}
 function calGo(dy){_calInit();var d=new Date(calY,calM+dy,1);calY=d.getFullYear();calM=d.getMonth();calPick=null;renderProg();}
 function calToday(){var d=new Date();calY=d.getFullYear();calM=d.getMonth();calPick=_calKey(d);renderProg();}
 function calSel(k){calPick=(calPick===k)?null:k;renderProg();
  try{var el=document.querySelector(".callist");if(el)el.scrollIntoView({block:"nearest",behavior:"smooth"});}catch(e){}}
 
+function _calItemHtml(it){
+ return '<div class="calit"'+(it.go?(' onclick="'+it.go+'" style="cursor:pointer"'):'')+'>'
+  +'<span class="cbar" style="background:'+CAL_COL[it.k]+'"></span>'
+  +'<span class="ctx"><b>'+esc(it.t)+(it.mine?' <span class="calmy">al tău</span>':'')+'</b>'
+  +(it.s?('<small>'+esc(it.s)+'</small>'):'')+'</span>'
+  +(it.h?('<span class="chh">'+esc(it.h)+'</span>'):'')+'</div>';}
+
 function progCalHtml(){
  ensureAlk39CSS();_calInit();
- var map=_calMap(calY,calM),today=new Date();
- /* luna începe luni, ca în calendarele de pe perete */
- var first=new Date(calY,calM,1),lead=(first.getDay()+6)%7,days=new Date(calY,calM+1,0).getDate();
- var H='<div class="calhd">'
+ var map=_calMap(calY,calM),today=new Date(),onlyMine=_calMineOn(),hasMe=_calHasMe();
+ /* ce se numără pe grilă: în „Ale mele", doar rândurile tale */
+ function shown(k){var all=map[k]||[];return onlyMine?all.filter(function(x){return x.mine;}):all;}
+
+ var H="";
+ if(hasMe)H+='<div class="calfilt">'
+   +'<button class="calfx'+(onlyMine?" on":"")+'" onclick="calSetMine(1)">Ale mele</button>'
+   +'<button class="calfx'+(onlyMine?"":" on")+'" onclick="calSetMine(0)">Toate</button></div>';
+
+ H+='<div class="calhd">'
   +'<button class="calnav" title="Luna trecută" onclick="calGo(-1)">'+IC.back+'</button>'
-  +'<span class="calnm">'+esc(RO_MONTHS_CAP[calM]+" "+calY)+'</span>'
+  +'<button class="calnm" title="Luna în curs" onclick="calToday()">'+esc(RO_MONTHS_CAP[calM]+" "+calY)+'</button>'
   +'<button class="calnav" title="Luna viitoare" onclick="calGo(1)">'+IC.fwd+'</button>'
   +'</div><div class="calgrid">'
   +CAL_DOW.map(function(d){return '<div class="caldow">'+d+'</div>';}).join("");
+ var first=new Date(calY,calM,1),lead=(first.getDay()+6)%7,days=new Date(calY,calM+1,0).getDate();
  for(var i=0;i<lead;i++)H+='<div class="calcell off"></div>';
  for(var dd=1;dd<=days;dd++){
-  var d=new Date(calY,calM,dd),k=_calKey(d),its=map[k]||[];
+  var d=new Date(calY,calM,dd),k=_calKey(d),its=shown(k);
   var kinds=[],mine=false;
   its.forEach(function(x){if(kinds.indexOf(x.k)<0)kinds.push(x.k);if(x.mine)mine=true;});
-  var cls="calcell"+(its.length?" has":"")+(mine?" mine":"")+(_calSameDay(d,today)?" today":"")+(calPick===k?" today":"");
+  var cls="calcell"+(its.length?" has":"")+(mine?" mine":"")+(_calSameDay(d,today)?" today":"")+(calPick===k?" pick":"");
   H+='<button class="'+cls+'" onclick="calSel(\''+k+'\')" aria-label="'+esc(dd+" "+RO_MONTHS_CAP[calM])+'">'
-   +'<span>'+dd+'</span><span class="caldots">'
-   +kinds.slice(0,4).map(function(kk){return '<span class="caldot" style="background:'+CAL_COL[kk]+'"></span>';}).join("")
+   +'<span class="cald">'+dd+'</span><span class="caldots">'
+   +kinds.slice(0,3).map(function(kk){return '<span class="caldot" style="background:'+CAL_COL[kk]+'"></span>';}).join("")
    +'</span></button>';}
  H+='</div>';
- H+='<div class="calleg">'
+
+ /* Legenda are rost doar când pe grilă stau mai multe feluri de puncte. În „Ale mele"
+    punctul are un singur înțeles — „aici ai tu ceva" — iar șase rânduri de legendă ar
+    ocupa mai mult decât calendarul însuși. */
+ if(!onlyMine)H+='<div class="calleg">'
   +'<span><i class="caldot" style="background:'+CAL_COL.mid+'"></i>Viața creștină</span>'
   +'<span><i class="caldot" style="background:'+CAL_COL.wend+'"></i>Întrunirea publică</span>'
   +'<span><i class="caldot" style="background:'+CAL_COL.ft+'"></i>Teren</span>'
   +'<span><i class="caldot" style="background:'+CAL_COL.mp+'"></i>Mărturia publică</span>'
   +'<span><i class="caldot" style="background:'+CAL_COL.ev+'"></i>Evenimente</span>'
-  +(_myBro()?'<span><i class="caldot" style="background:var(--accsoft);border:1.5px solid var(--acc)"></i>zile în care ai tu ceva</span>':'')
   +'</div>';
- /* dedesubt: ziua aleasă, sau — dacă n-ai ales — tot ce a mai rămas din lună de azi încolo */
- var keys=Object.keys(map).sort(),list="";
- if(calPick){keys=keys.filter(function(k){return k===calPick;});
-  if(!keys.length)list='<div class="fndempty">Nimic în ziua aceasta.</div>';}
- else{var tk=_calKey(today);keys=keys.filter(function(k){return k>=tk;});
-  if(!keys.length)list='<div class="fndempty">Nimic de aici încolo în '+esc(RO_MONTHS[calM])+'.<br>Alege o zi pentru ce a fost.</div>';}
- keys.forEach(function(k){
-  var p=k.split("-"),d=new Date(+p[0],+p[1]-1,+p[2]);
-  list+='<div class="caldayh">'+esc(_fmtDayLong(d))+'</div>';
-  (map[k]||[]).slice().sort(function(a,b){return String(a.h||"zz").localeCompare(String(b.h||"zz"));}).forEach(function(it){
-   list+='<div class="calit"'+(it.go?(' onclick="'+it.go+'" style="cursor:pointer"'):'')+'>'
-    +'<span class="cbar" style="background:'+CAL_COL[it.k]+'"></span>'
-    +'<span class="ctx"><b>'+esc(it.t)+(it.mine?' <span class="s10auto">al tău</span>':'')+'</b>'
-    +(it.s?('<small>'+esc(it.s)+'</small>'):'')+'</span>'
-    +(it.h?('<span class="chh">'+esc(it.h)+'</span>'):'')+'</div>';});});
+ else H+='<div class="calhint">Punctele sunt zilele în care ești programat. Apasă orice zi ca să vezi <b>tot</b> ce e în ea.</div>';
+
+ /* --- lista de dedesubt --- */
+ var list="";
+ if(calPick){
+  /* ziua aleasă se arată ÎNTREAGĂ, chiar și în „Ale mele" */
+  var pk=calPick,pp=pk.split("-"),pd=new Date(+pp[0],+pp[1]-1,+pp[2]),all=(map[pk]||[]).slice();
+  list+='<div class="caldayh">'+esc(_fmtDayLong(pd))
+   +'<button class="calclr" onclick="calSel(\''+pk+'\')">Înapoi la listă</button></div>';
+  if(!all.length)list+='<div class="calnone">Nimic în ziua aceasta.</div>';
+  else{all.sort(function(x,y){return String(x.h||"zz").localeCompare(String(y.h||"zz"));});
+   all.forEach(function(it){list+=_calItemHtml(it);});}
+ }else{
+  var tk=_calKey(today),keys=Object.keys(map).sort().filter(function(k){return k>=tk&&shown(k).length;});
+  if(!keys.length){
+   list+='<div class="calnone">'+(onlyMine
+    ?('Nu ești programat la nimic de aici încolo în '+esc(RO_MONTHS[calM])+'.<br>Apasă o zi ca să vezi ce e în ea, sau treci pe „Toate".')
+    :('Nimic de aici încolo în '+esc(RO_MONTHS[calM])+'.<br>Alege o zi pentru ce a fost.'))+'</div>';}
+  else{
+   if(onlyMine)list+='<div class="calsec">Ce ai tu de făcut</div>';
+   keys.forEach(function(k){
+    var p2=k.split("-"),d2=new Date(+p2[0],+p2[1]-1,+p2[2]);
+    list+='<div class="caldayh">'+esc(_fmtDayLong(d2))+'</div>';
+    shown(k).slice().sort(function(x,y){return String(x.h||"zz").localeCompare(String(y.h||"zz"));})
+     .forEach(function(it){list+=_calItemHtml(it);});});}}
  H+='<div class="callist">'+list+'</div>';
  return H;}
 
@@ -14959,6 +15027,7 @@ function statPdf(){
    LEGĂTURILE CU RESTUL APLICAȚIEI
    ============================================================================ */
 (function(){
+ try{ensureAlk39CSS();}catch(e){}/* bara foilor și calendarul își iau stilul de aici */
  /* --- butonul de căutare din antet, lângă semnul „?" --- */
  function mountFind(){
   var hd=document.querySelector(".head");if(!hd||document.getElementById("btnFind"))return;
@@ -15013,9 +15082,20 @@ function statPdf(){
  st.textContent=".fab{transition:transform .16s ease,opacity .16s ease,background .12s ease}"
   +".fab.fabaway{transform:translateY(96px) scale(.9);opacity:0;pointer-events:none}"
   /* antetul cu cinci iconuri: pe telefon le strângem, ca numele congregației să încapă */
-  +"@media(max-width:430px){.head{gap:6px;padding-left:11px;padding-right:11px}"
-  +".head .icon{width:31px;height:31px;border-radius:10px}.head .icon svg{width:18.5px;height:18.5px}}"
-  +"@media(max-width:360px){.head .icon{width:28px;height:28px}.head .icon svg{width:17px;height:17px}}";
+  +"@media(max-width:430px){"
+  +".app .head{gap:6px;padding-left:10px;padding-right:10px}"
+  +".app .head .icon{width:31px;height:31px;border-radius:10px}"
+  +".app .head .icon svg{width:18.5px;height:18.5px}"
+  +".app .head .htxt h1{font-size:15px}"
+  +".app .head .htxt .sub{font-size:11px}"
+  +"}"
+  +"@media(max-width:360px){"
+  +".app .head{gap:4px;padding-left:8px;padding-right:8px}"
+  +".app .head .logo{width:32px;height:32px;border-radius:10px}"
+  +".app .head .icon{width:29px;height:29px}"
+  +".app .head .icon svg{width:17px;height:17px}"
+  +".app .head .htxt h1{font-size:14.5px}"
+  +"}";
  document.head.appendChild(st);
 })();
 
