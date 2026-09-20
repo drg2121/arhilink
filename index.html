@@ -676,7 +676,7 @@ Object.assign(IC,{
  box:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h18v13H3z"/><path d="M3 7l2-4h14l2 4"/><path d="M10 11h4"/></svg>',
  mark:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15.5 4.5l4 4-9.5 9.5H6v-4z"/><path d="M12.5 7.5l4 4M5 21h14"/></svg>'
 });
-const VERSION="3.10.1";
+const VERSION="3.10.2";
 /* Versiunea minima care are voie sa SCRIE in cloud. Se trece in gist la fiecare trimitere;
    un dispozitiv ramas pe un build mai vechi decat atat nu mai poate suprascrie datele —
    doar citeste si se actualizeaza singur. Asa nu mai poate un singur telefon uitat deschis
@@ -1276,9 +1276,9 @@ function openWeek(i){if(_wkDraft&&_wkDraft.i!==i&&!_wkGuard())return;wkOpen=true
   /* „i"-ul cu detaliile din caiet stă în rândul temei, ca în Programări — sub selector, pe
      rândul lui, arăta ca un buton uitat acolo */
   const inf=(study&&isVisit)?null:infoFor(w,p);
-  const ib=inf?`<button class="vinfo" title="Detalii din caiet" aria-label="Detalii temă" onclick="showPartInfo(${i},'${k}')">${IC.info}</button>`:'';
-  const tt=`<div class="pti ${tdone?'titlehl':''}">${p.num?'<b>'+p.num+'.</b> ':''}${esc(title)}</div>`;
-  Z[z].push(prow(t,`${ib?`<div class="ptiw">${tt}${ib}</div>`:tt}${sel}`,mn));
+  const ib=inf?`<span class="vinfo" role="button" tabindex="0" title="Detalii din caiet" aria-label="Detalii temă" onclick="showPartInfo(${i},'${k}')">${IC.info}</span>`:'';
+  const tt=`<div class="pti ${tdone?'titlehl':''}">${p.num?'<b>'+p.num+'.</b> ':''}${esc(title)}${ib?'&nbsp;'+ib:''}</div>`;
+  Z[z].push(prow(t,`${tt}${sel}`,mn));
   t=addMin(t,mn);if((p.title||"").toLowerCase().includes("citirea")||p.sec==="Predicare")t=addMin(t,1);});
  Z.close.push(prow(t,`<div class="pti">Cuvinte de încheiere</div>`,3));t=addMin(t,3);t=addMin(t,1);
  Z.close.push(prow(t,`${songCell(sC,"s_close")}${isVisit?'<div class="muted" style="font-size:11.5px;margin:2px 0 6px">Cântarea de încheiere o alege supraveghetorul; rugăciunea o poate rosti un frate invitat de el (S-38 §21).</div>':''}${dd("Rugăciune","close_pr",pl,"Rugăciune")}`));
@@ -1318,7 +1318,7 @@ function _vcpStyle(){if(document.getElementById("vcpstyle"))return;const s=docum
  /* Programul pe telefon: tema sus, iar numele DEDESUBT, la stânga, ca niște pastile — nu în
     dreapta, aliniate la margine. În dreapta, un nume lung („AMBROZINSKI- SZABO, Monika") se
     rupea pe două-trei rânduri zimțate, eticheta rămânea singură pe rândul ei, iar tema se
-    subția. Acum eticheta (CURSANT, PARTENER, CITITOR) e mică, cu majuscule, în fața pastilei,
+    subția. Eticheta (CURSANT, PARTENER, CITITOR) e mică, cu majuscule, în fața pastilei,
     și perechea de nume stă pe același rând cât încape, altfel trece firesc pe rândul următor. */
  '.vln{display:flex;flex-direction:column;gap:7px;min-width:0}'
  +'.vln .vnm{display:flex;flex-wrap:wrap;gap:5px 12px;min-width:0}'
@@ -1330,7 +1330,7 @@ function _vcpStyle(){if(document.getElementById("vcpstyle"))return;const s=docum
  +'.vro .vnone{color:var(--ink3);font-weight:600;padding:2px 0}'
  /* pe ecran lat încape tot pe un rând: tema în stânga, numele în dreapta */
  +'@media(min-width:640px){.vln{flex-direction:row;align-items:flex-start;gap:14px}'
- +'.vln>div:first-child{flex:1;min-width:0}'
+ +'.vln .vlt{flex:1;min-width:0}'
  +'.vln .vnm{flex:0 1 auto;max-width:50%;flex-direction:column;align-items:flex-end;gap:4px}'
  +'.vro{justify-content:flex-end}}'
  /* fiecare secțiune a întrunirii își are culoarea și în fundalul antetului, ca pe caiet */
@@ -1341,9 +1341,10 @@ function _vcpStyle(){if(document.getElementById("vcpstyle"))return;const s=docum
     „(30" pe un rând și „min.)" pe următorul, iar titlurile lungi se terminau haotic pe telefon */
  +'.prow .tm{display:flex;flex-direction:column;align-items:flex-start;gap:3px;width:40px;padding-top:9px}'
  +'.prow .tm .tmd{font-size:10px;font-weight:700;line-height:1;color:var(--ink3);letter-spacing:.1px;white-space:nowrap}'
- ''
- +'.ptiw{display:flex;align-items:flex-start;gap:6px}.ptiw .pti{flex:1;min-width:0}'
- +'.vinfo{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;margin:-1px 0 0;padding:0;border:1px solid var(--bd);border-radius:50%;background:var(--surf);color:var(--ink3);cursor:pointer;flex:0 0 auto}.vinfo:hover,.vinfo:active{color:var(--acc);border-color:var(--acc)}.vinfo svg{width:12px;height:12px}';document.head.appendChild(s);}
+ /* „i"-ul cu detaliile din caiet e un semn în linie, la capătul titlului — nu un <button>:
+    pe iPhone butonul lua forma implicită a sistemului, un pătrat gri fără icoană */
+ +'.pti .vinfo{display:inline-flex;align-items:center;justify-content:center;vertical-align:-4px;margin-left:2px;width:19px;height:19px;border-radius:50%;border:1px solid var(--bd);background:var(--surf);color:var(--ink3);cursor:pointer;-webkit-tap-highlight-color:transparent}'
+ +'.pti .vinfo:active{color:var(--acc);border-color:var(--acc)}.pti .vinfo svg{width:11px;height:11px;display:block}';document.head.appendChild(s);}
 function renderVcp(i){_fabDl(vcpDlSheet);_vcpStyle();
  if(typeof i==="number")vcpW=i;
  if(vcpW<0||vcpW>=S.weeks.length)vcpW=vcpCurWeek();
@@ -1380,9 +1381,9 @@ function renderVcp(i){_fabDl(vcpDlSheet);_vcpStyle();
   else sel=vro("",k);
   /* „i" cu detaliile temei din caiet — vizibil pentru TOȚI (și fără drept de editare) */
   const inf=(study&&isVisit)?null:infoFor(w,p);
-  const ib=inf?`<button class="vinfo" title="Detalii din caiet" aria-label="Detalii temă" onclick="showPartInfo(${vcpW},'${k}')">${IC.info}</button>`:'';
-  const tt=`<div class="pti ${tdone?'titlehl':''}">${p.num?'<b>'+p.num+'.</b> ':''}${esc(title)}</div>`;
-  Z[z].push(prow(t,vln(ib?`<div class="ptiw">${tt}${ib}</div>`:tt,sel),mn));
+  const ib=inf?`<span class="vinfo" role="button" tabindex="0" title="Detalii din caiet" aria-label="Detalii temă" onclick="showPartInfo(${vcpW},'${k}')">${IC.info}</span>`:'';
+  const tt=`<div class="pti ${tdone?'titlehl':''}">${p.num?'<b>'+p.num+'.</b> ':''}${esc(title)}${ib?'&nbsp;'+ib:''}</div>`;
+  Z[z].push(prow(t,vln(tt,sel),mn));
   t=addMin(t,mn);if((p.title||"").toLowerCase().includes("citirea")||p.sec==="Predicare")t=addMin(t,1);});
  Z.close.push(prow(t,`<div class="pti">Cuvinte de încheiere</div>`,3));t=addMin(t,3);t=addMin(t,1);
  Z.close.push(prow(t,vln(`<div class="pti">${songLine(sC)}</div>`,vro("Rugăciune","close_pr"))));
@@ -5252,6 +5253,9 @@ function startApp(){_dirty=computeDirty();applyTheme();try{bkpMigrate();}catch(e
    `v` = cheia de „văzut deja"; `label` = versiunea afișată.
    ============================================================================ */
 var NEWS=[
+ {v:"3.10.2",label:"3.10.2",d:"20.09.2026",t:"Programul: semnul „i” la locul lui",items:[
+  ["check","Pătratul gol de sub titlu","Pe iPhone, semnul „i” cu detaliile din caiet apărea ca un pătrat gri, gol, sub titlu: butonul lua forma implicită a sistemului. Acum e un cerc mic la capătul titlului, iar apăsarea deschide detaliile, ca înainte."]
+ ]},
  {v:"3.10.1",label:"3.10.1",d:"20.09.2026",t:"Pe iPhone: bara foilor, banda de sus, durata temei",items:[
   ["info","Bara foilor, fiecare nume pe un rând","„Întrunirea publică” se rupea „pu-blică” pe două rânduri în bara celor patru foi. Acum fiecare foaie e lată cât numele ei, iar numele nu se rupe și nu se desparte niciodată."],
   ["check","Banda de sub bara de sistem","Pe iOS 26 și mai nou, bara de sistem a telefonului lasă să se vadă prin sticlă ce e sub ea — și dedesubt era fundalul gri al paginii, deci ieșea o bandă tulbure deasupra antetului. Acum sub ea e culoarea antetului, pe zi și pe noapte."],
