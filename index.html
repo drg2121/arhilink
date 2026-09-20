@@ -507,7 +507,8 @@ label.fl{display:block;font-size:11.5px;color:var(--ink2);margin:12px 0 5px;font
 .secimg{width:100%;height:100%;display:block;object-fit:cover}
 .ckmini{display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--ink2);white-space:nowrap;font-weight:700;flex:0 0 auto}
 .ckmini input{width:18px;height:18px;accent-color:var(--acc)}
-.ckrow2{display:flex;align-items:center;gap:9px;font-size:13.5px;color:var(--ink);margin:12px 0 2px;cursor:pointer}
+.ckrow2{display:flex;align-items:flex-start;gap:9px;font-size:13.5px;line-height:1.35;color:var(--ink);margin:12px 0 2px;cursor:pointer}
+.ckrow2>span{flex:1;min-width:0}
 .ckrow2 input{width:19px;height:19px;accent-color:var(--acc);flex:0 0 auto}
 .edsec{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--acc);margin:20px 2px 9px;border-top:1px solid var(--bd);padding-top:15px}
 .famlist{max-height:210px;overflow:auto;border:1px solid var(--bd);border-radius:11px;padding:0 10px;margin-bottom:4px}
@@ -532,6 +533,14 @@ label.fl{display:block;font-size:11.5px;color:var(--ink2);margin:12px 0 5px;font
 .titlehl{background:#fff3a3;color:#1c1a10;border-radius:6px;padding:1px 7px;display:inline-block}
 .pico.modon{color:var(--acc);background:var(--accsoft)}
 </style><style>
+/* Contactele de urgență: fiecare persoană în cutia ei, cu „Nume" și „Telefon" alături —
+   etichetele lungi („Contact urgență 1 — telefon") se rupeau pe două rânduri și câmpurile
+   perechii ajungeau la înălțimi diferite */
+.mcec{background:var(--surf2);border:1px solid var(--bd);border-radius:12px;padding:2px 12px 12px;margin-top:8px}
+.mcec .fl{margin-top:8px}
+.mcecn{font-size:12.5px;font-weight:800;margin-top:10px;color:var(--ink)}
+.mcecn .muted{font-weight:600;font-size:11.5px}
+.mcec .two{gap:8px}
 .pio-row{cursor:pointer}
 .pio-row:active{background:var(--surf2)}
 .pio-mtop{margin:2px 2px 9px}
@@ -659,7 +668,7 @@ Object.assign(IC,{
  box:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h18v13H3z"/><path d="M3 7l2-4h14l2 4"/><path d="M10 11h4"/></svg>',
  mark:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15.5 4.5l4 4-9.5 9.5H6v-4z"/><path d="M12.5 7.5l4 4M5 21h14"/></svg>'
 });
-const VERSION="3.9.2";
+const VERSION="3.10.0";
 /* Versiunea minima care are voie sa SCRIE in cloud. Se trece in gist la fiecare trimitere;
    un dispozitiv ramas pe un build mai vechi decat atat nu mai poate suprascrie datele —
    doar citeste si se actualizeaza singur. Asa nu mai poate un singur telefon uitat deschis
@@ -1218,7 +1227,7 @@ function _keepScroll(keep,sb,wy){/* nu mai ascundem #fab aici — săptămâna d
 function _bindWkSwipe(){const b=$("#body");if(!b||b._swBound)return;b._swBound=1;let sx=0,sy=0,st=0;
  b.addEventListener("touchstart",e=>{if(!e.touches||e.touches.length!==1)return;const t=e.touches[0];sx=t.clientX;sy=t.clientY;st=Date.now();},{passive:true});
  b.addEventListener("touchend",e=>{if(curW<0||!document.querySelector(".wkbar"))return;const t=e.changedTouches&&e.changedTouches[0];if(!t)return;const dx=t.clientX-sx,dy=t.clientY-sy,dt=Date.now()-st;if(dt>700)return;if(Math.abs(dx)<55||Math.abs(dx)<Math.abs(dy)*1.6)return;if(dx<0){if(curW<S.weeks.length-1)openWeek(curW+1);}else if(curW>0){openWeek(curW-1);}},{passive:true});}
-function openWeek(i){if(_wkDraft&&_wkDraft.i!==i&&!_wkGuard())return;wkOpen=true;
+function openWeek(i){if(_wkDraft&&_wkDraft.i!==i&&!_wkGuard())return;wkOpen=true;_vcpStyle();
  const _keep=(curW===i),_sb=(_keep&&$("#body"))?$("#body").scrollTop:0,_wy=_keep?(window.pageYOffset||0):0;curW=i;_bindWkSwipe();_fabDl(function(){wkFabSheet(curW);});const w=S.weeks[i];ensureIds(w);const pl=S.plans[i]=S.plans[i]||{a:{},songs:{}};pl.a=pl.a||{};
  if(_canEditVcp()&&(!_wkDraft||_wkDraft.i!==i))_wkDraft={i:i,plans:JSON.stringify(S.plans[i]||null),week:JSON.stringify(S.weeks[i]||null),dirty:false};
  const np=`<button class="wkb" onclick="openWeek(${i-1})" ${i<=0?"disabled":""} title="Săptămâna anterioară">${IC.back}</button>`;
@@ -1256,8 +1265,12 @@ function openWeek(i){if(_wkDraft&&_wkDraft.i!==i&&!_wkGuard())return;wkOpen=true
   else if(study)sel=`<div class="two asgpair">${dd("Conducător studiu","cond",pl,"Conducător")}${dd("Cititor studiu","cit",pl,"Cititor")}</div>`;
   else if(hasPartner(p,role))sel=`<div class="two asgpair">${dd(role,k+"_a",pl,"Cursant")}${dd(role,k+"_b",pl,"Partener")}</div>`;
   else sel=dd(role,k,pl,roleLabel(role));
-  const acts=`<div class="pact"><button class="pico" title="Detalii din caiet" onclick="showPartInfo(${i},'${k}')">${IC.info}</button></div>`;
-  Z[z].push(prow(t,`<div class="pti ${tdone?'titlehl':''}">${p.num?'<b>'+p.num+'.</b> ':''}${esc(title)}${mn?` (${mn} min.)`:''}</div>${sel}${acts}`));
+  /* „i"-ul cu detaliile din caiet stă în rândul temei, ca în Programări — sub selector, pe
+     rândul lui, arăta ca un buton uitat acolo */
+  const inf=(study&&isVisit)?null:infoFor(w,p);
+  const ib=inf?`<button class="vinfo" title="Detalii din caiet" aria-label="Detalii temă" onclick="showPartInfo(${i},'${k}')">${IC.info}</button>`:'';
+  const tt=`<div class="pti ${tdone?'titlehl':''}">${p.num?'<b>'+p.num+'.</b> ':''}${esc(title)}${mn?` (${mn} min.)`:''}</div>`;
+  Z[z].push(prow(t,`${ib?`<div class="ptiw">${tt}${ib}</div>`:tt}${sel}`));
   t=addMin(t,mn);if((p.title||"").toLowerCase().includes("citirea")||p.sec==="Predicare")t=addMin(t,1);});
  Z.close.push(prow(t,`<div class="pti">Cuvinte de încheiere (3 min.)</div>`));t=addMin(t,3);t=addMin(t,1);
  Z.close.push(prow(t,`${songCell(sC,"s_close")}${isVisit?'<div class="muted" style="font-size:11.5px;margin:2px 0 6px">Cântarea de încheiere o alege supraveghetorul; rugăciunea o poate rosti un frate invitat de el (S-38 §21).</div>':''}${dd("Rugăciune","close_pr",pl,"Rugăciune")}`));
@@ -1293,21 +1306,31 @@ function goVcpEdit(i){if(!_tabAllowed("arh")){toast("Nu ai acces la Arhivă");re
 /* înapoi la lista de săptămâni, rămânând în Arhivă */
 function wkBackList(){wkOpen=false;_arhLastSub=null;
  if(tab==="arh")renderArhRoute();else{arhGrp="plan";arhSub="vcped";go("arh");}}
-function _vcpStyle(){if(document.getElementById("vcpstyle"))return;const s=document.createElement("style");s.id="vcpstyle";s.textContent='.vro{display:flex;align-items:baseline;gap:8px;font-size:13.5px;margin-top:3px}.vro .vrol{color:var(--ink3);font-size:12px;flex:0 0 auto}.vro b{font-weight:700}'
- /* Pe telefon numele stau SUB temă, aliniate la dreapta — nu alături de ea. Alături, un nume
-    lung (numele de familie e un singur cuvânt, nu se poate rupe) fura jumătate din rând, iar
-    tema se subția până se rupea în șase rânduri. Mai rău: numele aveau „nowrap" într-o coloană
-    limitată la 48%, deci ieșeau din ea și se suprapuneau peste butonul „i" și peste titlu.
-    Acum coloana poate să se micșoreze (min-width:0) și numele se rup pe rânduri, nu peste text. */
- +'.vln{display:flex;flex-direction:column;gap:4px}'
- +'.vln .vnm{flex:0 0 auto;align-self:stretch;max-width:100%;min-width:0;display:flex;flex-direction:column;align-items:flex-end;gap:1px}'
- +'.vln .vnm .vro{margin-top:0;justify-content:flex-end;text-align:right;flex-wrap:wrap;min-width:0}'
- +'.vln .vnm .vro b{white-space:normal;overflow-wrap:break-word}'
+function _vcpStyle(){if(document.getElementById("vcpstyle"))return;const s=document.createElement("style");s.id="vcpstyle";s.textContent=
+ /* Programul pe telefon: tema sus, iar numele DEDESUBT, la stânga, ca niște pastile — nu în
+    dreapta, aliniate la margine. În dreapta, un nume lung („AMBROZINSKI- SZABO, Monika") se
+    rupea pe două-trei rânduri zimțate, eticheta rămânea singură pe rândul ei, iar tema se
+    subția. Acum eticheta (CURSANT, PARTENER, CITITOR) e mică, cu majuscule, în fața pastilei,
+    și perechea de nume stă pe același rând cât încape, altfel trece firesc pe rândul următor. */
+ '.vln{display:flex;flex-direction:column;gap:7px;min-width:0}'
+ +'.vln .vnm{display:flex;flex-wrap:wrap;gap:5px 12px;min-width:0}'
+ +'.vro{display:inline-flex;align-items:center;gap:6px;min-width:0;max-width:100%}'
+ +'.vro .vrol{flex:0 0 auto;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.45px;color:var(--ink3)}'
+ +'.vro b{display:inline-block;min-width:0;max-width:100%;font-size:13.5px;font-weight:700;line-height:1.3;color:var(--ink);'
+ +'background:var(--surf2);border:1px solid var(--bd);border-radius:9px;padding:4px 10px;overflow-wrap:anywhere}'
+ +'.vro b.titlehl{background:#fff3a3;border-color:#e6c200;color:#1c1a10}'
+ +'.vro .vnone{color:var(--ink3);font-weight:600;padding:2px 0}'
  /* pe ecran lat încape tot pe un rând: tema în stânga, numele în dreapta */
  +'@media(min-width:640px){.vln{flex-direction:row;align-items:flex-start;gap:14px}'
- +'.vln .vnm{flex:0 1 auto;align-self:auto;max-width:46%}}'
+ +'.vln>div:first-child{flex:1;min-width:0}'
+ +'.vln .vnm{flex:0 1 auto;max-width:50%;flex-direction:column;align-items:flex-end;gap:4px}'
+ +'.vro{justify-content:flex-end}}'
+ /* fiecare secțiune a întrunirii își are culoarea și în fundalul antetului, ca pe caiet */
+ +'.seccard{padding:13px 16px 12px}'
+ +'.seccard.sC{background:rgba(34,165,150,.09)}.seccard.sP{background:rgba(209,144,26,.10)}.seccard.sV{background:rgba(214,95,95,.09)}'
+ +'.app.light .seccard.sC{background:rgba(18,122,138,.07)}.app.light .seccard.sP{background:rgba(184,116,10,.08)}.app.light .seccard.sV{background:rgba(192,57,43,.06)}'
  +'.ptiw{display:flex;align-items:flex-start;gap:6px}.ptiw .pti{flex:1;min-width:0}'
- +'.vinfo{display:inline-flex;align-items:center;justify-content:center;width:19px;height:19px;margin:0;padding:0;border:1px solid var(--bd);border-radius:50%;background:var(--surf);color:var(--ink3);cursor:pointer;flex:0 0 auto}.vinfo:hover,.vinfo:active{color:var(--acc);border-color:var(--acc)}.vinfo svg{width:11px;height:11px}';document.head.appendChild(s);}
+ +'.vinfo{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;margin:-1px 0 0;padding:0;border:1px solid var(--bd);border-radius:50%;background:var(--surf);color:var(--ink3);cursor:pointer;flex:0 0 auto}.vinfo:hover,.vinfo:active{color:var(--acc);border-color:var(--acc)}.vinfo svg{width:12px;height:12px}';document.head.appendChild(s);}
 function renderVcp(i){_fabDl(vcpDlSheet);_vcpStyle();
  if(typeof i==="number")vcpW=i;
  if(vcpW<0||vcpW>=S.weeks.length)vcpW=vcpCurWeek();
@@ -1323,11 +1346,11 @@ function renderVcp(i){_fabDl(vcpDlSheet);_vcpStyle();
  const head=`<div class="group gp" style="padding:15px 16px 11px"><div class="nm" style="font-size:17px;font-weight:800">${tc(w.date)}</div><div class="mt" style="font-size:13px;margin-top:3px">${w.event?'<span style="color:var(--acc);font-weight:700">'+esc(w.event)+(w.eventName?' — '+esc(w.eventName):'')+'</span>':esc(w.bible||'')}</div></div>`;
  const isVisit=isVisitEv(w);
  if(evNoMeet(w)){$("#body").innerHTML=bar+head+`<div class="evb"><div class="et">${esc(evLabel(w))}</div>${w.eventName?'<div class="ed" style="color:var(--ink);font-weight:700;font-size:15px">'+esc(w.eventName)+'</div>':''}<div class="ed">În această săptămână nu se ține întrunirea (S-38).</div></div>`;_progNavFix();window.scrollTo(0,0);const b0=$("#body");if(b0)b0.scrollTop=0;return;}
- const nmv=key=>{const id=a[key];if(!id)return '<span style="color:var(--ink3)">—</span>';return '<b class="'+(dn[key]?'titlehl':'')+'">'+esc(broDisp(id))+'</b>';};
+ const nmv=key=>{const id=a[key];if(!id)return '<span class="vnone">—</span>';return '<b class="'+(dn[key]?'titlehl':'')+'">'+esc(broDisp(id))+'</b>';};
  const vro=(label,key)=>`<div class="vro">${label?`<span class="vrol">${label}</span>`:''}${nmv(key)}</div>`;
  const prow=(time,inner)=>`<div class="prow"><div class="tm">${time}</div><div class="pt">${inner}</div></div>`;
  /* tema în stânga, numele în dreptul ei (demonstrațiile: unul sub altul, în dreapta) */
- const vln=(titleHtml,namesHtml)=>`<div class="vln"><div style="flex:1;min-width:0">${titleHtml}</div>${namesHtml?`<div class="vnm">${namesHtml}</div>`:''}</div>`;
+ const vln=(titleHtml,namesHtml)=>`<div class="vln"><div class="vlt">${titleHtml}</div>${namesHtml?`<div class="vnm">${namesHtml}</div>`:''}</div>`;
  const meta={Comori:["Comori din Cuvântul lui Dumnezeu","C"],Predicare:["Să fim mai eficienți în predicare","P"],Viata:["Viața de creștin","V"]};
  let t=S.settings.start;const Z={open:[],Comori:[],Predicare:[],Viata:[],close:[]};
  const sO=pl.songs?.open??w.songs[0],sM=pl.songs?.mid??w.songs[1],sC=pl.songs?.close??w.songs[2];
@@ -2577,8 +2600,8 @@ function editBro(id,openSec){if(!_needEdit())return;ensureEdCSS();
    <div><label class="fl">Data botezului</label><input id="bbaptism" class="fld" type="date" value="${b.baptism||""}"></div></div>`;
 
  const secEc=[["1","becn","becp",b.ecn,b.ecp,"ex. Familia …"],["2","bec2n","bec2p",b.ec2n,b.ec2p,"opțional"],["3","bec3n","bec3p",b.ec3n,b.ec3p,"opțional"]]
-  .map(c=>`<div class="two"${c[0]==="1"?"":' style="margin-top:2px"'}><div><label class="fl">Contact ${c[0]} — nume</label><input id="${c[1]}" class="fld" value="${q(c[3])}" placeholder="${c[5]}"></div>
-   <div><label class="fl">Contact ${c[0]} — telefon</label><input id="${c[2]}" class="fld" value="${q(c[4])}" placeholder="07…"></div></div>`).join("");
+  .map(c=>`<div class="mcec"><div class="mcecn">Persoana ${c[0]}${c[0]==="1"?"":' <span class="muted">(opțional)</span>'}</div><div class="two"><div><label class="fl">Nume</label><input id="${c[1]}" class="fld" value="${q(c[3])}" placeholder="${c[5]}"></div>
+   <div><label class="fl">Telefon</label><input id="${c[2]}" class="fld" type="tel" inputmode="tel" value="${q(c[4])}" placeholder="07…"></div></div></div>`).join("");
 
  /* la ce sarcini de pe foaia de la avizier poate fi programat (Arhivă → Sarcini) */
  const secDuty=`<div class="muted" style="margin:11px 2px 9px">Bifează la ce poate fi programat în <b>Arhivă → Sarcini</b>. La alegerea unui post apar doar cei cu bifa potrivită.</div>`
@@ -2613,8 +2636,8 @@ function editBro(id,openSec){if(!_needEdit())return;ensureEdCSS();
  + _edSec(IC.book,"Întrunirea publică (sfârșit de săptămână)","edvWm",secWm)
  + _edSec(IC.ppl,"Mărturia publică","edvMp",secMp)
  + _edSec(IC.clock,"Întrunirea pentru serviciul de teren","edvFt",secFt)
- + _edSec(IC.book,"Contact și date S-21","edvCt",secCt)
- + _edSec(IC.info,"Contacte de urgență","edvEc",secEc)
+ + _edSec(IC.book,"Contact și date S-21","edvCt",secCt,openSec==="ct")
+ + _edSec(IC.info,"Contacte de urgență","edvEc",secEc,openSec==="ct"||openSec==="ec")
  + _edSec(IC.pdf,"Nume în export PDF","edvPdf",secPdf)
  + (id?_edSec(IC.hist,"Arhivă","edvArh",archEditBlock(b),openSec==="arh"):"")
  + `</div><div class="edbar">${id?`<button class="btn danger sm" style="width:auto" onclick="delBro('${id}')">Șterge</button>`:""}<div class="spacer"></div>
@@ -2801,6 +2824,113 @@ async function archPurge(id){if(!_needEdit())return;var b=(S.bros||[]).find(func
  save();closeSheet();_archRerender();toast("Șters definitiv");}
 
 /* --- subtabul „Arhivați" --- */
+/* ============================================================================
+   CONTACTE DE URGENȚĂ — Arhivă → Rapoarte și evidențe (doar administratori)
+   ----------------------------------------------------------------------------
+   Toate datele de contact ale vestitorilor activi la un loc: telefon, adresă, data nașterii
+   și a botezului, persoanele de contact în caz de urgență. Se vede dintr-o privire cine n-a
+   completat ce, lista se filtrează pe lipsuri, se descarcă ca PDF, iar celor cu lipsuri li
+   se poate trimite pe loc un mesaj pe WhatsApp cu exact ce le lipsește. */
+var _conF="all",_conQ="";
+/* administratorii, plus cei cărora le-au dat anume dreptul (bifa „Vede Contactele de urgență" din
+   fișa utilizatorului). Datele de contact nu circulă prin canalul doar-citire, deci dreptul are
+   sens doar pe un dispozitiv cu sincronizare completă (token). */
+function _conAllowed(){if(_isAdmin())return true;var u=_curUser();return !!(u&&u.conE&&_canEdit()&&typeof autoOn==="function"&&autoOn());}
+var CON_MISS=[["phone","telefon","numărul de telefon"],["addr","adresă","adresa completă"],["bdate","data nașterii","data nașterii"],["baptism","data botezului","data botezului"],["ec","contact de urgență","o persoană de contact în caz de urgență (nume și telefon)"]];
+function _conUnbapt(b){return /nebotezat|cursant/i.test(b.pio||"");}
+function _conActive(){return (S.bros||[]).filter(function(b){return b.active!==false&&!isArchNow(b);}).sort(function(a,b){return a.name.localeCompare(b.name,"ro");});}
+function _conMiss(b){var m=[];CON_MISS.forEach(function(c){var k=c[0];
+ if(k==="ec"){if(!((b.ecn||"").trim()&&(b.ecp||"").trim()))m.push(c);}
+ else if(k==="baptism"){if(!(b.baptism||"").trim()&&!_conUnbapt(b))m.push(c);}
+ else if(!(b[k]||"").trim())m.push(c);});return m;}
+function _conEcs(b){var o=[];[["ecn","ecp"],["ec2n","ec2p"],["ec3n","ec3p"]].forEach(function(p){var n=(b[p[0]]||"").trim(),t=(b[p[1]]||"").trim();if(n||t)o.push({n:n,t:t});});return o;}
+function _conDate(v){if(!v)return "";var d=asDate(v);return d?(arhPad(d.getDate())+"."+arhPad(d.getMonth()+1)+"."+d.getFullYear()):String(v);}
+function ensureConCSS(){if(document.getElementById("concss"))return;var st=document.createElement("style");st.id="concss";st.textContent=
+ ".conrow{background:var(--surf);border:1px solid var(--bd);border-radius:14px;padding:12px 13px;margin-bottom:8px;box-shadow:var(--sh)}"
++".conhd{display:flex;align-items:center;gap:10px}"
++".connm{flex:1;min-width:0;font-weight:800;font-size:15px;line-height:1.25;overflow-wrap:anywhere}"
++".connm small{display:block;font-weight:600;font-size:11.5px;color:var(--ink3);margin-top:2px}"
++".conedit{flex:0 0 auto;width:34px;height:34px;border-radius:10px;border:1px solid var(--bd);background:var(--surf2);color:var(--ink2);display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0}"
++".conedit svg{width:16px;height:16px}.conedit:hover{color:var(--acc);border-color:var(--acc)}"
++".contags{display:flex;flex-wrap:wrap;gap:5px;margin-top:9px}"
++".contag{font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.3px;border-radius:6px;padding:3px 8px;background:rgba(214,95,95,.13);color:var(--maroon)}"
++".contag.ok{background:rgba(34,165,150,.13);color:var(--tealtx)}"
++".condl{display:grid;grid-template-columns:auto 1fr;gap:5px 10px;margin:10px 0 0;font-size:13px}"
++".condl dt{color:var(--ink3);font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.3px;padding-top:3px;white-space:nowrap}"
++".condl dd{margin:0;min-width:0;overflow-wrap:anywhere;line-height:1.4}"
++".condl dd a{color:var(--ink);text-decoration:none;font-weight:600}.condl dd .mis{color:var(--maroon);font-weight:700}"
++".condl dd .ecl{display:block}.condl dd .ecl b{font-weight:700}"
++".conact{display:flex;gap:7px;margin-top:11px}"
++".conact .btn{width:auto;flex:1 1 auto;padding:10px 12px;font-size:13.5px}"
++".btn.conwa{background:#25D366;color:#fff}.btn.conwa:hover,.btn.conwa:active{background:#1fb457}"
++".conkp{margin-bottom:12px}"
++".conchips{display:flex;flex-wrap:wrap;gap:7px;margin:0 0 12px}";
+ document.head.appendChild(st);}
+function conFilter(f){_conF=f;arhRerender();}
+function conQ(v){_conQ=v||"";var q=fold(_conQ.trim());var wrap=document.getElementById("conList");if(!wrap)return;var n=0;
+ wrap.querySelectorAll(".conrow").forEach(function(r){var on=!q||(r.dataset.n||"").indexOf(q)>=0;r.style.display=on?"":"none";if(on)n++;});
+ var e=document.getElementById("conNone");if(e)e.style.display=n?"none":"";}
+function _conRow(b){var miss=_conMiss(b),mk=miss.map(function(x){return x[0];});var ecs=_conEcs(b);var gn=grpName(grpOf(b));
+ var rows="";var dd=function(k,v){rows+='<dt>'+k+'</dt><dd>'+v+'</dd>';};
+ dd("Telefon",b.phone?('<a href="tel:'+esc(String(b.phone).replace(/\s+/g,""))+'">'+esc(b.phone)+'</a>'):'<span class="mis">lipsește</span>');
+ if(b.email)dd("E-mail",esc(b.email));
+ dd("Adresă",b.addr?esc(b.addr):'<span class="mis">lipsește</span>');
+ dd("Născut",b.bdate?esc(_conDate(b.bdate)):'<span class="mis">lipsește</span>');
+ dd("Botezat",b.baptism?esc(_conDate(b.baptism)):(_conUnbapt(b)?'<span class="muted">nebotezat</span>':'<span class="mis">lipsește</span>'));
+ dd("Urgență",ecs.length?ecs.map(function(e){return '<span class="ecl"><b>'+esc(e.n||"—")+'</b>'+(e.t?(' · <a href="tel:'+esc(e.t.replace(/\s+/g,""))+'">'+esc(e.t)+'</a>'):'')+'</span>';}).join(""):'<span class="mis">nicio persoană de contact</span>');
+ var tags=miss.length?miss.map(function(x){return '<span class="contag">fără '+esc(x[1])+'</span>';}).join(""):'<span class="contag ok">complet</span>';
+ var ph=_waPhone(b);var ask=miss.filter(function(x){return x[0]!=="phone";});
+ var act='';
+ if(ask.length)act+='<button class="btn conwa" '+(ph?('onclick="conWa(\''+b.id+'\')"'):'disabled title="Nu are telefon în fișă"')+'>'+IC.fwd+' Cere pe WhatsApp</button>';
+ return '<div class="conrow" data-n="'+esc(fold(b.name))+'"><div class="conhd"><div class="pava">'+esc(initials(b.name)||"·")+'</div>'
+  +'<div class="connm">'+esc(b.name)+'<small>'+esc(gn?gn:(b.gen==="F"?"soră":"frate"))+(b.rol&&b.rol!=="Vestitor"?(' · '+esc(b.rol)):'')+'</small></div>'
+  +'<button class="conedit" title="Editează fișa" onclick="editBro(\''+b.id+'\',\'ct\')">'+IC.edit+'</button></div>'
+  +'<div class="contags">'+tags+'</div><dl class="condl">'+rows+'</dl>'+(act?('<div class="conact">'+act+'</div>'):'')+'</div>';}
+function arhConHtml(){if(!_conAllowed())return '<div class="empty">Doar administratorii (și cei cărora le-au dat dreptul) văd datele de contact.</div>';
+ ensureConCSS();ensureStatCSS();var list=_conActive();
+ var cnt={};CON_MISS.forEach(function(c){cnt[c[0]]=0;});var withMiss=0;
+ list.forEach(function(b){var m=_conMiss(b);if(m.length)withMiss++;m.forEach(function(x){cnt[x[0]]++;});});
+ var H='<div class="hint" style="margin:2px 2px 12px">Telefoanele, adresele, datele de naștere și de botez și persoanele de contact în caz de urgență ale vestitorilor activi. Roșu = lipsește. <b>Cere pe WhatsApp</b> deschide conversația cu mesajul gata scris, cu exact ce lipsește. Fiecare își poate completa singur datele din <b>Profilul meu → ⋮ → Datele mele de contact</b>.</div>';
+ H+='<button class="btn pri" style="margin:0 0 12px" onclick="conPdf()">'+IC.pdf+' Descarcă lista (PDF)</button>';
+ H+='<div class="stkpis conkp"><div class="stkpi teal"><div class="kv">'+(list.length-withMiss)+'<small>/'+list.length+'</small></div><div class="kk">cu datele complete</div></div>'
+  +'<div class="stkpi acc"><div class="kv">'+withMiss+'</div><div class="kk">cu lipsuri</div></div>'
+  +'<div class="stkpi"><div class="kv">'+cnt.ec+'</div><div class="kk">fără contact de urgență</div></div>'
+  +'<div class="stkpi"><div class="kv">'+cnt.addr+'</div><div class="kk">fără adresă</div></div></div>';
+ var chips=[["all","Toți",list.length],["miss","Cu lipsuri",withMiss],["ec","Fără contact de urgență",cnt.ec],["addr","Fără adresă",cnt.addr],["bdate","Fără data nașterii",cnt.bdate],["baptism","Fără data botezului",cnt.baptism],["phone","Fără telefon",cnt.phone]];
+ H+='<div class="conchips">'+chips.map(function(c){return '<button class="fchip'+(_conF===c[0]?" on":"")+'" onclick="conFilter(\''+c[0]+'\')">'+c[1]+' · '+c[2]+'</button>';}).join("")+'</div>';
+ H+='<div class="brosrch"><span class="brosrch-ic">'+IC.search+'</span><input class="brosrch-in" type="search" autocomplete="off" enterkeyhint="search" placeholder="Caută vestitor…" value="'+esc(_conQ)+'" oninput="conQ(this.value)"></div>';
+ var shown=list.filter(function(b){if(_conF==="all")return true;var mk=_conMiss(b).map(function(x){return x[0];});return _conF==="miss"?mk.length>0:mk.indexOf(_conF)>=0;});
+ H+='<div id="conList">'+(shown.length?shown.map(_conRow).join(""):'')+'</div>';
+ H+='<div class="empty" id="conNone" style="padding:26px 8px;'+(shown.length?'display:none':'')+'">'+(list.length?'Nimeni aici.':'Niciun vestitor activ.')+'</div>';
+ setTimeout(function(){try{conQ(_conQ);}catch(e){}},0);
+ return H;}
+function conWaMsg(b){var ask=_conMiss(b).filter(function(x){return x[0]!=="phone";}).map(function(x){return x[2];});
+ var cong=(S.settings.cong||"").trim();
+ return "Salut, "+(_givenName(b.name)||b.name)+"! Pentru evidența congregației"+(cong?(" "+cong):"")+" îmi lipsesc de la tine: "+ask.join(", ")+". Îmi poți trimite aici, te rog? Mulțumesc!";}
+function conWa(id){var b=(S.bros||[]).find(function(x){return x.id===id;});if(!b)return;var ph=_waPhone(b);if(!ph){toast("Nu are telefon în fișă");return;}
+ window.open("https://wa.me/"+ph+"?text="+encodeURIComponent(conWaMsg(b)),"_blank");logAct("Cerere date lipsă pe WhatsApp: "+b.name);}
+function conPdf(){if(!_conAllowed())return;var list=_conActive();if(!list.length){toast("Niciun vestitor activ");return;}
+ var cong=(S.settings.cong||"").trim();var d=new Date();var when=arhPad(d.getDate())+"."+arhPad(d.getMonth()+1)+"."+d.getFullYear();
+ var css=".conpg h2{font-size:15pt}.conph{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:6px}"
+  +".contb{width:100%;border-collapse:collapse;font-size:8.6pt;line-height:1.3;table-layout:fixed}"
+  +".contb th{background:#eef0f4;text-align:left;font-weight:700;padding:4px 5px;border:1px solid #c9cdd6;font-size:8pt}"
+  +".contb td{padding:4px 5px;border:1px solid #c9cdd6;vertical-align:top;overflow-wrap:anywhere}"
+  +".contb td.nm{font-weight:700}.contb .mis{color:#b3261e;font-style:italic}.contb .ecl{display:block}"
+  +".confo{font-size:8pt;color:#5b626c;margin-top:7px;display:flex;justify-content:space-between}";
+ var PER=16,pages="",np=Math.ceil(list.length/PER);
+ for(var k=0;k<list.length;k+=PER){var grp=list.slice(k,k+PER),pi=Math.floor(k/PER)+1;
+  var rows=grp.map(function(b){var ecs=_conEcs(b);var gn=grpName(grpOf(b));
+   return '<tr><td class="nm">'+esc(b.name)+(gn?('<br><span style="font-weight:400;color:#5b626c">'+esc(gn)+'</span>'):'')+'</td>'
+    +'<td>'+(b.phone?esc(b.phone):'<span class="mis">—</span>')+(b.email?('<br>'+esc(b.email)):'')+'</td>'
+    +'<td>'+(b.addr?esc(b.addr):'<span class="mis">lipsește</span>')+'</td>'
+    +'<td>'+(b.bdate?('Născut: '+esc(_conDate(b.bdate))):'<span class="mis">Născut: lipsește</span>')+'<br>'+(b.baptism?('Botezat: '+esc(_conDate(b.baptism))):(_conUnbapt(b)?'nebotezat':'<span class="mis">Botezat: lipsește</span>'))+'</td>'
+    +'<td>'+(ecs.length?ecs.map(function(e){return '<span class="ecl">'+esc(e.n||"—")+(e.t?(' · '+esc(e.t)):'')+'</span>';}).join(""):'<span class="mis">lipsește</span>')+'</td></tr>';}).join("");
+  pages+='<div class="page conpg"><div class="conph"><h2>Contacte de urgență'+(cong?(' — '+esc(cong)):'')+'</h2><span class="muted" style="font-size:9pt">'+list.length+' vestitori · '+when+'</span></div>'
+   +'<table class="contb"><colgroup><col style="width:22%"><col style="width:17%"><col style="width:24%"><col style="width:16%"><col style="width:21%"></colgroup>'
+   +'<thead><tr><th>Nume</th><th>Telefon / e-mail</th><th>Adresă</th><th>Naștere / Botez</th><th>Contact de urgență</th></tr></thead><tbody>'+rows+'</tbody></table>'
+   +'<div class="confo"><span>Confidențial — doar pentru bătrânii congregației.</span><span>pagina '+pi+' / '+np+'</span></div></div>';}
+ var fn="Contacte de urgenta"+(cong?(" - "+cong.replace(/[\/\\:*?"<>|]/g,"")):"")+".pdf";
+ arhPdfWindow(fn,pages,css);logAct("Lista contactelor de urgență descărcată (PDF)");}
 function arhArchHtml(){var list=brosArch().sort(function(a,b){var ka=(archCur(a)||{}).k||"",kb=(archCur(b)||{}).k||"";return kb.localeCompare(ka)||a.name.localeCompare(b.name,"ro");});
  var H='<div class="hint" style="margin:2px 2px 12px">Vestitorii mutați sau plecați din congregație. Nu apar în nicio listă și nu intră la numărul de vestitori începând cu luna trecerii în arhivă — lunile de dinainte au rămas neatinse. Rapoartele și fișele lor se pot vedea și descărca de aici.</div>';
  if(!list.length)return H+'<div class="empty" style="padding:26px 8px">Nimeni în arhivă.<br><span class="muted">Îi treci aici din fișa vestitorului, în tabul Vestitori.</span></div>';
@@ -4221,7 +4351,7 @@ function _shareFilter(u){var full=JSON.parse(JSON.stringify(S));
    if(mine&&pub){["phone","email","addr","ecn","ecp","ec2n","ec2p","ec3n","ec3p"].forEach(function(f){pub[f]=mine[f]||"";});pub.cT=mine.cT||0;}}}
  return out;}
 /* canalul doar-citire: un al doilea gist secret, împins automat de admin, citit anonim (fără token) */
-var PRIV_CF=["phone","email","addr","ecn","ecp","ec2n","ec2p","ec3n","ec3p"];
+var PRIV_CF=["phone","email","addr","ecn","ecp","ec2n","ec2p","ec3n","ec3p","bdate","baptism"];
 /* Canalul doar-citire e citit FĂRĂ token de oricine are linkul, deci NU mai poate conține în clar
    rapoartele și datele de contact. Rămân doar steagurile de lună (S.repFlags), din care se vede
    „✓ raport trimis" fără nicio cifră. Felia personală a fiecăruia (raportul lui + contactele lui)
@@ -4230,7 +4360,7 @@ async function _roPayload(){var out=JSON.parse(JSON.stringify(S));out.log=[];out
  out.reports={};out.repDel={};out.hlog={};/* carnetele de ore sunt personale */
  delete out.settings.od;out.settings.passHash="";out.settings.gh={token:"",gist:""};
  out.settings.users=(S.settings.users||[]).map(function(u){
-  var o={n:u.n,r:u.r,mods:u.mods||null,bro:u.bro||null,attV:u.attV||0,attE:u.attE||0,curE:u.curE||0,sarE:u.sarE||0,wmE:u.wmE||0,mpE:u.mpE||0,ftE:u.ftE||0};
+  var o={n:u.n,r:u.r,mods:u.mods||null,bro:u.bro||null,attV:u.attV||0,attE:u.attE||0,curE:u.curE||0,sarE:u.sarE||0,wmE:u.wmE||0,mpE:u.mpE||0,ftE:u.ftE||0,conE:u.conE||0};
   /* PIN-ul: doar forma PBKDF2. Hash-ul vechi pleacă numai dacă încă nu s-a putut calcula cea nouă
      (dispozitiv fără WebCrypto) — altfel s-ar putea sparge în câteva sutimi de secundă. */
   if(u.p2&&u.p2.h&&u.p2.s)o.p2=u.p2;else if(u.p)o.p=u.p;
@@ -4370,6 +4500,23 @@ async function shareApp(){if(!_isAdmin()){toast("Doar administratorul");return;}
  toast("Pregătesc fișierul…");var b=await _buildShareFile();if(!b)return;
  dl(b.fn,b.src,"text/html");logAct("Aplicația distribuită ca fișier (date incluse)");
  toast("Fișier creat — trimite-l; fiecare intră cu contul și PIN-ul lui");}
+/* Prenumele din „NUME Prenume" / „Nume, Prenume": pentru salutul din mesaj. Inițialele („A.")
+   se lasă deoparte, iar numele scris cu majuscule se aduce la forma obișnuită. */
+function _givenName(n){n=String(n||"").trim();if(!n)return "";var g="";
+ if(n.indexOf(",")>=0)g=n.split(",").slice(1).join(" ").trim();
+ else{var t=n.split(/\s+/);g=t.length>1?t.slice(1).filter(function(x){return !/\.$/.test(x);}).join(" "):t[0];}
+ g=(g||n.split(/\s+/)[0]).trim();
+ if(g===g.toUpperCase())g=g.toLowerCase().replace(/(^|[\s-])(\S)/g,function(m,a,b){return a+b.toUpperCase();});
+ return g;}
+/* Mesajul de invitație: scurt, pe rânduri — cine ești, linkul, numele de ales și PIN-ul. Ce e
+   aplicația și cum se pune pe ecranul principal află din ea, la prima deschidere. */
+function _inviteMsg(u,link,isPow){var cong=(S.settings.cong||"").trim();
+ var m="Salut, "+(_givenName(u.n)||u.n)+"!\n"+"Aplicația congregației"+(cong?" "+cong:"")+" — ArhiLink."
+  +"\n\n"+(link?("Deschide: "+link):"Deschide fișierul atașat în browser.")
+  +"\nNumele tău: "+u.n
+  +"\nPIN: "+(u.pin||"cel pe care îl știi");
+ if(isPow)m+="\n\nLinkul e personal, cu drept de "+(u.r==="admin"?"administrator":"editor")+" — nu-l trimite mai departe.";
+ return m;}
 async function userShare(i){if(!_isAdmin()){toast("Doar administratorul");return;}var u=_users()[i];if(!u)return;
  toast("Pregătesc…");
  /* modul principal pentru TOATE rolurile: trimitem LINKUL aplicației (cu datele incluse prin #c=…) + PIN-ul, nu un fișier */
@@ -4378,14 +4525,13 @@ async function userShare(i){if(!_isAdmin()){toast("Doar administratorul");return
     conectați complet, fără token/cod trimis separat; ceilalți primesc linkul public obișnuit */
  var link=await _appLink(isPow);
  if(link){
-  var extra=isPow?" Linkul e personal, cu drept de "+(u.r==="admin"?"administrator":"editor")+" — deschide-l și ești conectat direct, cu sincronizare completă. NU trimite acest link altcuiva.":" Salveaz-o la ecranul principal ca să o ai mereu.";
-  var msg="Salut, "+u.n+"! Aplicația congregației"+(S.settings.cong?" "+S.settings.cong:"")+": "+link+" — deschide linkul, alege numele tău („"+u.n+"”) și intră cu PIN-ul: "+(u.pin||"PIN-ul pe care îl știi")+"."+extra;
+  var msg=_inviteMsg(u,link,isPow);
   try{if(navigator.share){await navigator.share({text:msg,title:"ArhiLink"});logAct("Linkul aplicației trimis către: "+u.n+(isPow?" (cu cheie)":""));return;}}catch(e){if(e&&e.name==="AbortError")return;}
   try{await navigator.clipboard.writeText(msg);}catch(e){uiPrompt("Copiază mesajul",msg,{yes:"Gata",no:"Închide"});}
   logAct("Linkul aplicației copiat pentru: "+u.n+(isPow?" (cu cheie)":""));
-  toast(isPow?("Mesaj copiat — ATENȚIE: linkul conține cheia de scriere, trimite-l DOAR lui "+u.n+" și șterge-l din conversație după ce a intrat"):"Mesaj cu link + PIN copiat — lipește-l pe WhatsApp/e-mail",isPow?9000:4000);return;}
+  toast(isPow?("Mesaj copiat — linkul conține cheia de scriere: trimite-l doar lui "+u.n):"Mesaj copiat — lipește-l pe WhatsApp sau e-mail",isPow?7000:4000);return;}
  /* fără link configurat (adresa publică lipsește) → fișierul personalizat, ca înainte */
- var msg2="Salut, "+u.n+"! Aplicația congregației"+(S.settings.cong?" "+S.settings.cong:"")+": deschide fișierul atașat în browser, alege numele tău („"+u.n+"”) și intră cu PIN-ul: "+(u.pin||"PIN-ul pe care îl știi")+".";
+ var msg2=_inviteMsg(u,"",false);
  if((u.r==="vestitor"||u.r==="viewer"||u.r==="guest")&&!(S.settings.gh&&S.settings.gh.gist2))await roPush();/* creează canalul doar-citire */
  var b=await _buildShareFile(_shareFilter(u));if(!b)return;
  try{if(typeof File!=="undefined"&&navigator.canShare){var f=new File([b.src],b.fn,{type:"text/html"});
@@ -4393,7 +4539,7 @@ async function userShare(i){if(!_isAdmin()){toast("Doar administratorul");return
  dl(b.fn,b.src,"text/html");
  try{if(navigator.clipboard&&navigator.clipboard.writeText)await navigator.clipboard.writeText(msg2);}catch(e){}
  logAct("Aplicația pregătită pentru: "+u.n);
- toast("Fișier descărcat + mesajul cu PIN-ul lui "+u.n+" e copiat — lipește-l pe WhatsApp/e-mail");}
+ toast("Fișier descărcat; mesajul pentru "+u.n+" e copiat — lipește-l lângă fișier");}
 function exportJSON(){var d=new Date();var z=function(x){return ("0"+x).slice(-2);};var fn="ArhiLink_"+d.getFullYear()+"-"+z(d.getMonth()+1)+"-"+z(d.getDate())+"_v"+VERSION+".json";dl(fn,JSON.stringify(S,null,1));toast("Exportat");}
 /* ===== Backup-uri automate: IndexedDB în loc de localStorage =====
    localStorage are ~5MB și se umplea (starea + 6 copii complete) → „memoria browserului e plină” la import.
@@ -5093,6 +5239,13 @@ function startApp(){_dirty=computeDirty();applyTheme();try{bkpMigrate();}catch(e
    `v` = cheia de „văzut deja"; `label` = versiunea afișată.
    ============================================================================ */
 var NEWS=[
+ {v:"3.10.0",label:"3.10",d:"20.09.2026",t:"Programul pe telefon, contactele de urgență, invitația scurtă",items:[
+  ["book","Programul săptămânii, așezat pentru telefon","În „Viața creștină” numele stau sub temă, la stânga, ca niște pastile — nu în dreapta, rupte pe rânduri zimțate. Eticheta (Cursant, Partener, Cititor) e mică, cu majuscule, iar perechea de nume încape pe un rând. Antetul fiecărei secțiuni are culoarea ei în fundal, ca pe caiet. Semnul „i” cu detaliile din caiet stă în rândul temei — și în editorul din Arhivă, unde stătea singur sub selector."],
+  ["info","Contacte de urgență — secțiune nouă în Arhivă","Pentru administratori — și pentru cine primește de la ei bifa „Vede Contactele de urgență” din fișa utilizatorului — la „Rapoarte și evidențe”: telefoanele, adresele, datele de naștere și de botez și persoanele de contact ale tuturor vestitorilor activi. Roșu = lipsește. Filtre pe lipsuri („Fără contact de urgență”, „Fără adresă”, „Fără data nașterii”…), căutare și PDF cu lista întreagă. „Cere pe WhatsApp” deschide conversația cu mesajul gata scris, cu exact ce lipsește de la persoana aceea. Fiecare vestitor își completează singur datele din Profilul meu → „Datele mele de contact”, unde au intrat acum și data nașterii și a botezului."],
+  ["fwd","Invitația în aplicație, scurtă","Mesajul trimis din Setări → Utilizatori are acum patru rânduri: salutul pe prenume, linkul, numele de ales și PIN-ul. Administratorii și editorii mai primesc un rând: linkul e personal, nu se dă mai departe."],
+  ["edit","Datele de contact, în cutii","„Datele mele de contact” și fișa vestitorului țin fiecare persoană de urgență în cutia ei, cu „Nume” și „Telefon” alături — etichetele lungi se rupeau pe două rânduri și câmpurile perechii ajungeau la înălțimi diferite. Telefonul deschide tastatura numerică."],
+  ["check","Întrunirea publică: alegerea persoanei mergea în gol","Din 14 august, apăsarea pe un post (președinte, cititor, rugăciune) nu deschidea nimic, iar „×” nu scotea pe nimeni — două funcții lipseau. Acum lista se deschide, iar dedesubt se poate scrie și numele unui frate venit din altă congregație; numele scris de mână apare pe foaie, în PDF și în export."]
+ ]},
  {v:"3.9.0",label:"3.9",d:"20.09.2026",t:"Caută orice, vezi luna întreagă, analizează anul",items:[
   ["search","Caută în toată aplicația","Lupa din antet deschide un singur câmp care caută peste tot: vestitori, săptămâni, părți de program, sarcini, ture de la mărturia publică, grupe, responsabilități, cântări, tutoriale și ecranele aplicației. Diacriticele nu contează — „bratu” îl găsește pe „Brațu”. Apeși rezultatul și ajungi fix acolo. De la tastatură: Ctrl/Cmd+K sau „/”."],
   ["cal","Calendarul lunii, în Programări","A patra foaie. Se deschide pe „Ale mele”: luna cu zilele în care ești TU programat și, dedesubt, ce ai de făcut, cu ora. „Toate” arată luna congregației întregi — întrunirile, terenul, turele de la mărturia publică și evenimentele, fiecare cu punctul lui colorat. Apeși o zi și vezi tot ce e în ea, oricare din cele două ar fi ales."],
@@ -5449,7 +5602,7 @@ async function ulGo(){if(!_ulSel){toast("Alege un utilizator");return;}var p=doc
  if(_uHasPin(_ulSel)&&!(await pinCheck(_ulSel,pw))){toast("Parolă greșită");if(p){p.value="";p.focus();}return;}
  /* PIN-ul corect deschide și felia privată din canalul vestitorilor (raportul și contactele mele) */
  try{await _privKeyFrom(_ulSel,pw);}catch(e){}
- sessionStorage.setItem("alkUser",JSON.stringify({n:_ulSel.n,r:_ulSel.r,mods:_ulSel.mods||null,bro:_ulSel.bro||null,attV:_ulSel.attV||0,attE:_ulSel.attE||0,curE:_ulSel.curE||0,sarE:_ulSel.sarE||0,wmE:_ulSel.wmE||0,mpE:_ulSel.mpE||0,ftE:_ulSel.ftE||0}));_userSet(_ulSel.n);sessionStorage.setItem("alkUnlocked","1");
+ sessionStorage.setItem("alkUser",JSON.stringify({n:_ulSel.n,r:_ulSel.r,mods:_ulSel.mods||null,bro:_ulSel.bro||null,attV:_ulSel.attV||0,attE:_ulSel.attE||0,curE:_ulSel.curE||0,sarE:_ulSel.sarE||0,wmE:_ulSel.wmE||0,mpE:_ulSel.mpE||0,ftE:_ulSel.ftE||0,conE:_ulSel.conE||0}));_userSet(_ulSel.n);sessionStorage.setItem("alkUnlocked","1");
  try{if(typeof Notification!=="undefined"&&Notification.permission==="default")Notification.requestPermission().then(function(p){if(p==="granted"){try{fcmRegister(true);}catch(e){}}});}catch(e){}
  _gateClose();startApp();}
 function userLogout(){try{sessionStorage.removeItem("alkUser");sessionStorage.removeItem("alkUnlocked");localStorage.removeItem(KEY+"_sessUser");localStorage.removeItem(KEY+"_unlocked");}catch(e){}try{_privKeyClear();}catch(e){}try{pushUnregister();}catch(e){}location.reload();}
@@ -5461,16 +5614,16 @@ function usersLinkBros(){if(!_isAdmin())return;var us=_users();if(!us.length)ret
 /* sesiunea ține o copie a contului din momentul logării — o împrospătăm când contul s-a schimbat (ex. i s-a asociat vestitorul) */
 function _sessRefresh(){try{var raw=sessionStorage.getItem("alkUser");if(!raw)return;var cu=JSON.parse(raw);
  var u=_users().find(function(x){return x.n===cu.n;});if(!u)return;
- var nu={n:u.n,r:u.r,mods:u.mods||null,bro:u.bro||null,attV:u.attV||0,attE:u.attE||0,curE:u.curE||0,sarE:u.sarE||0,wmE:u.wmE||0,mpE:u.mpE||0,ftE:u.ftE||0};
- if(nu.r!==cu.r||JSON.stringify(nu.mods)!==JSON.stringify(cu.mods||null)||(nu.bro||null)!==(cu.bro||null)||(!!nu.attV)!==(!!cu.attV)||(!!nu.attE)!==(!!cu.attE)||(!!nu.curE)!==(!!cu.curE)||(!!nu.sarE)!==(!!cu.sarE)||(!!nu.wmE)!==(!!cu.wmE)||(!!nu.mpE)!==(!!cu.mpE)||(!!nu.ftE)!==(!!cu.ftE))sessionStorage.setItem("alkUser",JSON.stringify(nu));}catch(e){}}
+ var nu={n:u.n,r:u.r,mods:u.mods||null,bro:u.bro||null,attV:u.attV||0,attE:u.attE||0,curE:u.curE||0,sarE:u.sarE||0,wmE:u.wmE||0,mpE:u.mpE||0,ftE:u.ftE||0,conE:u.conE||0};
+ if(nu.r!==cu.r||JSON.stringify(nu.mods)!==JSON.stringify(cu.mods||null)||(nu.bro||null)!==(cu.bro||null)||(!!nu.attV)!==(!!cu.attV)||(!!nu.attE)!==(!!cu.attE)||(!!nu.curE)!==(!!cu.curE)||(!!nu.sarE)!==(!!cu.sarE)||(!!nu.wmE)!==(!!cu.wmE)||(!!nu.mpE)!==(!!cu.mpE)||(!!nu.ftE)!==(!!cu.ftE)||(!!nu.conE)!==(!!cu.conE))sessionStorage.setItem("alkUser",JSON.stringify(nu));}catch(e){}}
 
-function _uMeta(u){if(u.off)return "Cont dezactivat — persoana e în arhivă";var m=_roleLbl(u.r)+(u.p?(u.pin?' · PIN <b>'+esc(u.pin)+'</b>':' · parolă veche'):' · fără PIN');if(u.r==="vestitor")m+=' · '+esc(u.bro?broDisp(u.bro):'(fără vestitor)');else if((u.r==="editor"||u.r==="viewer")&&u.mods&&u.mods.length===1)m+=' · '+(u.mods[0]==="vcp"?"doar VCP":"doar Arhivă");if(u.r!=="admin"){if(u.attE)m+=' · <b style="color:var(--acc)">prezență ✎</b>';else if(u.attV)m+=' · prezență (vede)';if(u.curE)m+=' · <b style="color:var(--acc)">curățenie ✎</b>';if(u.sarE)m+=' · <b style="color:var(--acc)">sarcini ✎</b>';if(u.wmE)m+=' · <b style="color:var(--acc)">întrunirea publică ✎</b>';if(u.mpE)m+=' · <b style="color:var(--acc)">mărturia publică ✎</b>';if(u.ftE)m+=' · <b style="color:var(--acc)">întrunirile de teren ✎</b>';}return m;}
+function _uMeta(u){if(u.off)return "Cont dezactivat — persoana e în arhivă";var m=_roleLbl(u.r)+(u.p?(u.pin?' · PIN <b>'+esc(u.pin)+'</b>':' · parolă veche'):' · fără PIN');if(u.r==="vestitor")m+=' · '+esc(u.bro?broDisp(u.bro):'(fără vestitor)');else if((u.r==="editor"||u.r==="viewer")&&u.mods&&u.mods.length===1)m+=' · '+(u.mods[0]==="vcp"?"doar VCP":"doar Arhivă");if(u.r!=="admin"){if(u.attE)m+=' · <b style="color:var(--acc)">prezență ✎</b>';else if(u.attV)m+=' · prezență (vede)';if(u.curE)m+=' · <b style="color:var(--acc)">curățenie ✎</b>';if(u.sarE)m+=' · <b style="color:var(--acc)">sarcini ✎</b>';if(u.wmE)m+=' · <b style="color:var(--acc)">întrunirea publică ✎</b>';if(u.mpE)m+=' · <b style="color:var(--acc)">mărturia publică ✎</b>';if(u.ftE)m+=' · <b style="color:var(--acc)">întrunirile de teren ✎</b>';if(u.conE)m+=' · <b style="color:var(--acc)">contacte de urgență</b>';}return m;}
 function usersSheet(){if(!_isAdmin()){toast("Doar administratorul");return;}_uStyle();var us=_users();
  var ord=us.map(function(u,i){return {u:u,i:i};}).sort(function(a,b){return a.u.n.localeCompare(b.u.n,"ro");});
  var rows=us.length?ord.map(function(o){var u=o.u,i=o.i;return '<div class="urow" data-n="'+esc(fold(u.n))+'"><div style="flex:1;min-width:0"><b>'+esc(u.n)+'</b><div class="muted" style="font-size:12px">'+_uMeta(u)+'</div></div><button class="btn pri sm" style="width:auto" title="Trimite-i aplicația + PIN-ul" onclick="userShare('+i+')">Trimite</button><button class="btn ghost sm" style="width:auto" onclick="userEdit('+i+')">Editează</button></div>';}).join(""):'<div class="muted">Niciun utilizator încă. Apasă „Generează conturi" — se creează automat câte un cont pentru fiecare vestitor (bătrânii devin administratori), fiecare cu PIN prestabilit.</div>';
  var srch=us.length?('<div class="brosrch"><span class="brosrch-ic">'+IC.search+'</span><input class="brosrch-in" type="search" autocomplete="off" enterkeyhint="search" placeholder="Caută utilizator…" oninput="usersFilterQ(this.value)"></div>'):'';
  rows=srch+'<div id="usrRows">'+rows+'</div><div class="muted" id="usrNone" style="display:none;padding:10px 2px">Niciun utilizator nu se potrivește.</div>';
- var H='<div class="muted" style="margin:2px 2px 10px">Cine poate intra și ce poate face. Bătrânii sunt administratori; ceilalți primesc standard rolul Vestitor. <b>Trimite</b> = îi trimiți <b>linkul aplicației</b> + PIN-ul lui — deschide linkul și datele se încarcă singure (fără telefoane, fără rapoartele altora, fără PIN-urile altora). Adminii/editorii primesc același link — la prima intrare pun tokenul GitHub la „Activează sincronizarea completă” (trimite-l separat, pe alt canal).</div>'
+ var H='<div class="muted" style="margin:2px 2px 10px">Cine poate intra și ce poate face. <b>Trimite</b> pregătește un mesaj scurt — linkul aplicației, numele și PIN-ul persoanei — pe care îl lipești pe WhatsApp sau e-mail. Administratorii și editorii primesc linkul cu cheia de scriere inclusă.</div>'
   +'<label class="fl">Adresa publică a aplicației</label><input class="fld" value="'+esc(S.settings.appUrl||"")+'" placeholder="https://drg2121.github.io/arhilink/" onchange="S.settings.appUrl=this.value.trim();save()">'
   +'<button class="btn pri sm" style="width:100%;margin:8px 0 14px" onclick="linkShare()">Copiază linkul de trimis (cu datele incluse)</button>'+rows
   +'<div class="rowflex" style="gap:8px;margin-top:14px"><button class="btn pri sm" style="flex:1" onclick="usersGenerate()">Generează conturi pentru toți</button><button class="btn ghost sm" style="width:auto" onclick="usersPins()">Copiază PIN-urile</button></div>'
@@ -5487,23 +5640,24 @@ function userEdit(i){if(!_isAdmin()){toast("Doar administratorul");return;}_uSty
  var ropt=roles.map(function(rr){return '<button class="pmrow urole '+(u.r===rr[0]?'on':'')+'" onclick="ueRole(this)" data-r="'+rr[0]+'"><span>'+esc(rr[1])+'</span></button>';}).join("");
  var mods=(u.mods&&u.mods.length)?u.mods:["vcp","arh"];
  var modsBox='<div id="ueMods" style="'+((u.r==="editor"||u.r==="viewer")?"":"display:none;")+'margin-top:12px"><label class="fl">Acces la module</label>'
-   +'<label class="ckrow2"><input type="checkbox" id="ueMvcp" '+(mods.indexOf("vcp")>=0?"checked":"")+'> VCP (planificarea întrunirii)</label>'
-   +'<label class="ckrow2"><input type="checkbox" id="ueMarh" '+(mods.indexOf("arh")>=0?"checked":"")+'> Arhivă (rapoarte S-1 / S-21 / prezență)</label></div>';
+   +'<label class="ckrow2"><input type="checkbox" id="ueMvcp" '+(mods.indexOf("vcp")>=0?"checked":"")+'><span>VCP (planificarea întrunirii)</span></label>'
+   +'<label class="ckrow2"><input type="checkbox" id="ueMarh" '+(mods.indexOf("arh")>=0?"checked":"")+'><span>Arhivă (rapoarte S-1 / S-21 / prezență)</span></label></div>';
  var broOpts='<option value="">— alege vestitorul —</option>'+(S.bros||[]).filter(function(b){return !isArchNow(b)||b.id===u.bro;}).sort(function(a,b){return a.name.localeCompare(b.name,"ro");}).map(function(bb){return '<option value="'+bb.id+'" '+(u.bro===bb.id?"selected":"")+'>'+esc(bb.name)+'</option>';}).join("");
  var broBox='<div id="ueBro" style="margin-top:12px"><label class="fl">Vestitorul asociat <span class="muted" style="font-weight:400">(obligatoriu la rolul Vestitor; la celelalte roluri îi dă și „Ale mele": raportul + sarcinile lui)</span></label><select class="fld" id="ueBroSel">'+broOpts+'</select></div>';
  var _uad=(u.r==="admin");
  var attBox='<div style="margin-top:12px"><label class="fl">Prezența la întruniri</label>'
-  +'<label class="ckrow2"><input type="checkbox" id="ueAttV" '+((_uad||u.attV||u.attE)?"checked":"")+(_uad?" disabled":"")+'> Vede prezența — primește tabul Prezență (ultimele 60 de zile)</label>'
+  +'<label class="ckrow2"><input type="checkbox" id="ueAttV" '+((_uad||u.attV||u.attE)?"checked":"")+(_uad?" disabled":"")+'><span>Vede prezența — primește tabul Prezență (ultimele 60 de zile)</span></label>'
   +'<label class="ckrow2"><input type="checkbox" id="ueAttE" '+((_uad||u.attE)?"checked":"")+(_uad?" disabled":"")+' onchange="if(this.checked){var v=document.getElementById(\'ueAttV\');if(v)v.checked=true;}"> Poate introduce și edita prezența</label>'
   +'<div class="muted" id="ueAttNote" style="font-size:11.5px;margin-top:4px'+(_uad?'':';display:none')+'">Administratorii au prezența activă implicit.</div></div>';
  /* dreptul de a EDITA cele două secțiuni din Arhivă; toți le văd oricum */
  var secBox='<div style="margin-top:12px"><label class="fl">Secțiuni din Arhivă</label>'
   +'<div class="muted" style="font-size:11.5px;margin:0 2px 6px">Toți utilizatorii VĂD foile de mai jos. Bifează cui îi dai și dreptul să le modifice.</div>'
-  +'<label class="ckrow2"><input type="checkbox" id="ueCurE" '+((_uad||u.curE)?"checked":"")+(_uad?" disabled":"")+'> Poate edita <b>Curățenia generală</b></label>'
-  +'<label class="ckrow2"><input type="checkbox" id="ueSarE" '+((_uad||u.sarE)?"checked":"")+(_uad?" disabled":"")+'> Poate edita <b>Sarcinile</b> (ordine, audio/video, grupe)</label>'
-  +'<label class="ckrow2"><input type="checkbox" id="ueWmE" '+((_uad||u.wmE)?"checked":"")+(_uad?" disabled":"")+'> Poate edita <b>Întrunirea publică</b> (sfârșit de săptămână)</label>'
-  +'<label class="ckrow2"><input type="checkbox" id="ueMpE" '+((_uad||u.mpE)?"checked":"")+(_uad?" disabled":"")+'> Poate edita <b>Mărturia publică</b></label>'
-  +'<label class="ckrow2"><input type="checkbox" id="ueFtE" '+((_uad||u.ftE)?"checked":"")+(_uad?" disabled":"")+'> Poate edita <b>Întrunirile de teren</b></label>'
+  +'<label class="ckrow2"><input type="checkbox" id="ueCurE" '+((_uad||u.curE)?"checked":"")+(_uad?" disabled":"")+'><span>Poate edita <b>Curățenia generală</b></span></label>'
+  +'<label class="ckrow2"><input type="checkbox" id="ueSarE" '+((_uad||u.sarE)?"checked":"")+(_uad?" disabled":"")+'><span>Poate edita <b>Sarcinile</b> (ordine, audio/video, grupe)</span></label>'
+  +'<label class="ckrow2"><input type="checkbox" id="ueWmE" '+((_uad||u.wmE)?"checked":"")+(_uad?" disabled":"")+'><span>Poate edita <b>Întrunirea publică</b> (sfârșit de săptămână)</span></label>'
+  +'<label class="ckrow2"><input type="checkbox" id="ueMpE" '+((_uad||u.mpE)?"checked":"")+(_uad?" disabled":"")+'><span>Poate edita <b>Mărturia publică</b></span></label>'
+  +'<label class="ckrow2"><input type="checkbox" id="ueFtE" '+((_uad||u.ftE)?"checked":"")+(_uad?" disabled":"")+'><span>Poate edita <b>Întrunirile de teren</b></span></label>'
+  +'<label class="ckrow2"><input type="checkbox" id="ueConE" '+((_uad||u.conE)?"checked":"")+(_uad?" disabled":"")+'><span>Vede <b>Contactele de urgență</b> (lista, PDF-ul, cererea pe WhatsApp) — doar cu sincronizare completă (token)</span></label>'
   +'<div class="muted" id="ueSecNote" style="font-size:11.5px;margin-top:4px'+(_uad?'':';display:none')+'">Administratorii le pot edita implicit.</div></div>';
  var H='<label class="fl">Nume (apare în istoric)</label><input class="fld" id="ueName" value="'+esc(u.n)+'" placeholder="ex. Andrei"><label class="fl" style="margin-top:12px">Rol</label><div id="ueRoles" style="display:flex;flex-direction:column;gap:6px;margin-top:4px">'+ropt+'</div>'+modsBox+broBox+attBox+secBox+'<label class="fl" style="margin-top:12px">PIN</label>'
  +'<div class="rowflex" style="gap:8px"><input class="fld" id="uePass" inputmode="numeric" autocomplete="off" style="flex:1" value="'+esc(u.pin||"")+'" placeholder="'+((i>=0&&u.p&&!u.pin)?'are parolă veche — scrie un PIN ca s-o înlocuiești':'ex. 1234')+'"><button class="btn ghost sm" style="width:auto" onclick="ueGenPin()">Generează</button></div>'
@@ -5526,11 +5680,11 @@ async function userSave(i){if(!_isAdmin()){toast("Doar administratorul");return;
  var attE=($("#ueAttE")&&$("#ueAttE").checked)?1:0;var attV=(($("#ueAttV")&&$("#ueAttV").checked)||attE)?1:0;
  var curE=($("#ueCurE")&&$("#ueCurE").checked)?1:0;var sarE=($("#ueSarE")&&$("#ueSarE").checked)?1:0;
  var wmE=($("#ueWmE")&&$("#ueWmE").checked)?1:0;var mpE=($("#ueMpE")&&$("#ueMpE").checked)?1:0;
- var ftE=($("#ueFtE")&&$("#ueFtE").checked)?1:0;
- if(r==="admin"){attV=1;attE=1;curE=1;sarE=1;wmE=1;mpE=1;ftE=1;}/* adminii au prezența și secțiunile implicit */
+ var ftE=($("#ueFtE")&&$("#ueFtE").checked)?1:0;var conE=($("#ueConE")&&$("#ueConE").checked)?1:0;
+ if(r==="admin"){attV=1;attE=1;curE=1;sarE=1;wmE=1;mpE=1;ftE=1;conE=1;}/* adminii au prezența și secțiunile implicit */
  if(!S.settings.users)S.settings.users=[];var us=S.settings.users;for(var j=0;j<us.length;j++){if(j!==i&&us[j].n===nm){toast("Există deja un utilizator cu acest nume");return;}}
  var _chgPin=(i<0)||(pw!==(us[i].pin||""));
- if(i>=0){us[i].n=nm;us[i].r=r;if(_chgPin){us[i].p=pw?_hash(pw):"";us[i].pin=pw;us[i].pt=Date.now();}us[i].mods=(r==="editor"||r==="viewer")?mods:null;us[i].bro=bro||null;us[i].attV=attV;us[i].attE=attE;us[i].curE=curE;us[i].sarE=sarE;us[i].wmE=wmE;us[i].mpE=mpE;us[i].ftE=ftE;}else{us.push({n:nm,r:r,p:pw?_hash(pw):"",pin:pw||"",pt:Date.now(),mods:(r==="editor"||r==="viewer")?mods:null,bro:bro||null,attV:attV,attE:attE,curE:curE,sarE:sarE,wmE:wmE,mpE:mpE,ftE:ftE});}
+ if(i>=0){us[i].n=nm;us[i].r=r;if(_chgPin){us[i].p=pw?_hash(pw):"";us[i].pin=pw;us[i].pt=Date.now();}us[i].mods=(r==="editor"||r==="viewer")?mods:null;us[i].bro=bro||null;us[i].attV=attV;us[i].attE=attE;us[i].curE=curE;us[i].sarE=sarE;us[i].wmE=wmE;us[i].mpE=mpE;us[i].ftE=ftE;us[i].conE=conE;}else{us.push({n:nm,r:r,p:pw?_hash(pw):"",pin:pw||"",pt:Date.now(),mods:(r==="editor"||r==="viewer")?mods:null,bro:bro||null,attV:attV,attE:attE,curE:curE,sarE:sarE,wmE:wmE,mpE:mpE,ftE:ftE,conE:conE});}
  /* PIN nou → și forma PBKDF2, singura care pleacă în canalul vestitorilor */
  if(_chgPin){var _u=us[i>=0?i:us.length-1];if(pw&&_cw()){var _s=_rndHex(16);try{_u.p2={s:_s,h:await pinHash2(pw,_s),n:PBK_ITER};}catch(e){delete _u.p2;}}else delete _u.p2;}
  if(!us.some(function(u){return u.r==="admin";})){toast("Trebuie cel puțin un Administrator");if(i<0)us.pop();else us[i].r="admin";return;}if(!_curUser()&&r==="admin"){sessionStorage.setItem("alkUser",JSON.stringify({n:nm,r:"admin"}));_userSet(nm);sessionStorage.setItem("alkUnlocked","1");}save();_sessRefresh();usersSheet();toast("Salvat");}
@@ -6366,6 +6520,7 @@ function _arhGroups(){var g=[];
    ["grp","Grupe",IC.ppl,"grupele de serviciu, supraveghetorii și asistenții"],
    ["resp","Responsabilități",IC.mark,"departamentele și cine răspunde de fiecare"],
    ["arhv","Arhivați",IC.box,"cei mutați sau ieșiți din congregație, cu rapoartele lor"]];
+  if(_conAllowed())t.push(["con","Contacte de urgență",IC.info,"telefoane, adrese, naștere, botez și persoanele de contact — cine n-a completat, PDF și cererea pe WhatsApp"]);
   if(_isAdmin())t.push(["scr","Scrisori",IC.book,"documente, anunțuri și scrisori pentru avizier"]);
   t.push(["exp","Export",IC.dl,"PDF-uri: arhiva completă, S-1, S-88, fișele S-21"]);
   g.push({k:"rap",n:"Rapoarte și evidențe",ic:IC.arch,
@@ -6471,7 +6626,7 @@ function renderArh(){arhInitSel();arhEnsureCSS();$("#fab").style.display="none";
      else _f.style.display="none";}}
    _arhLastSub=arhSub;return;}
   var nav=_arhNavHtml();
-  var body=arhSub==="stat"?arhStatHtml():arhSub==="s10"?arhS10Html():arhSub==="rap"?arhRapHtml():arhSub==="pio600"?arhPioHtml():arhSub==="prez"?arhPrezHtml():arhSub==="grp"?arhGrpHtml():arhSub==="resp"?arhRespHtml():arhSub==="cur"?arhCleanHtml():arhSub==="sarc"?arhDutyHtml():arhSub==="mp"?arhMpHtml():arhSub==="teren"?arhFtHtml():arhSub==="wm"?arhWmHtml():arhSub==="scr"?arhScrHtml():arhSub==="arhv"?arhArchHtml():arhSub==="exp"?arhExpHtml():arhSumarHtml();
+  var body=arhSub==="stat"?arhStatHtml():arhSub==="s10"?arhS10Html():arhSub==="rap"?arhRapHtml():arhSub==="pio600"?arhPioHtml():arhSub==="prez"?arhPrezHtml():arhSub==="grp"?arhGrpHtml():arhSub==="resp"?arhRespHtml():arhSub==="cur"?arhCleanHtml():arhSub==="sarc"?arhDutyHtml():arhSub==="mp"?arhMpHtml():arhSub==="teren"?arhFtHtml():arhSub==="wm"?arhWmHtml():arhSub==="scr"?arhScrHtml():arhSub==="con"?arhConHtml():arhSub==="arhv"?arhArchHtml():arhSub==="exp"?arhExpHtml():arhSumarHtml();
   $("#body").innerHTML=nav+body;
   /* cu multe subtaburi bara depășește ecranul — aducem subtabul activ în vizor */
   try{var _pt=$("#body").querySelector(".ptabs-arh"),_on=_pt&&_pt.querySelector(".ptab.on");
@@ -6496,6 +6651,7 @@ function _arhFab(){var f=$("#fab");if(!f)return;var ed=_canEditArh(),ad=_isAdmin
  else if(arhSub==="mp")cfg={ic:(_canEditMp()?IC.tune:IC.dl),fn:arhFabMp};
  else if(arhSub==="wm")cfg={ic:(_canEditWm()?IC.tune:IC.dl),fn:arhFabWm};
  else if(arhSub==="teren")cfg={ic:(_canEditFt()?IC.tune:IC.dl),fn:arhFabFt};
+ else if(arhSub==="con")cfg=null;/* descărcarea e scrisă pe ecran, sus */
  if(!cfg){f.style.display="none";return;}
  f.innerHTML=cfg.ic;f.title="Descarcă / unelte";f.style.display="flex";f.onclick=cfg.fn;}
 function vcpListFab(){
@@ -7128,15 +7284,19 @@ function _odRefPaint(){var el=document.getElementById("odrBody"),R=_odRef;if(!el
 function meContact(){var my=_myBro();var b=S.bros.find(function(x){return x.id===my;});if(!b){toast("Contul nu e legat de un vestitor");return;}
  var q=function(s){return esc(s||"");};
  sheet("","Datele mele de contact",
-  '<div class="muted" style="margin:0 2px 12px">'+esc(b.name)+' — completează-ți telefonul, adresa și până la 3 persoane de contact în caz de urgență.</div>'
- +'<div class="two"><div><label class="fl">Telefon</label><input id="mc_p" class="fld" value="'+q(b.phone)+'" placeholder="07…"></div><div><label class="fl">E-mail</label><input id="mc_e" class="fld" type="email" value="'+q(b.email)+'" placeholder="nume@gmail.com"></div></div>'
- +'<label class="fl" style="margin-top:8px">Adresă</label><input id="mc_a" class="fld" value="'+q(b.addr)+'" placeholder="Str. …, nr …, sect …, București">'
- +'<div class="two" style="margin-top:8px"><div><label class="fl">Contact urgență 1 — nume</label><input id="mc_cn" class="fld" value="'+q(b.ecn)+'" placeholder="ex. Familia …"></div><div><label class="fl">Contact urgență 1 — telefon</label><input id="mc_cp" class="fld" value="'+q(b.ecp)+'" placeholder="07…"></div></div>'
- +'<div class="two" style="margin-top:8px"><div><label class="fl">Contact urgență 2 — nume</label><input id="mc_c2n" class="fld" value="'+q(b.ec2n)+'" placeholder="opțional"></div><div><label class="fl">Contact urgență 2 — telefon</label><input id="mc_c2p" class="fld" value="'+q(b.ec2p)+'" placeholder="07…"></div></div>'
- +'<div class="two" style="margin-top:8px"><div><label class="fl">Contact urgență 3 — nume</label><input id="mc_c3n" class="fld" value="'+q(b.ec3n)+'" placeholder="opțional"></div><div><label class="fl">Contact urgență 3 — telefon</label><input id="mc_c3p" class="fld" value="'+q(b.ec3p)+'" placeholder="07…"></div></div>'
+  '<div class="muted" style="margin:0 2px 12px">'+esc(b.name)+' — telefonul, adresa, data nașterii și a botezului și până la 3 persoane de contact în caz de urgență. Doar tu și administratorii le văd.</div>'
+ +'<label class="fl" style="margin-top:2px">Telefon</label><input id="mc_p" class="fld" type="tel" inputmode="tel" autocomplete="tel" value="'+q(b.phone)+'" placeholder="07…">'
+ +'<label class="fl">E-mail</label><input id="mc_e" class="fld" type="email" inputmode="email" autocomplete="email" value="'+q(b.email)+'" placeholder="nume@gmail.com">'
+ +'<label class="fl">Adresă</label><input id="mc_a" class="fld" autocomplete="street-address" value="'+q(b.addr)+'" placeholder="Str. …, nr …, sect …, București">'
+ +'<div class="two"><div><label class="fl">Data nașterii</label><input id="mc_bd" class="fld" type="date" value="'+q(b.bdate)+'"></div><div><label class="fl">Data botezului</label><input id="mc_bp" class="fld" type="date" value="'+q(b.baptism)+'"></div></div>'
+ +'<div class="pmlbl" style="margin-top:18px">În caz de urgență</div>'
+ +[["1","mc_cn","mc_cp",b.ecn,b.ecp,"ex. Familia …"],["2","mc_c2n","mc_c2p",b.ec2n,b.ec2p,"opțional"],["3","mc_c3n","mc_c3p",b.ec3n,b.ec3p,"opțional"]].map(function(c){
+   return '<div class="mcec"><div class="mcecn">Persoana '+c[0]+(c[0]==="1"?'':' <span class="muted">(opțional)</span>')+'</div>'
+    +'<div class="two"><div><label class="fl">Nume</label><input id="'+c[1]+'" class="fld" value="'+q(c[3])+'" placeholder="'+c[5]+'"></div>'
+    +'<div><label class="fl">Telefon</label><input id="'+c[2]+'" class="fld" type="tel" inputmode="tel" value="'+q(c[4])+'" placeholder="07…"></div></div></div>';}).join("")
  +(_canEdit()?'':'<div class="hint" style="margin-top:10px">La salvare, datele pleacă automat și către administratori, ca lista centrală să fie actualizată.</div>')
  +'<div class="rowflex" style="gap:9px;margin-top:18px"><button class="btn danger sm" style="width:auto" onclick="meContactDel()">Șterge datele</button><div class="spacer"></div><button class="btn ghost sm" style="width:auto" onclick="closeSheet()">Anulează</button><button class="btn pri sm" style="width:auto" onclick="meContactSave()">Salvează</button></div>');}
-function _cFields(){return ["phone","email","addr","ecn","ecp","ec2n","ec2p","ec3n","ec3p"];}
+function _cFields(){return ["phone","email","addr","ecn","ecp","ec2n","ec2p","ec3n","ec3p","bdate","baptism"];}
 function _meContactApply(b,vals){_cFields().forEach(function(f){b[f]=vals[f]||"";});b.cT=Date.now();
  logAct("Date de contact actualizate: "+b.name);save();closeSheet();if(tab==="arh")arhRerender();
  if(_canEdit()){toast("Salvat ✓");return;}
@@ -7149,10 +7309,10 @@ function _meContactApply(b,vals){_cFields().forEach(function(f){b[f]=vals[f]||""
 function meContactSave(){var my=_myBro();var b=S.bros.find(function(x){return x.id===my;});if(!b)return;
  _meContactApply(b,{phone:$("#mc_p").value.trim(),email:$("#mc_e").value.trim(),addr:$("#mc_a").value.trim(),
   ecn:$("#mc_cn").value.trim(),ecp:$("#mc_cp").value.trim(),ec2n:$("#mc_c2n").value.trim(),ec2p:$("#mc_c2p").value.trim(),
-  ec3n:$("#mc_c3n").value.trim(),ec3p:$("#mc_c3p").value.trim()});}
+  ec3n:$("#mc_c3n").value.trim(),ec3p:$("#mc_c3p").value.trim(),bdate:($("#mc_bd")?$("#mc_bd").value:"")||"",baptism:($("#mc_bp")?$("#mc_bp").value:"")||""});}
 async function meContactDel(){var my=_myBro();var b=S.bros.find(function(x){return x.id===my;});if(!b)return;
  if(!(await uiConfirm("Ștergi toate datele tale de contact (telefon, e-mail, adresă, contacte de urgență)?")))return;
- _meContactApply(b,{});}
+ _meContactApply(b,{bdate:b.bdate||"",baptism:b.baptism||""});/* datele de naștere și botez rămân — nu sunt „de contact" */}
 
 /* ---------- SCHIMBĂ-ȚI SINGUR PIN-UL ---------- */
 function mePinSheet(){var cu=_curUser();if(!cu){toast("Nu ești logat");return;}
@@ -10387,12 +10547,13 @@ function wmWeekHtml(wi){var w=S.weeks[wi],o=wmOf(wi),ed=_canEditWm(),posts=wmPos
   +'</div></div></div>';
  h+='<div class="group" style="overflow:hidden">';
  /* la fel ca la Sarcini: avertizarea o vede doar cine poate schimba foaia */
- posts.forEach(function(p){var id=o[p.id]||"";var busy=(ed&&id)?wmBusyAll(wi,id,p.id):[];
+ posts.forEach(function(p){var id=o[p.id]||"",nm=wmPName(o,p.id);var busy=(ed&&id)?wmBusyAll(wi,id,p.id):[];
   h+='<div class="wmf"><div class="wml">'+esc(p.n)+'</div><div class="wmr">'
-   +'<button class="mpb '+(id?"":"ph")+(busy.length?" warn":"")+'" '+(ed?('onclick="wmPick('+wi+',\''+p.id+'\')"'):'disabled style="cursor:default"')+'>'
-   +'<span class="mpx">'+(id?esc(broDisp(id)):"—")+'</span>'+(ed?('<span class="dpc">'+IC.chev+'</span>'):'')+'</button>'
+   +'<button class="mpb '+(nm?"":"ph")+(busy.length?" warn":"")+'" '+(ed?('onclick="wmPick('+wi+',\''+p.id+'\')"'):'disabled style="cursor:default"')+'>'
+   +'<span class="mpx">'+(nm?esc(nm):"—")+'</span>'+(ed?('<span class="dpc">'+IC.chev+'</span>'):'')+'</button>'
+   +((nm&&!id)?'<div class="muted" style="font-size:11.5px">din altă congregație</div>':'')
    +(busy.length?dutyWarnHtml(busy):'')
-   +'</div>'+((ed&&id)?('<button class="dpclr" title="Scoate" onclick="wmClear('+wi+',\''+p.id+'\')">×</button>'):'')+'</div>';});
+   +'</div>'+((ed&&nm)?('<button class="dpclr" title="Scoate" onclick="wmClear('+wi+',\''+p.id+'\')">×</button>'):'')+'</div>';});
  h+='</div>';
  var gt=wmGrpTxt(o);
  h+='<div class="group" style="overflow:hidden"><div class="wmf"><div class="wml">Ospitalitate</div><div class="wmr">'
@@ -10404,6 +10565,18 @@ function wmWeekHtml(wi){var w=S.weeks[wi],o=wmOf(wi),ed=_canEditWm(),posts=wmPos
   +'<span class="mpx" style="white-space:normal">'+((o.note||"").trim()?esc(o.note):"—")+'</span>'+(ed?('<span class="dpc">'+IC.chev+'</span>'):'')+'</button></div></div></div>';
  if(ed)h+='<div class="muted" style="margin:2px 2px 0;font-size:11.5px">În listele de alegere apar doar cei bifați în fișă la partea respectivă (Vestitori → fișă → „Întrunirea publică”).</div>';
  return h;}
+/* Numele de la un post: fratele din listă sau, dacă a venit din altă congregație, numele scris
+   de mână (o[<post>N] — la fel cum vorbitorul străin stă în spN). Cele trei funcții de mai jos
+   lipseau: selectorul de persoane și „×"-ul de la posturi le chemau și crăpau în tăcere. */
+function wmPName(o,pid){if(!o)return "";if(o[pid])return broDisp(o[pid]);return (o[pid+"N"]||"").trim();}
+function _wmExtBlock(wi,pid){if(pid==="sp")return "";var cur=(wmOf(wi)[pid+"N"]||"").trim();
+ return '<div class="pmlbl">Frate din altă congregație</div>'
+  +'<div class="asgrow" style="margin-top:4px"><input class="fld" id="wpxN" value="'+esc(cur)+'" placeholder="Numele, scris de mână" autocomplete="off" style="margin:0">'
+  +'<button class="btn pri sm" style="width:auto;flex:0 0 auto" onclick="wmSetExt()">Pune</button></div>';}
+function wmSetExt(){if(!_wpk||!_needWm())return;var n=($("#wpxN")?$("#wpxN").value:"").trim();if(!n){toast("Scrie numele");return;}
+ var wi=_wpk.wi,pid=_wpk.pid,p=wmPost(pid);wmSetVal(wi,pid,"");wmSetVal(wi,pid+"N",n);
+ wmCommit("Întrunirea publică "+tc(S.weeks[wi].date)+" · "+((p||{}).n||pid)+": "+n+" (din altă congregație)");
+ closeSheet();_wpk=null;renderArhRoute();}
 function wmClear(wi,pid){if(!_needWm())return;var o=wmOf(wi),nm=wmPName(o,pid);if(!nm)return;
  wmSetVal(wi,pid,"");wmSetVal(wi,pid+"N","");
  wmCommit("Întrunirea publică: scos "+nm+" de la „"+((wmPost(pid)||{}).n||pid)+"” ("+tc(S.weeks[wi].date)+")");
@@ -10740,8 +10913,8 @@ function _wmCard(wi){var w=S.weeks[wi],o=wmOf(wi),dt=wmDateOf(wi);
  var rows='<tr><td class="wl">Vorbitor</td><td class="wv">'+esc(wmSpeakerExp(o))+'</td><td class="wl">Congregația</td><td class="wv">'+esc(wmCong(o))+'</td></tr>'
   +'<tr><td class="wl">Titlu</td><td class="wv" colspan="3">'+esc(o.tt||"")+'</td></tr>';
  for(var j=0;j<posts.length;j+=2){var p1=posts[j],p2=posts[j+1];
-  rows+='<tr><td class="wl">'+esc(p1.n)+'</td><td class="wv">'+esc(o[p1.id]?(expNameS(o[p1.id])||broDisp(o[p1.id])):"")+'</td>'
-   +(p2?('<td class="wl">'+esc(p2.n)+'</td><td class="wv">'+esc(o[p2.id]?(expNameS(o[p2.id])||broDisp(o[p2.id])):"")+'</td>')
+  rows+='<tr><td class="wl">'+esc(p1.n)+'</td><td class="wv">'+esc(o[p1.id]?(expNameS(o[p1.id])||broDisp(o[p1.id])):wmPName(o,p1.id))+'</td>'
+   +(p2?('<td class="wl">'+esc(p2.n)+'</td><td class="wv">'+esc(o[p2.id]?(expNameS(o[p2.id])||broDisp(o[p2.id])):wmPName(o,p2.id))+'</td>')
        :'<td class="wl">Ospitalitate</td><td class="wv">'+esc(_grpCell(wmGrpShort(o)))+'</td>')+'</tr>';}
  if(posts.length%2===0)rows+='<tr><td class="wl">Ospitalitate</td><td class="wv" colspan="3">'+esc(_grpCell(wmGrpShort(o)))+'</td></tr>';
  if((o.note||"").trim())rows+='<tr><td class="wl">Notă</td><td class="wv" colspan="3">'+esc(o.note)+'</td></tr>';
@@ -10961,7 +11134,7 @@ function _allWmBox(wi){var o=wmOf(wi),dt=wmDateOf(wi),w=S.weeks[wi];
  var rows=_allRow(ALL_C_WM,"Vorbitor",wmSpeakerExp(o))
   +_allRow(ALL_C_WM,"Congregația",wmCong(o))
   +_allRow(ALL_C_WM,"Titlu",o.tt||"");
- wmPosts().forEach(function(p){rows+=_allRow(ALL_C_WM,p.n,o[p.id]?(expNameS(o[p.id])||broDisp(o[p.id])):"");});
+ wmPosts().forEach(function(p){rows+=_allRow(ALL_C_WM,p.n,o[p.id]?(expNameS(o[p.id])||broDisp(o[p.id])):wmPName(o,p.id));});
  rows+=_allRow(ALL_C_WM,"Ospitalitate",_grpCell(wmGrpShort(o)));
  if((o.note||"").trim())rows+=_allRow(ALL_C_WM,"Notă",o.note);
  return _allSec(ALL_C_WM,ALL_IC_WM,hd,rows);}
