@@ -346,7 +346,7 @@ label.fl{display:block;font-size:11.5px;color:var(--ink2);margin:12px 0 5px;font
 /* selector segmentat: trei părți egale într-o singură ramă, centrată ca bloc.
    Pastilele lipite de marginea din stânga arătau ca o listă neterminată, iar centrate
    pluteau în gol pe ecran lat. */
-.segbar{display:flex;gap:4px;width:100%;max-width:520px;margin:0 auto 12px;padding:4px;
+.segbar{display:flex;gap:4px;width:100%;max-width:620px;margin:0 auto 12px;padding:4px;
  background:var(--surf2);border:1px solid var(--bd);border-radius:14px}
 .segbar .seg{flex:1 1 0;min-width:0;border:0;background:transparent;color:var(--ink2);
  border-radius:10px;padding:9px 6px;font:inherit;font-size:13.5px;font-weight:700;cursor:pointer;
@@ -659,7 +659,7 @@ Object.assign(IC,{
  box:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h18v13H3z"/><path d="M3 7l2-4h14l2 4"/><path d="M10 11h4"/></svg>',
  mark:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15.5 4.5l4 4-9.5 9.5H6v-4z"/><path d="M12.5 7.5l4 4M5 21h14"/></svg>'
 });
-const VERSION="3.8.0";
+const VERSION="3.9.0";
 /* Versiunea minima care are voie sa SCRIE in cloud. Se trece in gist la fiecare trimitere;
    un dispozitiv ramas pe un build mai vechi decat atat nu mai poate suprascrie datele —
    doar citeste si se actualizeaza singur. Asa nu mai poate un singur telefon uitat deschis
@@ -5093,6 +5093,14 @@ function startApp(){_dirty=computeDirty();applyTheme();try{bkpMigrate();}catch(e
    `v` = cheia de „văzut deja"; `label` = versiunea afișată.
    ============================================================================ */
 var NEWS=[
+ {v:"3.9.0",label:"3.9",d:"20.09.2026",t:"Caută orice, vezi luna întreagă, analizează anul",items:[
+  ["search","Caută în toată aplicația","Lupa din antet deschide un singur câmp care caută peste tot: vestitori, săptămâni, părți de program, sarcini, ture de la mărturia publică, grupe, responsabilități, cântări, tutoriale și ecranele aplicației. Diacriticele nu contează — „bratu” îl găsește pe „Brațu”. Apeși rezultatul și ajungi fix acolo. De la tastatură: Ctrl/Cmd+K sau „/”."],
+  ["cal","Calendarul lunii, în Programări","A patra foaie: luna întreagă pe o pagină, cu un punct colorat pe fiecare zi — întrunirea din timpul săptămânii, cea de la sfârșit, întrunirile de teren, turele de la mărturia publică și evenimentele. Zilele în care ai TU ceva de făcut sunt colorate. Apeși o zi și dedesubt scrie tot ce e în ea, cu ora."],
+  ["chart","Statistici pe anul de serviciu","Secțiune nouă în „Rapoarte și evidențe”: orele pe lună față de anul trecut, vestitorii activi, prezența la cele două întruniri și studiile biblice, în grafice. Plus câți sunt în fiecare categorie. Se descarcă și ca PDF."],
+  ["form","Analiza congregației (S-10)","Formularul anual, completat de aplicație acolo unde are de unde: media prezenței, vestitorii activi, cine a devenit inactiv și cine a redevenit activ — cu numele și luna. Teritoriile și celelalte se scriu de mână și rămân salvate pe an. PDF-ul are și o a doua pagină în care scrie de unde vine fiecare cifră."],
+  ["check","Săptămâna cerută nu se mai pierde","Din „Profilul meu”, apăsarea pe o sarcină, pe o cuvântare sau pe curățenia grupei ducea în „Programări”, dar pe săptămâna în curs, nu pe cea pe care ai apăsat-o. Acum deschide exact săptămâna aceea."],
+  ["info","Butonul rotund se dă la o parte","Cât derulezi în jos se retrage, ca să nu mai acopere numele scris la capătul rândului („PRICHINDEL Filip” la Citirea Bibliei); la prima mișcare înapoi în sus revine. Antetul strânge iconurile pe telefoanele înguste, ca numele congregației să încapă."]
+ ]},
  {v:"3.8.0",label:"3.8",d:"05.09.2026",t:"Orele mele — carnetul de teren, în Profilul meu",items:[
   ["clock","Orele mele","Un card nou în „Profilul meu”: notezi orele pe zile („Adaugă ore”) sau pornești cronometrul când ieși și îl oprești când termini. Vezi totalul lunii, obiectivul și cât îți mai trebuie pe zi."],
   ["book","Aplicația pe ecranul principal — tutorial pentru toți","Îți recunoaște telefonul (iPhone sau Android, Safari, Chrome sau Samsung Internet, calculator) și arată pas cu pas, pe telefonul desenat, cum salvezi ArhiLink pe ecranul principal. Îl găsești în „Profilul meu”, în lista de tutoriale și în Setări. Unde browserul permite, „Instalează acum” face totul dintr-o apăsare."],
@@ -6272,7 +6280,7 @@ var _arhLastSub=null;
    Așa e la fel pentru toți: se citește într-un loc, se scrie în altul.
    ============================================================================ */
 var progSub="vcp";
-function _progTabs(){return [["vcp","Viața creștină"],["wm","Întrunirea publică"],["sarc","Sarcini"]];}
+function _progTabs(){return [["vcp","Viața creștină"],["wm","Întrunirea publică"],["sarc","Sarcini"],["cal","Calendar"]];}
 /* O SINGURĂ săptămână pentru tot ecranul: cele trei foi sunt trei fețe ale aceleiași
    săptămâni, deci schimbată pe una, e schimbată pe toate. Înainte fiecare foaie își ținea
    săptămâna ei și o uita la ieșire: treceai de pe „Viața creștină" pe „Întrunirea publică"
@@ -6299,6 +6307,8 @@ function renderProg(){
  if(progSub==="vcp"){renderVcp();}
  else if(progSub==="wm"){ensureDutyCSS();ensureMpCSS();
   $("#body").innerHTML=arhWmHtml();_fabDl(wmPdfSheet);}
+ else if(progSub==="cal"){/* calendarul n-are ce descărca: butonul rotund nu-și are rostul aici */
+  $("#body").innerHTML=progCalHtml();var _fc=$("#fab");if(_fc)_fc.style.display="none";}
  else{ensureDutyCSS();
   $("#body").innerHTML=arhDutyHtml();_fabDl(dutyPdfSheet);}
  _progNavFix();
@@ -6347,6 +6357,8 @@ function _arhGroups(){var g=[];
    ["cur","Curățenie generală",IC.check,"congregația de serviciu, fratele responsabil și bifa lunară"]]});
  if(_arhReports()){var t=[
    ["sumar","Sumar S-1",IC.info,"raportul lunar al congregației, pe categorii"],
+   ["stat","Statistici",IC.chart,"anul de serviciu în grafice: ore, vestitori activi, prezență, studii"],
+   ["s10","Analiza congregației",IC.form,"formularul S-10, o dată pe an — cifrele socotite din rapoarte, plus cele scrise de mână"],
    ["rap","Rapoarte",IC.edit,"rapoartele lunare ale vestitorilor"],
    ["pio600","Pionieri",IC.clock,"progresul fiecărui pionier spre cele 600 de ore"],
    ["prez","Prezență",IC.check,"prezența la întruniri și foaia S-88"],
@@ -6373,7 +6385,8 @@ function ensureArhHomeCSS(){if(document.getElementById("ahcss"))return;var st=do
 +".arhback{display:flex;align-items:center;gap:7px;flex:0 0 auto;background:var(--surf2);border:1px solid var(--bd);border-radius:10px;color:var(--ink2);font-size:12.5px;font-weight:700;padding:7px 11px;margin-right:8px;cursor:pointer}"
 +".arhback:hover{color:var(--acc);border-color:var(--acc)}.arhback svg{width:14px;height:14px}"
 +".arhnav{display:flex;align-items:center;gap:10px;margin-bottom:12px}"
-+".arhnav .ahtt2{font-size:16px;font-weight:800;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}";
++".arhnav .ahtt2{font-size:16px;font-weight:800;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}"
++"@media(max-width:430px){.arhback{font-size:11.5px;padding:7px 9px;max-width:44%;overflow:hidden;white-space:nowrap;display:flex}.arhback svg{flex:0 0 auto}.arhnav .ahtt2{font-size:14.5px}}";
  document.head.appendChild(st);}
 function _ahCard(onclick,ic,title,sub,note){
  return '<button class="ahcard" onclick="'+onclick+'"><span class="ahic">'+(ic||IC.box)+'</span>'
@@ -6457,7 +6470,7 @@ function renderArh(){arhInitSel();arhEnsureCSS();$("#fab").style.display="none";
      else _f.style.display="none";}}
    _arhLastSub=arhSub;return;}
   var nav=_arhNavHtml();
-  var body=arhSub==="rap"?arhRapHtml():arhSub==="pio600"?arhPioHtml():arhSub==="prez"?arhPrezHtml():arhSub==="grp"?arhGrpHtml():arhSub==="resp"?arhRespHtml():arhSub==="cur"?arhCleanHtml():arhSub==="sarc"?arhDutyHtml():arhSub==="mp"?arhMpHtml():arhSub==="teren"?arhFtHtml():arhSub==="wm"?arhWmHtml():arhSub==="scr"?arhScrHtml():arhSub==="arhv"?arhArchHtml():arhSub==="exp"?arhExpHtml():arhSumarHtml();
+  var body=arhSub==="stat"?arhStatHtml():arhSub==="s10"?arhS10Html():arhSub==="rap"?arhRapHtml():arhSub==="pio600"?arhPioHtml():arhSub==="prez"?arhPrezHtml():arhSub==="grp"?arhGrpHtml():arhSub==="resp"?arhRespHtml():arhSub==="cur"?arhCleanHtml():arhSub==="sarc"?arhDutyHtml():arhSub==="mp"?arhMpHtml():arhSub==="teren"?arhFtHtml():arhSub==="wm"?arhWmHtml():arhSub==="scr"?arhScrHtml():arhSub==="arhv"?arhArchHtml():arhSub==="exp"?arhExpHtml():arhSumarHtml();
   $("#body").innerHTML=nav+body;
   /* cu multe subtaburi bara depășește ecranul — aducem subtabul activ în vizor */
   try{var _pt=$("#body").querySelector(".ptabs-arh"),_on=_pt&&_pt.querySelector(".ptab.on");
@@ -6471,6 +6484,8 @@ function renderArh(){arhInitSel();arhEnsureCSS();$("#fab").style.display="none";
 function _arhFab(){var f=$("#fab");if(!f)return;var ed=_canEditArh(),ad=_isAdmin();var cfg=null;
  if(arhSub==="vcped")return;/* editorul de săptămâni își pune singur butonul */
  if(arhSub==="sumar")cfg={ic:(ed?IC.tune:IC.dl),fn:arhFabSumar};
+ else if(arhSub==="stat")cfg={ic:IC.dl,fn:statPdf};
+ else if(arhSub==="s10")cfg={ic:IC.dl,fn:s10Pdf};
  else if(arhSub==="rap"){if(ed)cfg={ic:IC.tune,fn:rapToolsSheet};}
  else if(arhSub==="pio600")cfg={ic:IC.dl,fn:function(){pioDownload(theoStartOf(arhYM));}};
  else if(arhSub==="prez")cfg=(ed||ad)?{ic:IC.tune,fn:arhFabPrez}:{ic:IC.dl,fn:function(){pdfS88(theoStartOf(arhYM));}};
@@ -7159,7 +7174,7 @@ async function mePinSave(){var cu=_curUser();if(!cu)return;var u=_users().find(f
 
 /* ---------- ALE MELE (raportul + sarcinile utilizatorului legat de un vestitor) ---------- */
 function meuGoWeek(wi){if(!_tabAllowed("prog")){toast("Programările nu-ți sunt disponibile");return;}
- progSub="vcp";vcpW=wi;go("prog");}
+ progSub="vcp";progW=wi;vcpW=wi;go("prog");}
 /* weekISO poate întoarce data cu puncte (ex. „2026.05.06" = ziua întrunirii) — normalizăm aici */
 function _isoDate(s){s=String(s||"").replace(/\./g,"-");var d=new Date(s+"T00:00:00");return isNaN(d.getTime())?null:d;}
 /* doar săptămânile a căror întrunire nu a trecut; fallback pe indexul săptămânii curente */
@@ -7176,7 +7191,7 @@ function meuGoClean(wi){dutyW=wi;_arhLastSub=null;
  if(_tabAllowed("arh")){
   if(_arhFull()){arhGrp="plan";arhSub="sarc";go("arh");return;}
   if(_mayEditDuty()){arhLiteSub="sarc";go("arh");return;}}
- progSub="sarc";go("prog");}
+ progSub="sarc";progW=wi;go("prog");}
 /* --- „Curățenia grupei mele": când e programată grupa din care fac parte ---
    Curățenia nu se dă pe persoane, ci pe grupă, și ține toată săptămâna — de aceea aici nu apare
    o oră, ci săptămâna întreagă, iar săptămâna în curs rămâne afișată până duminică. */
@@ -7307,7 +7322,7 @@ function _meuHostHtml(my){var gid=myCleanGrp(my);if(!gid)return "";
    :'<div class="muted" style="padding:12px 4px">Grupa ta nu e programată la ospitalitate în perioada următoare.</div>';
   return h+'</div></details>';}
 function meuGoWm(wi){if(!_tabAllowed("prog")){toast("Programările nu-ți sunt disponibile");return;}
- wmW=wi;progSub="wm";go("prog");}
+ wmW=wi;progW=wi;progSub="wm";go("prog");}
 /* meniul profilului: fișă, contact, PIN */
 function meuMenu(){var my=_myBro();if(!my){toast("Contul nu e legat de un vestitor");return;}
  var start=(arhTheo!=null?arhTheo:curTheoStart());
@@ -13926,6 +13941,1084 @@ TUT.A["prog.duty"]="prog.sarc";
   window[n]=function(){var r=f.apply(this,arguments);put();return r;};}
  wrap("renderSet");wrap("renderSetLimited");
 })();
+</script>
+
+<script>
+/* ============================================================================
+   ArhiLink 3.9 — CĂUTARE GLOBALĂ, CALENDAR, STATISTICI, ANALIZA CONGREGAȚIEI
+   ----------------------------------------------------------------------------
+   Patru unelte adăugate peste ce era. Toate se sprijină pe datele existente și
+   nu scriu nimic în ele, cu două excepții limpezi: cifrele pe care le completezi
+   tu în S-10 (S.s10) și anul ales în Statistici (ține de ecran, nu de date).
+   Stau la urmă, într-un bloc al lor, ca să se vadă dintr-o privire ce s-a
+   adăugat și ca restul fișierului să rămână neatins.
+   ============================================================================ */
+
+/* iconuri noi, desenate în aceeași linie ca celelalte (24×24, contur de 2) */
+IC.chart='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 3v16.5h16.5"/><path d="M8 16.5V12M12.3 16.5V7.5M16.6 16.5v-6"/></svg>';
+IC.form='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="2.5"/><path d="M8 8.5h8M8 12.5h8M8 16.5h5"/></svg>';
+
+/* ---------------------------------------------------------------------------
+   Potrivirea textului fără diacritice: cine scrie „bratu" trebuie să-l
+   găsească pe „Brațu", iar cine scrie „Brațu" să-l găsească la fel. Tăiem
+   semnele diacritice din amândouă părțile (NFD scoate virgulița și căciula
+   ca semne separate) și comparăm literele rămase.
+   --------------------------------------------------------------------------- */
+function alkNorm(s){
+ s=String(s==null?"":s);
+ try{s=s.normalize("NFD").replace(/[̀-ͯ]/g,"");}catch(e){}
+ return s.toLowerCase()
+  .replace(/[ăâàá]/g,"a").replace(/[îíì]/g,"i").replace(/[șş]/g,"s")
+  .replace(/[țţ]/g,"t").replace(/[éèê]/g,"e").replace(/[öóô]/g,"o").replace(/[üúû]/g,"u");}
+/* scorul unei potriviri: începutul unui cuvânt bate mijlocul, iar potrivirea
+   pe titlu bate potrivirea pe subtitlu — altfel „Ioan" scotea întâi o parte de
+   program în care apărea numele, nu omul */
+function alkScore(hay,q){
+ if(!hay)return 0;var h=alkNorm(hay),i=h.indexOf(q);
+ if(i<0)return 0;
+ if(i===0)return 100;
+ if(/[\s.,()\-\/]/.test(h.charAt(i-1)))return 70;
+ return 35;}
+
+/* ---------------------------------------------------------------------------
+   Stilurile celor patru unelte, puse o singură dată, la prima folosire — ca la
+   celelalte secțiuni (ensureArhHomeCSS, ensureDutyCSS). Culorile vin din
+   variabilele temei, deci zi și noapte merg fără o a doua foaie.
+   --------------------------------------------------------------------------- */
+function ensureAlk39CSS(){if(document.getElementById("alk39css"))return;
+ var st=document.createElement("style");st.id="alk39css";st.textContent=
+/* ---- căutarea globală ---- */
+ ".fndov{position:absolute;inset:0;z-index:120;background:var(--bg);display:none;flex-direction:column;border-radius:inherit;overflow:hidden}"
++".fndov.on{display:flex}"
++".fndbar{flex:0 0 auto;display:flex;align-items:center;gap:8px;padding:calc(env(safe-area-inset-top) + 10px) 12px 10px;background:var(--surf);border-bottom:1px solid var(--bd)}"
++".fndwrap{flex:1;min-width:0;display:flex;align-items:center;gap:8px;background:var(--surf2);border:1px solid var(--bd);border-radius:12px;padding:0 10px}"
++".fndwrap svg{width:18px;height:18px;color:var(--ink3);flex:0 0 auto}"
++".fndin{flex:1;min-width:0;border:0;background:transparent;color:var(--ink);font:inherit;font-size:15.5px;padding:11px 0;outline:none}"
++".fndin::placeholder{color:var(--ink3)}"
++".fndx{border:0;background:transparent;color:var(--ink3);font-size:20px;line-height:1;cursor:pointer;padding:4px 6px}"
++".fndcls{flex:0 0 auto;border:0;background:transparent;color:var(--ink2);font:inherit;font-size:14px;font-weight:700;cursor:pointer;padding:8px 4px}"
++".fndbody{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:10px 13px 26px}"
++".fndsec{font-size:10.5px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;color:var(--ink3);margin:14px 4px 7px}"
++".fndsec:first-child{margin-top:4px}"
++".fndrow{display:flex;align-items:center;gap:11px;width:100%;text-align:left;background:var(--surf);border:1px solid var(--bd);border-radius:13px;padding:11px 13px;margin-bottom:7px;color:var(--ink);cursor:pointer}"
++".fndrow:hover{border-color:var(--acc)}"
++".fndic{flex:0 0 auto;width:34px;height:34px;border-radius:10px;background:var(--accsoft);color:var(--acc);display:grid;place-items:center}"
++".fndic svg{width:18px;height:18px}"
++".fndtx{flex:1;min-width:0}"
++".fndt{display:block;font-size:14.5px;font-weight:700;line-height:1.3;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}"
++".fndk{display:block;font-size:11.5px;color:var(--ink3);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}"
++".fndt mark{background:var(--accsoft);color:var(--acc);border-radius:3px;padding:0 1px}"
++".fndempty{text-align:center;color:var(--ink3);font-size:13px;padding:40px 20px;line-height:1.6}"
++".fndhint{display:flex;flex-wrap:wrap;gap:6px;margin:8px 2px 0}"
++".fndchip{border:1px solid var(--bd);background:var(--surf);color:var(--ink2);border-radius:999px;font:inherit;font-size:12px;font-weight:600;padding:6px 11px;cursor:pointer}"
++".fndchip:hover{color:var(--acc);border-color:var(--acc)}"
+/* ---- calendarul lunar ---- */
++".calhd{display:flex;align-items:center;justify-content:center;gap:10px;margin:2px 0 12px}"
++".calhd .calnm{font-size:16.5px;font-weight:800;min-width:9.5em;text-align:center}"
++".calnav{width:34px;height:34px;border-radius:11px;border:1px solid var(--bd);background:var(--surf);color:var(--ink2);display:grid;place-items:center;cursor:pointer;flex:0 0 auto}"
++".calnav:hover{color:var(--acc);border-color:var(--acc)}.calnav svg{width:16px;height:16px}"
++".calgrid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}"
++".caldow{font-size:10.5px;font-weight:800;color:var(--ink3);text-align:center;padding:2px 0 4px;text-transform:uppercase;letter-spacing:.3px}"
++".calcell{aspect-ratio:1/1;min-height:40px;border:1px solid var(--bd);background:var(--surf);border-radius:11px;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:3px;padding:5px 2px 3px;color:var(--ink2);font:inherit;font-size:13px;font-weight:700;cursor:pointer;overflow:hidden}"
++".calcell.off{background:transparent;border-color:transparent;color:var(--ink3);opacity:.45;cursor:default}"
++".calcell.today{border-color:var(--acc);color:var(--acc)}"
++".calcell.has{color:var(--ink)}"
++".calcell.mine{background:var(--accsoft);border-color:var(--acc)}"
++".calcell:hover:not(.off){border-color:var(--acc)}"
++"@media(min-width:560px){.calcell{aspect-ratio:auto;height:62px;min-height:62px;font-size:14px}}"
++".caldots{display:flex;gap:2.5px;height:6px;align-items:center}"
++".caldot{width:5px;height:5px;border-radius:50%;flex:0 0 auto}"
++".calleg{display:flex;flex-wrap:wrap;gap:10px 14px;margin:13px 2px 2px;font-size:11.5px;color:var(--ink3)}"
++".calleg span{display:inline-flex;align-items:center;gap:6px}"
++".callist{margin-top:14px}"
++".caldayh{font-size:12.5px;font-weight:800;color:var(--ink2);margin:14px 2px 7px;text-transform:uppercase;letter-spacing:.3px}"
++".calit{display:flex;gap:10px;align-items:flex-start;background:var(--surf);border:1px solid var(--bd);border-radius:13px;padding:11px 13px;margin-bottom:7px}"
++".calit .cbar{flex:0 0 auto;width:4px;align-self:stretch;border-radius:2px;min-height:26px}"
++".calit .ctx{flex:1;min-width:0}"
++".calit b{display:block;font-size:14px;line-height:1.3}"
++".calit small{display:block;font-size:11.5px;color:var(--ink3);margin-top:2px;line-height:1.45}"
++".calit .chh{flex:0 0 auto;font-size:12px;font-weight:800;color:var(--acc)}";
+ document.head.appendChild(st);}
+
+function ensureStatCSS(){if(document.getElementById("stcss"))return;
+ var st=document.createElement("style");st.id="stcss";st.textContent=
+ ".stsel{display:flex;gap:8px;align-items:center;margin-bottom:12px}"
++".stsel select{flex:1;min-width:0}"
++".stkpis{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:14px}"
++"@media(min-width:560px){.stkpis{grid-template-columns:repeat(4,1fr)}}"
++".stkpi{background:var(--surf);border:1px solid var(--bd);border-radius:14px;padding:13px 12px;box-shadow:var(--sh)}"
++".stkpi .kv{font-size:24px;font-weight:800;line-height:1.05;color:var(--ink)}"
++".stkpi .kv small{font-size:13px;font-weight:700;color:var(--ink3)}"
++".stkpi .kk{font-size:11px;color:var(--ink3);font-weight:600;margin-top:5px;line-height:1.35}"
++".stkpi.acc .kv{color:var(--acc)}.stkpi.teal .kv{color:var(--tealtx)}"
++".stcard{background:var(--surf);border:1px solid var(--bd);border-radius:var(--r);padding:14px 13px 10px;margin-bottom:12px;box-shadow:var(--sh)}"
++".stcard h3{margin:0 0 2px;font-size:15px;font-weight:800;color:var(--ink)}"
++".stcard .sth{font-size:11.5px;color:var(--ink3);margin-bottom:11px;line-height:1.45}"
++".stsvg{width:100%;height:auto;display:block;overflow:visible}"
++".stleg{display:flex;flex-wrap:wrap;gap:8px 14px;margin-top:9px;font-size:11.5px;color:var(--ink3)}"
++".stleg span{display:inline-flex;align-items:center;gap:6px}"
++".stsw{width:11px;height:11px;border-radius:3px;flex:0 0 auto}"
++".stempty{text-align:center;color:var(--ink3);font-size:13px;padding:26px 14px;line-height:1.6}"
+/* ---- analiza congregației (S-10) ---- */
++".s10card{background:var(--surf);border:1px solid var(--bd);border-radius:var(--r);padding:4px 13px;margin-bottom:12px;box-shadow:var(--sh)}"
++".s10h{font-size:13px;font-weight:800;color:var(--acc);text-transform:uppercase;letter-spacing:.4px;padding:14px 0 4px}"
++".s10row{display:flex;align-items:center;gap:12px;padding:11px 0;border-top:1px solid var(--bd)}"
++".s10row:first-of-type{border-top:0}"
++".s10lb{flex:1;min-width:0;font-size:13.5px;line-height:1.35}"
++".s10lb small{display:block;font-size:11px;color:var(--ink3);margin-top:2px;line-height:1.4}"
++".s10v{flex:0 0 auto;font-size:19px;font-weight:800;color:var(--ink);min-width:2.2em;text-align:right}"
++".s10in{flex:0 0 auto;width:5.2em;border:1px solid var(--bd);background:var(--surf2);color:var(--ink);border-radius:10px;font:inherit;font-size:16px;font-weight:700;text-align:center;padding:8px 6px;outline:none}"
++".s10in:focus{border-color:var(--acc)}"
++".s10sel{flex:0 0 auto;border:1px solid var(--bd);background:var(--surf2);color:var(--ink);border-radius:10px;font:inherit;font-size:14px;font-weight:700;padding:8px 10px}"
++".s10auto{font-size:10px;font-weight:800;letter-spacing:.4px;text-transform:uppercase;color:var(--tealtx)}"
++".s10note{font-size:11.5px;color:var(--ink3);line-height:1.5;padding:2px 2px 14px}";
+ document.head.appendChild(st);}
+
+/* ============================================================================
+   CĂUTAREA GLOBALĂ — un singur câmp pentru tot
+   ----------------------------------------------------------------------------
+   Până acum fiecare listă avea căutarea ei, iar ce nu era listă (o parte de
+   program, o tură de la mărturia publică, o setare) nu se căuta deloc: trebuia
+   să știi dinainte în ce ecran stă. Aici se strâng toate într-un singur loc:
+   scrii o bucată de nume sau de titlu și primești rândurile din toată aplicația,
+   grupate pe felul lor, iar apăsarea te duce fix acolo.
+
+   Indexul se face la fiecare căutare, din datele din memorie — sunt sub o mie de
+   rânduri, deci nu merită ținut minte și împrospătat la fiecare salvare. Ce n-ai
+   voie să vezi nu intră în index (vestitorul nu caută prin rapoarte).
+   ============================================================================ */
+var _fndActs=[],_fndQ="",_fndT=null;
+
+/* un rând de rezultat; `act` e o funcție, ținută deoparte, ca să nu scriem cod în atribute */
+function _fndPush(out,score,ic,kind,title,sub,act){
+ if(!score)return;out.push({s:score,ic:ic,kind:kind,t:title,k:sub||"",a:act});}
+
+function _fndAllowed(what){
+ try{
+  if(what==="bros")return _tabAllowed("bros");
+  if(what==="prog")return _tabAllowed("prog");
+  if(what==="arh")return _tabAllowed("arh")&&_arhFull();
+  if(what==="rap")return _tabAllowed("arh")&&_arhReports();
+ }catch(e){}
+ return false;}
+
+function _fndBuild(q){
+ var out=[];
+ /* --- vestitori --- */
+ if(_fndAllowed("bros"))try{
+  (S.bros||[]).forEach(function(b){
+   if(!b||b.arch===true)return;
+   var nm=b.name||"",dp=b.disp||"";
+   var sc=Math.max(alkScore(nm,q),alkScore(dp,q));
+   if(!sc){/* telefonul și adresa se caută, dar valorează mai puțin decât numele */
+    if(alkScore(b.phone,q)||alkScore(b.email,q)||alkScore(b.addr,q))sc=20;}
+   if(!sc)return;
+   var g=(grpsAll().find(function(x){return x.id===b.grp;})||{}).name;
+   var bits=[];if(g)bits.push(g);
+   if(b.rol)bits.push(b.rol);
+   var p=b.pio||"";if(p&&p!=="Cursant")bits.push(p);
+   _fndPush(out,sc,IC.ppl,"Vestitori",nm,bits.join(" · "),function(){fndGoBro(b.id);});});
+ }catch(e){logErr("căutare: vestitori "+e.message,e.stack);}
+
+ /* --- săptămâni: data, versetele, evenimentul --- */
+ if(_fndAllowed("prog"))try{
+  (S.weeks||[]).forEach(function(w,wi){
+   if(!w)return;
+   var sc=Math.max(alkScore(w.date,q),alkScore(w.bible,q),alkScore(w.event,q));
+   if(!sc)return;
+   _fndPush(out,sc,IC.cal,"Săptămâni",String(w.date||"Săptămâna "+(wi+1)),
+    [w.bible||"",evLabel(w)||""].filter(Boolean).join(" · "),function(){fndGoWeek(wi);});});
+ }catch(e){logErr("căutare: săptămâni "+e.message,e.stack);}
+
+ /* --- părțile de program și cine le ține ---
+    „Nestemate spirituale" e titlul aceleiași părți în toate cele douăzeci și cinci de
+    săptămâni: scoase una câte una, ar umple lista și ar acoperi restul. Deci potrivirile
+    pe TITLU se strâng într-un singur rând — săptămâna cea mai apropiată de azi, cu
+    numărul celorlalte alături. Potrivirile pe NUME rămân separate: acolo contează
+    fiecare săptămână în parte, ea e chiar răspunsul la întrebare. */
+ if(_fndAllowed("prog"))try{
+  var cw=(typeof vcpCurWeek==="function")?vcpCurWeek():0;if(cw<0)cw=0;
+  var byTitle={};
+  (S.weeks||[]).forEach(function(w,wi){
+   if(!w||!w.parts)return;
+   var pl=(S.plans||{})[wi]||{},a=pl.a||{};
+   w.parts.forEach(function(p){
+    if(!p)return;
+    var who=a[p.id]?broDisp(a[p.id]):"";
+    var who2=a[p.id+"_a"]?broDisp(a[p.id+"_a"]):"";
+    var scWho=Math.max(alkScore(who,q),alkScore(who2,q));
+    var scT=alkScore(p.title,q);
+    if(!scWho&&!scT)return;
+    var nm=[who,who2].filter(Boolean).join(" / ");
+    var title=(p.num?p.num+". ":"")+(p.title||"");
+    if(scWho){/* pe nume: fiecare săptămână e un rezultat în sine */
+     _fndPush(out,scWho-5,IC.book,"Părți de program",title,
+      String(w.date||"")+(nm?(" · "+nm):""),function(){fndGoWeek(wi);});return;}
+    var key=String(p.title||"").toLowerCase();
+    var g=byTitle[key];
+    if(!g||Math.abs(wi-cw)<Math.abs(g.wi-cw))byTitle[key]=g={wi:wi,s:scT,title:title,date:w.date||"",nm:nm,n:(g?g.n:0)};
+    byTitle[key].n=(g&&g.n||0)+1;});});
+  Object.keys(byTitle).forEach(function(k){var g=byTitle[k];
+   _fndPush(out,g.s-8,IC.book,"Părți de program",g.title,
+    String(g.date)+(g.nm?(" · "+g.nm):"")+(g.n>1?(" · și în alte "+(g.n-1)+" săptămâni"):""),
+    function(){fndGoWeek(g.wi);});});
+ }catch(e){logErr("căutare: părți "+e.message,e.stack);}
+
+ /* --- întrunirea publică: vorbitor, titlu, congregație --- */
+ if(_fndAllowed("prog"))try{
+  (S.weeks||[]).forEach(function(w,wi){
+   var o=wmOf(wi);if(!o)return;
+   var sp=(typeof wmSpeakerExp==="function")?wmSpeakerExp(o):"";
+   var sc=Math.max(alkScore(o.tt,q),alkScore(sp,q),alkScore((typeof wmCong==="function")?wmCong(o):"",q));
+   if(!sc)return;
+   _fndPush(out,sc-5,IC.star,"Întrunirea publică",o.tt||"Cuvântare publică",
+    String(w&&w.date||"")+(sp?(" · "+sp):""),function(){fndGoWm(wi);});});
+ }catch(e){logErr("căutare: wm "+e.message,e.stack);}
+
+ /* --- sarcini: cine e pus la audio, ordine, podium ---
+    La fel ca la părți: numele postului („Audio") se repetă în fiecare săptămână, deci
+    potrivirile pe post se strâng într-un rând; cele pe nume rămân despărțite. */
+ if(_fndAllowed("prog"))try{
+  var posts=(S.duty&&S.duty.posts)||[];
+  var cw2=(typeof vcpCurWeek==="function")?vcpCurWeek():0;if(cw2<0)cw2=0;
+  var byPost={};
+  (S.weeks||[]).forEach(function(w,wi){
+   var o=dutyOf(wi);if(!o)return;
+   posts.forEach(function(p){
+    var id=o[p.id];if(!id)return;
+    var who=broDisp(id);
+    var scWho=alkScore(who,q),scP=alkScore(p.n,q);
+    if(!scWho&&!scP)return;
+    if(scWho){_fndPush(out,scWho-10,IC.mark,"Sarcini",who+" — "+p.n,String(w&&w.date||""),function(){fndGoDuty(wi);});return;}
+    var g=byPost[p.id];
+    if(!g||Math.abs(wi-cw2)<Math.abs(g.wi-cw2))byPost[p.id]=g={wi:wi,s:scP,n:p.n,who:who,date:(w&&w.date)||"",c:(g?g.c:0)};
+    byPost[p.id].c=(g&&g.c||0)+1;});});
+  Object.keys(byPost).forEach(function(k){var g=byPost[k];
+   _fndPush(out,g.s-12,IC.mark,"Sarcini",g.n+" — "+g.who,
+    String(g.date)+(g.c>1?(" · și în alte "+(g.c-1)+" săptămâni"):""),
+    function(){fndGoDuty(g.wi);});});
+ }catch(e){logErr("căutare: sarcini "+e.message,e.stack);}
+
+ /* --- grupe de serviciu --- */
+ if(_fndAllowed("rap"))try{
+  grpsAll().forEach(function(g){
+   var sup=g.sup?broDisp(g.sup):"",as=g.asis?broDisp(g.asis):"";
+   var sc=Math.max(alkScore(g.name,q),alkScore(sup,q),alkScore(as,q));
+   if(!sc)return;
+   _fndPush(out,sc,IC.ppl,"Grupe",g.name||"Grupă",
+    [sup?("supraveghetor "+sup):"",as?("asistent "+as):""].filter(Boolean).join(" · "),
+    function(){fndGoArh("rap","grp");});});
+ }catch(e){logErr("căutare: grupe "+e.message,e.stack);}
+
+ /* --- responsabilități --- */
+ if(_fndAllowed("rap"))try{
+  ((S.resp&&S.resp.deps)||[]).forEach(function(d){
+   var r=d.r?broDisp(d.r):"",a=d.a?broDisp(d.a):"";
+   var sc=Math.max(alkScore(d.n,q),alkScore(r,q),alkScore(a,q));
+   if(!sc)return;
+   _fndPush(out,sc,IC.mark,"Responsabilități",d.n||"Departament",
+    [r,a].filter(Boolean).join(" · "),function(){fndGoArh("rap","resp");});});
+ }catch(e){logErr("căutare: responsabilități "+e.message,e.stack);}
+
+ /* --- mărturia publică și întrunirile de teren: locurile --- */
+ if(_fndAllowed("arh"))try{
+  ((S.mp&&S.mp.locs)||[]).forEach(function(l){
+   var sc=alkScore(l.n,q);if(!sc)return;
+   _fndPush(out,sc,IC.ppl,"Mărturia publică",l.n,"locație",function(){fndGoArh("plan","mp");});});
+  ((S.ft&&S.ft.locs)||[]).forEach(function(l){
+   var sc=alkScore(l.n,q);if(!sc)return;
+   _fndPush(out,sc,IC.clock,"Întrunirile de teren",l.n,"locație",function(){fndGoArh("plan","teren");});});
+ }catch(e){logErr("căutare: locuri "+e.message,e.stack);}
+
+ /* --- cântări --- */
+ try{
+  var SG=S.songs||{};
+  Object.keys(SG).forEach(function(n){
+   var t=SG[n];if(!t)return;
+   var sc=Math.max(alkScore(t,q),(String(n)===q?100:0));
+   if(!sc)return;
+   _fndPush(out,sc-15,IC.music,"Cântări","Cântarea "+n,t,function(){toast("Cântarea "+n+" — "+t);});});
+ }catch(e){logErr("căutare: cântări "+e.message,e.stack);}
+
+ /* --- ecranele aplicației --- */
+ try{
+  _fndSections().forEach(function(s){
+   var sc=Math.max(alkScore(s.t,q),alkScore(s.k||"",q)?30:0);
+   if(!sc)return;
+   _fndPush(out,sc,s.ic,"Ecrane",s.t,s.k||"",s.a);});
+ }catch(e){logErr("căutare: ecrane "+e.message,e.stack);}
+
+ /* --- tutoriale --- */
+ try{
+  if(typeof TUT!=="undefined"&&TUT.D)Object.keys(TUT.D).forEach(function(id){
+   var d=TUT.D[id];if(!d)return;
+   var sc=Math.max(alkScore(d.t,q),alkScore(d.sub,q)?30:0);
+   if(!sc)return;
+   _fndPush(out,sc-10,IC.book,"Tutoriale",d.t||id,d.sub||"cum se face",function(){findClose();tutOpen(id);});});
+ }catch(e){logErr("căutare: tutoriale "+e.message,e.stack);}
+
+ return out;}
+
+/* ecranele în care te poate duce căutarea — cele patru taburi, foile din
+   Programări și toate secțiunile Arhivei la care ai acces */
+function _fndSections(){
+ var L=[];
+ L.push({t:"Profilul meu",k:"raportul, orele, sarcinile mele",ic:IC.ppl,a:function(){findClose();go("meu");}});
+ if(_fndAllowed("prog")){
+  L.push({t:"Programări — Viața creștină",k:"programul întrunirii din timpul săptămânii",ic:IC.book,a:function(){findClose();progSub="vcp";go("prog");}});
+  L.push({t:"Programări — Întrunirea publică",k:"vorbitor, titlu, ospitalitate",ic:IC.star,a:function(){findClose();progSub="wm";go("prog");}});
+  L.push({t:"Programări — Sarcini",k:"audio-video, ordine, podium",ic:IC.mark,a:function(){findClose();progSub="sarc";go("prog");}});
+  L.push({t:"Programări — Calendar",k:"luna întreagă, cu întruniri și sarcini",ic:IC.cal,a:function(){findClose();progSub="cal";go("prog");}});}
+ if(_fndAllowed("bros"))L.push({t:"Vestitori",k:"lista congregației, fișele și grupele",ic:IC.ppl,a:function(){findClose();go("bros");}});
+ if(_fndAllowed("arh"))try{
+  _arhGroups().forEach(function(g){
+   g.tabs.forEach(function(t){
+    L.push({t:"Arhivă — "+t[1],k:t[3]||"",ic:t[2]||IC.arch,a:function(){findClose();fndGoArh(g.k,t[0]);}});});});
+ }catch(e){}
+ L.push({t:"Setări",k:"cont, sincronizare, notificări, tutoriale",ic:IC.gear,a:function(){findClose();go("set");}});
+ return L;}
+
+/* --- unde duce fiecare rezultat --- */
+function fndGoBro(id){findClose();
+ if(typeof _canEdit==="function"&&_canEdit()){go("bros");setTimeout(function(){try{editBro(id);}catch(e){}},60);return;}
+ /* fără drept de modificare fișa nu se deschide: ducem la listă, filtrată pe numele lui */
+ try{broSearch=broDisp(id)||"";}catch(e){}
+ go("bros");}
+function fndGoWeek(wi){findClose();
+ if(!_tabAllowed("prog")){toast("Programările nu-ți sunt disponibile");return;}
+ progW=wi;vcpW=wi;progSub="vcp";go("prog");}
+function fndGoWm(wi){findClose();
+ if(!_tabAllowed("prog")){toast("Programările nu-ți sunt disponibile");return;}
+ progW=wi;wmW=wi;progSub="wm";go("prog");}
+function fndGoDuty(wi){findClose();
+ if(!_tabAllowed("prog")){toast("Programările nu-ți sunt disponibile");return;}
+ progW=wi;dutyW=wi;progSub="sarc";go("prog");}
+function fndGoArh(grp,sub){findClose();
+ if(!_tabAllowed("arh")){toast("Arhiva nu-ți este disponibilă");return;}
+ arhGrp=grp;arhSub=sub;_arhLastSub=null;wkOpen=false;go("arh");}
+function fndGo(i){var a=_fndActs[i];if(typeof a==="function")try{a();}catch(e){logErr("căutare: salt "+e.message,e.stack);}}
+
+/* --- ecranul căutării --- */
+function findOpen(){
+ ensureAlk39CSS();
+ var ov=document.getElementById("fndov");
+ if(!ov){
+  ov=document.createElement("div");ov.id="fndov";ov.className="fndov";
+  ov.innerHTML='<div class="fndbar"><div class="fndwrap">'+IC.search
+   +'<input id="fndin" class="fndin" type="search" autocomplete="off" autocorrect="off" spellcheck="false" enterkeyhint="search" placeholder="Caută în toată aplicația…" oninput="findType(this.value)">'
+   +'<button class="fndx" tabindex="-1" title="Șterge" onclick="findClear()">×</button></div>'
+   +'<button class="fndcls" onclick="findClose()">Închide</button></div>'
+   +'<div class="fndbody" id="fndbody"></div>';
+  (document.querySelector(".app")||document.body).appendChild(ov);}
+ ov.classList.add("on");
+ var inp=document.getElementById("fndin");
+ if(inp){inp.value=_fndQ;setTimeout(function(){try{inp.focus();inp.select();}catch(e){}},30);}
+ findRun();}
+function findClose(){var ov=document.getElementById("fndov");if(ov)ov.classList.remove("on");}
+function findOpen_(){findOpen();}
+function findClear(){_fndQ="";var i=document.getElementById("fndin");if(i){i.value="";i.focus();}findRun();}
+/* scrisul nu caută la fiecare literă: așteptăm o clipă, ca lista să nu clipească */
+function findType(v){_fndQ=v;if(_fndT)clearTimeout(_fndT);_fndT=setTimeout(findRun,110);}
+function findSet(v){_fndQ=v;var i=document.getElementById("fndin");if(i)i.value=v;findRun();}
+
+function _fndMark(s,q){
+ s=String(s==null?"":s);
+ if(!q)return esc(s);
+ var i=alkNorm(s).indexOf(q);
+ if(i<0)return esc(s);
+ return esc(s.slice(0,i))+"<mark>"+esc(s.slice(i,i+q.length))+"</mark>"+esc(s.slice(i+q.length));}
+
+function findRun(){
+ var box=document.getElementById("fndbody");if(!box)return;
+ var q=alkNorm(_fndQ).trim();
+ _fndActs=[];
+ if(q.length<2){
+  var chips=["Ioan","Audio","Rugăciune","Grupa 1","Curățenie","Pionieri"];
+  box.innerHTML='<div class="fndempty">Scrie cel puțin două litere.<br>Caută un nume, o parte de program, o sarcină, o cântare sau un ecran al aplicației.<br>Diacriticele nu contează.</div>'
+   +'<div class="fndhint">'+chips.map(function(c){return '<button class="fndchip" onclick="findSet(\''+esc(c)+'\')">'+esc(c)+'</button>';}).join("")+'</div>';
+  return;}
+ var res=_fndBuild(q);
+ res.sort(function(a,b){return (b.s-a.s)||a.t.localeCompare(b.t,"ro");});
+ if(!res.length){
+  box.innerHTML='<div class="fndempty">Nimic pentru „'+esc(_fndQ)+'”.<br>Încearcă doar o bucată din nume.</div>';return;}
+ /* grupate pe fel, în ordinea în care a ieșit cel mai bun rezultat al fiecărui fel */
+ var order=[],byKind={};
+ res.forEach(function(r){if(!byKind[r.kind]){byKind[r.kind]=[];order.push(r.kind);}byKind[r.kind].push(r);});
+ var H="",total=0;
+ order.forEach(function(k){
+  var arr=byKind[k].slice(0,8);
+  H+='<div class="fndsec">'+esc(k)+(byKind[k].length>arr.length?(" · primele "+arr.length+" din "+byKind[k].length):"")+'</div>';
+  arr.forEach(function(r){
+   var i=_fndActs.push(r.a)-1;total++;
+   H+='<button class="fndrow" onclick="fndGo('+i+')"><span class="fndic">'+(r.ic||IC.search)+'</span>'
+    +'<span class="fndtx"><span class="fndt">'+_fndMark(r.t,q)+'</span>'
+    +(r.k?('<span class="fndk">'+_fndMark(r.k,q)+'</span>'):'')+'</span>'
+    +'<span class="chev">'+IC.chev+'</span></button>';});});
+ box.innerHTML=H;
+ box.scrollTop=0;}
+
+/* ============================================================================
+   CALENDARUL LUNII — a patra foaie din Programări
+   ----------------------------------------------------------------------------
+   Lista pe săptămâni spune bine ce e într-o săptămână, dar nu spune niciodată
+   „în ce zi". Calendarul pune luna întreagă pe o pagină: întrunirile, întrunirile
+   de teren, turele de la mărturia publică și evenimentele, cu un punct colorat pe
+   fiecare zi. Zilele în care ai tu ceva de făcut sunt colorate, ca să le vezi
+   dintr-o privire. Apeși o zi și dedesubt scrie tot ce e în ea, cu ora.
+   Nu ține date proprii: totul se citește din săptămâni, exact ca celelalte foi.
+   ============================================================================ */
+var calY=null,calM=null,calPick=null;
+
+function _calInit(){if(calY==null||calM==null){var d=new Date();calY=d.getFullYear();calM=d.getMonth();}}
+function _calKey(d){return d.getFullYear()+"-"+_pad2(d.getMonth()+1)+"-"+_pad2(d.getDate());}
+function _calSameDay(a,b){return a&&b&&a.getFullYear()===b.getFullYear()&&a.getMonth()===b.getMonth()&&a.getDate()===b.getDate();}
+
+/* culorile felurilor — aceleași și în punctul din zi, și în bara rândului de dedesubt */
+var CAL_COL={mid:"var(--acc)",wend:"var(--secTeal)",ft:"var(--tealtx)",mp:"var(--secGold)",ev:"var(--secRed)",clean:"var(--ink3)"};
+
+/* tot ce am eu de făcut într-o săptămână, din toate foile — numele îl dăm celui legat de cont */
+function _calMineWeek(wi,me){
+ var out={mid:[],wend:[],ft:[],mp:[]};
+ if(!me)return out;
+ try{
+  var pl=(S.plans||{})[wi]||{},a=pl.a||{},w=S.weeks[wi];
+  if(w&&w.parts)ensureIds(w);
+  var SPECIAL={cond:"Conducător studiu",cit:"Cititor",pres:"Președinte",open_pr:"Rugăciune (început)",close_pr:"Rugăciune (încheiere)",pray:"Rugăciune"};
+  var byId={};((w&&w.parts)||[]).forEach(function(p){byId[p.id]=p;});
+  Object.keys(a).forEach(function(key){
+   if(a[key]!==me)return;
+   var base=key.replace(/_(a|b)$/,""),p=byId[key]||byId[base];
+   if(p)out.mid.push((p.num?p.num+". ":"")+(p.title||""));
+   else if(SPECIAL[key])out.mid.push(SPECIAL[key]);});
+ }catch(e){}
+ try{
+  var o=wmOf(wi);
+  (typeof wmPosts==="function"?wmPosts():[]).forEach(function(p){if(o[p.id]===me)out.wend.push(p.n);});
+ }catch(e){}
+ try{
+  var d=dutyOf(wi);
+  ((S.duty&&S.duty.posts)||[]).forEach(function(p){if(d[p.id]===me)out.wend.push(p.n);});
+ }catch(e){}
+ try{
+  var f=ftOf(wi);
+  ((S.ft&&S.ft.slots)||[]).forEach(function(s){if(f[s.id]===me)out.ft.push(s.id);});
+ }catch(e){}
+ try{
+  var m=mpOf(wi);
+  ((S.mp&&S.mp.shifts)||[]).forEach(function(s){
+   var v=m[s.id];
+   if(v===me)out.mp.push(s.id);
+   else if(Array.isArray(v)&&v.indexOf(me)>=0)out.mp.push(s.id);});
+ }catch(e){}
+ return out;}
+
+/* harta lunii: ziua (2026-09-16) -> lista de lucruri din ea */
+function _calMap(y,m){
+ var map={},me=null;
+ try{me=_myBro();}catch(e){}
+ var locFt={},locMp={};
+ ((S.ft&&S.ft.locs)||[]).forEach(function(l){locFt[l.id]=l.n;});
+ ((S.mp&&S.mp.locs)||[]).forEach(function(l){locMp[l.id]=l.n;});
+ function put(d,it){if(!d||d.getFullYear()!==y||d.getMonth()!==m)return;var k=_calKey(d);(map[k]=map[k]||[]).push(it);}
+ (S.weeks||[]).forEach(function(w,wi){
+  var ws=_weekStartDate(wi);if(!ws)return;
+  /* sărim peste săptămânile care nu ating luna cerută — 25 de săptămâni × 20 de rânduri
+     s-ar face degeaba la fiecare randare */
+  var we=new Date(ws.getFullYear(),ws.getMonth(),ws.getDate()+6);
+  var m0=new Date(y,m,1),m1=new Date(y,m+1,0);
+  if(we<m0||ws>m1)return;
+  var mine=_calMineWeek(wi,me);
+  var noMeet=(typeof evNoMeet==="function")&&evNoMeet(w);
+  var ev=(typeof evLabel==="function")?evLabel(w):"";
+  /* întrunirea din timpul săptămânii */
+  var dMid=_wkDayDate(wi,meetDayVal());
+  if(dMid){
+   if(noMeet)put(dMid,{k:"ev",h:"",t:ev||"Fără întrunire",s:"săptămâna "+(w.date||""),go:"fndGoWeek("+wi+")"});
+   else put(dMid,{k:"mid",h:(S.settings&&S.settings.start)||"",t:"Viața creștină",
+    s:[w.bible||"",mine.mid.length?("ai "+mine.mid.length+(mine.mid.length===1?" parte":" părți")+": "+mine.mid.join(", ")):""].filter(Boolean).join(" · "),
+    mine:!!mine.mid.length,go:"fndGoWeek("+wi+")"});}
+  /* întrunirea de la sfârșitul săptămânii */
+  var dW=_wkDayDate(wi,meetDayWVal());
+  if(dW&&!noMeet){
+   var o=wmOf(wi);
+   put(dW,{k:"wend",h:"",t:"Întrunirea publică",
+    s:[(o&&o.tt)||"",mine.wend.length?("ai: "+mine.wend.join(", ")):""].filter(Boolean).join(" · "),
+    mine:!!mine.wend.length,go:"fndGoWm("+wi+")"});}
+  /* evenimentul săptămânii, când nu anulează întrunirea (vizite, congrese, Comemorarea) */
+  if(ev&&!noMeet)put(dW||dMid,{k:"ev",h:"",t:ev,s:"săptămâna "+(w.date||""),go:"fndGoWeek("+wi+")"});
+  /* întrunirile pentru predicare */
+  var fa=ftOf(wi);
+  ((S.ft&&S.ft.slots)||[]).forEach(function(s){
+   var d=_wkDayDate(wi,+s.d);if(!d)return;
+   var who=fa[s.id]?broDisp(fa[s.id]):"";
+   put(d,{k:"ft",h:s.h||"",t:"Întrunire de teren",
+    s:[locFt[s.loc]||"",who?("conduce "+who):""].filter(Boolean).join(" · "),
+    mine:mine.ft.indexOf(s.id)>=0,go:"fndGoArh('plan','teren')"});});
+  /* turele de la mărturia publică */
+  var ma=mpOf(wi);
+  ((S.mp&&S.mp.shifts)||[]).forEach(function(s){
+   var d=_wkDayDate(wi,+s.d);if(!d)return;
+   var v=ma[s.id],names=[];
+   if(Array.isArray(v))names=v.filter(Boolean).map(broDisp);
+   else if(v)names=[broDisp(v)];
+   put(d,{k:"mp",h:s.h||"",t:(locMp[s.loc]||"Mărturia publică")+(s.n?(" — "+s.n):""),
+    s:names.join(", "),mine:mine.mp.indexOf(s.id)>=0,go:"fndGoArh('plan','mp')"});});
+  /* curățenia grupei, pe toată săptămâna — o punem în ziua întrunirii din timpul săptămânii */
+  try{
+   var gid=dutyOf(wi).grp;
+   if(gid&&dMid){var g=grpsAll().find(function(x){return x.id===gid;});
+    if(g)put(dMid,{k:"clean",h:"",t:"Curățenie — "+(g.name||"grupă"),s:"toată săptămâna",
+     mine:false,go:"fndGoDuty("+wi+")"});}
+  }catch(e){}
+ });
+ return map;}
+
+var CAL_DOW=["L","Ma","Mi","J","V","S","D"];
+function calGo(dy){_calInit();var d=new Date(calY,calM+dy,1);calY=d.getFullYear();calM=d.getMonth();calPick=null;renderProg();}
+function calToday(){var d=new Date();calY=d.getFullYear();calM=d.getMonth();calPick=_calKey(d);renderProg();}
+function calSel(k){calPick=(calPick===k)?null:k;renderProg();
+ try{var el=document.querySelector(".callist");if(el)el.scrollIntoView({block:"nearest",behavior:"smooth"});}catch(e){}}
+
+function progCalHtml(){
+ ensureAlk39CSS();_calInit();
+ var map=_calMap(calY,calM),today=new Date();
+ /* luna începe luni, ca în calendarele de pe perete */
+ var first=new Date(calY,calM,1),lead=(first.getDay()+6)%7,days=new Date(calY,calM+1,0).getDate();
+ var H='<div class="calhd">'
+  +'<button class="calnav" title="Luna trecută" onclick="calGo(-1)">'+IC.back+'</button>'
+  +'<span class="calnm">'+esc(RO_MONTHS_CAP[calM]+" "+calY)+'</span>'
+  +'<button class="calnav" title="Luna viitoare" onclick="calGo(1)">'+IC.fwd+'</button>'
+  +'</div><div class="calgrid">'
+  +CAL_DOW.map(function(d){return '<div class="caldow">'+d+'</div>';}).join("");
+ for(var i=0;i<lead;i++)H+='<div class="calcell off"></div>';
+ for(var dd=1;dd<=days;dd++){
+  var d=new Date(calY,calM,dd),k=_calKey(d),its=map[k]||[];
+  var kinds=[],mine=false;
+  its.forEach(function(x){if(kinds.indexOf(x.k)<0)kinds.push(x.k);if(x.mine)mine=true;});
+  var cls="calcell"+(its.length?" has":"")+(mine?" mine":"")+(_calSameDay(d,today)?" today":"")+(calPick===k?" today":"");
+  H+='<button class="'+cls+'" onclick="calSel(\''+k+'\')" aria-label="'+esc(dd+" "+RO_MONTHS_CAP[calM])+'">'
+   +'<span>'+dd+'</span><span class="caldots">'
+   +kinds.slice(0,4).map(function(kk){return '<span class="caldot" style="background:'+CAL_COL[kk]+'"></span>';}).join("")
+   +'</span></button>';}
+ H+='</div>';
+ H+='<div class="calleg">'
+  +'<span><i class="caldot" style="background:'+CAL_COL.mid+'"></i>Viața creștină</span>'
+  +'<span><i class="caldot" style="background:'+CAL_COL.wend+'"></i>Întrunirea publică</span>'
+  +'<span><i class="caldot" style="background:'+CAL_COL.ft+'"></i>Teren</span>'
+  +'<span><i class="caldot" style="background:'+CAL_COL.mp+'"></i>Mărturia publică</span>'
+  +'<span><i class="caldot" style="background:'+CAL_COL.ev+'"></i>Evenimente</span>'
+  +(_myBro()?'<span><i class="caldot" style="background:var(--accsoft);border:1.5px solid var(--acc)"></i>zile în care ai tu ceva</span>':'')
+  +'</div>';
+ /* dedesubt: ziua aleasă, sau — dacă n-ai ales — tot ce a mai rămas din lună de azi încolo */
+ var keys=Object.keys(map).sort(),list="";
+ if(calPick){keys=keys.filter(function(k){return k===calPick;});
+  if(!keys.length)list='<div class="fndempty">Nimic în ziua aceasta.</div>';}
+ else{var tk=_calKey(today);keys=keys.filter(function(k){return k>=tk;});
+  if(!keys.length)list='<div class="fndempty">Nimic de aici încolo în '+esc(RO_MONTHS[calM])+'.<br>Alege o zi pentru ce a fost.</div>';}
+ keys.forEach(function(k){
+  var p=k.split("-"),d=new Date(+p[0],+p[1]-1,+p[2]);
+  list+='<div class="caldayh">'+esc(_fmtDayLong(d))+'</div>';
+  (map[k]||[]).slice().sort(function(a,b){return String(a.h||"zz").localeCompare(String(b.h||"zz"));}).forEach(function(it){
+   list+='<div class="calit"'+(it.go?(' onclick="'+it.go+'" style="cursor:pointer"'):'')+'>'
+    +'<span class="cbar" style="background:'+CAL_COL[it.k]+'"></span>'
+    +'<span class="ctx"><b>'+esc(it.t)+(it.mine?' <span class="s10auto">al tău</span>':'')+'</b>'
+    +(it.s?('<small>'+esc(it.s)+'</small>'):'')+'</span>'
+    +(it.h?('<span class="chh">'+esc(it.h)+'</span>'):'')+'</div>';});});
+ H+='<div class="callist">'+list+'</div>';
+ return H;}
+
+/* ============================================================================
+   STATISTICI — anul de serviciu, în grafice
+   ----------------------------------------------------------------------------
+   Sumarul S-1 spune ce s-a întâmplat într-o lună. Aici se vede anul: dacă orele
+   urcă sau coboară, câți vestitori raportează de la lună la lună, cum merge
+   prezența și câte studii se țin. Cifrele nu sunt recalculate altfel — vin din
+   aceleași funcții ca S-1 (s1Stats, attMonth), ca să nu existe două adevăruri.
+   Graficele sunt desenate în SVG, direct, fără nicio bibliotecă.
+   ============================================================================ */
+var RO_M3=["Ian","Feb","Mar","Apr","Mai","Iun","Iul","Aug","Sep","Oct","Noi","Dec"];
+var statTheo=null;
+
+/* cifrele unui an de serviciu, lună cu lună */
+function statYearData(start){
+ var months=theoMonths(start),out=[];
+ months.forEach(function(m){
+  var st=null;try{st=s1Stats(m.k);}catch(e){st=null;}
+  var h=0,stud=0,rep=0;
+  if(st){["pub","aux","reg","special"].forEach(function(c){
+    stud+=st.cats[c].st;if(catHasHours(c))h+=st.cats[c].h;});
+   rep=st.reported;}
+  out.push({k:m.k,m0:m.m0,name:RO_M3[m.m0],full:m.name,
+   h:Math.round(h),stud:stud,active:st?st.active:0,rep:rep,
+   mid:st?st.mid:0,wend:st?st.wend:0,
+   cats:st?st.cats:null,has:!!(st&&(rep||st.mid||st.wend))});});
+ return out;}
+
+/* ----- graficele, desenate de mână -----
+   `rows` sunt lunile; `v` e seria din față, `v2` seria palidă din spate (anul trecut).
+   Textele stau în SVG cu font-size mic, dar SVG-ul se întinde pe toată lățimea, deci
+   pe telefon ies la mărimea normală a unei etichete. */
+function stBars(rows,o){
+ o=o||{};
+ var W=360,H=o.h||160,padL=26,padR=6,padB=20,padT=18;
+ var max=0;rows.forEach(function(r){max=Math.max(max,+r.v||0,+r.v2||0);});
+ if(!max)max=1;
+ max=_stNice(max);
+ var pair=!!o.c2,n=rows.length||1,cw=(W-padL-padR)/n;
+ var bw=Math.min(pair?cw*0.34:cw*0.56,pair?13:26),gh=H-padB-padT;
+ var c1=o.c1||"var(--acc)",c2=o.c2||"var(--bd)";
+ var s='<svg class="stsvg" viewBox="0 0 '+W+' '+H+'" role="img">';
+ /* linii de sprijin cu valoarea scrisă în stânga — fără ele nu se știe cât e „sus" */
+ [0,0.5,1].forEach(function(f){var y=padT+gh-gh*f;
+  s+='<line x1="'+padL+'" y1="'+y.toFixed(1)+'" x2="'+(W-padR)+'" y2="'+y.toFixed(1)+'" stroke="var(--bd)" stroke-width="1"'+(f?' stroke-dasharray="3 4"':'')+'/>';
+  if(f)s+='<text x="'+(padL-5)+'" y="'+(y+3.2).toFixed(1)+'" text-anchor="end" font-size="8.5" fill="var(--ink3)">'+esc(o.fmt?o.fmt(Math.round(max*f)):Math.round(max*f))+'</text>';});
+ rows.forEach(function(r,i){
+  var cx=padL+cw*i+cw/2,v=+r.v||0,v2=+r.v2||0;
+  /* anul trecut stă alături, nu în spate: așa se compară cu ochiul, nu prin transparență */
+  var x1=pair?(cx-bw-1):(cx-bw/2),x2=cx+1;
+  if(pair&&v2){var h2=gh*(v2/max);
+   s+='<rect x="'+x2.toFixed(1)+'" y="'+(padT+gh-h2).toFixed(1)+'" width="'+bw+'" height="'+Math.max(h2,1).toFixed(1)+'" rx="2.5" fill="'+c2+'" opacity=".55"/>';}
+  var hh=gh*(v/max);
+  s+='<rect x="'+x1.toFixed(1)+'" y="'+(padT+gh-hh).toFixed(1)+'" width="'+bw+'" height="'+Math.max(hh,1.5).toFixed(1)+'" rx="2.5" fill="'+c1+'"'+(v?'':' opacity=".25"')+'/>';
+  if(v&&!o.nolab)s+='<text x="'+(x1+bw/2).toFixed(1)+'" y="'+(padT+gh-hh-5).toFixed(1)+'" text-anchor="middle" font-size="9" font-weight="700" fill="var(--ink2)">'+esc(o.fmt?o.fmt(v):v)+'</text>';
+  s+='<text x="'+cx.toFixed(1)+'" y="'+(H-6)+'" text-anchor="middle" font-size="9" fill="var(--ink3)">'+esc(r.l)+'</text>';});
+ return s+'</svg>';}
+
+/* un maxim rotund pentru axă: 1647 devine 1800, 85 devine 90 — cifre pe care le citești dintr-o privire */
+function _stNice(v){
+ if(v<=10)return Math.ceil(v);
+ var p=Math.pow(10,Math.floor(Math.log(v)/Math.LN10)-1);
+ return Math.ceil(v/(p*2))*(p*2);}
+
+/* linie cu puncte — pentru prezență, unde contează urcușul, nu volumul.
+   Axa nu pornește de la zero (diferența dintre 78 și 83 s-ar pierde), dar capetele
+   ei sunt scrise pe grafic, ca nimeni să nu creadă că e vorba de o prăbușire. */
+function stLines(rows,series){
+ var W=360,H=150,padL=26,padR=6,padB=20,padT=14;
+ var min=Infinity,max=0;
+ rows.forEach(function(r){series.forEach(function(se){var v=+r[se.f]||0;if(!v)return;max=Math.max(max,v);min=Math.min(min,v);});});
+ if(!max){max=1;min=0;}
+ if(min===Infinity)min=0;
+ var span=Math.max(max-min,1),lo=Math.max(0,Math.floor((min-span*0.35)/5)*5),hi=Math.ceil((max+span*0.25)/5)*5;
+ if(hi<=lo)hi=lo+5;
+ var n=rows.length||1,cw=(W-padL-padR)/n,gh=H-padB-padT;
+ function X(i){return padL+cw*i+cw/2;}
+ function Y(v){return padT+gh-gh*(((+v||0)-lo)/(hi-lo));}
+ var s='<svg class="stsvg" viewBox="0 0 '+W+' '+H+'" role="img">';
+ [0,0.5,1].forEach(function(f){var y=padT+gh-gh*f,val=Math.round(lo+(hi-lo)*f);
+  s+='<line x1="'+padL+'" y1="'+y.toFixed(1)+'" x2="'+(W-padR)+'" y2="'+y.toFixed(1)+'" stroke="var(--bd)" stroke-width="1"'+(f?' stroke-dasharray="3 4"':'')+'/>'
+   +'<text x="'+(padL-5)+'" y="'+(y+3.2).toFixed(1)+'" text-anchor="end" font-size="8.5" fill="var(--ink3)">'+val+'</text>';});
+ series.forEach(function(se){
+  var pts=[];rows.forEach(function(r,i){if(r[se.f])pts.push([X(i),Y(r[se.f])]);});
+  if(pts.length>1)s+='<polyline fill="none" stroke="'+se.c+'" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" points="'+pts.map(function(p){return p[0].toFixed(1)+","+p[1].toFixed(1);}).join(" ")+'"/>';
+  pts.forEach(function(p){s+='<circle cx="'+p[0].toFixed(1)+'" cy="'+p[1].toFixed(1)+'" r="2.8" fill="'+se.c+'"/>';});});
+ rows.forEach(function(r,i){s+='<text x="'+X(i).toFixed(1)+'" y="'+(H-6)+'" text-anchor="middle" font-size="9" fill="var(--ink3)">'+esc(r.l)+'</text>';});
+ return s+'</svg>';}
+
+function stLeg(items){return '<div class="stleg">'+items.map(function(it){
+ return '<span><i class="stsw" style="background:'+it.c+(it.o?';opacity:'+it.o:'')+'"></i>'+esc(it.t)+'</span>';}).join("")+'</div>';}
+function stKpi(v,unit,label,cls){
+ return '<div class="stkpi '+(cls||"")+'"><div class="kv">'+esc(String(v))+(unit?('<small> '+esc(unit)+'</small>'):'')+'</div><div class="kk">'+esc(label)+'</div></div>';}
+
+function statSetYear(y){statTheo=+y;renderArhRoute();}
+/* Anul cu care se deschid Statisticile și S-10: cel mai recent an care ARE date.
+   În septembrie, anul de serviciu abia a început și e gol — cine intră atunci nu vrea
+   un ecran gol, ci anul tocmai încheiat, cel pe care îl are de raportat. */
+function _statYear(){
+ if(statTheo!=null)return statTheo;
+ var R=arhRep(),last="";
+ Object.keys(R).forEach(function(id){Object.keys(R[id]||{}).forEach(function(k){if(k>last)last=k;});});
+ statTheo=last?theoStartOf(last):((typeof arhTheo!=="undefined"&&arhTheo!=null)?arhTheo:curTheoStart());
+ return statTheo;}
+
+function arhStatHtml(){
+ ensureStatCSS();
+ var start=_statYear(),rows=statYearData(start),prev=statYearData(start-1);
+ var done=rows.filter(function(r){return r.has;});
+ var totH=0,totSt=0,sumAct=0,nAct=0,sumMid=0,nMid=0,sumW=0,nW=0;
+ rows.forEach(function(r){totH+=r.h;totSt+=r.stud;
+  if(r.rep){sumAct+=r.active;nAct++;}
+  if(r.mid){sumMid+=r.mid;nMid++;}
+  if(r.wend){sumW+=r.wend;nW++;}});
+ var prevH=0;prev.forEach(function(r){prevH+=r.h;});
+ var avgAct=nAct?Math.round(sumAct/nAct):0,avgMid=nMid?Math.round(sumMid/nMid):0,avgW=nW?Math.round(sumW/nW):0;
+
+ var years=theoYearsAvail().slice().sort(function(a,b){return b-a;});
+ var H='<div class="stsel"><select class="fld" onchange="statSetYear(this.value)">'
+  +years.map(function(y){return '<option value="'+y+'"'+(y===start?" selected":"")+'>An de serviciu '+theoLabel(y)+'</option>';}).join("")
+  +'</select></div>';
+
+ if(!done.length)return H+'<div class="stempty">Nu sunt încă date pentru anul '+esc(theoLabel(start))+'.<br>Graficele apar pe măsură ce intră rapoartele și prezența.</div>';
+
+ H+='<div class="stkpis">'
+  +stKpi(totH,"ore","Ore de predicare în an","acc")
+  +stKpi(avgAct,"","Media vestitorilor activi","")
+  +stKpi(avgMid+" / "+avgW,"","Prezența medie — mijloc / sfârșit","teal")
+  +stKpi(totSt,"","Studii biblice raportate","")
+  +'</div>';
+
+ /* --- orele --- */
+ H+='<div class="stcard"><h3>Ore de predicare pe lună</h3>'
+  +'<div class="sth">Coloana portocalie e anul '+esc(theoLabel(start))+'; cea gri de lângă ea, aceeași lună din anul '+esc(theoLabel(start-1))+'.'
+  +(prevH?(' Pe tot anul trecut s-au raportat '+prevH+' ore.'):'')+'</div>'
+  +stBars(rows.map(function(r,i){return {l:r.name,v:r.h,v2:prev[i]?prev[i].h:0};}),{c1:"var(--acc)",c2:"var(--ink3)",h:170})
+  +stLeg([{c:"var(--acc)",t:theoLabel(start)},{c:"var(--ink3)",o:".45",t:theoLabel(start-1)}])
+  +'</div>';
+
+ /* --- vestitori activi --- */
+ H+='<div class="stcard"><h3>Vestitori activi pe lună</h3>'
+  +'<div class="sth">Câți au raportat în fiecare lună, pionierii speciali incluși. Media anului: '+avgAct+'.</div>'
+  +stBars(rows.map(function(r){return {l:r.name,v:r.active};}),{c1:"var(--teal)",h:160})
+  +'</div>';
+
+ /* --- prezența --- */
+ if(nMid||nW){
+  H+='<div class="stcard"><h3>Prezența la întruniri</h3>'
+   +'<div class="sth">Media pe lună a celor prezenți, din foaia de prezență (S-88).</div>'
+   +stLines(rows.map(function(r){return {l:r.name,mid:r.mid,wend:r.wend};}),
+     [{f:"mid",c:"var(--acc)"},{f:"wend",c:"var(--teal)"}])
+   +stLeg([{c:"var(--acc)",t:"Întrunirea din timpul săptămânii"},{c:"var(--teal)",t:"Întrunirea de la sfârșitul săptămânii"}])
+   +'</div>';}
+
+ /* --- studii biblice --- */
+ H+='<div class="stcard"><h3>Studii biblice pe lună</h3>'
+  +'<div class="sth">Totalul studiilor raportate de congregație. În tot anul: '+totSt+'.</div>'
+  +stBars(rows.map(function(r){return {l:r.name,v:r.stud};}),{c1:"var(--secGold)",h:150})
+  +'</div>';
+
+ /* --- categoriile, în ultima lună cu date --- */
+ var last=done[done.length-1];
+ if(last&&last.cats){
+  var C=last.cats,catRows=[
+   {l:"Vestitori",v:C.pub.ids.length,c:"var(--ink3)"},
+   {l:"Auxiliari",v:C.aux.ids.length,c:"var(--secGold)"},
+   {l:"Regulari",v:C.reg.ids.length,c:"var(--acc)"},
+   {l:"Speciali",v:C.special.ids.length,c:"var(--teal)"}];
+  H+='<div class="stcard"><h3>Categorii în '+esc(last.full)+'</h3>'
+   +'<div class="sth">Câți sunt în fiecare categorie și câte ore au raportat împreună.</div>';
+  var mx=Math.max.apply(null,catRows.map(function(r){return r.v;}).concat([1]));
+  catRows.forEach(function(r){
+   var pct=Math.round(r.v/mx*100);
+   H+='<div style="display:flex;align-items:center;gap:10px;margin:9px 0">'
+    +'<span style="flex:0 0 6.2em;font-size:12.5px;color:var(--ink2);font-weight:600">'+esc(r.l)+'</span>'
+    +'<span style="flex:1;height:14px;background:var(--surf2);border-radius:7px;overflow:hidden"><span style="display:block;height:100%;width:'+pct+'%;background:'+r.c+';border-radius:7px"></span></span>'
+    +'<span style="flex:0 0 2.2em;text-align:right;font-size:13px;font-weight:800">'+r.v+'</span></div>';});
+  var hh={pub:0,aux:C.aux.h,reg:C.reg.h,special:C.special.h};
+  H+='<div class="sth" style="margin:10px 0 2px">Ore în luna aceasta: auxiliari '+Math.round(hh.aux)+', regulari '+Math.round(hh.reg)+(hh.special?(', speciali '+Math.round(hh.special)):'')+'.</div>'
+   +'</div>';}
+
+ H+='<div class="s10note" style="padding-top:2px">Cifrele vin din aceleași rapoarte ca Sumarul S-1. O lună fără raport rămâne goală, nu zero.</div>';
+ return H;}
+
+/* ============================================================================
+   ANALIZA CONGREGAȚIEI (S-10) — o dată pe an de serviciu
+   ----------------------------------------------------------------------------
+   Formularul cerut o dată pe an. Jumătate din cifre le știe aplicația (media
+   prezenței, câți vestitori au raportat, cine a devenit inactiv și cine s-a
+   întors), cealaltă jumătate nu are de unde (teritoriile, vestitorii nevăzători
+   sau cu deficiențe auditive, cei închiși) — acelea se scriu de mână și se
+   păstrează pe an, în S.s10, ca la anul să fie acolo.
+   Cifrele socotite de aplicație se pot suprascrie: dacă evidența ta spune altceva,
+   scrii tu, iar aplicația nu se mai amestecă. „Șterge" pune la loc socoteala ei.
+
+   Anul: jw.org numește anul de serviciu după anul în care se termină (septembrie
+   2025 – august 2026 = „anul de serviciu 2026"), iar în aplicație anii teocratici
+   se țin după anul de început. Aici scriem amândouă, ca să nu se încurce nimeni.
+   ============================================================================ */
+function s10All(){S.s10=S.s10||{};return S.s10;}
+function s10Of(start){var a=s10All();return a[String(start)]||{};}
+function s10Set(start,f,v){
+ if(!_canEditArh()){toast("Doar vizualizare — nu poți modifica");return;}
+ var a=s10All(),k=String(start);a[k]=a[k]||{};
+ v=String(v==null?"":v).trim();
+ if(v===""){delete a[k][f];}
+ else if(f==="help"){a[k][f]=v;}
+ else{var n=parseInt(String(v).replace(/[^\d-]/g,""),10);if(isNaN(n)||n<0)n=0;a[k][f]=n;}
+ a[k].upd=Date.now();
+ try{var cu=_curUser();a[k].by=(cu&&cu.n)||"";}catch(e){}
+ save();}
+function s10Field(start,f,v){s10Set(start,f,v);}
+function s10Reset(start,f){
+ if(!_canEditArh()){toast("Doar vizualizare — nu poți modifica");return;}
+ var a=s10All(),k=String(start);if(a[k])delete a[k][f];save();renderArhRoute();}
+
+/* cine a devenit inactiv și cine s-a întors, în anul cerut.
+   Regula obișnuită: șase luni la rând fără raport = inactiv. „Nou inactiv" e luna
+   în care se împlinesc cele șase, dacă acea lună cade în anul de serviciu.
+   „Redevenit activ" e luna în care raportează din nou cineva care era inactiv. */
+function s10Flow(start){
+ var months=theoMonths(start).map(function(m){return m.k;});
+ var R=arhRep(),newIn=[],back=[];
+ (S.bros||[]).forEach(function(b){
+  if(!b||!isPublisher(b))return;
+  var rr=R[b.id];if(!rr)return;
+  var keys=Object.keys(rr);if(!keys.length)return;
+  var firstEver=keys.sort()[0];
+  function rep(k){return !!rr[k];}
+  function inactiveAt(k){
+   /* inactiv la luna k = nici k, nici cele cinci de dinainte n-au raport */
+   if(k<firstEver)return false;
+   for(var i=0;i<6;i++){if(rep(ymShift(k,-i)))return false;}
+   return true;}
+  months.forEach(function(k){
+   var prev=ymShift(k,-1);
+   if(inactiveAt(k)&&!inactiveAt(prev))newIn.push({id:b.id,k:k});
+   if(rep(k)&&inactiveAt(prev))back.push({id:b.id,k:k});});});
+ return {newIn:newIn,back:back};}
+
+/* toate cifrele S-10 ale unui an: ce socotește aplicația și ce ai scris tu peste */
+function s10Calc(start){
+ var months=theoMonths(start),man=s10Of(start);
+ var sumM=0,nM=0,sumW=0,nW=0,reporters={},lastK="";
+ months.forEach(function(m){
+  var am=attMonth(m.k,"m"),aw=attMonth(m.k,"w");
+  if(am.meetings){sumM+=am.avg;nM++;}
+  if(aw.meetings){sumW+=aw.avg;nW++;}
+  var any=false;
+  (S.bros||[]).forEach(function(b){
+   if(!b||!isPublisher(b))return;
+   if(repOf(b.id,m.k)){reporters[b.id]=1;any=true;}});
+  if(any||am.meetings||aw.meetings)lastK=m.k;});
+ /* luna după care se numără: ultima lună a anului care are ceva în ea (altfel, în
+    septembrie, un an abia început ar da zero) */
+ if(!lastK)lastK=months[months.length-1].k;
+ var actEnd=0;
+ (S.bros||[]).forEach(function(b){if(isActivePub(b,lastK))actEnd++;});
+ var fl=s10Flow(start);
+ var auto={
+  mid:nM?Math.round(sumM/nM):0,
+  wend:nW?Math.round(sumW/nW):0,
+  act:actEnd,
+  actRep:Object.keys(reporters).length,
+  actK:lastK,
+  newInact:fl.newIn.length,
+  reAct:fl.back.length};
+ function pick(f){return (man[f]!=null&&man[f]!=="")?man[f]:auto[f];}
+ return {start:start,year:start+1,auto:auto,man:man,flow:fl,
+  mid:pick("mid"),wend:pick("wend"),act:pick("act"),
+  newInact:pick("newInact"),reAct:pick("reAct"),
+  deaf:(man.deaf||0),blind:(man.blind||0),jail:(man.jail||0),
+  terr:(man.terr||0),terrNo:(man.terrNo||0),help:(man.help||"nu"),
+  months:months};}
+
+function s10SetYear(y){statTheo=+y;renderArhRoute();}
+function _s10Row(lb,hint,inner){
+ return '<div class="s10row"><span class="s10lb">'+esc(lb)+(hint?('<small>'+hint+'</small>'):'')+'</span>'+inner+'</div>';}
+function _s10Num(start,f,val,auto,ed){
+ if(!ed)return '<span class="s10v">'+esc(String(val))+'</span>';
+ var man=s10Of(start),isMan=(man[f]!=null&&man[f]!=="");
+ return '<input class="s10in" type="number" inputmode="numeric" min="0" step="1" value="'+(isMan?esc(String(man[f])):(auto==null?"":esc(String(val))))+'"'
+  +(auto!=null?(' placeholder="'+esc(String(auto))+'"'):'')
+  +' onchange="s10Field('+start+',\''+f+'\',this.value)">';}
+
+function arhS10Html(){
+ ensureStatCSS();
+ var start=_statYear(),D=s10Calc(start),ed=_canEditArh();
+ var years=theoYearsAvail().slice().sort(function(a,b){return b-a;});
+ var H='<div class="stsel"><select class="fld" onchange="s10SetYear(this.value)">'
+  +years.map(function(y){return '<option value="'+y+'"'+(y===start?" selected":"")+'>Anul de serviciu '+(y+1)+' ('+theoLabel(y)+')</option>';}).join("")
+  +'</select></div>';
+ H+='<div class="s10note">Septembrie '+start+' – august '+(start+1)+'. Cifrele marcate <span class="s10auto">socotit</span> vin din rapoartele și prezența din aplicație; scrie peste ele doar dacă evidența ta spune altceva. Restul se completează de mână și rămân salvate pe an.</div>';
+
+ /* --- prezența --- */
+ H+='<div class="s10card"><div class="s10h">Media prezenței la întruniri</div>'
+  +_s10Row("Întrunirea de la sfârșitul săptămânii",'<span class="s10auto">socotit</span> '+D.auto.wend+' — media lunilor cu prezență trecută',_s10Num(start,"wend",D.wend,D.auto.wend,ed))
+  +_s10Row("Întrunirea din timpul săptămânii",'<span class="s10auto">socotit</span> '+D.auto.mid+' — media lunilor cu prezență trecută',_s10Num(start,"mid",D.mid,D.auto.mid,ed))
+  +'</div>';
+
+ /* --- totalurile --- */
+ var flIn=D.flow.newIn.map(function(x){return broDisp(x.id)+" ("+RO_M3[ymM(x.k)]+")";}).join(", ");
+ var flBk=D.flow.back.map(function(x){return broDisp(x.id)+" ("+RO_M3[ymM(x.k)]+")";}).join(", ");
+ H+='<div class="s10card"><div class="s10h">Totalurile congregației</div>'
+  +_s10Row("Toți vestitorii activi",'<span class="s10auto">socotit</span> '+D.auto.act+' — vestitorii congregației la '+esc(monthName(D.auto.actK)).toLowerCase()+', fără cei arhivați. Au raportat măcar o lună în an: '+D.auto.actRep+'.',_s10Num(start,"act",D.act,D.auto.act,ed))
+  +_s10Row("Vestitori cu deficiențe auditive","se completează de mână",_s10Num(start,"deaf",D.deaf,null,ed))
+  +_s10Row("Vestitori inactivi noi",'<span class="s10auto">socotit</span> '+D.auto.newInact+' — șase luni la rând fără raport'+(flIn?(": "+esc(flIn)):""),_s10Num(start,"newInact",D.newInact,D.auto.newInact,ed))
+  +_s10Row("Vestitori nevăzători","se completează de mână",_s10Num(start,"blind",D.blind,null,ed))
+  +_s10Row("Vestitori redeveniți activi",'<span class="s10auto">socotit</span> '+D.auto.reAct+' — au raportat din nou după o perioadă de inactivitate'+(flBk?(": "+esc(flBk)):""),_s10Num(start,"reAct",D.reAct,D.auto.reAct,ed))
+  +_s10Row("Vestitori închiși","se completează de mână",_s10Num(start,"jail",D.jail,null,ed))
+  +'</div>';
+
+ /* --- teritoriul --- */
+ H+='<div class="s10card"><div class="s10h">Parcurgerea teritoriului</div>'
+  +_s10Row("Numărul total teritorii","se completează de mână",_s10Num(start,"terr",D.terr,null,ed))
+  +_s10Row("Teritorii nelucrate","se completează de mână",_s10Num(start,"terrNo",D.terrNo,null,ed))
+  +_s10Row("Ar accepta congregația ajutor pentru a parcurge teritoriile nelucrate?","",
+    ed?('<select class="s10sel" onchange="s10Field('+start+',\'help\',this.value)"><option value="nu"'+(D.help==="nu"?" selected":"")+'>Nu</option><option value="da"'+(D.help==="da"?" selected":"")+'>Da</option></select>')
+      :('<span class="s10v">'+(D.help==="da"?"Da":"Nu")+'</span>'))
+  +'</div>';
+
+ var man=s10Of(start);
+ if(man.upd)H+='<div class="s10note">Ultima modificare: '+esc(new Date(man.upd).toLocaleDateString("ro-RO"))+(man.by?(" · "+esc(man.by)):"")+'</div>';
+ H+='<div class="s10note">Butonul rotund descarcă formularul completat, ca PDF, cu o a doua pagină în care scrie de unde vine fiecare cifră.</div>';
+ return H;}
+
+/* ----- PDF-urile celor două secțiuni noi -----
+   Motorul de PDF clonează pagina, iar la clonare un <svg> scris direct în document nu
+   se mai desenează (de aceea și iconurile de pe foaia săptămânii sunt făcute din casete).
+   Deci pe hârtie coloanele sunt tot casete cu fundal, nu grafice SVG. */
+var S10_CSS=".s10pg{font-size:11pt}.s10t1{font-size:10pt;letter-spacing:.6px;text-transform:uppercase;color:#6b7280}"
++".s10t2{font-size:20pt;font-weight:700;margin:1mm 0 5mm}"
++".s10meta{font-size:9.5pt;color:#6b7280;margin-bottom:7mm}"
++".s10bx{border:1px solid #d7dae2;border-radius:2.5mm;padding:4mm 5mm;margin-bottom:5mm}"
++".s10bx h3{font-size:12.5pt;font-weight:700;margin:0 0 3mm}"
++".s10gr{display:flex;flex-wrap:wrap}"
++".s10c{width:50%;padding:2mm 0 3mm;box-sizing:border-box}"
++".s10c .l{font-size:10pt;color:#5b6270}.s10c .v{font-size:14pt;font-weight:700;margin-top:.8mm}"
++".s10c.full{width:100%}"
++".s10tb{width:100%;border-collapse:collapse;font-size:9.5pt}"
++".s10tb th,.s10tb td{border:1px solid #d7dae2;padding:1.6mm 2mm;text-align:left}"
++".s10tb th{background:#f2f4f8;font-weight:700}"
++".s10tb td.n{text-align:right;font-variant-numeric:tabular-nums}"
++".s10bar{height:3.6mm;background:#e7eaf0;border-radius:1.8mm;overflow:hidden}"
++".s10bar>span{display:block;height:100%;background:#d9840f;border-radius:1.8mm}"
++".s10note2{font-size:9pt;color:#6b7280;line-height:1.5;margin-top:3mm}";
+
+function _s10Cell(l,v,full){return '<div class="s10c'+(full?" full":"")+'"><div class="l">'+esc(l)+'</div><div class="v">'+esc(String(v))+'</div></div>';}
+function s10Pdf(){
+ var start=_statYear(),D=s10Calc(start);
+ var cong=(S.settings&&S.settings.cong)||"";
+ var fn="S-10_"+(start+1)+(cong?("_"+cong.replace(/\s+/g,"_")):"")+".pdf";
+ var p1='<div class="page s10pg">'
+  +'<div class="s10t1">Analiza congregației (S-10)</div>'
+  +'<div class="s10t2">Anul de serviciu '+(start+1)+'</div>'
+  +'<div class="s10meta">'+esc(cong||"Congregația")+' · septembrie '+start+' – august '+(start+1)
+   +' · întocmit la '+new Date().toLocaleDateString("ro-RO")+'</div>'
+  +'<div class="s10bx"><h3>Media prezenței la întruniri</h3><div class="s10gr">'
+   +_s10Cell("Întrunirea de la sfârșitul săptămânii",D.wend)
+   +_s10Cell("Întrunirea din timpul săptămânii",D.mid)
+  +'</div></div>'
+  +'<div class="s10bx"><h3>Totalurile congregației</h3><div class="s10gr">'
+   +_s10Cell("Toți vestitorii activi",D.act)
+   +_s10Cell("Vestitori cu deficiențe auditive",D.deaf)
+   +_s10Cell("Vestitori inactivi noi",D.newInact)
+   +_s10Cell("Vestitori nevăzători",D.blind)
+   +_s10Cell("Vestitori redeveniți activi",D.reAct)
+   +_s10Cell("Vestitori închiși",D.jail)
+  +'</div></div>'
+  +'<div class="s10bx"><h3>Parcurgerea teritoriului</h3><div class="s10gr">'
+   +_s10Cell("Numărul total teritorii",D.terr)
+   +_s10Cell("Teritorii nelucrate",D.terrNo)
+   +_s10Cell("Ar accepta congregația ajutor pentru a parcurge teritoriile nelucrate?",D.help==="da"?"Da":"Nu",true)
+  +'</div></div>'
+  +'<div class="s10note2">Formular pentru raportarea anuală. Cifrele de prezență și cele despre vestitori sunt socotite din rapoartele lunare și din foaia de prezență ținute în aplicație; acolo unde s-a scris altceva peste, pe pagina următoare se vede și valoarea socotită.</div>'
+  +'</div>';
+ /* pagina a doua: de unde vine fiecare cifră */
+ var rows=statYearData(start);
+ var p2='<div class="page s10pg">'
+  +'<div class="s10t1">Analiza congregației (S-10)</div>'
+  +'<div class="s10t2">De unde vin cifrele</div>'
+  +'<table class="s10tb"><thead><tr><th>Luna</th><th class="n">Prezență mijloc</th><th class="n">Prezență sfârșit</th><th class="n">Au raportat</th><th class="n">Ore</th><th class="n">Studii</th></tr></thead><tbody>'
+  +rows.map(function(r){return '<tr><td>'+esc(r.full)+'</td><td class="n">'+(r.mid||"—")+'</td><td class="n">'+(r.wend||"—")+'</td><td class="n">'+(r.rep||"—")+'</td><td class="n">'+(r.h||"—")+'</td><td class="n">'+(r.stud||"—")+'</td></tr>';}).join("")
+  +'</tbody></table>'
+  +'<div class="s10bx" style="margin-top:6mm"><h3>Socotit de aplicație</h3><div class="s10gr">'
+   +_s10Cell("Media prezenței — sfârșit de săptămână",D.auto.wend)
+   +_s10Cell("Media prezenței — mijlocul săptămânii",D.auto.mid)
+   +_s10Cell("Vestitori activi la "+monthName(D.auto.actK).toLowerCase(),D.auto.act)
+   +_s10Cell("Vestitori care au raportat măcar o lună",D.auto.actRep)
+   +_s10Cell("Vestitori inactivi noi",D.auto.newInact)
+   +_s10Cell("Vestitori redeveniți activi",D.auto.reAct)
+  +'</div>'
+  +(D.flow.newIn.length?('<div class="s10note2"><b>Au devenit inactivi:</b> '+esc(D.flow.newIn.map(function(x){return broDisp(x.id)+" ("+monthName(x.k)+")";}).join(", "))+'</div>'):'')
+  +(D.flow.back.length?('<div class="s10note2"><b>Au redevenit activi:</b> '+esc(D.flow.back.map(function(x){return broDisp(x.id)+" ("+monthName(x.k)+")";}).join(", "))+'</div>'):'')
+  +'<div class="s10note2">Regula folosită: șase luni la rând fără raport înseamnă inactiv; luna în care se împlinesc cele șase e luna în care persoana devine inactivă.</div>'
+  +'</div></div>';
+ arhPdfWindow(fn,p1+p2,S10_CSS);}
+
+/* Statisticile pe hârtie: aceleași cifre, dar desenate din casete */
+function statPdf(){
+ var start=_statYear(),rows=statYearData(start),prev=statYearData(start-1);
+ var cong=(S.settings&&S.settings.cong)||"";
+ var totH=0,totSt=0,sumAct=0,nAct=0;
+ rows.forEach(function(r){totH+=r.h;totSt+=r.stud;if(r.rep){sumAct+=r.active;nAct++;}});
+ var maxH=Math.max.apply(null,rows.map(function(r){return r.h;}).concat(prev.map(function(r){return r.h;})).concat([1]));
+ var body='<div class="page s10pg">'
+  +'<div class="s10t1">Statistici · an de serviciu</div>'
+  +'<div class="s10t2">'+esc(theoLabel(start))+'</div>'
+  +'<div class="s10meta">'+esc(cong||"Congregația")+' · întocmit la '+new Date().toLocaleDateString("ro-RO")+'</div>'
+  +'<div class="s10bx"><h3>Pe scurt</h3><div class="s10gr">'
+   +_s10Cell("Ore de predicare în an",totH)
+   +_s10Cell("Media vestitorilor activi",nAct?Math.round(sumAct/nAct):0)
+   +_s10Cell("Studii biblice raportate",totSt)
+   +_s10Cell("Luni cu rapoarte",nAct)
+  +'</div></div>'
+  +'<div class="s10bx"><h3>Ore de predicare pe lună</h3>'
+  +rows.map(function(r,i){var pv=prev[i]?prev[i].h:0;
+    return '<div style="display:flex;align-items:center;gap:3mm;margin:1.6mm 0">'
+     +'<span style="width:22mm;font-size:9.5pt;color:#5b6270">'+esc(r.full)+'</span>'
+     +'<span class="s10bar" style="flex:1"><span style="width:'+Math.round(r.h/maxH*100)+'%"></span></span>'
+     +'<span style="width:14mm;text-align:right;font-size:10pt;font-weight:700">'+r.h+'</span>'
+     +'<span style="width:16mm;text-align:right;font-size:9pt;color:#8a90a0">'+(pv?("("+pv+")"):"")+'</span></div>';}).join("")
+  +'<div class="s10note2">În paranteză, aceeași lună din anul '+esc(theoLabel(start-1))+'.</div></div>'
+  +'<div class="s10bx"><h3>Lună cu lună</h3>'
+  +'<table class="s10tb"><thead><tr><th>Luna</th><th class="n">Activi</th><th class="n">Au raportat</th><th class="n">Ore</th><th class="n">Studii</th><th class="n">Prez. mijloc</th><th class="n">Prez. sfârșit</th></tr></thead><tbody>'
+  +rows.map(function(r){return '<tr><td>'+esc(r.full)+'</td><td class="n">'+(r.active||"—")+'</td><td class="n">'+(r.rep||"—")+'</td><td class="n">'+(r.h||"—")+'</td><td class="n">'+(r.stud||"—")+'</td><td class="n">'+(r.mid||"—")+'</td><td class="n">'+(r.wend||"—")+'</td></tr>';}).join("")
+  +'</tbody></table></div></div>';
+ arhPdfWindow("Statistici_"+theoLabel(start).replace("/","-")+".pdf",body,S10_CSS);}
+
+/* ============================================================================
+   LEGĂTURILE CU RESTUL APLICAȚIEI
+   ============================================================================ */
+(function(){
+ /* --- butonul de căutare din antet, lângă semnul „?" --- */
+ function mountFind(){
+  var hd=document.querySelector(".head");if(!hd||document.getElementById("btnFind"))return;
+  var b=document.createElement("button");
+  b.id="btnFind";b.className="icon";b.title="Caută în toată aplicația";
+  b.setAttribute("aria-label","Caută");
+  b.innerHTML=IC.search;
+  b.onclick=function(){findOpen();};
+  var first=hd.querySelector("#btnHelp")||hd.querySelector("#btnSet");
+  if(first)hd.insertBefore(b,first);else hd.appendChild(b);}
+ if(document.readyState==="loading")window.addEventListener("DOMContentLoaded",mountFind);else mountFind();
+ /* semnul „?" se pune și el tot la deschidere; dacă a ajuns după noi, ne mutăm înaintea lui */
+ setTimeout(function(){try{
+  var hd=document.querySelector(".head"),f=document.getElementById("btnFind"),h=document.getElementById("btnHelp");
+  if(hd&&f&&h&&f.compareDocumentPosition(h)&Node.DOCUMENT_POSITION_PRECEDING)hd.insertBefore(f,h);}catch(e){}},400);
+
+ /* --- de la tastatură: Ctrl/Cmd+K sau „/" --- */
+ document.addEventListener("keydown",function(e){
+  var ov=document.getElementById("fndov"),on=ov&&ov.classList.contains("on");
+  if(e.key==="Escape"&&on){e.preventDefault();e.stopPropagation();findClose();return;}
+  var t=e.target,inField=t&&(t.tagName==="INPUT"||t.tagName==="TEXTAREA"||t.tagName==="SELECT"||t.isContentEditable);
+  if((e.metaKey||e.ctrlKey)&&(e.key==="k"||e.key==="K")){e.preventDefault();on?findClose():findOpen();return;}
+  if(e.key==="/"&&!inField&&!on&&!sheetOpen()){e.preventDefault();findOpen();}
+ },true);
+
+ /* --- butonul rotund se dă la o parte când derulezi în jos ---
+    Plutește peste listă și acoperea numele scris la capătul din dreapta al rândului
+    („PRICHINDEL Filip" la Citirea Bibliei). Acum, cât derulezi în jos, se retrage;
+    la prima mișcare înapoi în sus revine, fiindcă atunci îl cauți. */
+ var lastY=0,ticking=0;
+ function onScroll(el){
+  var y=el.scrollTop,f=document.getElementById("fab");
+  if(!f||f.style.display==="none")return;
+  if(y<40||y<lastY-4)f.classList.remove("fabaway");
+  else if(y>lastY+8)f.classList.add("fabaway");
+  lastY=y;}
+ function bind(){
+  var b=document.getElementById("body");if(!b||b._fabScroll)return;b._fabScroll=1;
+  /* strunit pe ceas, nu pe requestAnimationFrame: acela nu bate cât pagina e ascunsă,
+     iar la revenire butonul rămânea unde-l lăsase derularea de dinainte */
+  b.addEventListener("scroll",function(){
+   var t=Date.now();if(t-ticking<60)return;ticking=t;onScroll(b);},{passive:true});}
+ if(document.readyState==="loading")window.addEventListener("DOMContentLoaded",bind);else bind();
+ /* la schimbarea ecranului derularea pornește de sus, deci butonul trebuie să fie iar acolo */
+ ["go","progGo","arhGo","arhHome","renderArhRoute"].forEach(function(n){
+  var f=window[n];if(typeof f!=="function")return;
+  window[n]=function(){var r=f.apply(this,arguments);
+   try{lastY=0;var el=document.getElementById("fab");if(el)el.classList.remove("fabaway");}catch(e){}
+   return r;};});
+
+ var st=document.createElement("style");
+ st.textContent=".fab{transition:transform .16s ease,opacity .16s ease,background .12s ease}"
+  +".fab.fabaway{transform:translateY(96px) scale(.9);opacity:0;pointer-events:none}"
+  /* antetul cu cinci iconuri: pe telefon le strângem, ca numele congregației să încapă */
+  +"@media(max-width:430px){.head{gap:6px;padding-left:11px;padding-right:11px}"
+  +".head .icon{width:31px;height:31px;border-radius:10px}.head .icon svg{width:18.5px;height:18.5px}}"
+  +"@media(max-width:360px){.head .icon{width:28px;height:28px}.head .icon svg{width:17px;height:17px}}";
+ document.head.appendChild(st);
+})();
+
 </script>
 
 </body></html>
