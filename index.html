@@ -659,7 +659,7 @@ Object.assign(IC,{
  box:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h18v13H3z"/><path d="M3 7l2-4h14l2 4"/><path d="M10 11h4"/></svg>',
  mark:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15.5 4.5l4 4-9.5 9.5H6v-4z"/><path d="M12.5 7.5l4 4M5 21h14"/></svg>'
 });
-const VERSION="3.9.1";
+const VERSION="3.9.2";
 /* Versiunea minima care are voie sa SCRIE in cloud. Se trece in gist la fiecare trimitere;
    un dispozitiv ramas pe un build mai vechi decat atat nu mai poate suprascrie datele —
    doar citeste si se actualizeaza singur. Asa nu mai poate un singur telefon uitat deschis
@@ -5097,9 +5097,9 @@ var NEWS=[
   ["search","Caută în toată aplicația","Lupa din antet deschide un singur câmp care caută peste tot: vestitori, săptămâni, părți de program, sarcini, ture de la mărturia publică, grupe, responsabilități, cântări, tutoriale și ecranele aplicației. Diacriticele nu contează — „bratu” îl găsește pe „Brațu”. Apeși rezultatul și ajungi fix acolo. De la tastatură: Ctrl/Cmd+K sau „/”."],
   ["cal","Calendarul lunii, în Programări","A patra foaie. Se deschide pe „Ale mele”: luna cu zilele în care ești TU programat și, dedesubt, ce ai de făcut, cu ora. „Toate” arată luna congregației întregi — întrunirile, terenul, turele de la mărturia publică și evenimentele, fiecare cu punctul lui colorat. Apeși o zi și vezi tot ce e în ea, oricare din cele două ar fi ales."],
   ["chart","Statistici pe anul de serviciu","Secțiune nouă în „Rapoarte și evidențe”: orele pe lună față de anul trecut, vestitorii activi, prezența la cele două întruniri și studiile biblice, în grafice. Plus câți sunt în fiecare categorie. Se descarcă și ca PDF."],
-  ["form","Analiza congregației (S-10)","Formularul anual, completat de aplicație acolo unde are de unde: media prezenței, vestitorii activi, cine a devenit inactiv și cine a redevenit activ — cu numele și luna. Teritoriile și celelalte se scriu de mână și rămân salvate pe an. PDF-ul are și o a doua pagină în care scrie de unde vine fiecare cifră."],
+  ["form","Analiza congregației (S-10)","Formularul anual, completat de aplicație acolo unde are de unde: media prezenței, vestitorii activi, cine a devenit inactiv și cine a redevenit activ — cu numele și luna. Teritoriile și celelalte se scriu de mână și rămân salvate pe an. Butonul „Descarcă formularul S-10 (PDF)” stă sus, lângă anul de serviciu, și încă o dată la capătul foii; PDF-ul are o a doua pagină în care scrie de unde vine fiecare cifră."],
   ["check","Săptămâna cerută nu se mai pierde","Din „Profilul meu”, apăsarea pe o sarcină, pe o cuvântare sau pe curățenia grupei ducea în „Programări”, dar pe săptămâna în curs, nu pe cea pe care ai apăsat-o. Acum deschide exact săptămâna aceea."],
-  ["info","Mai încăpător pe telefon","Bara celor patru foi arată iconul fiecăreia și numele celei deschise — patru nume întregi nu încăpeau pe un ecran de telefon. Antetul strânge iconurile, ca numele congregației să nu se mai taie. Butonul rotund se retrage cât derulezi în jos, ca să nu mai acopere numele scris la capătul rândului, și revine la prima mișcare în sus."]
+  ["info","Mai încăpător pe telefon","Bara celor patru foi are iconul deasupra și numele dedesubt, în patru coloane egale — numele întregi pe un rând nu încăpeau pe un ecran de telefon. Antetul strânge iconurile, ca numele congregației să nu se mai taie. Butonul rotund se retrage cât derulezi în jos, ca să nu mai acopere numele scris la capătul rândului, și revine la prima mișcare în sus."]
  ]},
  {v:"3.8.0",label:"3.8",d:"05.09.2026",t:"Orele mele — carnetul de teren, în Profilul meu",items:[
   ["clock","Orele mele","Un card nou în „Profilul meu”: notezi orele pe zile („Adaugă ore”) sau pornești cronometrul când ieși și îl oprești când termini. Vezi totalul lunii, obiectivul și cât îți mai trebuie pe zi."],
@@ -6485,8 +6485,7 @@ function renderArh(){arhInitSel();arhEnsureCSS();$("#fab").style.display="none";
 function _arhFab(){var f=$("#fab");if(!f)return;var ed=_canEditArh(),ad=_isAdmin();var cfg=null;
  if(arhSub==="vcped")return;/* editorul de săptămâni își pune singur butonul */
  if(arhSub==="sumar")cfg={ic:(ed?IC.tune:IC.dl),fn:arhFabSumar};
- else if(arhSub==="stat")cfg={ic:IC.dl,fn:statPdf};
- else if(arhSub==="s10")cfg={ic:IC.dl,fn:s10Pdf};
+ else if(arhSub==="stat"||arhSub==="s10")cfg=null;/* descărcarea e scrisă pe ecran, nu ascunsă în butonul rotund */
  else if(arhSub==="rap"){if(ed)cfg={ic:IC.tune,fn:rapToolsSheet};}
  else if(arhSub==="pio600")cfg={ic:IC.dl,fn:function(){pioDownload(theoStartOf(arhYM));}};
  else if(arhSub==="prez")cfg=(ed||ad)?{ic:IC.tune,fn:arhFabPrez}:{ic:IC.dl,fn:function(){pdfS88(theoStartOf(arhYM));}};
@@ -14054,27 +14053,22 @@ function ensureAlk39CSS(){if(document.getElementById("alk39css"))return;
 +".calit small{display:block;font-size:11.5px;color:var(--ink3);margin-top:2px;line-height:1.45}"
 +".calit .chh{flex:0 0 auto;font-size:12px;font-weight:800;color:var(--acc)}"
 +".calmy{font-size:10px;font-weight:800;letter-spacing:.4px;text-transform:uppercase;color:var(--acc);background:var(--accsoft);border-radius:5px;padding:1px 5px;margin-left:5px;vertical-align:1px}"
-+".segbar .seg .segic{display:none}"
-+".segbar .seg svg{width:18px;height:18px}"
-+"@media(max-width:470px){"
-+".segbar{gap:3px;padding:3px}"
-+".segbar .seg{flex:0 0 auto;display:flex;align-items:center;justify-content:center;gap:6px;min-height:42px;padding:8px 11px;white-space:nowrap;font-size:13px}"
-+".segbar .seg .segtx{display:none}"
-+".segbar .seg.on{flex:1 1 auto;min-width:0}"
-+".segbar .seg.on .segtx{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}"
-+".segbar .seg .segic{display:flex;flex:0 0 auto}"
++".segbar .seg{flex:1 1 0;min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:4px;padding:9px 3px;min-height:56px;white-space:normal}"
++".segbar .seg .segic{display:flex;flex:0 0 auto;color:inherit}"
 +".segbar .seg svg{width:19px;height:19px}"
-+"}"
-+"@media(max-width:360px){"
-+".app .segbar .seg{padding:8px 9px;gap:5px}"
-+".app .segbar .seg.on .segtx{font-size:12.5px}"
-+"}";
++".segbar .seg .segtx{display:block;width:100%;min-height:2.3em;font-size:10.5px;font-weight:700;line-height:1.15;text-align:center;letter-spacing:-.1px;overflow-wrap:break-word;hyphens:auto}"
++"@media(max-width:340px){.segbar .seg{padding:8px 2px;gap:3px}.segbar .seg .segtx{font-size:10px}.segbar .seg svg{width:18px;height:18px}}"
+/* aceeași formă la orice lățime: pe ecran lat numele au loc să crească, dar rămân
+   unul sub icon — o bară care își schimbă forma la mijloc se citește ca alt ecran */
++"@media(min-width:560px){.segbar .seg{min-height:62px;padding:11px 6px}.segbar .seg svg{width:21px;height:21px}.segbar .seg .segtx{font-size:12.5px;letter-spacing:0}}"+"}";
  document.head.appendChild(st);}
 
 function ensureStatCSS(){if(document.getElementById("stcss"))return;
  var st=document.createElement("style");st.id="stcss";st.textContent=
  ".stsel{display:flex;gap:8px;align-items:center;margin-bottom:12px}"
 +".stsel select{flex:1;min-width:0}"
++".stsel .stdl{flex:0 0 auto;width:auto;padding:11px 15px;font-size:14px;border-radius:12px}"
++".stsel .stdl svg{width:17px;height:17px}"
 +".stkpis{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:14px}"
 +"@media(min-width:560px){.stkpis{grid-template-columns:repeat(4,1fr)}}"
 +".stkpi{background:var(--surf);border:1px solid var(--bd);border-radius:14px;padding:13px 12px;box-shadow:var(--sh)}"
@@ -14688,6 +14682,8 @@ function stLeg(items){return '<div class="stleg">'+items.map(function(it){
 function stKpi(v,unit,label,cls){
  return '<div class="stkpi '+(cls||"")+'"><div class="kv">'+esc(String(v))+(unit?('<small> '+esc(unit)+'</small>'):'')+'</div><div class="kk">'+esc(label)+'</div></div>';}
 
+function _stDlBtn(fn){
+ return '<button class="btn pri stdl" onclick="'+fn+'" title="Descarcă PDF" aria-label="Descarcă PDF">'+IC.dl+'<span class="stdltx">PDF</span></button>';}
 function statSetYear(y){statTheo=+y;renderArhRoute();}
 /* Anul cu care se deschid Statisticile și S-10: cel mai recent an care ARE date.
    În septembrie, anul de serviciu abia a început și e gol — cine intră atunci nu vrea
@@ -14714,7 +14710,7 @@ function arhStatHtml(){
  var years=theoYearsAvail().slice().sort(function(a,b){return b-a;});
  var H='<div class="stsel"><select class="fld" onchange="statSetYear(this.value)">'
   +years.map(function(y){return '<option value="'+y+'"'+(y===start?" selected":"")+'>An de serviciu '+theoLabel(y)+'</option>';}).join("")
-  +'</select></div>';
+  +'</select>'+_stDlBtn("statPdf()")+'</div>';
 
  if(!done.length)return H+'<div class="stempty">Nu sunt încă date pentru anul '+esc(theoLabel(start))+'.<br>Graficele apar pe măsură ce intră rapoartele și prezența.</div>';
 
@@ -14775,6 +14771,7 @@ function arhStatHtml(){
   H+='<div class="sth" style="margin:10px 0 2px">Ore în luna aceasta: auxiliari '+Math.round(hh.aux)+', regulari '+Math.round(hh.reg)+(hh.special?(', speciali '+Math.round(hh.special)):'')+'.</div>'
    +'</div>';}
 
+ H+='<button class="btn pri" style="margin:4px 0 8px" onclick="statPdf()">'+IC.pdf+' Descarcă statisticile (PDF)</button>';
  H+='<div class="s10note" style="padding-top:2px">Cifrele vin din aceleași rapoarte ca Sumarul S-1. O lună fără raport rămâne goală, nu zero.</div>';
  return H;}
 
@@ -14885,7 +14882,7 @@ function arhS10Html(){
  var years=theoYearsAvail().slice().sort(function(a,b){return b-a;});
  var H='<div class="stsel"><select class="fld" onchange="s10SetYear(this.value)">'
   +years.map(function(y){return '<option value="'+y+'"'+(y===start?" selected":"")+'>Anul de serviciu '+(y+1)+' ('+theoLabel(y)+')</option>';}).join("")
-  +'</select></div>';
+  +'</select>'+_stDlBtn("s10Pdf()")+'</div>';
  H+='<div class="s10note">Septembrie '+start+' – august '+(start+1)+'. Cifrele marcate <span class="s10auto">socotit</span> vin din rapoartele și prezența din aplicație; scrie peste ele doar dacă evidența ta spune altceva. Restul se completează de mână și rămân salvate pe an.</div>';
 
  /* --- prezența --- */
@@ -14917,7 +14914,8 @@ function arhS10Html(){
 
  var man=s10Of(start);
  if(man.upd)H+='<div class="s10note">Ultima modificare: '+esc(new Date(man.upd).toLocaleDateString("ro-RO"))+(man.by?(" · "+esc(man.by)):"")+'</div>';
- H+='<div class="s10note">Butonul rotund descarcă formularul completat, ca PDF, cu o a doua pagină în care scrie de unde vine fiecare cifră.</div>';
+ H+='<button class="btn pri" style="margin:6px 0 8px" onclick="s10Pdf()">'+IC.pdf+' Descarcă formularul S-10 (PDF)</button>';
+ H+='<div class="s10note">PDF-ul are două pagini: formularul completat și, pe a doua, tabelul lună-cu-lună din care vine fiecare cifră.</div>';
  return H;}
 
 /* ----- PDF-urile celor două secțiuni noi -----
