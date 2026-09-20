@@ -23,8 +23,14 @@ html,body{margin:0;padding:0}
  --acc:#d9840f;--acc2:#b86e08;--accsoft:rgba(217,132,15,.12);
  --teal:#1aa593;--tealtx:#10786c;--secTeal:#127a8a;--secGold:#b8740a;--secRed:#c0392b;
  --sh:0 1px 2px rgba(20,24,40,.05);}
-body{background:#0b0c10;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased}
-body:has(.app.light){background:#e6e8ef}
+/* Pe telefon pagina de sub aplicație are culoarea antetului: bara de sistem a iPhone-ului
+   (iOS 26+) lasă să se vadă, prin sticlă, ce e sub ea — cu fundalul gri de pe ecran lat ieșea
+   o bandă tulbure deasupra antetului. Gri rămâne doar în jurul ramei, pe calculator. */
+html,body{background:#191c23;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased}
+html:has(.app.light),body:has(.app.light){background:#ffffff}
+@media(min-width:760px){html,body{background:#0b0c10}html:has(.app.light),body:has(.app.light){background:#e6e8ef}}
+.app::before{content:"";position:fixed;top:0;left:0;right:0;height:env(safe-area-inset-top,0px);background:var(--surf);z-index:6;pointer-events:none}
+@media(min-width:760px){.app::before{display:none}}
 .app{display:flex;flex-direction:column;height:100dvh;overflow:hidden;background:var(--bg);color:var(--ink);
  max-width:720px;margin:0 auto;position:relative}
 @media(min-width:760px){.app{height:94dvh;min-height:560px;margin-top:3dvh;border:1px solid var(--bd);
@@ -271,6 +277,8 @@ label.fl{display:block;font-size:11.5px;color:var(--ink2);margin:12px 0 5px;font
 .wkbar .bk svg{color:var(--acc)}
 .wkbar .wknavc{justify-self:center;flex:0 0 auto;background:transparent;border:0;padding:0;gap:2px}
 .wkbar .wkpos{flex:0 0 auto;padding:0 6px;font-size:14.5px}
+/* citirea Bibliei stă sub dată, în bara de navigare; cardul de dedesubt repeta data */
+.wkpos .wkbib{display:block;font-size:11px;font-weight:600;color:var(--ink3);margin-top:2px;letter-spacing:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .wkbar .wkb{width:34px;height:32px}
 .wkbar .wkspace{justify-self:end}
 .wkbar .wkedit{color:var(--ink3)}
@@ -355,7 +363,7 @@ label.fl{display:block;font-size:11.5px;color:var(--ink2);margin:12px 0 5px;font
 .segbar .seg.on{background:var(--surf);color:var(--acc);box-shadow:0 1px 5px rgba(0,0,0,.10)}
 /* pe telefon numele nu încap pe un rând: le lăsăm să se rupă în două, decât să le tăiem */
 @media(max-width:430px){.segbar .seg{font-size:11.5px;line-height:1.2;padding:7px 4px;letter-spacing:-.1px;
- white-space:normal;min-height:40px;display:flex;align-items:center;justify-content:center;text-align:center}}
+ white-space:nowrap;min-height:40px;display:flex;align-items:center;justify-content:center;text-align:center}}
 .ptab{flex:1;border:1px solid var(--bd);background:var(--surf);color:var(--ink2);border-radius:10px;padding:9px;font-size:13.5px;font-weight:700;cursor:pointer}
 .ptab.on{background:var(--accsoft);color:var(--acc);border-color:var(--acc)}
 .pcard{display:flex;align-items:center;gap:11px;width:100%;text-align:left;border:0;border-bottom:1px solid var(--bd);background:transparent;padding:11px 4px;cursor:pointer;color:var(--ink)}
@@ -668,7 +676,7 @@ Object.assign(IC,{
  box:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h18v13H3z"/><path d="M3 7l2-4h14l2 4"/><path d="M10 11h4"/></svg>',
  mark:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15.5 4.5l4 4-9.5 9.5H6v-4z"/><path d="M12.5 7.5l4 4M5 21h14"/></svg>'
 });
-const VERSION="3.10.0";
+const VERSION="3.10.1";
 /* Versiunea minima care are voie sa SCRIE in cloud. Se trece in gist la fiecare trimitere;
    un dispozitiv ramas pe un build mai vechi decat atat nu mai poate suprascrie datele —
    doar citeste si se actualizeaza singur. Asa nu mai poate un singur telefon uitat deschis
@@ -1235,25 +1243,25 @@ function openWeek(i){if(_wkDraft&&_wkDraft.i!==i&&!_wkGuard())return;wkOpen=true
  /* întoarcerea la lista de săptămâni stă în bara Arhivei, de sus; aici era a doua săgeată
     „înapoi", pe rândul următor, arătând spre altundeva decât prima */
  const bar=`<div class="wkbar"><span class="wkspace"></span>`
-  +`<div class="wknavc">${np}<span class="wkpos">${esc(tc(w.date))}</span>${nn}</div>`
+  +`<div class="wknavc">${np}<span class="wkpos">${esc(tc(w.date))}${(!w.event&&w.bible)?`<small class="wkbib">${esc(w.bible)}</small>`:''}</span>${nn}</div>`
   +`<span class="wkspace"></span></div>`
   +`<div class="wksavebar" id="wkSaveSlot">${(_wkDraft&&_wkDraft.dirty)?'<button class="btn pri sm" onclick="wkCommit()">Salvează</button><button class="btn ghost sm" onclick="wkCancel()">Anulează</button>':''}</div>`
   +`<div class="ebar2">`
   +`<button class="miniact" onclick="editStart()">${IC.clock} ${S.settings.start}</button>`
   +`<button class="miniact" onclick="autoSheet()">${IC.auto} Auto</button>`
   +(_canEditVcp()?`<button class="miniact" onclick="mailWeekSheet(${i})" title="Trimite temele pe e-mail">✉ E-mail</button>`:``)+`</div>`;
- const head=`<div class="group gp" style="padding:15px 16px 11px"><div class="nm" style="font-size:17px;font-weight:800">${tc(w.date)}</div><div class="mt" style="font-size:13px;margin-top:3px">${w.event?'<span style="color:var(--acc);font-weight:700">'+esc(w.event)+(w.eventName?' — '+esc(w.eventName):'')+'</span>':esc(w.bible||'')}</div></div>`;
+ const head=w.event?`<div class="group gp" style="padding:15px 16px 11px"><div class="nm" style="font-size:17px;font-weight:800">${tc(w.date)}</div><div class="mt" style="font-size:13px;margin-top:3px"><span style="color:var(--acc);font-weight:700">${esc(w.event)}${w.eventName?' — '+esc(w.eventName):''}</span>${w.bible?' · '+esc(w.bible):''}</div></div>`:'';
  const isVisit=isVisitEv(w);
  if(evNoMeet(w)){$("#body").innerHTML=bar+head
    +`<div class="evb"><div class="et">${esc(evLabel(w))}</div>${w.eventName?'<div class="ed" style="color:var(--ink);font-weight:700;font-size:15px">'+esc(w.eventName)+'</div>':''}<div class="ed">În această săptămână nu se ține întrunirea, deci nu se face nicio planificare (S-38).</div></div>`
    +`<button class="btn ghost" style="margin-bottom:10px" onclick="clearEvent(${i})">Folosește program normal</button>`;
   _arhNavPrepend();_keepScroll(_keep,_sb,_wy);return;}
  const meta={Comori:["Comori din Cuvântul lui Dumnezeu","C",IC.gem],Predicare:["Să fim mai eficienți în predicare","P",IC.wheat],Viata:["Viața de creștin","V",IC.sheep]};
- const prow=(time,inner)=>`<div class="prow"><div class="tm">${time}</div><div class="pt">${inner}</div></div>`;
+ const prow=(time,inner,mn)=>`<div class="prow"><div class="tm">${time}${mn?`<span class="tmd">${mn} min</span>`:''}</div><div class="pt">${inner}</div></div>`;
  let t=S.settings.start;const Z={open:[],Comori:[],Predicare:[],Viata:[],close:[]};
  const sO=pl.songs?.open??w.songs[0],sM=pl.songs?.mid??w.songs[1],sC=pl.songs?.close??w.songs[2];
  Z.open.push(prow(t,`${songCell(sO,"s_open")}${dd("Rugăciune","open_pr",pl,"Rugăciune")}`));t=addMin(t,5);
- Z.open.push(prow(t,`<div class="pti">Cuvinte introductive (1 min.)</div>${dd("Președinte","pres",pl,"Președinte")}`));t=addMin(t,1);
+ Z.open.push(prow(t,`<div class="pti">Cuvinte introductive</div>${dd("Președinte","pres",pl,"Președinte")}`,1));t=addMin(t,1);
  let mid=false;
  w.parts.forEach((p)=>{const z=p.sec;const k=p.id;const tdone=!!(pl.done&&pl.done[k+"_t"]);
   if(z==="Viata"&&!mid){t=addMin(t,1);Z.Viata.push(prow(t,songCell(sM,"s_mid")));t=addMin(t,4);mid=true;}
@@ -1269,10 +1277,10 @@ function openWeek(i){if(_wkDraft&&_wkDraft.i!==i&&!_wkGuard())return;wkOpen=true
      rândul lui, arăta ca un buton uitat acolo */
   const inf=(study&&isVisit)?null:infoFor(w,p);
   const ib=inf?`<button class="vinfo" title="Detalii din caiet" aria-label="Detalii temă" onclick="showPartInfo(${i},'${k}')">${IC.info}</button>`:'';
-  const tt=`<div class="pti ${tdone?'titlehl':''}">${p.num?'<b>'+p.num+'.</b> ':''}${esc(title)}${mn?` (${mn} min.)`:''}</div>`;
-  Z[z].push(prow(t,`${ib?`<div class="ptiw">${tt}${ib}</div>`:tt}${sel}`));
+  const tt=`<div class="pti ${tdone?'titlehl':''}">${p.num?'<b>'+p.num+'.</b> ':''}${esc(title)}</div>`;
+  Z[z].push(prow(t,`${ib?`<div class="ptiw">${tt}${ib}</div>`:tt}${sel}`,mn));
   t=addMin(t,mn);if((p.title||"").toLowerCase().includes("citirea")||p.sec==="Predicare")t=addMin(t,1);});
- Z.close.push(prow(t,`<div class="pti">Cuvinte de încheiere (3 min.)</div>`));t=addMin(t,3);t=addMin(t,1);
+ Z.close.push(prow(t,`<div class="pti">Cuvinte de încheiere</div>`,3));t=addMin(t,3);t=addMin(t,1);
  Z.close.push(prow(t,`${songCell(sC,"s_close")}${isVisit?'<div class="muted" style="font-size:11.5px;margin:2px 0 6px">Cântarea de încheiere o alege supraveghetorul; rugăciunea o poate rosti un frate invitat de el (S-38 §21).</div>':''}${dd("Rugăciune","close_pr",pl,"Rugăciune")}`));
  const card=k=>{const[nm,c,ic]=meta[k];const add=`<div class="addrow"><button class="addbtn" onclick="addPart('${k}')">${IC.plus} Adaugă parte</button></div>`;
    return `<div class="group"><div class="seccard s${c}"><span class="sq"><img class="secimg" src="${SEC_ICON[k]}" alt=""></span>${nm}</div><div class="divtop">${Z[k].join("")}</div>${add}</div>`;};
@@ -1329,6 +1337,11 @@ function _vcpStyle(){if(document.getElementById("vcpstyle"))return;const s=docum
  +'.seccard{padding:13px 16px 12px}'
  +'.seccard.sC{background:rgba(34,165,150,.09)}.seccard.sP{background:rgba(209,144,26,.10)}.seccard.sV{background:rgba(214,95,95,.09)}'
  +'.app.light .seccard.sC{background:rgba(18,122,138,.07)}.app.light .seccard.sP{background:rgba(184,116,10,.08)}.app.light .seccard.sV{background:rgba(192,57,43,.06)}'
+ /* durata stă sub ora de start, în coloana din stânga: „(30 min.)" la capătul titlului se rupea
+    „(30" pe un rând și „min.)" pe următorul, iar titlurile lungi se terminau haotic pe telefon */
+ +'.prow .tm{display:flex;flex-direction:column;align-items:flex-start;gap:3px;width:40px;padding-top:9px}'
+ +'.prow .tm .tmd{font-size:10px;font-weight:700;line-height:1;color:var(--ink3);letter-spacing:.1px;white-space:nowrap}'
+ ''
  +'.ptiw{display:flex;align-items:flex-start;gap:6px}.ptiw .pti{flex:1;min-width:0}'
  +'.vinfo{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;margin:-1px 0 0;padding:0;border:1px solid var(--bd);border-radius:50%;background:var(--surf);color:var(--ink3);cursor:pointer;flex:0 0 auto}.vinfo:hover,.vinfo:active{color:var(--acc);border-color:var(--acc)}.vinfo svg{width:12px;height:12px}';document.head.appendChild(s);}
 function renderVcp(i){_fabDl(vcpDlSheet);_vcpStyle();
@@ -1342,20 +1355,20 @@ function renderVcp(i){_fabDl(vcpDlSheet);_vcpStyle();
  const nn=`<button class="wkb" onclick="renderVcp(${vcpW+1})" ${vcpW>=S.weeks.length-1?"disabled":""} title="Săptămâna următoare">${IC.fwd}</button>`;
  /* creionul intră în grupul de navigare, nu într-o coloană a lui: pe telefon coloana a
     treia a grilei se prăbușea și butonul sărea pe rândul următor */
- const bar=`<div class="wkbar vcpbar"><span class="wkspace"></span><div class="wknavc">${np}<span class="wkpos">${esc(tc(w.date))}</span>${nn}</div><span class="wkspace">${_progEditBtn()}</span></div>`;
- const head=`<div class="group gp" style="padding:15px 16px 11px"><div class="nm" style="font-size:17px;font-weight:800">${tc(w.date)}</div><div class="mt" style="font-size:13px;margin-top:3px">${w.event?'<span style="color:var(--acc);font-weight:700">'+esc(w.event)+(w.eventName?' — '+esc(w.eventName):'')+'</span>':esc(w.bible||'')}</div></div>`;
+ const bar=`<div class="wkbar vcpbar"><span class="wkspace"></span><div class="wknavc">${np}<span class="wkpos">${esc(tc(w.date))}${(!w.event&&w.bible)?`<small class="wkbib">${esc(w.bible)}</small>`:''}</span>${nn}</div><span class="wkspace">${_progEditBtn()}</span></div>`;
+ const head=w.event?`<div class="group gp" style="padding:15px 16px 11px"><div class="nm" style="font-size:17px;font-weight:800">${tc(w.date)}</div><div class="mt" style="font-size:13px;margin-top:3px"><span style="color:var(--acc);font-weight:700">${esc(w.event)}${w.eventName?' — '+esc(w.eventName):''}</span>${w.bible?' · '+esc(w.bible):''}</div></div>`:'';
  const isVisit=isVisitEv(w);
  if(evNoMeet(w)){$("#body").innerHTML=bar+head+`<div class="evb"><div class="et">${esc(evLabel(w))}</div>${w.eventName?'<div class="ed" style="color:var(--ink);font-weight:700;font-size:15px">'+esc(w.eventName)+'</div>':''}<div class="ed">În această săptămână nu se ține întrunirea (S-38).</div></div>`;_progNavFix();window.scrollTo(0,0);const b0=$("#body");if(b0)b0.scrollTop=0;return;}
  const nmv=key=>{const id=a[key];if(!id)return '<span class="vnone">—</span>';return '<b class="'+(dn[key]?'titlehl':'')+'">'+esc(broDisp(id))+'</b>';};
  const vro=(label,key)=>`<div class="vro">${label?`<span class="vrol">${label}</span>`:''}${nmv(key)}</div>`;
- const prow=(time,inner)=>`<div class="prow"><div class="tm">${time}</div><div class="pt">${inner}</div></div>`;
+ const prow=(time,inner,mn)=>`<div class="prow"><div class="tm">${time}${mn?`<span class="tmd">${mn} min</span>`:''}</div><div class="pt">${inner}</div></div>`;
  /* tema în stânga, numele în dreptul ei (demonstrațiile: unul sub altul, în dreapta) */
  const vln=(titleHtml,namesHtml)=>`<div class="vln"><div class="vlt">${titleHtml}</div>${namesHtml?`<div class="vnm">${namesHtml}</div>`:''}</div>`;
  const meta={Comori:["Comori din Cuvântul lui Dumnezeu","C"],Predicare:["Să fim mai eficienți în predicare","P"],Viata:["Viața de creștin","V"]};
  let t=S.settings.start;const Z={open:[],Comori:[],Predicare:[],Viata:[],close:[]};
  const sO=pl.songs?.open??w.songs[0],sM=pl.songs?.mid??w.songs[1],sC=pl.songs?.close??w.songs[2];
  Z.open.push(prow(t,vln(`<div class="pti">${songLine(sO)}</div>`,vro("Rugăciune","open_pr"))));t=addMin(t,5);
- Z.open.push(prow(t,vln(`<div class="pti">Cuvinte introductive (1 min.)</div>`,vro("Președinte","pres"))));t=addMin(t,1);
+ Z.open.push(prow(t,vln(`<div class="pti">Cuvinte introductive</div>`,vro("Președinte","pres")),1));t=addMin(t,1);
  let mid=false;
  w.parts.forEach(p=>{const z=p.sec;const k=p.id;const tdone=!!dn[k+"_t"];
   if(z==="Viata"&&!mid){t=addMin(t,1);Z.Viata.push(prow(t,`<div class="pti">${songLine(sM)}</div>`));t=addMin(t,4);mid=true;}
@@ -1368,10 +1381,10 @@ function renderVcp(i){_fabDl(vcpDlSheet);_vcpStyle();
   /* „i" cu detaliile temei din caiet — vizibil pentru TOȚI (și fără drept de editare) */
   const inf=(study&&isVisit)?null:infoFor(w,p);
   const ib=inf?`<button class="vinfo" title="Detalii din caiet" aria-label="Detalii temă" onclick="showPartInfo(${vcpW},'${k}')">${IC.info}</button>`:'';
-  const tt=`<div class="pti ${tdone?'titlehl':''}">${p.num?'<b>'+p.num+'.</b> ':''}${esc(title)}${mn?` (${mn} min.)`:''}</div>`;
-  Z[z].push(prow(t,vln(ib?`<div class="ptiw">${tt}${ib}</div>`:tt,sel)));
+  const tt=`<div class="pti ${tdone?'titlehl':''}">${p.num?'<b>'+p.num+'.</b> ':''}${esc(title)}</div>`;
+  Z[z].push(prow(t,vln(ib?`<div class="ptiw">${tt}${ib}</div>`:tt,sel),mn));
   t=addMin(t,mn);if((p.title||"").toLowerCase().includes("citirea")||p.sec==="Predicare")t=addMin(t,1);});
- Z.close.push(prow(t,`<div class="pti">Cuvinte de încheiere (3 min.)</div>`));t=addMin(t,3);t=addMin(t,1);
+ Z.close.push(prow(t,`<div class="pti">Cuvinte de încheiere</div>`,3));t=addMin(t,3);t=addMin(t,1);
  Z.close.push(prow(t,vln(`<div class="pti">${songLine(sC)}</div>`,vro("Rugăciune","close_pr"))));
  const card=kk=>{const[nm2,c]=meta[kk];return `<div class="group"><div class="seccard s${c}"><span class="sq"><img class="secimg" src="${SEC_ICON[kk]}" alt=""></span>${nm2}</div><div class="divtop">${Z[kk].join("")}</div></div>`;};
  $("#body").innerHTML=bar+head+`<div class="group">${Z.open.join("")}</div>`+card("Comori")+card("Predicare")+card("Viata")+`<div class="group">${Z.close.join("")}</div>`;
@@ -5239,6 +5252,13 @@ function startApp(){_dirty=computeDirty();applyTheme();try{bkpMigrate();}catch(e
    `v` = cheia de „văzut deja"; `label` = versiunea afișată.
    ============================================================================ */
 var NEWS=[
+ {v:"3.10.1",label:"3.10.1",d:"20.09.2026",t:"Pe iPhone: bara foilor, banda de sus, durata temei",items:[
+  ["info","Bara foilor, fiecare nume pe un rând","„Întrunirea publică” se rupea „pu-blică” pe două rânduri în bara celor patru foi. Acum fiecare foaie e lată cât numele ei, iar numele nu se rupe și nu se desparte niciodată."],
+  ["check","Banda de sub bara de sistem","Pe iOS 26 și mai nou, bara de sistem a telefonului lasă să se vadă prin sticlă ce e sub ea — și dedesubt era fundalul gri al paginii, deci ieșea o bandă tulbure deasupra antetului. Acum sub ea e culoarea antetului, pe zi și pe noapte."],
+  ["book","Durata, sub ora de start","„(30 min.)” de la capătul titlului se rupea „(30” pe un rând și „min.)” pe următorul. Durata stă acum sub ora de start, în coloana din stânga, iar titlul rămâne curat."],
+  ["cal","Citirea Bibliei, sub dată","Cardul de sub bara săptămânii repeta data de deasupra — la Viața creștină, Sarcini, Mărturia publică și Întrunirile de teren. A rămas doar în săptămânile cu eveniment; în rest, citirea Bibliei stă sub dată, în bara de navigare."],
+  ["check","Foile, la citire, ca text","Cine doar citește Întrunirea publică, Sarcinile sau Mărturia publică vedea numele în cutii gri, ca niște câmpuri dezactivate. Acum sunt text simplu, mai mare, iar nota goală de pe foaie nu se mai arată."]
+ ]},
  {v:"3.10.0",label:"3.10",d:"20.09.2026",t:"Programul pe telefon, contactele de urgență, invitația scurtă",items:[
   ["book","Programul săptămânii, așezat pentru telefon","În „Viața creștină” numele stau sub temă, la stânga, ca niște pastile — nu în dreapta, rupte pe rânduri zimțate. Eticheta (Cursant, Partener, Cititor) e mică, cu majuscule, iar perechea de nume încape pe un rând. Antetul fiecărei secțiuni are culoarea ei în fundal, ca pe caiet. Semnul „i” cu detaliile din caiet stă în rândul temei — și în editorul din Arhivă, unde stătea singur sub selector."],
   ["info","Contacte de urgență — secțiune nouă în Arhivă","Pentru administratori — și pentru cine primește de la ei bifa „Vede Contactele de urgență” din fișa utilizatorului — la „Rapoarte și evidențe”: telefoanele, adresele, datele de naștere și de botez și persoanele de contact ale tuturor vestitorilor activi. Roșu = lipsește. Filtre pe lipsuri („Fără contact de urgență”, „Fără adresă”, „Fără data nașterii”…), căutare și PDF cu lista întreagă. „Cere pe WhatsApp” deschide conversația cu mesajul gata scris, cu exact ce lipsește de la persoana aceea. Fiecare vestitor își completează singur datele din Profilul meu → „Datele mele de contact”, unde au intrat acum și data nașterii și a botezului."],
@@ -8530,6 +8550,7 @@ function ensureDutyCSS(){if(document.getElementById("dutycss"))return;var st=doc
 +".dpr .dpl{flex:0 0 36%;max-width:36%;font-size:12.5px;color:var(--ink2);font-weight:600;line-height:1.3;padding-top:11px}"
 +".dprr{flex:1;min-width:0;display:flex;flex-direction:column;gap:6px}"
 +".dpb{width:100%;display:flex;align-items:center;gap:7px;background:var(--bg);border:1px solid var(--bd);border-radius:11px;padding:9px 11px;color:var(--ink);font-size:13.5px;font-weight:700;text-align:left;cursor:pointer}"
++".dpb:disabled{background:transparent;border-color:transparent;padding:5px 0 6px;cursor:default;font-size:15px}.dpb:disabled span.dpx{white-space:normal;overflow:visible;text-overflow:clip;line-height:1.3}"
 +".dpb.ph{color:var(--ink3);font-weight:500}.dpb.warn{border-color:var(--acc)}.dpb span.dpx{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}"
 +".dpb .dpc{flex:0 0 auto;color:var(--ink3);display:flex}.dpb .dpc svg{width:16px;height:16px}"
  /* avertizarea: o fâșie discretă sub nume, nu text liber peste tot rândul */
@@ -8865,11 +8886,11 @@ function dutyWeekHtml(wi){var w=S.weeks[wi],o=dutyOf(wi),ed=_canEditDuty(),posts
  var np=function(i){return (i>=0&&i<S.weeks.length);};
  var h=_secBar("sarc")+'<div class="'+_wkBarCls()+'">'+_wkBack("Sarcini","dutyBack()")
   +'<div class="wknavc"><button class="wkb" onclick="dutyGo('+(wi-1)+')" '+(np(wi-1)?"":"disabled")+' title="Săptămâna anterioară">'+IC.back+'</button>'
-  +'<span class="wkpos">'+esc(tc(w.date))+'</span>'
+  +'<span class="wkpos">'+esc(tc(w.date))+((!w.event&&w.bible)?('<small class="wkbib">'+esc(w.bible)+'</small>'):'')+'</span>'
   +'<button class="wkb" onclick="dutyGo('+(wi+1)+')" '+(np(wi+1)?"":"disabled")+' title="Săptămâna următoare">'+IC.fwd+'</button></div><span class="wkspace">'+_progEditBtn()+'</span></div>';
  if(evNoMeet(w))return h+'<div class="evb" style="margin-top:10px"><div class="et">'+esc(evLabel(w))+'</div><div class="ed">În această săptămână nu se ține întrunirea, deci nu se repartizează sarcini (S-38).</div></div>';
- h+='<div class="group gp" style="padding:14px 16px 11px"><div class="nm" style="font-size:16.5px;font-weight:800">Săptămâna '+esc(tc(w.date))+'</div>'
-  +'<div class="mt" style="font-size:12.5px;margin-top:3px">'+(w.event?('<span style="color:var(--acc);font-weight:700">'+esc(w.event)+'</span>'):esc(w.bible||""))+'</div></div>';
+ if(w.event)h+='<div class="group gp" style="padding:14px 16px 11px"><div class="nm" style="font-size:16.5px;font-weight:800">Săptămâna '+esc(tc(w.date))+'</div>'
+  +'<div class="mt" style="font-size:12.5px;margin-top:3px"><span style="color:var(--acc);font-weight:700">'+esc(w.event)+'</span>'+(w.bible?(' · '+esc(w.bible)):'')+'</div></div>';
  h+='<div class="group" style="overflow:hidden">';
  /* Semnul „!” e o unealtă de repartizare: îi spune celui care pune oamenii că persoana mai
     are ceva în săptămâna aceea. Cine doar citește foaia n-are ce face cu el — pentru el
@@ -9462,6 +9483,9 @@ function ensureMpCSS(){if(document.getElementById("mpcss"))return;var st=documen
 +".mpn{flex:0 0 auto;width:20px;text-align:center;font-size:10.5px;font-weight:800;color:var(--ink3)}"
 +".mpb{flex:1;min-width:0;display:flex;align-items:center;gap:7px;background:var(--bg);border:1px solid var(--bd);border-radius:11px;padding:9px 11px;color:var(--ink);font-size:13.5px;font-weight:700;text-align:left;cursor:pointer}"
 +".mpb.ph{color:var(--ink3);font-weight:500}.mpb.warn{border-color:var(--acc)}"
+/* la citire (fără drept de modificare) numele stau ca text, nu în cutii gri de „câmp dezactivat" */
++".mpb:disabled{background:transparent;border-color:transparent;padding:5px 0 6px;cursor:default;font-size:15px}"
++".mpb:disabled span.mpx{white-space:normal;overflow:visible;text-overflow:clip;line-height:1.3}"
 +".mpb span.mpx{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}"
 +".mpb .dpc{flex:0 0 auto;color:var(--ink3);display:flex}.mpb .dpc svg{width:16px;height:16px}"
 +".mpnote{padding:0 13px 11px;font-size:11.5px;color:var(--ink3)}"
@@ -9527,8 +9551,8 @@ function mpWeekHtml(wi){var w=S.weeks[wi],ed=_canEditMp();
   +'<div class="wknavc"><button class="wkb" onclick="mpGo('+(wi-1)+')" '+(np(wi-1)?"":"disabled")+' title="Săptămâna anterioară">'+IC.back+'</button>'
   +'<span class="wkpos">'+esc(tc(w.date))+'</span>'
   +'<button class="wkb" onclick="mpGo('+(wi+1)+')" '+(np(wi+1)?"":"disabled")+' title="Săptămâna următoare">'+IC.fwd+'</button></div><span class="wkspace"></span></div>';
- h+='<div class="group gp" style="padding:14px 16px 11px"><div class="nm" style="font-size:16.5px;font-weight:800">Săptămâna '+esc(tc(w.date))+'</div>'
-  +'<div class="mt" style="font-size:12.5px;margin-top:3px">'+(w.event?('<span style="color:var(--acc);font-weight:700">'+esc(w.event)+'</span> · '):'')+'mărturia publică se ține și în săptămânile cu evenimente — scoate tura dacă nu se ține</div></div>';
+ if(w.event)h+='<div class="evb" style="padding:12px 14px;margin-bottom:10px"><div class="et" style="font-size:15px">'+esc(w.event)+'</div><div class="ed">mărturia publică se ține și în săptămânile cu evenimente — scoate tura dacă nu se ține</div></div>';
+ else if(ed)h+='<div class="hint" style="margin:0 0 10px">Turele pe zile și ore, cu numele de la fiecare. În săptămânile cu evenimente mărturia se ține tot — scoate tura dacă nu se ține.</div>';
  var ss=mpShiftsSorted();
  if(!ss.length)return h+'<div class="empty" style="padding:26px 8px">Nicio tură pe foaie.</div>';
  var lastD=-1;
@@ -9892,8 +9916,7 @@ function ftWeekHtml(wi){var w=S.weeks[wi],ed=_canEditFt();
   +'<div class="wknavc"><button class="wkb" onclick="ftGo('+(wi-1)+')" '+(np(wi-1)?"":"disabled")+' title="Săptămâna anterioară">'+IC.back+'</button>'
   +'<span class="wkpos">'+esc(tc(w.date))+'</span>'
   +'<button class="wkb" onclick="ftGo('+(wi+1)+')" '+(np(wi+1)?"":"disabled")+' title="Săptămâna următoare">'+IC.fwd+'</button></div><span class="wkspace"></span></div>';
- h+='<div class="group gp" style="padding:14px 16px 11px"><div class="nm" style="font-size:16.5px;font-weight:800">Săptămâna '+esc(tc(w.date))+'</div>'
-  +'<div class="mt" style="font-size:12.5px;margin-top:3px">fratele care conduce întrunirea pentru predicare, în fiecare zi de pe foaie</div></div>';
+ if(ed)h+='<div class="hint" style="margin:0 0 10px">Fratele care conduce întrunirea pentru predicare, în fiecare zi de pe foaie.</div>';
  var ev=_ftEvTxt(wi),ssl=ftSSLbl(wi);
  if(ev)h+='<div class="ftnote">'+esc(ev)+'</div>';
  if(ed)h+='<button class="ftssb'+(ssl?' on':'')+'" onclick="ftSSPick('+wi+')">'+IC.star
@@ -10532,7 +10555,7 @@ function wmWeekHtml(wi){var w=S.weeks[wi],o=wmOf(wi),ed=_canEditWm(),posts=wmPos
   +'<button class="wkb" onclick="wmGo('+(wi+1)+')" '+(np(wi+1)?"":"disabled")+' title="Săptămâna următoare">'+IC.fwd+'</button></div><span class="wkspace">'+_progEditBtn()+'</span></div>';
  if(evNoMeet(w))return h+'<div class="evb" style="margin-top:10px"><div class="et">'+esc(evLabel(w))+'</div><div class="ed">În această săptămână nu se ține întrunirea de la sfârșit de săptămână, deci nu se repartizează nimic.</div></div>';
  h+='<div class="group gp" style="padding:14px 16px 11px"><div class="nm" style="font-size:16.5px;font-weight:800">'+esc(dt?_fmtDayLong(dt):tc(w.date))+'</div>'
-  +'<div class="mt" style="font-size:12.5px;margin-top:3px">'+(w.event?('<span style="color:var(--acc);font-weight:700">'+esc(evLabel(w))+'</span>'):('Săptămâna '+esc(tc(w.date))))+'</div></div>';
+  +(w.event?('<div class="mt" style="font-size:12.5px;margin-top:3px"><span style="color:var(--acc);font-weight:700">'+esc(evLabel(w))+'</span></div>'):'')+'</div>';
  /* vorbitorul + titlul: blocul cel mai important al foii */
  var sp=wmSpeaker(o),cg=wmCong(o);
  h+='<div class="group" style="overflow:hidden">'
@@ -10560,9 +10583,9 @@ function wmWeekHtml(wi){var w=S.weeks[wi],o=wmOf(wi),ed=_canEditWm(),posts=wmPos
   +'<button class="mpb '+(gt?"":"ph")+'" '+(ed?('onclick="wmGrpPick('+wi+')"'):'disabled style="cursor:default"')+'>'
   +'<span class="mpx">'+(gt?esc(gt):"—")+'</span>'+(ed?('<span class="dpc">'+IC.chev+'</span>'):'')+'</button></div>'
   +((ed&&gt)?('<button class="dpclr" title="Scoate" onclick="wmGrpClear('+wi+')">×</button>'):'')+'</div>'
-  +'<div class="wmf"><div class="wml">Notă (pe foaie)</div><div class="wmr">'
+  +((ed||(o.note||"").trim())?('<div class="wmf"><div class="wml">Notă (pe foaie)</div><div class="wmr">'
   +'<button class="mpb '+((o.note||"").trim()?"":"ph")+'" style="white-space:normal" '+(ed?('onclick="wmNoteSheet('+wi+')"'):'disabled style="cursor:default"')+'>'
-  +'<span class="mpx" style="white-space:normal">'+((o.note||"").trim()?esc(o.note):"—")+'</span>'+(ed?('<span class="dpc">'+IC.chev+'</span>'):'')+'</button></div></div></div>';
+  +'<span class="mpx" style="white-space:normal">'+((o.note||"").trim()?esc(o.note):"—")+'</span>'+(ed?('<span class="dpc">'+IC.chev+'</span>'):'')+'</button></div></div>'):'')+'</div>';
  if(ed)h+='<div class="muted" style="margin:2px 2px 0;font-size:11.5px">În listele de alegere apar doar cei bifați în fișă la partea respectivă (Vestitori → fișă → „Întrunirea publică”).</div>';
  return h;}
 /* Numele de la un post: fratele din listă sau, dacă a venit din altă congregație, numele scris
@@ -14226,14 +14249,18 @@ function ensureAlk39CSS(){if(document.getElementById("alk39css"))return;
 +".calit small{display:block;font-size:11.5px;color:var(--ink3);margin-top:2px;line-height:1.45}"
 +".calit .chh{flex:0 0 auto;font-size:12px;font-weight:800;color:var(--acc)}"
 +".calmy{font-size:10px;font-weight:800;letter-spacing:.4px;text-transform:uppercase;color:var(--acc);background:var(--accsoft);border-radius:5px;padding:1px 5px;margin-left:5px;vertical-align:1px}"
-+".segbar .seg{flex:1 1 0;min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:4px;padding:9px 3px;min-height:56px;white-space:normal}"
+/* fiecare nume pe UN rând: coloana e cât numele, nu un sfert fix din bară — „Întrunirea
+   publică" nu mai are voie nici să se rupă, nici să se despartă în silabe. Dacă pe un ecran
+   foarte îngust tot nu încap toate, bara se trage lateral cu degetul. */
++".segbar{overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;gap:3px}.segbar::-webkit-scrollbar{display:none}"
++".segbar .seg{flex:1 1 auto;min-width:max-content;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:8px 9px;min-height:54px;white-space:nowrap;overflow:visible}"
 +".segbar .seg .segic{display:flex;flex:0 0 auto;color:inherit}"
 +".segbar .seg svg{width:19px;height:19px}"
-+".segbar .seg .segtx{display:block;width:100%;min-height:2.3em;font-size:10.5px;font-weight:700;line-height:1.15;text-align:center;letter-spacing:-.1px;overflow-wrap:break-word;hyphens:auto}"
-+"@media(max-width:340px){.segbar .seg{padding:8px 2px;gap:3px}.segbar .seg .segtx{font-size:10px}.segbar .seg svg{width:18px;height:18px}}"
++".segbar .seg .segtx{display:block;min-height:auto;font-size:10.5px;font-weight:700;line-height:1.2;text-align:center;letter-spacing:-.1px;white-space:nowrap;hyphens:none;-webkit-hyphens:none}"
++"@media(max-width:374px){.segbar .seg{padding:8px 6px}.segbar .seg .segtx{font-size:10px}.segbar .seg svg{width:18px;height:18px}}"
 /* aceeași formă la orice lățime: pe ecran lat numele au loc să crească, dar rămân
    unul sub icon — o bară care își schimbă forma la mijloc se citește ca alt ecran */
-+"@media(min-width:560px){.segbar .seg{min-height:62px;padding:11px 6px}.segbar .seg svg{width:21px;height:21px}.segbar .seg .segtx{font-size:12.5px;letter-spacing:0}}"+"}";
++"@media(min-width:560px){.segbar .seg{min-height:62px;padding:11px 14px}.segbar .seg svg{width:21px;height:21px}.segbar .seg .segtx{font-size:12.5px;letter-spacing:0}}"+"}";
  document.head.appendChild(st);}
 
 function ensureStatCSS(){if(document.getElementById("stcss"))return;
