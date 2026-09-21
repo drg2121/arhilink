@@ -676,7 +676,7 @@ Object.assign(IC,{
  box:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h18v13H3z"/><path d="M3 7l2-4h14l2 4"/><path d="M10 11h4"/></svg>',
  mark:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15.5 4.5l4 4-9.5 9.5H6v-4z"/><path d="M12.5 7.5l4 4M5 21h14"/></svg>'
 });
-const VERSION="3.11.0";
+const VERSION="3.11.1";
 /* Versiunea minima care are voie sa SCRIE in cloud. Se trece in gist la fiecare trimitere;
    un dispozitiv ramas pe un build mai vechi decat atat nu mai poate suprascrie datele —
    doar citeste si se actualizeaza singur. Asa nu mai poate un singur telefon uitat deschis
@@ -2846,7 +2846,7 @@ async function archPurge(id){if(!_needEdit())return;var b=(S.bros||[]).find(func
    și a botezului, persoanele de contact în caz de urgență. Se vede dintr-o privire cine n-a
    completat ce, lista se filtrează pe lipsuri, se descarcă ca PDF, iar celor cu lipsuri li
    se poate trimite pe loc un mesaj pe WhatsApp cu exact ce le lipsește. */
-var _conF="all",_conQ="";
+var _conF="all",_conQ="",_conS="nume";
 /* administratorii, plus cei cărora le-au dat anume dreptul (bifa „Vede Contactele de urgență" din
    fișa utilizatorului). Datele de contact nu circulă prin canalul doar-citire, deci dreptul are
    sens doar pe un dispozitiv cu sincronizare completă (token). */
@@ -2863,6 +2863,13 @@ function _conConfT(b){return Math.max(+(b&&b.cC)||0,+(b&&b.cT)||0);}
 function _conConf(b){return _conConfT(b)>=_syStart();}
 function _conConfWhen(b){var t=_conConfT(b);if(!t)return "";var d=new Date(t);return arhPad(d.getDate())+"."+arhPad(d.getMonth()+1)+"."+d.getFullYear();}
 function _conActive(){return (S.bros||[]).filter(function(b){return b.active!==false&&!isArchNow(b);}).sort(function(a,b){return a.name.localeCompare(b.name,"ro");});}
+/* ordinea listei: alfabetic sau pe grupe, în ordinea grupelor din aplicație */
+function _conOrder(list){if(_conS!=="grp")return list;
+ var pos={};grpsAll().forEach(function(g,i){pos[g.id]=i;});
+ return list.slice().sort(function(a,b){var ga=grpOf(a),gb=grpOf(b);
+  var pa=ga?((pos[ga]!=null)?pos[ga]:900):1000,pb=gb?((pos[gb]!=null)?pos[gb]:900):1000;
+  return pa-pb||a.name.localeCompare(b.name,"ro");});}
+function _conGLabel(b){var g=grpOf(b);return g?grpName(g):"Fără grupă";}
 function _conMiss(b){var m=[];CON_MISS.forEach(function(c){var k=c[0];
  if(k==="ec"){if(!((b.ecn||"").trim()&&(b.ecp||"").trim()))m.push(c);}
  else if(k==="baptism"){if(!(b.baptism||"").trim()&&!_conUnbapt(b))m.push(c);}
@@ -2890,11 +2897,18 @@ function ensureConCSS(){if(document.getElementById("concss"))return;var st=docum
 +".btn.conwa{background:#25D366;color:#fff}.btn.conwa:hover,.btn.conwa:active{background:#1fb457}"
 +".btn.conok{width:auto;flex:0 1 auto}"
 +".conkp{margin-bottom:12px}"
-+".conchips{display:flex;flex-wrap:wrap;gap:7px;margin:0 0 12px}";
++".conchips{display:flex;flex-wrap:wrap;gap:7px;margin:0 0 12px}"
++".conord{align-items:center}.conordl{font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.3px;color:var(--ink3);margin-right:2px}"
++".congh{font-size:11.5px;font-weight:800;text-transform:uppercase;letter-spacing:.4px;color:var(--ink3);margin:14px 4px 7px}"
++"#conList .congh:first-child{margin-top:2px}";
  document.head.appendChild(st);}
 function conFilter(f){_conF=f;arhRerender();}
+function conSort(v){_conS=v;arhRerender();}
 function conQ(v){_conQ=v||"";var q=fold(_conQ.trim());var wrap=document.getElementById("conList");if(!wrap)return;var n=0;
  wrap.querySelectorAll(".conrow").forEach(function(r){var on=!q||(r.dataset.n||"").indexOf(q)>=0;r.style.display=on?"":"none";if(on)n++;});
+ wrap.querySelectorAll(".congh").forEach(function(h){var any=false,e2=h.nextElementSibling;
+  while(e2&&!e2.classList.contains("congh")){if(e2.classList.contains("conrow")&&e2.style.display!=="none"){any=true;break;}e2=e2.nextElementSibling;}
+  h.style.display=any?"":"none";});
  var e=document.getElementById("conNone");if(e)e.style.display=n?"none":"";}
 function _conRow(b){var miss=_conMiss(b),mk=miss.map(function(x){return x[0];});var ecs=_conEcs(b);var gn=grpName(grpOf(b));var conf=_conConf(b);
  var rows="";var dd=function(k,v){rows+='<dt>'+k+'</dt><dd>'+v+'</dd>';};
@@ -2930,10 +2944,17 @@ function arhConHtml(){if(!_conAllowed())return '<div class="empty">Doar administ
   +'<div class="stkpi"><div class="kv">'+unconf+'</div><div class="kk">neconfirmate '+_syLabel()+'</div></div></div>';
  var chips=[["all","Toți",list.length],["miss","Cu lipsuri",withMiss],["ec","Fără contact de urgență",cnt.ec],["addr","Fără adresă",cnt.addr],["bdate","Fără data nașterii",cnt.bdate],["baptism","Fără data botezului",cnt.baptism],["phone","Fără telefon",cnt.phone],["unconf","Neconfirmate "+_syLabel(),unconf]];
  H+='<div class="conchips">'+chips.map(function(c){return '<button class="fchip'+(_conF===c[0]?" on":"")+'" onclick="conFilter(\''+c[0]+'\')">'+c[1]+' · '+c[2]+'</button>';}).join("")+'</div>';
+ H+='<div class="conchips conord"><span class="conordl">Ordinea</span>'
+  +[["nume","Alfabetic"],["grp","Pe grupe"]].map(function(o){return '<button class="fchip'+(_conS===o[0]?" on":"")+'" onclick="conSort(\''+o[0]+'\')">'+o[1]+'</button>';}).join("")+'</div>';
  H+='<div class="brosrch"><span class="brosrch-ic">'+IC.search+'</span><input class="brosrch-in" type="search" autocomplete="off" enterkeyhint="search" placeholder="Caută vestitor…" value="'+esc(_conQ)+'" oninput="conQ(this.value)"></div>';
  var shown=list.filter(function(b){if(_conF==="all")return true;if(_conF==="unconf")return !_conConf(b);
   var mk=_conMiss(b).map(function(x){return x[0];});return _conF==="miss"?mk.length>0:mk.indexOf(_conF)>=0;});
- H+='<div id="conList">'+(shown.length?shown.map(_conRow).join(""):'')+'</div>';
+ var ord=_conOrder(shown),body="";
+ if(_conS==="grp"){var lastg=null;ord.forEach(function(b){var nm=_conGLabel(b);
+   if(nm!==lastg){lastg=nm;body+='<div class="congh">'+esc(nm)+'</div>';}
+   body+=_conRow(b);});}
+ else body=ord.map(_conRow).join("");
+ H+='<div id="conList">'+body+'</div>';
  H+='<div class="empty" id="conNone" style="padding:26px 8px;'+(shown.length?'display:none':'')+'">'+(list.length?'Nimeni aici.':'Niciun vestitor activ.')+'</div>';
  setTimeout(function(){try{conQ(_conQ);}catch(e){}},0);
  return H;}
@@ -2947,7 +2968,7 @@ function conWa(id){var b=(S.bros||[]).find(function(x){return x.id===id;});if(!b
    fără să-i atingem datele — cT rămâne cum era, ca să nu bată o modificare trimisă de el între timp */
 function conMark(id){if(!_conAllowed()||!_canEdit())return;var b=(S.bros||[]).find(function(x){return x.id===id;});if(!b)return;
  b.cC=Date.now();logAct("Date de contact confirmate: "+b.name);save();arhRerender();toast("Confirmat pentru anul "+_syLabel());}
-function conPdf(){if(!_conAllowed())return;var list=_conActive();if(!list.length){toast("Niciun vestitor activ");return;}
+function conPdf(){if(!_conAllowed())return;var list=_conOrder(_conActive());if(!list.length){toast("Niciun vestitor activ");return;}
  var cong=(S.settings.cong||"").trim();var d=new Date();var when=arhPad(d.getDate())+"."+arhPad(d.getMonth()+1)+"."+d.getFullYear();
  var css=".conpg h2{font-size:15pt}.conph{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:6px}"
   +".contb{width:100%;border-collapse:collapse;font-size:8.6pt;line-height:1.3;table-layout:fixed}"
@@ -5284,6 +5305,9 @@ function startApp(){_dirty=computeDirty();applyTheme();try{bkpMigrate();}catch(e
    `v` = cheia de „văzut deja"; `label` = versiunea afișată.
    ============================================================================ */
 var NEWS=[
+ {v:"3.11.1",label:"3.11.1",d:"21.09.2026",t:"Contactele, ordonate pe grupe",items:[
+  ["info","Alfabetic sau pe grupe","În „Contacte de urgență” poți alege ordinea listei: alfabetic, ca până acum, sau pe grupe, cu fiecare grupă sub numele ei. Căutarea ascunde grupele rămase goale, iar PDF-ul se descarcă în ordinea aleasă."]
+ ]},
  {v:"3.11.0",label:"3.11.0",d:"21.09.2026",t:"Datele de contact, confirmate o dată pe an",items:[
   ["check","Confirmarea, pe 1 septembrie","Telefonul, adresa și persoanele de contact în caz de urgență se confirmă o dată pe an de serviciu. Pe 1 septembrie expiră confirmările tuturor, iar fiecare vestitor primește îndemnul în „Profilul meu”: deschide „Datele mele de contact”, se uită peste ele, schimbă ce s-a schimbat și apasă „Confirmă datele”. Cine și-a actualizat datele după 1 septembrie e deja confirmat."],
   ["info","În „Contacte de urgență”","Lista arată câți n-au confirmat anul acesta, are un filtru numai pentru ei și data ultimei confirmări la fiecare. Mesajul de WhatsApp cere confirmarea, iar pe cel care răspunde altfel decât din aplicație îl treci confirmat cu un buton. Starea intră și în PDF."],
