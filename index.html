@@ -676,7 +676,7 @@ Object.assign(IC,{
  box:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h18v13H3z"/><path d="M3 7l2-4h14l2 4"/><path d="M10 11h4"/></svg>',
  mark:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15.5 4.5l4 4-9.5 9.5H6v-4z"/><path d="M12.5 7.5l4 4M5 21h14"/></svg>'
 });
-const VERSION="3.10.2";
+const VERSION="3.11.0";
 /* Versiunea minima care are voie sa SCRIE in cloud. Se trece in gist la fiecare trimitere;
    un dispozitiv ramas pe un build mai vechi decat atat nu mai poate suprascrie datele —
    doar citeste si se actualizeaza singur. Asa nu mai poate un singur telefon uitat deschis
@@ -2683,10 +2683,11 @@ function saveBro(bid,exists){if(!_needEdit())return;const name=$("#bn").value.tr
  var _cNew={phone:phone,email:email,addr:addr,ecn:ecn,ecp:ecp,ec2n:ec2n,ec2p:ec2p,ec3n:ec3n,ec3p:ec3p};
  var _cChg=!_oldB||Object.keys(_cNew).some(function(f){return (_cNew[f]||"")!==(_oldB[f]||"");});
  const cT=_cChg?Date.now():((_oldB&&_oldB.cT)||0);
+ const cC=(_oldB&&_oldB.cC)||0;/* confirmarea anuală rămâne a vestitorului, n-o ștergem când îi edităm fișa */
  const isPub=(pio!=="Cursant");
  let grp=$("#bgrp")?$("#bgrp").value:((S.bros.find(x=>x.id===bid)||{}).grp||"");
  if(pio==="Cursant")grp="";/* cursanții nu fac parte din grupele de serviciu */
- const o={id:bid,name,disp,dispExp,famIds,canPartner,pio,pioFrom:pioFrom||"",pioPrev:pioFrom?pioPrev:"",phone,email,addr,ecn,ecp,ec2n,ec2p,ec3n,ec3p,cT,hope,bdate,baptism,isPub,grp,duties,wm:wmParts,mpl,ft:ftLead,gen:$("#bg").value,rol:$("#br").value,active:$("#ba").value==="1",roles,rSeed:1};
+ const o={id:bid,name,disp,dispExp,famIds,canPartner,pio,pioFrom:pioFrom||"",pioPrev:pioFrom?pioPrev:"",phone,email,addr,ecn,ecp,ec2n,ec2p,ec3n,ec3p,cT,cC,hope,bdate,baptism,isPub,grp,duties,wm:wmParts,mpl,ft:ftLead,gen:$("#bg").value,rol:$("#br").value,active:$("#ba").value==="1",roles,rSeed:1};
  if(exists){const i=S.bros.findIndex(x=>x.id===bid);S.bros[i]=o;}else S.bros.push(o);
  syncFamily(o.id,o.famIds||[]);if(typeof userSyncBro==="function")userSyncBro(o,!exists);logAct((exists?"Vestitor modificat: ":"Vestitor adăugat: ")+(o.name||""));save();closeSheet();renderBros();toast("Salvat");}
 function syncFamily(id,fam){S.bros.forEach(function(b){if(b.id===id)return;b.famIds=b.famIds||[];var has=b.famIds.indexOf(id)>=0;if(fam.indexOf(b.id)>=0){if(!has)b.famIds.push(id);}else if(has){b.famIds=b.famIds.filter(function(x){return x!==id;});}});}
@@ -2852,6 +2853,15 @@ var _conF="all",_conQ="";
 function _conAllowed(){if(_isAdmin())return true;var u=_curUser();return !!(u&&u.conE&&_canEdit()&&typeof autoOn==="function"&&autoOn());}
 var CON_MISS=[["phone","telefon","numărul de telefon"],["addr","adresă","adresa completă"],["bdate","data nașterii","data nașterii"],["baptism","data botezului","data botezului"],["ec","contact de urgență","o persoană de contact în caz de urgență (nume și telefon)"]];
 function _conUnbapt(b){return /nebotezat|cursant/i.test(b.pio||"");}
+/* Confirmarea anuală: telefonul, adresa și persoanele de contact în caz de urgență se confirmă o
+   dată pe an de serviciu. Toate expiră pe 1 septembrie, odată cu noul an de serviciu. `cC` e
+   momentul ultimei confirmări; orice actualizare a datelor (cT) de după 1 septembrie ține loc de
+   confirmare — cine și-a schimbat datele în anul acesta nu mai e bătut la cap. */
+function _syStart(){return new Date(curTheoStart(),8,1,0,0,0,0).getTime();}
+function _syLabel(){return theoLabel(curTheoStart());}
+function _conConfT(b){return Math.max(+(b&&b.cC)||0,+(b&&b.cT)||0);}
+function _conConf(b){return _conConfT(b)>=_syStart();}
+function _conConfWhen(b){var t=_conConfT(b);if(!t)return "";var d=new Date(t);return arhPad(d.getDate())+"."+arhPad(d.getMonth()+1)+"."+d.getFullYear();}
 function _conActive(){return (S.bros||[]).filter(function(b){return b.active!==false&&!isArchNow(b);}).sort(function(a,b){return a.name.localeCompare(b.name,"ro");});}
 function _conMiss(b){var m=[];CON_MISS.forEach(function(c){var k=c[0];
  if(k==="ec"){if(!((b.ecn||"").trim()&&(b.ecp||"").trim()))m.push(c);}
@@ -2875,8 +2885,10 @@ function ensureConCSS(){if(document.getElementById("concss"))return;var st=docum
 +".condl dd a{color:var(--ink);text-decoration:none;font-weight:600}.condl dd .mis{color:var(--maroon);font-weight:700}"
 +".condl dd .ecl{display:block}.condl dd .ecl b{font-weight:700}"
 +".conact{display:flex;gap:7px;margin-top:11px}"
-+".conact .btn{width:auto;flex:1 1 auto;padding:10px 12px;font-size:13.5px}"
++".conact{flex-wrap:wrap}.conact .btn{width:auto;flex:1 1 auto;padding:10px 12px;font-size:13.5px}"
++".conact.two .btn{font-size:12.5px;padding:10px 9px;white-space:nowrap}"
 +".btn.conwa{background:#25D366;color:#fff}.btn.conwa:hover,.btn.conwa:active{background:#1fb457}"
++".btn.conok{width:auto;flex:0 1 auto}"
 +".conkp{margin-bottom:12px}"
 +".conchips{display:flex;flex-wrap:wrap;gap:7px;margin:0 0 12px}";
  document.head.appendChild(st);}
@@ -2884,7 +2896,7 @@ function conFilter(f){_conF=f;arhRerender();}
 function conQ(v){_conQ=v||"";var q=fold(_conQ.trim());var wrap=document.getElementById("conList");if(!wrap)return;var n=0;
  wrap.querySelectorAll(".conrow").forEach(function(r){var on=!q||(r.dataset.n||"").indexOf(q)>=0;r.style.display=on?"":"none";if(on)n++;});
  var e=document.getElementById("conNone");if(e)e.style.display=n?"none":"";}
-function _conRow(b){var miss=_conMiss(b),mk=miss.map(function(x){return x[0];});var ecs=_conEcs(b);var gn=grpName(grpOf(b));
+function _conRow(b){var miss=_conMiss(b),mk=miss.map(function(x){return x[0];});var ecs=_conEcs(b);var gn=grpName(grpOf(b));var conf=_conConf(b);
  var rows="";var dd=function(k,v){rows+='<dt>'+k+'</dt><dd>'+v+'</dd>';};
  dd("Telefon",b.phone?('<a href="tel:'+esc(String(b.phone).replace(/\s+/g,""))+'">'+esc(b.phone)+'</a>'):'<span class="mis">lipsește</span>');
  if(b.email)dd("E-mail",esc(b.email));
@@ -2892,37 +2904,49 @@ function _conRow(b){var miss=_conMiss(b),mk=miss.map(function(x){return x[0];});
  dd("Născut",b.bdate?esc(_conDate(b.bdate)):'<span class="mis">lipsește</span>');
  dd("Botezat",b.baptism?esc(_conDate(b.baptism)):(_conUnbapt(b)?'<span class="muted">nebotezat</span>':'<span class="mis">lipsește</span>'));
  dd("Urgență",ecs.length?ecs.map(function(e){return '<span class="ecl"><b>'+esc(e.n||"—")+'</b>'+(e.t?(' · <a href="tel:'+esc(e.t.replace(/\s+/g,""))+'">'+esc(e.t)+'</a>'):'')+'</span>';}).join(""):'<span class="mis">nicio persoană de contact</span>');
- var tags=miss.length?miss.map(function(x){return '<span class="contag">fără '+esc(x[1])+'</span>';}).join(""):'<span class="contag ok">complet</span>';
+ dd("Confirmat",conf?(esc(_conConfWhen(b))+' <span class="muted">· anul '+esc(_syLabel())+'</span>'):('<span class="mis">nu pentru anul '+esc(_syLabel())+'</span>'+(_conConfWhen(b)?(' <span class="muted">· ultima dată '+esc(_conConfWhen(b))+'</span>'):'')));
+  var tg=miss.map(function(x){return '<span class="contag">fără '+esc(x[1])+'</span>';});
+ if(!conf)tg.push('<span class="contag">neconfirmate '+esc(_syLabel())+'</span>');
+ if(!tg.length)tg.push('<span class="contag ok">complet · confirmat</span>');
+ var tags=tg.join("");
  var ph=_waPhone(b);var ask=miss.filter(function(x){return x[0]!=="phone";});
  var act='';
- if(ask.length)act+='<button class="btn conwa" '+(ph?('onclick="conWa(\''+b.id+'\')"'):'disabled title="Nu are telefon în fișă"')+'>'+IC.fwd+' Cere pe WhatsApp</button>';
+ if(ask.length||!conf)act+='<button class="btn conwa" '+(ph?('onclick="conWa(\''+b.id+'\')"'):'disabled title="Nu are telefon în fișă"')+'>'+IC.fwd+' '+(ask.length?'Cere pe WhatsApp':'Cere confirmarea')+'</button>';
+ if(!conf&&_canEdit())act+='<button class="btn ghost conok" onclick="conMark(\''+b.id+'\')">Marchează confirmat</button>';
  return '<div class="conrow" data-n="'+esc(fold(b.name))+'"><div class="conhd"><div class="pava">'+esc(initials(b.name)||"·")+'</div>'
   +'<div class="connm">'+esc(b.name)+'<small>'+esc(gn?gn:(b.gen==="F"?"soră":"frate"))+(b.rol&&b.rol!=="Vestitor"?(' · '+esc(b.rol)):'')+'</small></div>'
   +'<button class="conedit" title="Editează fișa" onclick="editBro(\''+b.id+'\',\'ct\')">'+IC.edit+'</button></div>'
-  +'<div class="contags">'+tags+'</div><dl class="condl">'+rows+'</dl>'+(act?('<div class="conact">'+act+'</div>'):'')+'</div>';}
+  +'<div class="contags">'+tags+'</div><dl class="condl">'+rows+'</dl>'+(act?('<div class="conact'+(act.split("<button").length>2?" two":"")+'">'+act+'</div>'):'')+'</div>';}
 function arhConHtml(){if(!_conAllowed())return '<div class="empty">Doar administratorii (și cei cărora le-au dat dreptul) văd datele de contact.</div>';
  ensureConCSS();ensureStatCSS();var list=_conActive();
- var cnt={};CON_MISS.forEach(function(c){cnt[c[0]]=0;});var withMiss=0;
- list.forEach(function(b){var m=_conMiss(b);if(m.length)withMiss++;m.forEach(function(x){cnt[x[0]]++;});});
- var H='<div class="hint" style="margin:2px 2px 12px">Telefoanele, adresele, datele de naștere și de botez și persoanele de contact în caz de urgență ale vestitorilor activi. Roșu = lipsește. <b>Cere pe WhatsApp</b> deschide conversația cu mesajul gata scris, cu exact ce lipsește. Fiecare își poate completa singur datele din <b>Profilul meu → ⋮ → Datele mele de contact</b>.</div>';
+ var cnt={};CON_MISS.forEach(function(c){cnt[c[0]]=0;});var withMiss=0,unconf=0;
+ list.forEach(function(b){var m=_conMiss(b);if(m.length)withMiss++;m.forEach(function(x){cnt[x[0]]++;});if(!_conConf(b))unconf++;});
+ var H='';
  H+='<button class="btn pri" style="margin:0 0 12px" onclick="conPdf()">'+IC.pdf+' Descarcă lista (PDF)</button>';
  H+='<div class="stkpis conkp"><div class="stkpi teal"><div class="kv">'+(list.length-withMiss)+'<small>/'+list.length+'</small></div><div class="kk">cu datele complete</div></div>'
   +'<div class="stkpi acc"><div class="kv">'+withMiss+'</div><div class="kk">cu lipsuri</div></div>'
   +'<div class="stkpi"><div class="kv">'+cnt.ec+'</div><div class="kk">fără contact de urgență</div></div>'
-  +'<div class="stkpi"><div class="kv">'+cnt.addr+'</div><div class="kk">fără adresă</div></div></div>';
- var chips=[["all","Toți",list.length],["miss","Cu lipsuri",withMiss],["ec","Fără contact de urgență",cnt.ec],["addr","Fără adresă",cnt.addr],["bdate","Fără data nașterii",cnt.bdate],["baptism","Fără data botezului",cnt.baptism],["phone","Fără telefon",cnt.phone]];
+  +'<div class="stkpi"><div class="kv">'+cnt.addr+'</div><div class="kk">fără adresă</div></div>'
+  +'<div class="stkpi"><div class="kv">'+unconf+'</div><div class="kk">neconfirmate '+_syLabel()+'</div></div></div>';
+ var chips=[["all","Toți",list.length],["miss","Cu lipsuri",withMiss],["ec","Fără contact de urgență",cnt.ec],["addr","Fără adresă",cnt.addr],["bdate","Fără data nașterii",cnt.bdate],["baptism","Fără data botezului",cnt.baptism],["phone","Fără telefon",cnt.phone],["unconf","Neconfirmate "+_syLabel(),unconf]];
  H+='<div class="conchips">'+chips.map(function(c){return '<button class="fchip'+(_conF===c[0]?" on":"")+'" onclick="conFilter(\''+c[0]+'\')">'+c[1]+' · '+c[2]+'</button>';}).join("")+'</div>';
  H+='<div class="brosrch"><span class="brosrch-ic">'+IC.search+'</span><input class="brosrch-in" type="search" autocomplete="off" enterkeyhint="search" placeholder="Caută vestitor…" value="'+esc(_conQ)+'" oninput="conQ(this.value)"></div>';
- var shown=list.filter(function(b){if(_conF==="all")return true;var mk=_conMiss(b).map(function(x){return x[0];});return _conF==="miss"?mk.length>0:mk.indexOf(_conF)>=0;});
+ var shown=list.filter(function(b){if(_conF==="all")return true;if(_conF==="unconf")return !_conConf(b);
+  var mk=_conMiss(b).map(function(x){return x[0];});return _conF==="miss"?mk.length>0:mk.indexOf(_conF)>=0;});
  H+='<div id="conList">'+(shown.length?shown.map(_conRow).join(""):'')+'</div>';
  H+='<div class="empty" id="conNone" style="padding:26px 8px;'+(shown.length?'display:none':'')+'">'+(list.length?'Nimeni aici.':'Niciun vestitor activ.')+'</div>';
  setTimeout(function(){try{conQ(_conQ);}catch(e){}},0);
  return H;}
 function conWaMsg(b){var ask=_conMiss(b).filter(function(x){return x[0]!=="phone";}).map(function(x){return x[2];});
- var cong=(S.settings.cong||"").trim();
- return "Salut, "+(_givenName(b.name)||b.name)+"! Pentru evidența congregației"+(cong?(" "+cong):"")+" îmi lipsesc de la tine: "+ask.join(", ")+". Îmi poți trimite aici, te rog? Mulțumesc!";}
+ var head="Salutare! Dorim să actualizăm datele din fișa de activitate, te rog dacă îmi poți ";
+ if(!ask.length)return head+"confirma că telefonul, adresa și persoana de contact în caz de urgență pe care le avem de la tine sunt cele bune. Mulțumim!";
+ return head+"trimite: "+ask.join(", ")+". Mulțumim!";}
 function conWa(id){var b=(S.bros||[]).find(function(x){return x.id===id;});if(!b)return;var ph=_waPhone(b);if(!ph){toast("Nu are telefon în fișă");return;}
  window.open("https://wa.me/"+ph+"?text="+encodeURIComponent(conWaMsg(b)),"_blank");logAct("Cerere date lipsă pe WhatsApp: "+b.name);}
+/* vestitorul a confirmat altfel decât din aplicație (pe WhatsApp, la sală): îi punem data confirmării
+   fără să-i atingem datele — cT rămâne cum era, ca să nu bată o modificare trimisă de el între timp */
+function conMark(id){if(!_conAllowed()||!_canEdit())return;var b=(S.bros||[]).find(function(x){return x.id===id;});if(!b)return;
+ b.cC=Date.now();logAct("Date de contact confirmate: "+b.name);save();arhRerender();toast("Confirmat pentru anul "+_syLabel());}
 function conPdf(){if(!_conAllowed())return;var list=_conActive();if(!list.length){toast("Niciun vestitor activ");return;}
  var cong=(S.settings.cong||"").trim();var d=new Date();var when=arhPad(d.getDate())+"."+arhPad(d.getMonth()+1)+"."+d.getFullYear();
  var css=".conpg h2{font-size:15pt}.conph{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:6px}"
@@ -2934,7 +2958,8 @@ function conPdf(){if(!_conAllowed())return;var list=_conActive();if(!list.length
  var PER=16,pages="",np=Math.ceil(list.length/PER);
  for(var k=0;k<list.length;k+=PER){var grp=list.slice(k,k+PER),pi=Math.floor(k/PER)+1;
   var rows=grp.map(function(b){var ecs=_conEcs(b);var gn=grpName(grpOf(b));
-   return '<tr><td class="nm">'+esc(b.name)+(gn?('<br><span style="font-weight:400;color:#5b626c">'+esc(gn)+'</span>'):'')+'</td>'
+   return '<tr><td class="nm">'+esc(b.name)+(gn?('<br><span style="font-weight:400;color:#5b626c">'+esc(gn)+'</span>'):'')
+    +(_conConf(b)?('<br><span style="font-weight:400;color:#5b626c">confirmat '+esc(_conConfWhen(b))+'</span>'):'<br><span class="mis">neconfirmat</span>')+'</td>'
     +'<td>'+(b.phone?esc(b.phone):'<span class="mis">—</span>')+(b.email?('<br>'+esc(b.email)):'')+'</td>'
     +'<td>'+(b.addr?esc(b.addr):'<span class="mis">lipsește</span>')+'</td>'
     +'<td>'+(b.bdate?('Născut: '+esc(_conDate(b.bdate))):'<span class="mis">Născut: lipsește</span>')+'<br>'+(b.baptism?('Botezat: '+esc(_conDate(b.baptism))):(_conUnbapt(b)?'nebotezat':'<span class="mis">Botezat: lipsește</span>'))+'</td>'
@@ -2942,7 +2967,7 @@ function conPdf(){if(!_conAllowed())return;var list=_conActive();if(!list.length
   pages+='<div class="page conpg"><div class="conph"><h2>Contacte de urgență'+(cong?(' — '+esc(cong)):'')+'</h2><span class="muted" style="font-size:9pt">'+list.length+' vestitori · '+when+'</span></div>'
    +'<table class="contb"><colgroup><col style="width:22%"><col style="width:17%"><col style="width:24%"><col style="width:16%"><col style="width:21%"></colgroup>'
    +'<thead><tr><th>Nume</th><th>Telefon / e-mail</th><th>Adresă</th><th>Naștere / Botez</th><th>Contact de urgență</th></tr></thead><tbody>'+rows+'</tbody></table>'
-   +'<div class="confo"><span>Confidențial — doar pentru bătrânii congregației.</span><span>pagina '+pi+' / '+np+'</span></div></div>';}
+   +'<div class="confo"><span>Confidențial — doar pentru bătrânii congregației. Datele se confirmă în fiecare an de serviciu, de la 1 septembrie.</span><span>pagina '+pi+' / '+np+'</span></div></div>';}
  var fn="Contacte de urgenta"+(cong?(" - "+cong.replace(/[\/\\:*?"<>|]/g,"")):"")+".pdf";
  arhPdfWindow(fn,pages,css);logAct("Lista contactelor de urgență descărcată (PDF)");}
 function arhArchHtml(){var list=brosArch().sort(function(a,b){var ka=(archCur(a)||{}).k||"",kb=(archCur(b)||{}).k||"";return kb.localeCompare(ka)||a.name.localeCompare(b.name,"ro");});
@@ -3545,7 +3570,9 @@ async function boxTake(force){if(!_canEdit())return;if(typeof autoOn!=="function
       repTombSet(b.bro,b.mk,_repSig(ex||{}));setRep(b.bro,b.mk,null);chg++;
       logAct("Raport șters din aplicație: "+broDisp(b.bro)+" — "+monthName(b.mk));}}
    else if(b.k==="con"&&b.bro&&b.c){var p=(S.bros||[]).find(function(x){return x.id===b.bro;});
-    if(p&&(b.t||0)>=(p.cT||0)){_cFields().forEach(function(f){p[f]=(b.c&&b.c[f])||"";});p.cT=b.t||Date.now();chg++;
+    if(p&&(b.t||0)>=(p.cT||0)){_cFields().forEach(function(f){var nv=(b.c&&b.c[f])||"";
+       if(!nv&&(f==="bdate"||f==="baptism")&&(p[f]||""))return;/* versiunile vechi nu trimiteau datele astea — nu le golim */
+       p[f]=nv;});p.cT=b.t||Date.now();if((b.cc||0)>(p.cC||0))p.cC=b.cc||0;chg++;
       logAct("Date de contact actualizate din aplicație: "+p.name);}}
    else if(b.k==="att"&&b.d&&b.kk){var recs=arhRecs();var xi=-1;for(var q2=0;q2<recs.length;q2++){if(recs[q2].d===b.d&&recs[q2].k===b.kk){xi=q2;break;}}
     if(b.del){if(xi>=0&&(b.t||0)>=(recs[xi].t||0)){recs.splice(xi,1);chg++;
@@ -4362,7 +4389,7 @@ function _shareFilter(u){var full=JSON.parse(JSON.stringify(S));
   out.bros=origBros.map(_broPublic);
   /* propriile date de contact rămân în fișierul LUI (doar ale lui) */
   if(u.bro){var mine=origBros.find(function(b){return b.id===u.bro;});var pub=out.bros.find(function(b){return b.id===u.bro;});
-   if(mine&&pub){["phone","email","addr","ecn","ecp","ec2n","ec2p","ec3n","ec3p"].forEach(function(f){pub[f]=mine[f]||"";});pub.cT=mine.cT||0;}}}
+   if(mine&&pub){PRIV_CF.forEach(function(f){pub[f]=mine[f]||"";});pub.cT=mine.cT||0;pub.cC=mine.cC||0;}}}
  return out;}
 /* canalul doar-citire: un al doilea gist secret, împins automat de admin, citit anonim (fără token) */
 var PRIV_CF=["phone","email","addr","ecn","ecp","ec2n","ec2p","ec3n","ec3p","bdate","baptism"];
@@ -4386,7 +4413,7 @@ async function _roPayload(){var out=JSON.parse(JSON.stringify(S));out.log=[];out
    if(!u.bro||!u.pin||!(u.p2&&u.p2.s))continue;
    var b=(S.bros||[]).find(function(x){return x.id===u.bro;});
    var plain={rep:(S.reports||{})[u.bro]||{}};
-   if(b){plain.c={cT:b.cT||0};PRIV_CF.forEach(function(f){plain.c[f]=b[f]||"";});}
+   if(b){plain.c={cT:b.cT||0,cC:b.cC||0};PRIV_CF.forEach(function(f){plain.c[f]=b[f]||"";});}
    try{var k=await _uKeyFor(u);if(!k)continue;var box=await _encJSON(k,plain);if(box)out.priv[u.n]=box;}catch(e){}}}
  out._ro=1;return out;}
 let _roPushBusy=false,_roLast=0,_roPushT=0,_roetag="";
@@ -4435,7 +4462,7 @@ async function roSync(silent){if(!roOn()||_offline()||_busy)return;_roLast=Date.
    myH:(myB&&S.hlog&&S.hlog[myB])?S.hlog[myB]:null,/* „Orele mele" — nu vine din cloud, deci nu trebuie să se piardă */
    myAtt:((S.att&&S.att.recs)||[]).filter(function(r){return r&&r.src==="me";}),
    myU:myUOld?{p:myUOld.p,p2:myUOld.p2,pin:myUOld.pin,pt:myUOld.pt||0}:null,
-   myC:myOld?{t:myOld.cT||0,phone:myOld.phone,email:myOld.email,addr:myOld.addr,ecn:myOld.ecn,ecp:myOld.ecp,ec2n:myOld.ec2n,ec2p:myOld.ec2p,ec3n:myOld.ec3n,ec3p:myOld.ec3p}:null};
+   myC:myOld?{t:myOld.cT||0,cc:myOld.cC||0,phone:myOld.phone,email:myOld.email,addr:myOld.addr,ecn:myOld.ecn,ecp:myOld.ecp,ec2n:myOld.ec2n,ec2p:myOld.ec2p,ec3n:myOld.ec3n,ec3p:myOld.ec3p,bdate:myOld.bdate,baptism:myOld.baptism}:null};
   _applying=true;S=Object.assign(blank(),R);
   S.settings.theme=keep.theme;S.settings.roGist=keep.roGist;S.settings.gh={token:"",gist:""};
   if(keep.myH&&myB){S.hlog=S.hlog||{};S.hlog[myB]=keep.myH;}
@@ -4468,6 +4495,9 @@ async function roSync(silent){if(!roOn()||_offline()||_busy)return;_roLast=Date.
      până n-o preia adminul, iar datele actualizate central ajung la mine */
   if(keep.myC&&myB){var nb=(S.bros||[]).find(function(b){return b.id===myB;});
    if(nb){var _cf=["phone","email","addr","ecn","ecp","ec2n","ec2p","ec3n","ec3p"];
+    /* data nașterii și a botezului nu se golesc niciodată la sincronizare — se completează doar dacă lipsesc */
+    ["bdate","baptism"].forEach(function(f){if(keep.myC[f]&&!nb[f])nb[f]=keep.myC[f];});
+    if((keep.myC.cc||0)>(nb.cC||0))nb.cC=keep.myC.cc||0;
     if((keep.myC.t||0)>(nb.cT||0)){_cf.forEach(function(f){nb[f]=keep.myC[f]||"";});nb.cT=keep.myC.t||0;}
     else _cf.forEach(function(f){if(keep.myC[f]&&!nb[f])nb[f]=keep.myC[f];});}}
   /* prezențele introduse chiar de mine rămân până le preia adminul; cele șterse de mine nu „reînvie" */
@@ -4491,7 +4521,8 @@ async function roSync(silent){if(!roOn()||_offline()||_busy)return;_roLast=Date.
        var loc=_mine[k];if(!loc||(loc.src!=="me"&&(inc.t||0)>=(loc.t||0)))_mine[k]=inc;});
       S.reports[myB]=_mine;}
      if(_pv.c&&myB){var _nb=(S.bros||[]).find(function(b){return b.id===myB;});
-      if(_nb&&(_pv.c.cT||0)>(_nb.cT||0)){PRIV_CF.forEach(function(f){_nb[f]=_pv.c[f]||"";});_nb.cT=_pv.c.cT||0;}}}}
+      if(_nb){if((_pv.c.cT||0)>(_nb.cT||0)){PRIV_CF.forEach(function(f){_nb[f]=_pv.c[f]||"";});_nb.cT=_pv.c.cT||0;}
+       if((_pv.c.cC||0)>(_nb.cC||0))_nb.cC=_pv.c.cC||0;}}}}
   }catch(e){}
   /* sesiunea primește pe loc rolul/funcțiile actualizate de admin (ex. devii administrator sau primești drept de prezență) */
   try{_sessRefresh();_sessSave();}catch(e){}
@@ -5253,6 +5284,11 @@ function startApp(){_dirty=computeDirty();applyTheme();try{bkpMigrate();}catch(e
    `v` = cheia de „văzut deja"; `label` = versiunea afișată.
    ============================================================================ */
 var NEWS=[
+ {v:"3.11.0",label:"3.11.0",d:"21.09.2026",t:"Datele de contact, confirmate o dată pe an",items:[
+  ["check","Confirmarea, pe 1 septembrie","Telefonul, adresa și persoanele de contact în caz de urgență se confirmă o dată pe an de serviciu. Pe 1 septembrie expiră confirmările tuturor, iar fiecare vestitor primește îndemnul în „Profilul meu”: deschide „Datele mele de contact”, se uită peste ele, schimbă ce s-a schimbat și apasă „Confirmă datele”. Cine și-a actualizat datele după 1 septembrie e deja confirmat."],
+  ["info","În „Contacte de urgență”","Lista arată câți n-au confirmat anul acesta, are un filtru numai pentru ei și data ultimei confirmări la fiecare. Mesajul de WhatsApp cere confirmarea, iar pe cel care răspunde altfel decât din aplicație îl treci confirmat cu un buton. Starea intră și în PDF."],
+  ["check","Data nașterii și a botezului nu se mai pierd","Pe telefoanele fără drept de sincronizare, cele două date nu ajungeau în fișierul personal, așa că la prima salvare din „Datele mele de contact” se ștergeau și din lista administratorului. Acum ajung acolo și nu mai pot fi golite de o versiune veche a aplicației."]
+ ]},
  {v:"3.10.2",label:"3.10.2",d:"20.09.2026",t:"Programul: semnul „i” la locul lui",items:[
   ["check","Pătratul gol de sub titlu","Pe iPhone, semnul „i” cu detaliile din caiet apărea ca un pătrat gri, gol, sub titlu: butonul lua forma implicită a sistemului. Acum e un cerc mic la capătul titlului, iar apăsarea deschide detaliile, ca înainte."]
  ]},
@@ -5527,7 +5563,12 @@ function renderArhRoute(){if(tab==="prog"){renderProg();return;}
  if(_arhFull())renderArh();else renderArhLite();
  try{setTimeout(_hscrollBind,0);}catch(e){}}
 function arhRerender(){if(tab==="meu"){renderMeu();return;}renderArhRoute();}
-function renderMeu(){$("#fab").style.display="none";$("#body").innerHTML='<div style="height:6px"></div>'+((typeof _instNudge==="function"?_instNudge():"")||_pushNudge())+arhMeuHtml();}
+function renderMeu(){$("#fab").style.display="none";$("#body").innerHTML='<div style="height:6px"></div>'+_conNudge()+((typeof _instNudge==="function"?_instNudge():"")||_pushNudge())+arhMeuHtml();}
+/* îndemn în „Profilul meu" cât timp nu și-a confirmat datele de contact pe anul de serviciu în curs */
+function _conNudge(){try{var my=_myBro();if(!my)return "";var b=(S.bros||[]).find(function(x){return x.id===my;});
+ if(!b||b.active===false||isArchNow(b)||_conConf(b))return "";
+ return '<div class="group gp" style="cursor:pointer" onclick="meContact()"><div class="rowflex" style="gap:10px;align-items:center"><span style="font-size:20px">📇</span><div><b>Confirmă-ți datele de contact</b>'
+  +'<div class="muted" style="font-size:12px">Telefonul, adresa și persoana de contact în caz de urgență se confirmă o dată pe an, de la 1 septembrie. Apasă aici.</div></div></div></div>';}catch(e){return "";}}
 /* toate atribuirile unui vestitor, pe săptămâni (pt. rolul „vestitor") */
 function myAssignments(broId){var out=[];if(!broId)return out;
  var SPECIAL={cond:"Conducător studiu",cit:"Cititor",pres:"Președinte",open_pr:"Rugăciune (început)",close_pr:"Rugăciune (încheiere)",pray:"Rugăciune"};
@@ -7309,6 +7350,9 @@ function meContact(){var my=_myBro();var b=S.bros.find(function(x){return x.id==
  var q=function(s){return esc(s||"");};
  sheet("","Datele mele de contact",
   '<div class="muted" style="margin:0 2px 12px">'+esc(b.name)+' — telefonul, adresa, data nașterii și a botezului și până la 3 persoane de contact în caz de urgență. Doar tu și administratorii le văd.</div>'
+ +(_conConf(b)
+   ?('<div class="hint" style="margin:0 2px 14px">Datele tale sunt confirmate pentru anul de serviciu '+esc(_syLabel())+(_conConfWhen(b)?(' (pe '+esc(_conConfWhen(b))+')'):'')+'. Următoarea confirmare, după 1 septembrie.</div>')
+   :('<div class="hint" style="margin:0 2px 14px;background:rgba(217,132,15,.14);color:var(--ink)">Confirmă-ți datele pentru anul de serviciu '+esc(_syLabel())+'. Telefonul, adresa și persoanele de contact în caz de urgență se confirmă o dată pe an — expiră toate pe <b>1 septembrie</b>, odată cu noul an de serviciu. Uită-te peste ele, schimbă ce s-a schimbat și apasă <b>Confirmă datele</b>.</div>'))
  +'<label class="fl" style="margin-top:2px">Telefon</label><input id="mc_p" class="fld" type="tel" inputmode="tel" autocomplete="tel" value="'+q(b.phone)+'" placeholder="07…">'
  +'<label class="fl">E-mail</label><input id="mc_e" class="fld" type="email" inputmode="email" autocomplete="email" value="'+q(b.email)+'" placeholder="nume@gmail.com">'
  +'<label class="fl">Adresă</label><input id="mc_a" class="fld" autocomplete="street-address" value="'+q(b.addr)+'" placeholder="Str. …, nr …, sect …, București">'
@@ -7319,13 +7363,14 @@ function meContact(){var my=_myBro();var b=S.bros.find(function(x){return x.id==
     +'<div class="two"><div><label class="fl">Nume</label><input id="'+c[1]+'" class="fld" value="'+q(c[3])+'" placeholder="'+c[5]+'"></div>'
     +'<div><label class="fl">Telefon</label><input id="'+c[2]+'" class="fld" type="tel" inputmode="tel" value="'+q(c[4])+'" placeholder="07…"></div></div></div>';}).join("")
  +(_canEdit()?'':'<div class="hint" style="margin-top:10px">La salvare, datele pleacă automat și către administratori, ca lista centrală să fie actualizată.</div>')
- +'<div class="rowflex" style="gap:9px;margin-top:18px"><button class="btn danger sm" style="width:auto" onclick="meContactDel()">Șterge datele</button><div class="spacer"></div><button class="btn ghost sm" style="width:auto" onclick="closeSheet()">Anulează</button><button class="btn pri sm" style="width:auto" onclick="meContactSave()">Salvează</button></div>');}
+ +'<div class="rowflex" style="gap:9px;margin-top:18px"><button class="btn danger sm" style="width:auto" onclick="meContactDel()">Șterge datele</button><div class="spacer"></div><button class="btn ghost sm" style="width:auto" onclick="closeSheet()">Anulează</button><button class="btn pri sm" style="width:auto" onclick="meContactSave()">'+(_conConf(b)?'Salvează':'Confirmă datele')+'</button></div>');}
 function _cFields(){return ["phone","email","addr","ecn","ecp","ec2n","ec2p","ec3n","ec3p","bdate","baptism"];}
-function _meContactApply(b,vals){_cFields().forEach(function(f){b[f]=vals[f]||"";});b.cT=Date.now();
+function _meContactApply(b,vals,noConf){_cFields().forEach(function(f){b[f]=vals[f]||"";});b.cT=Date.now();
+ if(!noConf)b.cC=b.cT;/* și-a văzut datele și le-a salvat: e confirmarea pe anul de serviciu în curs */
  logAct("Date de contact actualizate: "+b.name);save();closeSheet();if(tab==="arh")arhRerender();
  if(_canEdit()){toast("Salvat ✓");return;}
  /* vestitor/viewer: trimitem modificarea și către administratori prin canalul aplicației */
- boxQueue({k:"con",bro:b.id,name:b.name,t:b.cT,c:vals});
+ boxQueue({k:"con",bro:b.id,name:b.name,t:b.cT,cc:b.cC||0,c:vals});
  toast("Se trimit datele…");
  boxFlush(true).then(function(){var q=_boxQ().some(function(x){return x.box&&x.box.k==="con";});
   if(q)toast("Salvat pe telefon — se retrimit automat către administratori când e conexiune",5000);
@@ -7336,7 +7381,7 @@ function meContactSave(){var my=_myBro();var b=S.bros.find(function(x){return x.
   ec3n:$("#mc_c3n").value.trim(),ec3p:$("#mc_c3p").value.trim(),bdate:($("#mc_bd")?$("#mc_bd").value:"")||"",baptism:($("#mc_bp")?$("#mc_bp").value:"")||""});}
 async function meContactDel(){var my=_myBro();var b=S.bros.find(function(x){return x.id===my;});if(!b)return;
  if(!(await uiConfirm("Ștergi toate datele tale de contact (telefon, e-mail, adresă, contacte de urgență)?")))return;
- _meContactApply(b,{bdate:b.bdate||"",baptism:b.baptism||""});/* datele de naștere și botez rămân — nu sunt „de contact" */}
+ _meContactApply(b,{bdate:b.bdate||"",baptism:b.baptism||""},true);/* datele de naștere și botez rămân — nu sunt „de contact" */}
 
 /* ---------- SCHIMBĂ-ȚI SINGUR PIN-UL ---------- */
 function mePinSheet(){var cu=_curUser();if(!cu){toast("Nu ești logat");return;}
