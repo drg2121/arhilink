@@ -676,7 +676,7 @@ Object.assign(IC,{
  box:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h18v13H3z"/><path d="M3 7l2-4h14l2 4"/><path d="M10 11h4"/></svg>',
  mark:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15.5 4.5l4 4-9.5 9.5H6v-4z"/><path d="M12.5 7.5l4 4M5 21h14"/></svg>'
 });
-const VERSION="3.11.1";
+const VERSION="3.11.2";
 /* Versiunea minima care are voie sa SCRIE in cloud. Se trece in gist la fiecare trimitere;
    un dispozitiv ramas pe un build mai vechi decat atat nu mai poate suprascrie datele —
    doar citeste si se actualizeaza singur. Asa nu mai poate un singur telefon uitat deschis
@@ -2846,7 +2846,7 @@ async function archPurge(id){if(!_needEdit())return;var b=(S.bros||[]).find(func
    și a botezului, persoanele de contact în caz de urgență. Se vede dintr-o privire cine n-a
    completat ce, lista se filtrează pe lipsuri, se descarcă ca PDF, iar celor cu lipsuri li
    se poate trimite pe loc un mesaj pe WhatsApp cu exact ce le lipsește. */
-var _conF="all",_conQ="",_conS="nume";
+var _conF="all",_conQ="",_conS="nume",_conGOpen={};
 /* administratorii, plus cei cărora le-au dat anume dreptul (bifa „Vede Contactele de urgență" din
    fișa utilizatorului). Datele de contact nu circulă prin canalul doar-citire, deci dreptul are
    sens doar pe un dispozitiv cu sincronizare completă (token). */
@@ -2870,6 +2870,7 @@ function _conOrder(list){if(_conS!=="grp")return list;
   var pa=ga?((pos[ga]!=null)?pos[ga]:900):1000,pb=gb?((pos[gb]!=null)?pos[gb]:900):1000;
   return pa-pb||a.name.localeCompare(b.name,"ro");});}
 function _conGLabel(b){var g=grpOf(b);return g?grpName(g):"Fără grupă";}
+function _conGKey(b){return grpOf(b)||"-";}
 function _conMiss(b){var m=[];CON_MISS.forEach(function(c){var k=c[0];
  if(k==="ec"){if(!((b.ecn||"").trim()&&(b.ecp||"").trim()))m.push(c);}
  else if(k==="baptism"){if(!(b.baptism||"").trim()&&!_conUnbapt(b))m.push(c);}
@@ -2899,16 +2900,29 @@ function ensureConCSS(){if(document.getElementById("concss"))return;var st=docum
 +".conkp{margin-bottom:12px}"
 +".conchips{display:flex;flex-wrap:wrap;gap:7px;margin:0 0 12px}"
 +".conord{align-items:center}.conordl{font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.3px;color:var(--ink3);margin-right:2px}"
-+".congh{font-size:11.5px;font-weight:800;text-transform:uppercase;letter-spacing:.4px;color:var(--ink3);margin:14px 4px 7px}"
-+"#conList .congh:first-child{margin-top:2px}";
++".congrp{margin-bottom:8px}"
++".congh{width:100%;display:flex;align-items:center;gap:9px;background:var(--surf);border:1px solid var(--bd);border-radius:12px;padding:11px 13px;cursor:pointer;color:var(--ink);font:inherit;text-align:left;box-shadow:var(--sh)}"
++".conghn{flex:1;min-width:0;font-weight:800;font-size:12.5px;text-transform:uppercase;letter-spacing:.3px;overflow-wrap:anywhere}"
++".conghc{font-size:12px;font-weight:800;color:var(--ink3)}"
++".congh .chev{display:flex;color:var(--ink3);transition:transform .15s}.congh .chev svg{width:16px;height:16px}"
++".congh.on{border-color:var(--acc)}.congh.on .chev{transform:rotate(90deg);color:var(--acc)}"
++".congb{padding-top:8px}";
  document.head.appendChild(st);}
 function conFilter(f){_conF=f;arhRerender();}
 function conSort(v){_conS=v;arhRerender();}
+/* deschide/închide o grupă, fără să redesenăm toată lista */
+function conGT(k){_conGOpen[k]=!_conGOpen[k];var el=document.querySelector('.congrp[data-k="'+k+'"]');if(!el)return;
+ var b=el.querySelector(".congb");if(b)b.style.display=_conGOpen[k]?"":"none";
+ var h=el.querySelector(".congh");if(h)h.classList.toggle("on",!!_conGOpen[k]);}
 function conQ(v){_conQ=v||"";var q=fold(_conQ.trim());var wrap=document.getElementById("conList");if(!wrap)return;var n=0;
  wrap.querySelectorAll(".conrow").forEach(function(r){var on=!q||(r.dataset.n||"").indexOf(q)>=0;r.style.display=on?"":"none";if(on)n++;});
- wrap.querySelectorAll(".congh").forEach(function(h){var any=false,e2=h.nextElementSibling;
-  while(e2&&!e2.classList.contains("congh")){if(e2.classList.contains("conrow")&&e2.style.display!=="none"){any=true;break;}e2=e2.nextElementSibling;}
-  h.style.display=any?"":"none";});
+ wrap.querySelectorAll(".congrp").forEach(function(g){var k=g.dataset.k||"-";
+  var any=[].some.call(g.querySelectorAll(".conrow"),function(r){return r.style.display!=="none";});
+  g.style.display=any?"":"none";
+  var bd=g.querySelector(".congb");if(!bd)return;
+  var op=q?any:!!_conGOpen[k];
+  bd.style.display=op?"":"none";
+  var h=g.querySelector(".congh");if(h)h.classList.toggle("on",op);});
  var e=document.getElementById("conNone");if(e)e.style.display=n?"none":"";}
 function _conRow(b){var miss=_conMiss(b),mk=miss.map(function(x){return x[0];});var ecs=_conEcs(b);var gn=grpName(grpOf(b));var conf=_conConf(b);
  var rows="";var dd=function(k,v){rows+='<dt>'+k+'</dt><dd>'+v+'</dd>';};
@@ -2936,7 +2950,6 @@ function arhConHtml(){if(!_conAllowed())return '<div class="empty">Doar administ
  var cnt={};CON_MISS.forEach(function(c){cnt[c[0]]=0;});var withMiss=0,unconf=0;
  list.forEach(function(b){var m=_conMiss(b);if(m.length)withMiss++;m.forEach(function(x){cnt[x[0]]++;});if(!_conConf(b))unconf++;});
  var H='';
- H+='<button class="btn pri" style="margin:0 0 12px" onclick="conPdf()">'+IC.pdf+' Descarcă lista (PDF)</button>';
  H+='<div class="stkpis conkp"><div class="stkpi teal"><div class="kv">'+(list.length-withMiss)+'<small>/'+list.length+'</small></div><div class="kk">cu datele complete</div></div>'
   +'<div class="stkpi acc"><div class="kv">'+withMiss+'</div><div class="kk">cu lipsuri</div></div>'
   +'<div class="stkpi"><div class="kv">'+cnt.ec+'</div><div class="kk">fără contact de urgență</div></div>'
@@ -2950,9 +2963,12 @@ function arhConHtml(){if(!_conAllowed())return '<div class="empty">Doar administ
  var shown=list.filter(function(b){if(_conF==="all")return true;if(_conF==="unconf")return !_conConf(b);
   var mk=_conMiss(b).map(function(x){return x[0];});return _conF==="miss"?mk.length>0:mk.indexOf(_conF)>=0;});
  var ord=_conOrder(shown),body="";
- if(_conS==="grp"){var lastg=null;ord.forEach(function(b){var nm=_conGLabel(b);
-   if(nm!==lastg){lastg=nm;body+='<div class="congh">'+esc(nm)+'</div>';}
-   body+=_conRow(b);});}
+ if(_conS==="grp"){var gk=[],gm={};
+  ord.forEach(function(b){var k=_conGKey(b);if(!gm[k]){gm[k]={nm:_conGLabel(b),l:[]};gk.push(k);}gm[k].l.push(b);});
+  body=gk.map(function(k){var g=gm[k],op=!!_conGOpen[k];
+   return '<div class="congrp" data-k="'+esc(k)+'">'
+    +'<button class="congh'+(op?" on":"")+'" onclick="conGT(\''+esc(k)+'\')"><span class="conghn">'+esc(g.nm)+'</span><span class="conghc">'+g.l.length+'</span><span class="chev">'+IC.chev+'</span></button>'
+    +'<div class="congb"'+(op?'':' style="display:none"')+'>'+g.l.map(_conRow).join("")+'</div></div>';}).join("");}
  else body=ord.map(_conRow).join("");
  H+='<div id="conList">'+body+'</div>';
  H+='<div class="empty" id="conNone" style="padding:26px 8px;'+(shown.length?'display:none':'')+'">'+(list.length?'Nimeni aici.':'Niciun vestitor activ.')+'</div>';
@@ -5305,6 +5321,10 @@ function startApp(){_dirty=computeDirty();applyTheme();try{bkpMigrate();}catch(e
    `v` = cheia de „văzut deja"; `label` = versiunea afișată.
    ============================================================================ */
 var NEWS=[
+ {v:"3.11.2",label:"3.11.2",d:"21.09.2026",t:"Grupele se deschid și se închid",items:[
+  ["info","Pe grupe, pliat","În „Contacte de urgență”, ordinea „Pe grupe” arată acum fiecare grupă ca un rând cu numărul de vestitori; apeși pe ea și se deschide. Căutarea deschide singură grupele în care găsește pe cineva."],
+  ["check","Descărcarea, în butonul rotund","Lista în PDF se ia din butonul rotund din colț, ca la celelalte secțiuni ale Arhivei, nu dintr-un buton lat pus în capul paginii."]
+ ]},
  {v:"3.11.1",label:"3.11.1",d:"21.09.2026",t:"Contactele, ordonate pe grupe",items:[
   ["info","Alfabetic sau pe grupe","În „Contacte de urgență” poți alege ordinea listei: alfabetic, ca până acum, sau pe grupe, cu fiecare grupă sub numele ei. Căutarea ascunde grupele rămase goale, iar PDF-ul se descarcă în ordinea aleasă."]
  ]},
@@ -6740,7 +6760,7 @@ function _arhFab(){var f=$("#fab");if(!f)return;var ed=_canEditArh(),ad=_isAdmin
  else if(arhSub==="mp")cfg={ic:(_canEditMp()?IC.tune:IC.dl),fn:arhFabMp};
  else if(arhSub==="wm")cfg={ic:(_canEditWm()?IC.tune:IC.dl),fn:arhFabWm};
  else if(arhSub==="teren")cfg={ic:(_canEditFt()?IC.tune:IC.dl),fn:arhFabFt};
- else if(arhSub==="con")cfg=null;/* descărcarea e scrisă pe ecran, sus */
+ else if(arhSub==="con")cfg={ic:IC.dl,fn:function(){conPdf();}};
  if(!cfg){f.style.display="none";return;}
  f.innerHTML=cfg.ic;f.title="Descarcă / unelte";f.style.display="flex";f.onclick=cfg.fn;}
 function vcpListFab(){
