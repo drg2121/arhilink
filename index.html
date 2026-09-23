@@ -682,7 +682,7 @@ Object.assign(IC,{
  box:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h18v13H3z"/><path d="M3 7l2-4h14l2 4"/><path d="M10 11h4"/></svg>',
  mark:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15.5 4.5l4 4-9.5 9.5H6v-4z"/><path d="M12.5 7.5l4 4M5 21h14"/></svg>'
 });
-const VERSION="3.11.3";
+const VERSION="3.11.4";
 /* Versiunea minima care are voie sa SCRIE in cloud. Se trece in gist la fiecare trimitere;
    un dispozitiv ramas pe un build mai vechi decat atat nu mai poate suprascrie datele —
    doar citeste si se actualizeaza singur. Asa nu mai poate un singur telefon uitat deschis
@@ -2888,7 +2888,7 @@ var CIC={
  phone:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16.4v3a2 2 0 0 1-2.2 2 19.6 19.6 0 0 1-8.5-3 19.3 19.3 0 0 1-6-6 19.6 19.6 0 0 1-3-8.6A2 2 0 0 1 3.3 1.6h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.4 2.1L7.3 9.5a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.8.7a2 2 0 0 1 1.7 2z"/></svg>',
  mail:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="M3.5 6.5 12 13l8.5-6.5"/></svg>',
  home:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"/><path d="M5.5 9v11a1 1 0 0 0 1 1H10v-6h4v6h3.5a1 1 0 0 0 1-1V9"/></svg>',
- cake:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M5 21v-7.5A1.5 1.5 0 0 1 6.5 12h11a1.5 1.5 0 0 1 1.5 1.5V21"/><path d="M5 16.5c1.2.8 2.3.8 3.5 0s2.3-.8 3.5 0 2.3.8 3.5 0 2.3-.8 3.5 0"/><path d="M12 12V8.5"/><path d="M12 6.2c.9-.9.9-1.9 0-3.2-.9 1.3-.9 2.3 0 3.2z"/></svg>',
+ cal:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4.5" width="18" height="16" rx="2.5"/><path d="M3 9.5h18M8 2.5v4M16 2.5v4"/><rect x="7" y="13" width="4" height="4" rx="1" fill="currentColor" stroke="none"/></svg>',
  drop:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.8s6.5 6.8 6.5 11.7a6.5 6.5 0 0 1-13 0C5.5 9.6 12 2.8 12 2.8z"/><path d="M9 15a3 3 0 0 0 3 3"/></svg>',
  sos:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.4 5.6a5.3 5.3 0 0 0-7.5 0L12 6.5l-.9-.9a5.3 5.3 0 0 0-7.5 7.5l8.4 8.3 8.4-8.3a5.3 5.3 0 0 0 0-7.5z"/><path d="M7 12h2.5l1.3-2.3 2.2 4.3 1.3-2h2.7"/></svg>',
  shield:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.8 4.5 5.8v5.7c0 4.6 3.1 8.5 7.5 9.7 4.4-1.2 7.5-5.1 7.5-9.7V5.8z"/><path d="m8.8 12.1 2.3 2.3 4.2-4.4"/></svg>',
@@ -2897,7 +2897,7 @@ var CIC={
  card:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2.8" y="4.5" width="18.4" height="15" rx="2.6"/><circle cx="8.8" cy="10.6" r="2.3"/><path d="M5.3 16.3c.6-1.7 1.9-2.6 3.5-2.6s2.9.9 3.5 2.6"/><path d="M15 10h3.3M15 13.5h3.3"/></svg>',
  bell:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8.5a6 6 0 0 1 12 0c0 6.5 2.8 8.5 2.8 8.5H3.2S6 15 6 8.5"/><path d="M10.2 20.5a2 2 0 0 0 3.6 0"/></svg>',
  inst:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="2.5" width="12" height="19" rx="2.6"/><path d="M12 7v7.2M9.3 11.6 12 14.3l2.7-2.7"/><path d="M10.8 18.3h2.4"/></svg>'};
-var CON_IC={phone:CIC.phone,addr:CIC.home,bdate:CIC.cake,baptism:CIC.drop,ec:CIC.sos};
+var CON_IC={phone:CIC.phone,addr:CIC.home,bdate:CIC.cal,baptism:CIC.drop,ec:CIC.sos};
 function ensureConCSS(){if(document.getElementById("concss"))return;var st=document.createElement("style");st.id="concss";st.textContent=
  /* roșul lipsurilor: pe zi cel închis (--secRed), ca textul mic să se citească pe alb */
  ".conwrap{--cred:var(--maroon);--credsoft:rgba(244,124,124,.14);--cok:var(--tealtx);--cooksoft:rgba(60,201,183,.14)}"
@@ -2995,7 +2995,7 @@ function _conRow(b){var miss=_conMiss(b),mk=miss.map(function(x){return x[0];});
  li(CIC.phone,"Telefon",b.phone?('<a href="tel:'+esc(String(b.phone).replace(/\s+/g,""))+'">'+esc(b.phone)+'</a>'):no,mk.indexOf("phone")>=0);
  if(b.email)li(CIC.mail,"E-mail",esc(b.email));
  li(CIC.home,"Adresă",b.addr?esc(b.addr):no,mk.indexOf("addr")>=0);
- li(CIC.cake,"Născut",b.bdate?esc(_conDate(b.bdate)):no,mk.indexOf("bdate")>=0);
+ li(CIC.cal,"Născut",b.bdate?esc(_conDate(b.bdate)):no,mk.indexOf("bdate")>=0);
  li(CIC.drop,"Botezat",b.baptism?esc(_conDate(b.baptism)):(_conUnbapt(b)?'<span class="muted">nebotezat</span>':no),mk.indexOf("baptism")>=0);
  li(CIC.sos,"Urgență",ecs.length?ecs.map(function(e){return '<span class="ecl"><b>'+esc(e.n||"—")+'</b>'+(e.t?(' · <a href="tel:'+esc(e.t.replace(/\s+/g,""))+'">'+esc(e.t)+'</a>'):'')+'</span>';}).join(""):'<span class="mis">nicio persoană de contact</span>',mk.indexOf("ec")>=0);
  /* starea dintr-o privire: câte din cele 5 date are și dacă le-a confirmat anul acesta */
@@ -5400,6 +5400,9 @@ function startApp(){_dirty=computeDirty();applyTheme();try{bkpMigrate();}catch(e
    `v` = cheia de „văzut deja"; `label` = versiunea afișată.
    ============================================================================ */
 var NEWS=[
+ {v:"3.11.4",label:"3.11.4",d:"23.09.2026",t:"Data nașterii, cu calendar",items:[
+  ["cal","Calendar la data nașterii","În „Contacte de urgență”, data nașterii are acum iconița de calendar, în locul tortului — și în „Ce lipsește”, și pe cardul fiecărui vestitor."]
+ ]},
  {v:"3.11.3",label:"3.11.3",d:"23.09.2026",t:"Contactele de urgență, cu fața nouă",items:[
   ["chart","Totul dintr-o privire","Sus, două inele arată câți au datele complete și câți le-au confirmat anul acesta. Dedesubt, „Ce lipsește” numără pe feluri — contact de urgență, adresă, data nașterii, a botezului, telefon — și fiecare rând e și filtru: apeși și rămân doar cei cărora le lipsește asta."],
   ["edit","Cardul fiecărui vestitor, mai limpede","Fiecare dată are iconița ei, iar ce lipsește e scris cu roșu chiar pe rândul ei. O bară de 5 liniuțe arată cât e completat, iar alături scrie dacă e confirmat și când. Filtrele și ordinea (A–Z sau pe grupe) stau acum în două bare compacte."],
