@@ -682,7 +682,7 @@ Object.assign(IC,{
  box:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h18v13H3z"/><path d="M3 7l2-4h14l2 4"/><path d="M10 11h4"/></svg>',
  mark:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15.5 4.5l4 4-9.5 9.5H6v-4z"/><path d="M12.5 7.5l4 4M5 21h14"/></svg>'
 });
-const VERSION="3.11.4";
+const VERSION="3.11.5";
 /* Versiunea minima care are voie sa SCRIE in cloud. Se trece in gist la fiecare trimitere;
    un dispozitiv ramas pe un build mai vechi decat atat nu mai poate suprascrie datele —
    doar citeste si se actualizeaza singur. Asa nu mai poate un singur telefon uitat deschis
@@ -3160,9 +3160,11 @@ function ensureGrpCSS(){if(document.getElementById("grpcss"))return;var st=docum
 /* cardul raportului: luna mare, starea ca pastilă, „Altă lună" ca buton mic peste un <select> ascuns */
 +".mrhd{display:flex;align-items:flex-start;gap:10px}.mrtx{flex:1;min-width:0}"
 +".mrmon{font-size:22px;font-weight:800;line-height:1.15;margin-top:1px}"
-+".mrpick{position:relative;flex:0 0 auto;display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:700;color:var(--ink2);background:var(--surf);border:1px solid var(--bd);border-radius:999px;padding:6px 10px 6px 9px;cursor:pointer}"
++".mrpick{position:relative;overflow:hidden;flex:0 0 auto;display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:700;color:var(--ink2);background:var(--surf);border:1px solid var(--bd);border-radius:999px;padding:6px 10px 6px 9px;cursor:pointer}"
 +".mrpick svg{width:14px;height:14px}.mrpick:hover,.mrpick:focus-within{color:var(--acc);border-color:var(--acc)}"
-+".mrpick select{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;font-size:16px;-webkit-appearance:none;appearance:none}"
+/* pe iPhone, <select>-ul ascuns își ia lățimea după textul lunii alese și ieșea din buton, iar pagina
+   se putea trage în lateral: butonul îl taie (overflow:hidden), iar lățimea e fixată pe a lui */
++".mrpick select{position:absolute;left:0;top:0;width:100%;height:100%;min-width:0;max-width:100%;margin:0;padding:0;border:0;opacity:0;cursor:pointer;font-size:16px;-webkit-appearance:none;appearance:none}"
 +".mrst{display:flex;align-items:center;flex-wrap:wrap;gap:6px 8px;margin-top:8px;font-size:12.5px;color:var(--ink2)}"
 +".mrpill{display:inline-flex;align-items:center;font-size:11.5px;font-weight:800;border-radius:999px;padding:3px 10px}"
 +".mrpill.ok{background:rgba(60,201,183,.14);color:var(--tealtx)}.app.light .mrpill.ok{background:rgba(26,165,147,.11)}"
@@ -5416,6 +5418,9 @@ function startApp(){_dirty=computeDirty();applyTheme();try{bkpMigrate();}catch(e
    `v` = cheia de „văzut deja"; `label` = versiunea afișată.
    ============================================================================ */
 var NEWS=[
+ {v:"3.11.5",label:"3.11.5",d:"23.09.2026",t:"Profilul meu stă pe loc",items:[
+  ["check","Pagina nu mai fuge în lateral","Pe iPhone, „Profilul meu” se putea trage spre stânga și spre dreapta: lista ascunsă din spatele butonului „Altă lună” ieșea din el, cât textul lunii alese. Acum rămâne în buton."]
+ ]},
  {v:"3.11.4",label:"3.11.4",d:"23.09.2026",t:"Profilul meu, pe secțiuni",items:[
   ["info","Două secțiuni: „Raport și ore” și „Ce urmează”","Raportul, orele și istoricul stau împreună; sarcinile, curățenia, ospitalitatea grupei și evenimentele, în lista „Ce urmează”. Cardurile unei secțiuni sunt acum o singură listă, nu cutii separate."],
   ["cal","Ce urmează, fără să deschizi","Fiecare rând din „Ce urmează” arată direct următoarea dată: săptămâna și partea ta, când e grupa la curățenie sau la ospitalitate, care e următorul eveniment."],
