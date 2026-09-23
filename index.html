@@ -126,6 +126,12 @@ html:has(.app.light),body:has(.app.light){background:#ffffff}
 .group{background:var(--surf);border:1px solid var(--bd);border-radius:var(--r);margin-bottom:12px;overflow:hidden;box-shadow:var(--sh)}
 .gp{padding:15px 16px}
 .gp h2{margin:0 0 3px;font-size:16.5px;font-weight:800;letter-spacing:-.1px}
+/* îndemnurile din „Profilul meu” (confirmă datele, notificări, instalare): iconiță desenată, nu emoji */
+.mnudge{display:flex;align-items:center;gap:12px;cursor:pointer}
+.mnudge.acc{border-left:4px solid var(--acc);background:linear-gradient(135deg,var(--accsoft),var(--surf) 60%)}
+.mnic{flex:0 0 auto;width:42px;height:42px;border-radius:12px;background:var(--accsoft);color:var(--acc);display:grid;place-items:center}.mnic svg{width:21px;height:21px}
+.mntx{flex:1;min-width:0}.mntx b{display:block;font-size:14.5px;font-weight:800;line-height:1.3}.mntx span{display:block;font-size:12px;color:var(--ink3);line-height:1.45;margin-top:3px}
+.mnchev{flex:0 0 auto;display:flex;color:var(--ink3)}.mnchev svg{width:18px;height:18px}.mnudge:hover .mnchev{color:var(--acc)}
 .lead{font-size:12.5px;color:var(--ink2);margin:2px 2px 14px}
 .muted{color:var(--ink3);font-size:12.5px}
 .rowflex{display:flex;align-items:center;gap:12px}
@@ -676,7 +682,7 @@ Object.assign(IC,{
  box:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h18v13H3z"/><path d="M3 7l2-4h14l2 4"/><path d="M10 11h4"/></svg>',
  mark:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15.5 4.5l4 4-9.5 9.5H6v-4z"/><path d="M12.5 7.5l4 4M5 21h14"/></svg>'
 });
-const VERSION="3.11.2";
+const VERSION="3.11.3";
 /* Versiunea minima care are voie sa SCRIE in cloud. Se trece in gist la fiecare trimitere;
    un dispozitiv ramas pe un build mai vechi decat atat nu mai poate suprascrie datele —
    doar citeste si se actualizeaza singur. Asa nu mai poate un singur telefon uitat deschis
@@ -2877,33 +2883,91 @@ function _conMiss(b){var m=[];CON_MISS.forEach(function(c){var k=c[0];
  else if(!(b[k]||"").trim())m.push(c);});return m;}
 function _conEcs(b){var o=[];[["ecn","ecp"],["ec2n","ec2p"],["ec3n","ec3p"]].forEach(function(p){var n=(b[p[0]]||"").trim(),t=(b[p[1]]||"").trim();if(n||t)o.push({n:n,t:t});});return o;}
 function _conDate(v){if(!v)return "";var d=asDate(v);return d?(arhPad(d.getDate())+"."+arhPad(d.getMonth()+1)+"."+d.getFullYear()):String(v);}
+/* iconițele secțiunii — același desen cu linie ca restul aplicației */
+var CIC={
+ phone:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16.4v3a2 2 0 0 1-2.2 2 19.6 19.6 0 0 1-8.5-3 19.3 19.3 0 0 1-6-6 19.6 19.6 0 0 1-3-8.6A2 2 0 0 1 3.3 1.6h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.4 2.1L7.3 9.5a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.8.7a2 2 0 0 1 1.7 2z"/></svg>',
+ mail:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="M3.5 6.5 12 13l8.5-6.5"/></svg>',
+ home:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"/><path d="M5.5 9v11a1 1 0 0 0 1 1H10v-6h4v6h3.5a1 1 0 0 0 1-1V9"/></svg>',
+ cake:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M5 21v-7.5A1.5 1.5 0 0 1 6.5 12h11a1.5 1.5 0 0 1 1.5 1.5V21"/><path d="M5 16.5c1.2.8 2.3.8 3.5 0s2.3-.8 3.5 0 2.3.8 3.5 0 2.3-.8 3.5 0"/><path d="M12 12V8.5"/><path d="M12 6.2c.9-.9.9-1.9 0-3.2-.9 1.3-.9 2.3 0 3.2z"/></svg>',
+ drop:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.8s6.5 6.8 6.5 11.7a6.5 6.5 0 0 1-13 0C5.5 9.6 12 2.8 12 2.8z"/><path d="M9 15a3 3 0 0 0 3 3"/></svg>',
+ sos:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.4 5.6a5.3 5.3 0 0 0-7.5 0L12 6.5l-.9-.9a5.3 5.3 0 0 0-7.5 7.5l8.4 8.3 8.4-8.3a5.3 5.3 0 0 0 0-7.5z"/><path d="M7 12h2.5l1.3-2.3 2.2 4.3 1.3-2h2.7"/></svg>',
+ shield:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.8 4.5 5.8v5.7c0 4.6 3.1 8.5 7.5 9.7 4.4-1.2 7.5-5.1 7.5-9.7V5.8z"/><path d="m8.8 12.1 2.3 2.3 4.2-4.4"/></svg>',
+ wait:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>',
+ chat:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 11.6a8.4 8.4 0 0 1-12.4 7.4L3 20.8l1.8-4.9a8.4 8.4 0 1 1 15.7-4.3z"/></svg>',
+ card:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2.8" y="4.5" width="18.4" height="15" rx="2.6"/><circle cx="8.8" cy="10.6" r="2.3"/><path d="M5.3 16.3c.6-1.7 1.9-2.6 3.5-2.6s2.9.9 3.5 2.6"/><path d="M15 10h3.3M15 13.5h3.3"/></svg>',
+ bell:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8.5a6 6 0 0 1 12 0c0 6.5 2.8 8.5 2.8 8.5H3.2S6 15 6 8.5"/><path d="M10.2 20.5a2 2 0 0 0 3.6 0"/></svg>',
+ inst:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="2.5" width="12" height="19" rx="2.6"/><path d="M12 7v7.2M9.3 11.6 12 14.3l2.7-2.7"/><path d="M10.8 18.3h2.4"/></svg>'};
+var CON_IC={phone:CIC.phone,addr:CIC.home,bdate:CIC.cake,baptism:CIC.drop,ec:CIC.sos};
 function ensureConCSS(){if(document.getElementById("concss"))return;var st=document.createElement("style");st.id="concss";st.textContent=
- ".conrow{background:var(--surf);border:1px solid var(--bd);border-radius:14px;padding:12px 13px;margin-bottom:8px;box-shadow:var(--sh)}"
-+".conhd{display:flex;align-items:center;gap:10px}"
+ /* roșul lipsurilor: pe zi cel închis (--secRed), ca textul mic să se citească pe alb */
+ ".conwrap{--cred:var(--maroon);--credsoft:rgba(244,124,124,.14);--cok:var(--tealtx);--cooksoft:rgba(60,201,183,.14)}"
++".app.light .conwrap{--cred:var(--secRed);--credsoft:rgba(192,57,43,.08);--cooksoft:rgba(26,165,147,.11)}"
+/* cardul de sus: două inele + ce lipsește */
++".consum{background:var(--surf);border:1px solid var(--bd);border-radius:16px;box-shadow:var(--sh);padding:14px 14px 10px;margin-bottom:12px}"
++".conrings{display:grid;grid-template-columns:1fr 1fr;gap:10px}"
++".conring{display:flex;align-items:center;gap:10px;min-width:0}"
++".conrg{position:relative;flex:0 0 auto;width:52px;height:52px}"
++".conrg svg{width:52px;height:52px;transform:rotate(-90deg);display:block}"
++".conrg circle{fill:none;stroke-width:5.5}.conrg .trk{stroke:var(--surf2)}.conrg .val{stroke-linecap:round}"
++".conring.teal .val{stroke:var(--teal)}.conring.acc .val{stroke:var(--acc)}"
++".conrg b{position:absolute;inset:0;display:grid;place-items:center;font-size:12px;font-weight:800;letter-spacing:-.2px}"
++".conrt{min-width:0}.conrt .v{font-size:19px;font-weight:800;line-height:1.1;font-variant-numeric:tabular-nums}.conrt .v small{font-size:12.5px;font-weight:700;color:var(--ink3)}"
++".conrt .l{font-size:11.5px;font-weight:600;color:var(--ink3);line-height:1.3;margin-top:3px}"
++".conmh{display:flex;align-items:baseline;justify-content:space-between;gap:8px;border-top:1px solid var(--bd);margin:13px 0 4px;padding:11px 2px 0;font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.4px;color:var(--ink3)}"
++".conmh span:last-child{text-transform:none;letter-spacing:0;font-weight:600;font-size:11px}"
++".conmr{display:flex;align-items:center;gap:10px;width:calc(100% + 12px);margin:0 -6px;padding:6px;background:none;border:1px solid transparent;border-radius:11px;color:var(--ink);font:inherit;text-align:left;cursor:pointer}"
++".conmr:hover{background:var(--surf2)}.conmr.on{background:var(--accsoft);border-color:var(--acc)}"
++".conmi{flex:0 0 auto;width:28px;height:28px;border-radius:9px;display:grid;place-items:center;background:var(--credsoft);color:var(--cred)}.conmi svg{width:15px;height:15px}"
++".conml{flex:0 0 128px;min-width:0;font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}"
++".conmb{flex:1;min-width:20px;height:6px;border-radius:99px;background:var(--surf2);overflow:hidden}.conmb i{display:block;height:100%;border-radius:99px;background:var(--cred)}"
++".conmn{flex:0 0 auto;min-width:24px;text-align:right;font-size:13.5px;font-weight:800;font-variant-numeric:tabular-nums}"
++".conmr.z .conmi{background:var(--cooksoft);color:var(--cok)}.conmr.z .conmn{color:var(--cok)}.conmr.z .conml{color:var(--ink2)}"
+/* bara de filtre (segmente) și ordinea, lângă căutare */
++".conseg{display:flex;gap:3px;background:var(--surf2);border:1px solid var(--bd);border-radius:12px;padding:3px;margin-bottom:10px}"
++".conseg button{flex:1 1 0;min-width:0;display:flex;align-items:center;justify-content:center;gap:6px;border:0;background:none;border-radius:9px;padding:8px 4px;font:inherit;font-size:12.5px;font-weight:700;color:var(--ink2);cursor:pointer;white-space:nowrap}"
++".conseg button i{font-style:normal;font-size:11px;font-weight:800;color:var(--ink3);font-variant-numeric:tabular-nums}"
++".conseg button.on{background:var(--bd);color:var(--acc)}.app.light .conseg button.on{background:var(--surf);box-shadow:0 1px 3px rgba(20,24,40,.14)}.conseg button.on i{color:var(--acc)}"
++"@media(max-width:360px){.conseg button{font-size:11.5px;gap:4px}}"
++".contool{display:flex;align-items:center;gap:8px;margin-bottom:12px}.contool .brosrch{flex:1;min-width:0;margin-bottom:0}"
++".contool .conseg{flex:0 0 auto;margin:0}.contool .conseg button{flex:0 0 auto;padding:7px 10px;font-size:12px}"
++".confl{display:flex;align-items:center;gap:8px;margin:-2px 2px 10px;font-size:12.5px;color:var(--ink2)}.confl b{color:var(--ink)}"
++".confl button{margin-left:auto;border:0;background:none;color:var(--acc);font:inherit;font-weight:700;font-size:12.5px;cursor:pointer;padding:4px 2px}"
+/* cardul fiecărui vestitor */
++".conrow{background:var(--surf);border:1px solid var(--bd);border-radius:16px;padding:13px 14px 14px;margin-bottom:10px;box-shadow:var(--sh)}"
++".conhd{display:flex;align-items:center;gap:11px}"
++".conrow .pava.ok{background:var(--cooksoft);color:var(--cok)}"
 +".connm{flex:1;min-width:0;font-weight:800;font-size:15px;line-height:1.25;overflow-wrap:anywhere}"
 +".connm small{display:block;font-weight:600;font-size:11.5px;color:var(--ink3);margin-top:2px}"
 +".conedit{flex:0 0 auto;width:34px;height:34px;border-radius:10px;border:1px solid var(--bd);background:var(--surf2);color:var(--ink2);display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0}"
 +".conedit svg{width:16px;height:16px}.conedit:hover{color:var(--acc);border-color:var(--acc)}"
-+".contags{display:flex;flex-wrap:wrap;gap:5px;margin-top:9px}"
-+".contag{font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.3px;border-radius:6px;padding:3px 8px;background:rgba(214,95,95,.13);color:var(--maroon)}"
-+".contag.ok{background:rgba(34,165,150,.13);color:var(--tealtx)}"
-+".condl{display:grid;grid-template-columns:auto 1fr;gap:5px 10px;margin:10px 0 0;font-size:13px}"
-+".condl dt{color:var(--ink3);font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.3px;padding-top:3px;white-space:nowrap}"
-+".condl dd{margin:0;min-width:0;overflow-wrap:anywhere;line-height:1.4}"
-+".condl dd a{color:var(--ink);text-decoration:none;font-weight:600}.condl dd .mis{color:var(--maroon);font-weight:700}"
-+".condl dd .ecl{display:block}.condl dd .ecl b{font-weight:700}"
-+".conact{display:flex;gap:7px;margin-top:11px}"
-+".conact{flex-wrap:wrap}.conact .btn{width:auto;flex:1 1 auto;padding:10px 12px;font-size:13.5px}"
++".constat{display:flex;align-items:center;flex-wrap:wrap;gap:7px 12px;margin-top:11px}"
++".conprog{display:flex;align-items:center;gap:7px;font-size:11.5px;font-weight:800;color:var(--ink2);font-variant-numeric:tabular-nums}"
++".conprog .sg{display:flex;gap:3px}.conprog .sg i{width:13px;height:5px;border-radius:9px;background:var(--credsoft)}.conprog .sg i.f{background:var(--teal)}"
++".conpill{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:700;line-height:1.2;border-radius:999px;padding:4px 10px 4px 7px}"
++".conpill svg{width:13px;height:13px;flex:0 0 auto}.conpill.ok{background:var(--cooksoft);color:var(--cok)}.conpill.wait{background:var(--accsoft);color:var(--acc)}"
++".condl{margin:12px 0 0;padding:2px 12px;background:var(--surf2);border-radius:12px}"
++".conli{display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:1px solid var(--bd);font-size:13.5px;line-height:1.4}"
++".conli:last-child{border-bottom:0}"
++".conli .ic{flex:0 0 auto;display:flex;color:var(--ink3);padding-top:1px}.conli .ic svg{width:16px;height:16px}"
++".conli .k{flex:0 0 62px;color:var(--ink3);font-size:12px;font-weight:700;padding-top:1px}"
++".conli .v{flex:1;min-width:0;overflow-wrap:anywhere}"
++".conli .v a{color:var(--ink);text-decoration:none;font-weight:600}"
++".conli .v .ecl{display:block}.conli .v .ecl b{font-weight:700}.conli .v .ecl+.ecl{margin-top:3px}"
++".conli.mis .ic{color:var(--cred)}.conli .mis{color:var(--cred);font-weight:700}"
++".conact{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}"
++".conact .btn{width:auto;flex:1 1 auto;display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:10px 12px;font-size:13.5px}"
++".conact .btn svg{width:16px;height:16px;flex:0 0 auto}"
 +".conact.two .btn{font-size:12.5px;padding:10px 9px;white-space:nowrap}"
-+".btn.conwa{background:#25D366;color:#fff}.btn.conwa:hover,.btn.conwa:active{background:#1fb457}"
-+".btn.conok{width:auto;flex:0 1 auto}"
-+".conkp{margin-bottom:12px}"
-+".conchips{display:flex;flex-wrap:wrap;gap:7px;margin:0 0 12px}"
-+".conord{align-items:center}.conordl{font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.3px;color:var(--ink3);margin-right:2px}"
++".btn.conwa{background:#1fa855;color:#fff}.btn.conwa:hover,.btn.conwa:active{background:#1a9149}.btn.conwa:disabled{opacity:.45}"
++".btn.conok{flex:0 1 auto}"
+/* pe grupe: capul pliabil al fiecărei grupe */
 +".congrp{margin-bottom:8px}"
-+".congh{width:100%;display:flex;align-items:center;gap:9px;background:var(--surf);border:1px solid var(--bd);border-radius:12px;padding:11px 13px;cursor:pointer;color:var(--ink);font:inherit;text-align:left;box-shadow:var(--sh)}"
-+".conghn{flex:1;min-width:0;font-weight:800;font-size:12.5px;text-transform:uppercase;letter-spacing:.3px;overflow-wrap:anywhere}"
-+".conghc{font-size:12px;font-weight:800;color:var(--ink3)}"
++".congh{width:100%;display:flex;align-items:center;gap:11px;background:var(--surf);border:1px solid var(--bd);border-radius:14px;padding:10px 12px;cursor:pointer;color:var(--ink);font:inherit;text-align:left;box-shadow:var(--sh)}"
++".conghi{flex:0 0 auto;width:34px;height:34px;border-radius:10px;display:grid;place-items:center;background:var(--accsoft);color:var(--acc)}.conghi svg{width:17px;height:17px}"
++".conght{flex:1;min-width:0}"
++".conghn{display:block;font-weight:800;font-size:14px;line-height:1.25;overflow-wrap:anywhere}"
++".conghs{display:block;font-size:11.5px;font-weight:600;color:var(--ink3);margin-top:2px}.conghs .r{color:var(--cred)}.conghs .g{color:var(--cok)}"
++".conghc{flex:0 0 auto;min-width:26px;text-align:center;font-size:12px;font-weight:800;color:var(--ink2);background:var(--surf2);border-radius:999px;padding:3px 8px}"
 +".congh .chev{display:flex;color:var(--ink3);transition:transform .15s}.congh .chev svg{width:16px;height:16px}"
 +".congh.on{border-color:var(--acc)}.congh.on .chev{transform:rotate(90deg);color:var(--acc)}"
 +".congb{padding-top:8px}";
@@ -2924,54 +2988,69 @@ function conQ(v){_conQ=v||"";var q=fold(_conQ.trim());var wrap=document.getEleme
   bd.style.display=op?"":"none";
   var h=g.querySelector(".congh");if(h)h.classList.toggle("on",op);});
  var e=document.getElementById("conNone");if(e)e.style.display=n?"none":"";}
-function _conRow(b){var miss=_conMiss(b),mk=miss.map(function(x){return x[0];});var ecs=_conEcs(b);var gn=grpName(grpOf(b));var conf=_conConf(b);
- var rows="";var dd=function(k,v){rows+='<dt>'+k+'</dt><dd>'+v+'</dd>';};
- dd("Telefon",b.phone?('<a href="tel:'+esc(String(b.phone).replace(/\s+/g,""))+'">'+esc(b.phone)+'</a>'):'<span class="mis">lipsește</span>');
- if(b.email)dd("E-mail",esc(b.email));
- dd("Adresă",b.addr?esc(b.addr):'<span class="mis">lipsește</span>');
- dd("Născut",b.bdate?esc(_conDate(b.bdate)):'<span class="mis">lipsește</span>');
- dd("Botezat",b.baptism?esc(_conDate(b.baptism)):(_conUnbapt(b)?'<span class="muted">nebotezat</span>':'<span class="mis">lipsește</span>'));
- dd("Urgență",ecs.length?ecs.map(function(e){return '<span class="ecl"><b>'+esc(e.n||"—")+'</b>'+(e.t?(' · <a href="tel:'+esc(e.t.replace(/\s+/g,""))+'">'+esc(e.t)+'</a>'):'')+'</span>';}).join(""):'<span class="mis">nicio persoană de contact</span>');
- dd("Confirmat",conf?(esc(_conConfWhen(b))+' <span class="muted">· anul '+esc(_syLabel())+'</span>'):('<span class="mis">nu pentru anul '+esc(_syLabel())+'</span>'+(_conConfWhen(b)?(' <span class="muted">· ultima dată '+esc(_conConfWhen(b))+'</span>'):'')));
-  var tg=miss.map(function(x){return '<span class="contag">fără '+esc(x[1])+'</span>';});
- if(!conf)tg.push('<span class="contag">neconfirmate '+esc(_syLabel())+'</span>');
- if(!tg.length)tg.push('<span class="contag ok">complet · confirmat</span>');
- var tags=tg.join("");
+function _conCap(s){return s.charAt(0).toUpperCase()+s.slice(1);}
+function _conRow(b){var miss=_conMiss(b),mk=miss.map(function(x){return x[0];});var ecs=_conEcs(b);var gn=grpName(grpOf(b));var conf=_conConf(b),cw=_conConfWhen(b);
+ var no='<span class="mis">lipsește</span>',rows="";
+ var li=function(ic,k,v,mis){rows+='<div class="conli'+(mis?' mis':'')+'"><span class="ic">'+ic+'</span><span class="k">'+k+'</span><span class="v">'+v+'</span></div>';};
+ li(CIC.phone,"Telefon",b.phone?('<a href="tel:'+esc(String(b.phone).replace(/\s+/g,""))+'">'+esc(b.phone)+'</a>'):no,mk.indexOf("phone")>=0);
+ if(b.email)li(CIC.mail,"E-mail",esc(b.email));
+ li(CIC.home,"Adresă",b.addr?esc(b.addr):no,mk.indexOf("addr")>=0);
+ li(CIC.cake,"Născut",b.bdate?esc(_conDate(b.bdate)):no,mk.indexOf("bdate")>=0);
+ li(CIC.drop,"Botezat",b.baptism?esc(_conDate(b.baptism)):(_conUnbapt(b)?'<span class="muted">nebotezat</span>':no),mk.indexOf("baptism")>=0);
+ li(CIC.sos,"Urgență",ecs.length?ecs.map(function(e){return '<span class="ecl"><b>'+esc(e.n||"—")+'</b>'+(e.t?(' · <a href="tel:'+esc(e.t.replace(/\s+/g,""))+'">'+esc(e.t)+'</a>'):'')+'</span>';}).join(""):'<span class="mis">nicio persoană de contact</span>',mk.indexOf("ec")>=0);
+ /* starea dintr-o privire: câte din cele 5 date are și dacă le-a confirmat anul acesta */
+ var sg=CON_MISS.map(function(c){return '<i'+(mk.indexOf(c[0])<0?' class="f"':'')+'></i>';}).join("");
+ var stat='<span class="conprog"><span class="sg">'+sg+'</span>'+(CON_MISS.length-miss.length)+'/'+CON_MISS.length+'</span>'
+  +(conf?('<span class="conpill ok">'+CIC.shield+'Confirmat'+(cw?(' '+esc(cw)):'')+'</span>')
+   :('<span class="conpill wait">'+CIC.wait+'Neconfirmat '+esc(_syLabel())+(cw?(' · ultima '+esc(cw)):'')+'</span>'));
  var ph=_waPhone(b);var ask=miss.filter(function(x){return x[0]!=="phone";});
  var act='';
- if(ask.length||!conf)act+='<button class="btn conwa" '+(ph?('onclick="conWa(\''+b.id+'\')"'):'disabled title="Nu are telefon în fișă"')+'>'+IC.fwd+' '+(ask.length?'Cere pe WhatsApp':'Cere confirmarea')+'</button>';
- if(!conf&&_canEdit())act+='<button class="btn ghost conok" onclick="conMark(\''+b.id+'\')">Marchează confirmat</button>';
- return '<div class="conrow" data-n="'+esc(fold(b.name))+'"><div class="conhd"><div class="pava">'+esc(initials(b.name)||"·")+'</div>'
+ if(ask.length||!conf)act+='<button class="btn conwa" '+(ph?('onclick="conWa(\''+b.id+'\')"'):'disabled title="Nu are telefon în fișă"')+'>'+CIC.chat+(ask.length?'Cere pe WhatsApp':'Cere confirmarea')+'</button>';
+ if(!conf&&_canEdit())act+='<button class="btn ghost conok" onclick="conMark(\''+b.id+'\')">'+IC.check+'Marchează confirmat</button>';
+ return '<div class="conrow" data-n="'+esc(fold(b.name))+'"><div class="conhd"><div class="pava'+(!miss.length&&conf?' ok':'')+'">'+esc(initials(b.name)||"·")+'</div>'
   +'<div class="connm">'+esc(b.name)+'<small>'+esc(gn?gn:(b.gen==="F"?"soră":"frate"))+(b.rol&&b.rol!=="Vestitor"?(' · '+esc(b.rol)):'')+'</small></div>'
-  +'<button class="conedit" title="Editează fișa" onclick="editBro(\''+b.id+'\',\'ct\')">'+IC.edit+'</button></div>'
-  +'<div class="contags">'+tags+'</div><dl class="condl">'+rows+'</dl>'+(act?('<div class="conact'+(act.split("<button").length>2?" two":"")+'">'+act+'</div>'):'')+'</div>';}
+  +'<button class="conedit" title="Editează fișa" aria-label="Editează fișa" onclick="editBro(\''+b.id+'\',\'ct\')">'+IC.edit+'</button></div>'
+  +'<div class="constat">'+stat+'</div><div class="condl">'+rows+'</div>'+(act?('<div class="conact'+(act.split("<button").length>2?" two":"")+'">'+act+'</div>'):'')+'</div>';}
+/* inelul din cardul de sus */
+function _conRing(cls,v,n,lbl){var C=2*Math.PI*21,p=n?v/n:0;
+ return '<div class="conring '+cls+'"><div class="conrg"><svg viewBox="0 0 52 52" aria-hidden="true"><circle class="trk" cx="26" cy="26" r="21"/>'
+  +(v?('<circle class="val" cx="26" cy="26" r="21" stroke-dasharray="'+(p*C).toFixed(1)+' '+C.toFixed(1)+'"/>'):'')+'</svg><b>'+Math.round(p*100)+'%</b></div>'
+  +'<div class="conrt"><div class="v">'+v+'<small>/'+n+'</small></div><div class="l">'+lbl+'</div></div></div>';}
 function arhConHtml(){if(!_conAllowed())return '<div class="empty">Doar administratorii (și cei cărora le-au dat dreptul) văd datele de contact.</div>';
- ensureConCSS();ensureStatCSS();var list=_conActive();
+ ensureConCSS();var list=_conActive(),n=list.length;
  var cnt={};CON_MISS.forEach(function(c){cnt[c[0]]=0;});var withMiss=0,unconf=0;
  list.forEach(function(b){var m=_conMiss(b);if(m.length)withMiss++;m.forEach(function(x){cnt[x[0]]++;});if(!_conConf(b))unconf++;});
- var H='';
- H+='<div class="stkpis conkp"><div class="stkpi teal"><div class="kv">'+(list.length-withMiss)+'<small>/'+list.length+'</small></div><div class="kk">cu datele complete</div></div>'
-  +'<div class="stkpi acc"><div class="kv">'+withMiss+'</div><div class="kk">cu lipsuri</div></div>'
-  +'<div class="stkpi"><div class="kv">'+cnt.ec+'</div><div class="kk">fără contact de urgență</div></div>'
-  +'<div class="stkpi"><div class="kv">'+cnt.addr+'</div><div class="kk">fără adresă</div></div>'
-  +'<div class="stkpi"><div class="kv">'+unconf+'</div><div class="kk">neconfirmate '+_syLabel()+'</div></div></div>';
- var chips=[["all","Toți",list.length],["miss","Cu lipsuri",withMiss],["ec","Fără contact de urgență",cnt.ec],["addr","Fără adresă",cnt.addr],["bdate","Fără data nașterii",cnt.bdate],["baptism","Fără data botezului",cnt.baptism],["phone","Fără telefon",cnt.phone],["unconf","Neconfirmate "+_syLabel(),unconf]];
- H+='<div class="conchips">'+chips.map(function(c){return '<button class="fchip'+(_conF===c[0]?" on":"")+'" onclick="conFilter(\''+c[0]+'\')">'+c[1]+' · '+c[2]+'</button>';}).join("")+'</div>';
- H+='<div class="conchips conord"><span class="conordl">Ordinea</span>'
-  +[["nume","Alfabetic"],["grp","Pe grupe"]].map(function(o){return '<button class="fchip'+(_conS===o[0]?" on":"")+'" onclick="conSort(\''+o[0]+'\')">'+o[1]+'</button>';}).join("")+'</div>';
- H+='<div class="brosrch"><span class="brosrch-ic">'+IC.search+'</span><input class="brosrch-in" type="search" autocomplete="off" enterkeyhint="search" placeholder="Caută vestitor…" value="'+esc(_conQ)+'" oninput="conQ(this.value)"></div>';
+ var H='<div class="conwrap">';
+ /* sus: cât e gata (două inele) și ce lipsește, pe feluri — fiecare rând e și filtru */
+ H+='<div class="consum"><div class="conrings">'+_conRing("teal",n-withMiss,n,"cu datele complete")+_conRing("acc",n-unconf,n,"confirmate "+esc(_syLabel()))+'</div>'
+  +'<div class="conmh"><span>Ce lipsește</span><span>apasă pe un rând ca să filtrezi</span></div>'
+  +["ec","addr","bdate","baptism","phone"].map(function(k){var c=CON_MISS.find(function(x){return x[0]===k;}),v=cnt[k],on=_conF===k;
+   return '<button class="conmr'+(v?'':' z')+(on?' on':'')+'" onclick="conFilter(\''+(on?'all':k)+'\')"><span class="conmi">'+CON_IC[k]+'</span>'
+    +'<span class="conml">'+esc(_conCap(c[1]))+'</span><span class="conmb"><i style="width:'+(n?Math.round(v/n*100):0)+'%"></i></span><span class="conmn">'+v+'</span></button>';}).join("")
+  +'</div>';
+ H+='<div class="conseg">'+[["all","Toți",n],["miss","Cu lipsuri",withMiss],["unconf","Neconfirmate",unconf]].map(function(c){
+   return '<button class="'+(_conF===c[0]?'on':'')+'" onclick="conFilter(\''+c[0]+'\')">'+c[1]+'<i>'+c[2]+'</i></button>';}).join("")+'</div>';
+ H+='<div class="contool"><div class="brosrch"><span class="brosrch-ic">'+IC.search+'</span><input class="brosrch-in" type="search" autocomplete="off" enterkeyhint="search" placeholder="Caută vestitor…" value="'+esc(_conQ)+'" oninput="conQ(this.value)"></div>'
+  +'<div class="conseg" role="group" aria-label="Ordinea">'+[["nume","A–Z"],["grp","Grupe"]].map(function(o){return '<button class="'+(_conS===o[0]?'on':'')+'" onclick="conSort(\''+o[0]+'\')">'+o[1]+'</button>';}).join("")+'</div></div>';
  var shown=list.filter(function(b){if(_conF==="all")return true;if(_conF==="unconf")return !_conConf(b);
   var mk=_conMiss(b).map(function(x){return x[0];});return _conF==="miss"?mk.length>0:mk.indexOf(_conF)>=0;});
+ if(CON_IC[_conF]){var fc=CON_MISS.find(function(x){return x[0]===_conF;});
+  H+='<div class="confl"><span>Fără <b>'+esc(fc[1])+'</b> · '+shown.length+'</span><button onclick="conFilter(\'all\')">Arată toți</button></div>';}
  var ord=_conOrder(shown),body="";
  if(_conS==="grp"){var gk=[],gm={};
   ord.forEach(function(b){var k=_conGKey(b);if(!gm[k]){gm[k]={nm:_conGLabel(b),l:[]};gk.push(k);}gm[k].l.push(b);});
   body=gk.map(function(k){var g=gm[k],op=!!_conGOpen[k];
+   var gM=g.l.filter(function(b){return _conMiss(b).length;}).length,gU=g.l.filter(function(b){return !_conConf(b);}).length,sb=[];
+   if(gM)sb.push('<span class="r">'+gM+' cu lipsuri</span>');if(gU)sb.push(gU+(gU===1?' neconfirmat':' neconfirmați'));
    return '<div class="congrp" data-k="'+esc(k)+'">'
-    +'<button class="congh'+(op?" on":"")+'" onclick="conGT(\''+esc(k)+'\')"><span class="conghn">'+esc(g.nm)+'</span><span class="conghc">'+g.l.length+'</span><span class="chev">'+IC.chev+'</span></button>'
+    +'<button class="congh'+(op?" on":"")+'" onclick="conGT(\''+esc(k)+'\')"><span class="conghi">'+IC.ppl+'</span>'
+    +'<span class="conght"><span class="conghn">'+esc(g.nm)+'</span><span class="conghs">'+(sb.length?sb.join(" · "):'<span class="g">complet · confirmat</span>')+'</span></span>'
+    +'<span class="conghc">'+g.l.length+'</span><span class="chev">'+IC.chev+'</span></button>'
     +'<div class="congb"'+(op?'':' style="display:none"')+'>'+g.l.map(_conRow).join("")+'</div></div>';}).join("");}
  else body=ord.map(_conRow).join("");
  H+='<div id="conList">'+body+'</div>';
  H+='<div class="empty" id="conNone" style="padding:26px 8px;'+(shown.length?'display:none':'')+'">'+(list.length?'Nimeni aici.':'Niciun vestitor activ.')+'</div>';
+ H+='</div>';
  setTimeout(function(){try{conQ(_conQ);}catch(e){}},0);
  return H;}
 function conWaMsg(b){var ask=_conMiss(b).filter(function(x){return x[0]!=="phone";}).map(function(x){return x[2];});
@@ -3428,7 +3507,7 @@ function _setLimNotif(){var h='<div class="group gp"><h2>Notificări</h2>';
 /* --- îndemn discret în „Profilul meu" cât timp notificările nu sunt activate --- */
 function _pushNudge(){try{if(!pushReady())return "";
  var em=myPushEmail();
- var card=function(t,sub,act){return '<div class="group gp" style="cursor:pointer" onclick="'+act+'"><div class="rowflex" style="gap:10px;align-items:center"><span style="font-size:20px">🔔</span><div><b>'+t+'</b><div class="muted" style="font-size:12px">'+sub+' Apasă aici.</div></div></div></div>';};
+ var card=function(t,sub,act){return _meNudge(CIC.bell,t,sub+" Apasă aici.",act);};
  if(_pushNeedsInstall()&&notifPerm()!=="granted")return card("Primește notificări pe iPhone","Adaugă ArhiLink pe ecranul principal și activează-le — vezi pașii.","pushIosHelp()");
  if(notifPerm()==="default"&&em)return card("Activează notificările","Teme noi și reamintiri direct pe telefon — chiar și cu aplicația închisă.","notifAsk()");
  if(!em&&notifPerm()!=="denied")return card("Completează-ți e-mailul pentru notificări","E-mailul din „Datele mele de contact” e cheia notificărilor.","meContact()");
@@ -5321,6 +5400,11 @@ function startApp(){_dirty=computeDirty();applyTheme();try{bkpMigrate();}catch(e
    `v` = cheia de „văzut deja"; `label` = versiunea afișată.
    ============================================================================ */
 var NEWS=[
+ {v:"3.11.3",label:"3.11.3",d:"23.09.2026",t:"Contactele de urgență, cu fața nouă",items:[
+  ["chart","Totul dintr-o privire","Sus, două inele arată câți au datele complete și câți le-au confirmat anul acesta. Dedesubt, „Ce lipsește” numără pe feluri — contact de urgență, adresă, data nașterii, a botezului, telefon — și fiecare rând e și filtru: apeși și rămân doar cei cărora le lipsește asta."],
+  ["edit","Cardul fiecărui vestitor, mai limpede","Fiecare dată are iconița ei, iar ce lipsește e scris cu roșu chiar pe rândul ei. O bară de 5 liniuțe arată cât e completat, iar alături scrie dacă e confirmat și când. Filtrele și ordinea (A–Z sau pe grupe) stau acum în două bare compacte."],
+  ["check","Îndemnurile din „Profilul meu”, fără emoji","„Confirmă-ți datele de contact”, notificările și instalarea pe ecranul principal au acum iconițe desenate în stilul aplicației, în locul emoticoanelor."]
+ ]},
  {v:"3.11.2",label:"3.11.2",d:"21.09.2026",t:"Grupele se deschid și se închid",items:[
   ["info","Pe grupe, pliat","În „Contacte de urgență”, ordinea „Pe grupe” arată acum fiecare grupă ca un rând cu numărul de vestitori; apeși pe ea și se deschide. Căutarea deschide singură grupele în care găsește pe cineva."],
   ["check","Descărcarea, în butonul rotund","Lista în PDF se ia din butonul rotund din colț, ca la celelalte secțiuni ale Arhivei, nu dintr-un buton lat pus în capul paginii."]
@@ -5611,8 +5695,10 @@ function renderMeu(){$("#fab").style.display="none";$("#body").innerHTML='<div s
 /* îndemn în „Profilul meu" cât timp nu și-a confirmat datele de contact pe anul de serviciu în curs */
 function _conNudge(){try{var my=_myBro();if(!my)return "";var b=(S.bros||[]).find(function(x){return x.id===my;});
  if(!b||b.active===false||isArchNow(b)||_conConf(b))return "";
- return '<div class="group gp" style="cursor:pointer" onclick="meContact()"><div class="rowflex" style="gap:10px;align-items:center"><span style="font-size:20px">📇</span><div><b>Confirmă-ți datele de contact</b>'
-  +'<div class="muted" style="font-size:12px">Telefonul, adresa și persoana de contact în caz de urgență se confirmă o dată pe an, de la 1 septembrie. Apasă aici.</div></div></div></div>';}catch(e){return "";}}
+ return _meNudge(CIC.card,"Confirmă-ți datele de contact","Telefonul, adresa și persoana de contact în caz de urgență se confirmă o dată pe an, de la 1 septembrie. Apasă aici.","meContact()","acc");}catch(e){return "";}}
+/* cardul de îndemn din „Profilul meu”: iconiță în pătrățelul portocaliu, text, săgeată */
+function _meNudge(ic,t,sub,act,cls){return '<div class="group gp mnudge'+(cls?(' '+cls):'')+'" onclick="'+act+'"><span class="mnic">'+ic+'</span>'
+ +'<span class="mntx"><b>'+t+'</b><span>'+sub+'</span></span><span class="mnchev">'+IC.chev+'</span></div>';}
 /* toate atribuirile unui vestitor, pe săptămâni (pt. rolul „vestitor") */
 function myAssignments(broId){var out=[];if(!broId)return out;
  var SPECIAL={cond:"Conducător studiu",cit:"Cititor",pres:"Președinte",open_pr:"Rugăciune (început)",close_pr:"Rugăciune (încheiere)",pray:"Rugăciune"};
@@ -14038,7 +14124,7 @@ function _instX(){try{return localStorage.getItem(KEY+"_instX")==="1";}catch(e){
 function instNudgeHide(){try{localStorage.setItem(KEY+"_instX","1");}catch(e){}renderMeu();}
 function _instNudge(){try{if(_isInstalled()||_instX())return "";var p=_platInfo(),lbl=_PLAT_LBL[_instOrder(p)[0]];
  return '<div class="group gp" style="position:relative;padding-right:44px"><button class="hlnb" style="position:absolute;top:9px;right:9px;width:30px;height:30px;font-size:16px" title="Nu mai arăta" aria-label="Nu mai arăta" onclick="instNudgeHide()">×</button>'
-  +'<div class="rowflex" style="gap:10px;align-items:center"><span style="font-size:22px">📲</span><div style="min-width:0"><b>Pune ArhiLink pe ecranul principal</b><div class="muted" style="font-size:12px">Se deschide ca o aplicație, pe tot ecranul, fără browser. Pașii pentru '+esc(lbl)+'.</div></div></div>'
+  +'<div class="rowflex" style="gap:12px;align-items:center"><span class="mnic">'+CIC.inst+'</span><span class="mntx"><b>Pune ArhiLink pe ecranul principal</b><span>Se deschide ca o aplicație, pe tot ecranul, fără browser. Pașii pentru '+esc(lbl)+'.</span></span></div>'
   +'<div class="rowflex" style="gap:8px;margin-top:10px">'+(_bipEvt?'<button class="btn pri sm" style="flex:1;width:auto" onclick="_instPrompt()">Instalează acum</button>':'')
   +'<button class="btn '+(_bipEvt?'ghost':'pri')+' sm" style="flex:1;width:auto" onclick="tutInstall()">Arată-mi cum</button></div></div>';}catch(e){return "";}}
 
