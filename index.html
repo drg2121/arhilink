@@ -682,13 +682,15 @@ Object.assign(IC,{
  mic:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2.8" width="6" height="11.2" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0"/><path d="M12 17.5V21M8.5 21h7"/></svg>',
  home:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 10.5 12 3.5l8.5 7"/><path d="M5.5 9v11.5h13V9"/><path d="M10 20.5v-5h4v5"/></svg>',
  /* întrunirea publică: turnul cu creneluri (ca pe sigla Turnului de veghe) */
+ /* plecările (Profilul meu): valiza cu roți */
+ bag:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5.5" y="7" width="13" height="12.5" rx="2.4"/><path d="M9.5 7V4.8a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1V7"/><path d="M9.8 10.5v5.5M14.2 10.5v5.5"/><path d="M8.5 19.5v1.2M15.5 19.5v1.2"/></svg>',
  tower:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6.2h16v3.3l-2.6 2.1V21H6.6v-9.4L4 9.5z"/><path d="M10.2 21v-2.6a1.8 1.8 0 0 1 3.6 0V21"/><g fill="currentColor" stroke="none"><rect x="3.1" y="2.6" width="2.2" height="3.6" rx=".4"/><rect x="7" y="2.6" width="2.2" height="3.6" rx=".4"/><rect x="10.9" y="2.6" width="2.2" height="3.6" rx=".4"/><rect x="14.8" y="2.6" width="2.2" height="3.6" rx=".4"/><rect x="18.7" y="2.6" width="2.2" height="3.6" rx=".4"/></g></svg>',
  info:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 11.5v4.5"/><circle cx="12" cy="7.8" r="0.9" fill="currentColor" stroke="none"/></svg>',
  book:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg>',
  box:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h18v13H3z"/><path d="M3 7l2-4h14l2 4"/><path d="M10 11h4"/></svg>',
  mark:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15.5 4.5l4 4-9.5 9.5H6v-4z"/><path d="M12.5 7.5l4 4M5 21h14"/></svg>'
 });
-const VERSION="3.15.4";
+const VERSION="3.15.5";
 /* Versiunea minima care are voie sa SCRIE in cloud. Se trece in gist la fiecare trimitere;
    un dispozitiv ramas pe un build mai vechi decat atat nu mai poate suprascrie datele —
    doar citeste si se actualizeaza singur. Asa nu mai poate un singur telefon uitat deschis
@@ -5731,10 +5733,10 @@ function startApp(){_dirty=computeDirty();applyTheme();try{bkpMigrate();}catch(e
    `v` = cheia de „văzut deja"; `label` = versiunea afișată.
    ============================================================================ */
 var NEWS=[
- {v:"3.15.4",label:"3.15.4",d:"26.09.2026",quiet:1,t:"Întrunirea publică are turnul",items:[
+ {v:"3.15.5",label:"3.15.5",d:"26.09.2026",quiet:1,t:"Întrunirea publică are turnul",items:[
   {ic:"tower",t:"Turnul, în locul casei",s:"Întrunirea publică se recunoaște acum după turn — în bara Programărilor, în Arhivă și pe foile tipărite."},
   {ic:"book",who:"ed",t:"Foile tipărite, mai liniștite",s:"Banda fiecărei săptămâni e acum subțire și deschisă la culoare, ca privirea să cadă pe nume."},
-  {ic:"user",t:"„Când lipsesc”, mai discret",s:"Doar zilele, fără motiv. Când n-ai trecut nimic, în profil rămâne un singur rând."}
+  {ic:"bag",t:"Plecările, în cardul de sus",s:"În Profilul meu, lângă „Datele mele”, e acum „Plecări”: treci zilele în care lipsești (doar zilele, fără motiv). Plecarea de acum sau cea mai apropiată se vede și sub nume.",go:"meu",gl:"Deschide profilul"}
  ]},
  {v:"3.15.0",label:"3.15",d:"26.09.2026",t:"Când lipsești, iar foile de avizier arată mai bine",items:[
   {ic:"user",t:"Când lipsești",s:"În Profilul meu, la „Când lipsesc”, îți treci zilele de vacanță sau în care lipsești din alt motiv. Atunci nu vei fi pus la nimic. Le poți trece și pentru cei din familia ta.",go:"meu",gl:"Deschide profilul"},
@@ -7927,6 +7929,8 @@ function ensureAwCSS(){if(document.getElementById("awcss"))return;var st=documen
 +".awrow{display:flex;align-items:center;gap:10px;padding:8px 10px 8px 12px;border-top:1px solid var(--bd);cursor:pointer}.awrow:first-child{border-top:0}"
 +".awmini{display:flex;align-items:center;gap:10px;width:100%;padding:10px 12px;border:0;background:transparent;color:var(--ink);font:inherit;text-align:left;cursor:pointer}"
 +".awmini .awt b{display:inline;font-size:14px}.awmini .awt span{display:inline;margin-left:6px;font-size:12.5px;color:var(--ink3)}.awmini .awp{flex:0 0 auto;color:var(--acc);display:flex}.awmini .awp svg{width:19px;height:19px}"
++".awlist{border:1px solid var(--bd);border-radius:14px;overflow:hidden;background:var(--surf)}"
++".awnone{display:flex;align-items:center;gap:10px;padding:12px 14px;border:1px dashed var(--bd);border-radius:14px;color:var(--ink3);font-size:13px}.awnone svg{width:18px;height:18px;flex:0 0 auto}"
 +".awnow{display:inline-block;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.3px;color:var(--maroon);background:rgba(244,124,124,.14);border-radius:999px;padding:1px 7px;margin-left:6px;vertical-align:1px}.app.light .awnow{color:var(--secRed)}"
 +".awrow .awd,.awmini .awd{flex:0 0 auto;width:30px;height:30px;border-radius:9px;display:grid;place-items:center;background:var(--accsoft);color:var(--acc)}.awrow .awd svg,.awmini .awd svg{width:16px;height:16px}"
 +".awrow.now .awd{background:rgba(244,124,124,.16);color:var(--maroon)}.app.light .awrow.now .awd{color:var(--secRed)}"
@@ -7973,10 +7977,10 @@ function _awFamIds(b){var ids=((b&&b.famIds)||[]).slice();
 function _awCan(id){var my=_myBro();if(!id)return false;if(_isAdmin())return true;if(id===my)return true;
  return _awFamIds(_awB(my)).indexOf(id)>=0;}
 function _awNm(id){var my=_myBro();return id===my?"Eu":broDisp(id);}
-function _awRowHtml(p,id,showNm){var today=_ymd(new Date()),now=p.f<=today;
- return '<div class="awrow'+(now?" now":"")+'" role="button" tabindex="0" onclick="meAwaySheet(\''+p.id+'\',\''+id+'\')"><span class="awd">'+IC.cal+'</span><span class="awt"><b>'+esc(awRange(p))+'</b>'+(now?'<span class="awnow">acum</span>':'')
+function _awRowHtml(p,id,showNm,inList){var today=_ymd(new Date()),now=p.f<=today,L=inList?",1":"";
+ return '<div class="awrow'+(now?" now":"")+'" role="button" tabindex="0" onclick="meAwaySheet(\''+p.id+'\',\''+id+'\''+L+')"><span class="awd">'+IC.cal+'</span><span class="awt"><b>'+esc(awRange(p))+'</b>'+(now?'<span class="awnow">acum</span>':'')
   +(showNm?('<span>'+esc(_awNm(id))+'</span>'):'')+'</span>'
-  +'<button class="awx" title="Șterge" aria-label="Șterge" onclick="event.stopPropagation();meAwayDel(\''+p.id+'\',\''+id+'\')">×</button></div>';}
+  +'<button class="awx" title="Șterge" aria-label="Șterge" onclick="event.stopPropagation();meAwayDel(\''+p.id+'\',\''+id+'\''+L+')">×</button></div>';}
 function _awUpcoming(id){var today=_ymd(new Date());return awList(_awB(id)).filter(function(p){return (p.t||p.f)>=today;}).sort(function(x,y){return x.f<y.f?-1:1;});}
 function _meAwayHtml(b){ensureAwCSS();
  var fam=b?_awFamIds(b):[],base=b?[b.id]:[],rows=[];
@@ -7994,7 +7998,20 @@ function _meAwayHtml(b){ensureAwCSS();
  /* administratorii văd și pe ceilalți care lipsesc de acum încolo — doar dacă e cineva */
  if(oth.length)h+='<div class="mu-h">Cine mai lipsește<span class="n">'+oth.length+'</span></div><div class="mu-card">'+oth.map(function(r){return _awRowHtml(r.p,r.id,true);}).join("")+'</div>';
  return h;}
-function meAwaySheet(eid,forId){var my=_myBro();var me=_awB(my);
+/* „Plecări" (scurtătura din cardul de sus): ale mele și ale familiei, iar la administratori și ale
+   celorlalți. Apăsarea pe un rând îl schimbă, „×" îl șterge; după orice schimbare revii aici. */
+var _awRet=null;
+function meAwayList(){var my=_myBro(),b=_awB(my);if(!b&&!_isAdmin()){toast("Contul nu e legat de un vestitor");return;}ensureAwCSS();
+ var fam=b?_awFamIds(b):[],base=b?[b.id]:[],rows=[],oth=[],mine={};
+ base.concat(fam).forEach(function(id){mine[id]=1;_awUpcoming(id).forEach(function(p){rows.push({p:p,id:id});});});
+ if(_isAdmin())(S.bros||[]).forEach(function(x){if(mine[x.id]||x.active===false||isArchNow(x))return;_awUpcoming(x.id).forEach(function(p){oth.push({p:p,id:x.id});});});
+ var srt=function(x,y){return x.p.f<y.p.f?-1:(x.p.f>y.p.f?1:0);};rows.sort(srt);oth.sort(srt);
+ var row=function(r){return _awRowHtml(r.p,r.id,r.id!==(b&&b.id),1);};
+ sheet("","Plecări",'<div class="muted" style="margin:0 2px 12px">Zilele în care lipsești — atunci nu ești pus la nimic.'+(fam.length?' Le poți trece și pentru familia ta.':'')+'</div>'
+  +(rows.length?('<div class="awlist">'+rows.map(row).join("")+'</div>'):'<div class="awnone">'+IC.bag+'<span>Nicio plecare trecută.</span></div>')
+  +'<button class="btn pri" style="width:100%;margin-top:12px" onclick="meAwaySheet(\'\',\'\',1)">Adaugă o plecare</button>'
+  +(oth.length?('<div class="pmlbl" style="margin-top:18px">Cine mai lipsește</div><div class="awlist">'+oth.map(row).join("")+'</div>'):''));}
+function meAwaySheet(eid,forId,fromList){_awRet=fromList?meAwayList:null;var my=_myBro();var me=_awB(my);
  if(!me&&!_isAdmin()){toast("Contul nu e legat de un vestitor");return;}
  var tid=forId||my||"";if(tid&&!_awCan(tid)){toast("Poți pune doar pentru tine și familia ta");return;}
  var tb=_awB(tid),p=(eid&&tb)?awList(tb).find(function(x){return x.id===eid;}):null,t=_ymd(new Date());
@@ -8017,6 +8034,7 @@ function meAwaySheet(eid,forId){var my=_myBro();var me=_awB(my);
  +'<div class="two"'+(who?' style="margin-top:12px"':'')+'><div><label class="fl" style="margin-top:0">De la</label><input id="awF" class="fld" type="date" min="'+t+'" value="'+esc(p?p.f:t)+'" onchange="var e=document.getElementById(\'awT\');if(e&&(!e.value||e.value<this.value))e.value=this.value;e.min=this.value"></div>'
  +'<div><label class="fl" style="margin-top:0">Până la (inclusiv)</label><input id="awT" class="fld" type="date" min="'+esc(p?p.f:t)+'" value="'+esc(p?(p.t||p.f):"")+'"></div></div>'
  +'<div class="rowflex" style="gap:9px;margin-top:18px">'+(p?('<button class="btn danger sm" style="width:auto" onclick="meAwayDel(\''+p.id+'\',\''+tid+'\')">Șterge</button>'):'')+'<div class="spacer"></div><button class="btn ghost sm" style="width:auto" onclick="closeSheet()">Anulează</button><button class="btn pri sm" style="width:auto" onclick="meAwaySave(\''+(p?p.id:"")+'\',\''+tid+'\')">Salvează</button></div>');
+ if(fromList)_sheetBackTo(meAwayList);
  try{ensureEdCSS();ensureBfCSS();}catch(e){}}
 function meAwaySave(eid,forId){var w=$("#awWho"),tid=(w&&w.value)||forId||_myBro();
  if(!_awCan(tid)){toast("Poți pune doar pentru tine și familia ta");return;}
@@ -8029,7 +8047,7 @@ function meAwaySave(eid,forId){var w=$("#awWho"),tid=(w&&w.value)||forId||_myBro
  var L=awList(b).slice(),o={id:eid||("a"+Date.now().toString(36)),f:f,t:t};
  var i=eid?L.findIndex(function(x){return x.id===eid;}):-1;if(i>=0)L[i]=o;else L.push(o);
  _meAwayApply(b,L,o);}
-async function meAwayDel(eid,forId){var tid=forId||_myBro();if(!_awCan(tid))return;var b=_awB(tid);if(!b)return;
+async function meAwayDel(eid,forId,fromList){if(fromList)_awRet=meAwayList;var tid=forId||_myBro();if(!_awCan(tid))return;var b=_awB(tid);if(!b)return;
  var p=awList(b).find(function(x){return x.id===eid;});if(!p)return;
  if(!(await uiConfirm("Ștergi perioada "+awRange(p)+(tid!==_myBro()?(" a lui "+broDisp(tid)):"")+"? În zilele acelea va putea fi pus din nou la ceva.",{title:"Ștergi perioada?",yes:"Șterge",danger:true})))return;
  _meAwayApply(b,awList(b).filter(function(x){return x.id!==eid;}),null);}
@@ -8039,6 +8057,7 @@ function _awPrune(L){var cut=_ymd(new Date(Date.now()-30*864e5));
 function _meAwayApply(b,L,added){b.away=_awPrune(L);b.awT=Date.now();var self=(b.id===_myBro());
  logAct("Când lipsește — actualizat: "+b.name+(self?"":(" (pus de "+((_curUser()&&_curUser().n)||"?")+")")));save();closeSheet();
  try{if(tab==="meu")renderMeu();else if(tab==="arh")arhRerender();}catch(e){}
+ {var ret=_awRet;_awRet=null;if(ret)setTimeout(ret,30);}/* înapoi la lista plecărilor, dacă de acolo ai pornit */
  var conf=added?awConfOf(b.id).filter(function(x){return x.p.id===added.id;}):[];
  var cTxt=conf.length?((self?"Ai":broDisp(b.id)+" are")+" deja atunci: "+conf.slice(0,3).map(function(x){return x.what;}).join("; ")+(conf.length>3?"…":"")+(_isAdmin()?". Atenționarea apare în foaia respectivă — pune pe altcineva.":". Administratorii văd atenționarea și pun pe altcineva.")):"";
  if(_canEdit()){if(cTxt)notice({ic:"warn",kind:"warn",t:"Salvat — dar e deja pus la ceva atunci",s:cTxt,ms:12000});else toast("Salvat ✓");return;}
@@ -8140,12 +8159,13 @@ function ensureMeuCSS(){if(document.getElementById("meucss"))return;var st=docum
 +".mu-menu{width:38px;height:38px;flex:0 0 auto;display:grid;place-items:center;border:1px solid var(--bd);border-radius:50%;background:var(--surf);color:var(--ink2);cursor:pointer}.mu-menu svg{width:20px;height:20px}.mu-menu:active{transform:scale(.94)}"
 +".mu-chips{position:relative;display:flex;flex-wrap:wrap;gap:6px;margin-top:13px}"
 +".mu-chip{display:inline-flex;align-items:center;font-size:11.5px;font-weight:700;padding:4px 10px;border-radius:999px;background:var(--surf2);color:var(--ink2);border:1px solid var(--bd);white-space:nowrap}"
-+".mu-chip.a{background:var(--accsoft);color:var(--acc);border-color:transparent}.mu-chip.t{background:rgba(53,195,179,.14);color:var(--tealtx);border-color:transparent}"
-+".mu-qa{position:relative;display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin-top:14px;padding-top:12px;border-top:1px solid var(--bd)}"
-+".mu-qb{position:relative;display:flex;flex-direction:column;align-items:center;gap:6px;border:0;background:transparent;color:var(--ink);font:inherit;font-size:11.5px;font-weight:700;line-height:1.2;text-align:center;cursor:pointer;padding:4px 2px;border-radius:12px}"
-+".mu-qb .i{width:46px;height:46px;border-radius:15px;display:grid;place-items:center;background:var(--surf2);color:var(--ink2);transition:transform .1s}"
-+".mu-qb .i svg{width:21px;height:21px}.mu-qb.a .i{background:var(--accsoft);color:var(--acc)}.mu-qb:active .i{transform:scale(.93)}"
-+".mu-qb .dot{position:absolute;top:1px;left:calc(50% + 14px);width:11px;height:11px;border-radius:50%;background:var(--maroon);border:2px solid var(--surf)}"
++".mu-chip.a{background:var(--accsoft);color:var(--acc);border-color:transparent}.mu-chip.aw{cursor:pointer}.mu-chip.aw.now{background:rgba(244,124,124,.13);color:var(--maroon);border-color:transparent}.app.light .mu-chip.aw.now{color:var(--secRed)}.mu-chip.t{background:rgba(53,195,179,.14);color:var(--tealtx);border-color:transparent}"
++".mu-qa{position:relative;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:2px;margin-top:14px;padding-top:12px;border-top:1px solid var(--bd)}"
++".mu-qb{position:relative;display:flex;flex-direction:column;align-items:center;gap:6px;min-width:0;border:0;background:transparent;color:var(--ink);font:inherit;font-size:11px;font-weight:700;line-height:1.2;text-align:center;cursor:pointer;padding:4px 0;border-radius:12px}"
++".mu-qb .t{white-space:nowrap;letter-spacing:-.15px}@media(max-width:372px){.mu-qb{font-size:10.3px}.mu-qb .t{letter-spacing:-.25px}.mu-qb .i{width:42px;height:42px}}"
++".mu-qb .i{width:44px;height:44px;border-radius:14px;display:grid;place-items:center;background:var(--surf2);color:var(--ink2);transition:transform .1s}"
++".mu-qb .i svg{width:20px;height:20px}.mu-qb.a .i{background:var(--accsoft);color:var(--acc)}.mu-qb:active .i{transform:scale(.93)}"
++".mu-qb .dot{position:absolute;top:1px;left:calc(50% + 13px);width:11px;height:11px;border-radius:50%;background:var(--maroon);border:2px solid var(--surf)}"
 +".mu-h{display:flex;align-items:center;gap:8px;font-size:11.5px;font-weight:800;text-transform:uppercase;letter-spacing:.55px;color:var(--ink3);margin:20px 4px 8px}"
 +".mu-h .n{font-size:10.5px;background:var(--accsoft);color:var(--acc);border-radius:999px;padding:2px 8px;letter-spacing:0}"
 +".mu-h .lk{margin-left:auto;display:inline-flex;align-items:center;gap:2px;border:0;background:none;color:var(--acc);font:inherit;font-size:12.5px;font-weight:700;text-transform:none;letter-spacing:0;cursor:pointer;padding:2px 0}.mu-h .lk svg{width:15px;height:15px}"
@@ -8268,7 +8288,7 @@ function _muHero(o){
  return '<div class="mu-hero"><div class="mu-top"><span class="mu-av">'+esc(o.ini||"·")+'</span><span class="mu-idt"><span class="mu-hi">'+esc(_muGreet())+',</span><div class="mu-nm">'+esc(o.name)+'</div></span>'
   +(o.menu?('<button class="mu-menu" onclick="meuMenu()" title="Meniu profil" aria-label="Meniu profil">'+IC.dots+'</button>'):'')+'</div>'
   +(o.chips&&o.chips.length?('<div class="mu-chips">'+o.chips.join("")+'</div>'):'')
-  +(o.qa&&o.qa.length?('<div class="mu-qa">'+o.qa.map(function(q){return '<button class="mu-qb'+(q.a?' a':'')+'" onclick="'+q.go+'"><span class="i">'+q.ic+'</span>'+esc(q.t)+(q.dot?'<span class="dot"></span>':'')+'</button>';}).join("")+'</div>'):'')
+  +(o.qa&&o.qa.length?('<div class="mu-qa">'+o.qa.map(function(q){return '<button class="mu-qb'+(q.a?' a':'')+'" onclick="'+q.go+'"><span class="i">'+q.ic+'</span><span class="t">'+esc(q.t)+'</span>'+(q.dot?'<span class="dot"></span>':'')+'</button>';}).join("")+'</div>'):'')
   +'</div>';}
 /* pe scurt, ce scrie în raportul trimis: orele, studiile, creditul */
 function _muRepSum(r,b,k){if(!r)return "";var c=broCat(b,k),o=[];
@@ -8294,14 +8314,18 @@ function arhMeuHtml(){ensureGrpCSS();ensureMeuCSS();try{arhEnsureCSS();}catch(e)
  /* cartea de vizită: grupa, rolul în grupă, numirea și privilegiul */
  var chips=[];var gid=grpOf(b);if(gid)chips.push('<span class="mu-chip a">'+esc(grpName(gid))+'</span>');
  var tg=grpTags(b,gid?grpsAll().find(function(g){return g.id===gid;}):null);
- {var awN=awayOn(b,new Date());if(awN)chips.push('<span class="mu-chip">Lipsești · '+esc(awRange(awN))+'</span>');}
  if(tg)tg.split("/").forEach(function(t){var L={S:"Supraveghetor de grupă",A:"Asistent de grupă",B:"Bătrân",SA:"Slujitor auxiliar",PR:"Pionier regular",PA:"Pionier auxiliar",PS:"Pionier special",M:"Misionar",VN:"Vestitor nebotezat"}[t]||t;
   chips.push('<span class="mu-chip'+((t==="S"||t==="A")?' a':' t')+'">'+esc(L)+'</span>');});
+ /* plecarea de acum sau cea mai apropiată (în următoarele două luni) */
+ {var awN=awayOn(b,new Date()),awU=awN?null:_awUpcoming(b.id).find(function(p){return p.f<=_ymd(new Date(Date.now()+60*864e5));});
+  if(awN)chips.push('<span class="mu-chip aw now" onclick="meAwayList()">Lipsești · '+esc(awRange(awN))+'</span>');
+  else if(awU)chips.push('<span class="mu-chip aw" onclick="meAwayList()">Pleci · '+esc(awRange(awU))+'</span>');}
  var hoursNow=hlHoursOn(b,curK),conOk=_conConf(b)||b.active===false;
  var qa=[{t:"Raportul",ic:IC.edit,go:"hlReport('"+meuK+"')",a:!dueSent,dot:!dueSent},
   hoursNow?{t:"Adaugă ore",ic:IC.clock,go:"hlAddSheet('"+curK+"')"}:{t:"Programul",ic:IC.cal,go:"go('prog')"},
   {t:"Fișa S-21",ic:IC.pdf,go:"meuS21()"},
-  {t:"Datele mele",ic:IC.ppl,go:"meContact()",dot:!conOk}];
+  {t:"Datele mele",ic:IC.ppl,go:"meContact()",dot:!conOk},
+  {t:"Plecări",ic:IC.bag,go:"meAwayList()"}];
  var h=_muHero({name:b.name,ini:initials(b.name),chips:chips,qa:qa,menu:1})+(nudges?('<div class="mu-nudges">'+nudges+'</div>'):'');
  /* raportul lunii: luna de raportat (sau cea aleasă din listă) și starea ei */
  {var rc=repOf(my,meuK),sent=!!(rc||repHas(my,meuK)),lbl=(meuK===curK?"luna în curs":RO_MONTHS[ymM(meuK)]+(ymY(meuK)!==now.getFullYear()?(" "+ymY(meuK)):""));
@@ -8323,7 +8347,6 @@ function arhMeuHtml(){ensureGrpCSS();ensureMeuCSS();try{arhEnsureCSS();}catch(e)
   if(days.length>3)h+='<button class="mu-all'+(meuUpAll?' on':'')+'" onclick="meuUpTog()">'+(meuUpAll?'Arată mai puțin':('Arată toate ('+days.length+')'))+IC.chev+'</button>';}
  else h+='<div class="mu-empty"><span class="i">'+IC.cal+'</span><div><b>Nimic programat deocamdată</b><div class="muted">Când primești o parte, o sarcină sau o tură, apare aici, cu ziua și ora ei.</div></div></div>';
  h+='</div>';
- h+=_meAwayHtml(b);
  /* predicarea: carnetul lunii și, la pionieri, anul */
  var hl=_meuHoursHtml(my,b),pio="";
  if(b.active!==false&&months.some(function(m){return pioAt(b,m.k)==="Pionier";})){
@@ -8377,7 +8400,7 @@ function meuS21(){var my=_myBro();if(!my){toast("Contul nu e legat de un vestito
 function meuMenu(){var my=_myBro();if(!my){toast("Contul nu e legat de un vestitor");return;}
  sheet("","Profilul meu",
   '<button class="pmrow" onclick="closeSheet();meuS21()">'+IC.pdf+'<span><b>Fișa mea S-21</b> — alegi anul de serviciu și descarci PDF-ul</span></button>'
- +'<button class="pmrow" onclick="closeSheet();meAwaySheet()">'+IC.cal+'<span><b>Când lipsesc</b> — vacanță sau altceva; atunci nu primești nimic de făcut</span></button>'
+ +'<button class="pmrow" onclick="closeSheet();meAwayList()">'+IC.bag+'<span><b>Plecări</b> — zilele în care lipsești; atunci nu primești nimic de făcut</span></button>'
  +'<button class="pmrow" onclick="closeSheet();meContact()">'+IC.edit+'<span><b>Datele mele de contact</b> — telefon, e-mail, adresă, urgență</span></button>'
  +(_curUser()?('<button class="pmrow" onclick="closeSheet();mePinSheet()">'+IC.gear+'<span><b>Schimbă PIN-ul</b> — cu care intri în aplicație</span></button>'):''));}
 
