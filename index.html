@@ -681,12 +681,14 @@ Object.assign(IC,{
  cup:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9.5h12.5v4a5.5 5.5 0 0 1-5.5 5.5H9.5A5.5 5.5 0 0 1 4 13.5z"/><path d="M16.5 11h1.3a2.5 2.5 0 0 1 0 5h-1.6"/><path d="M8 3.5c0 1.2 1.2 1.6 1.2 3M12 3.5c0 1.2 1.2 1.6 1.2 3"/></svg>',
  mic:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2.8" width="6" height="11.2" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0"/><path d="M12 17.5V21M8.5 21h7"/></svg>',
  home:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 10.5 12 3.5l8.5 7"/><path d="M5.5 9v11.5h13V9"/><path d="M10 20.5v-5h4v5"/></svg>',
+ /* întrunirea publică: turnul cu creneluri (ca pe sigla Turnului de veghe) */
+ tower:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 21V12L4 10V4h3v3h3.5V4h3v3H17V4h3v6l-3 2v9z"/><path d="M4 10h16"/><path d="M10.5 21v-3a1.5 1.5 0 0 1 3 0v3"/></svg>',
  info:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 11.5v4.5"/><circle cx="12" cy="7.8" r="0.9" fill="currentColor" stroke="none"/></svg>',
  book:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg>',
  box:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h18v13H3z"/><path d="M3 7l2-4h14l2 4"/><path d="M10 11h4"/></svg>',
  mark:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15.5 4.5l4 4-9.5 9.5H6v-4z"/><path d="M12.5 7.5l4 4M5 21h14"/></svg>'
 });
-const VERSION="3.15.0";
+const VERSION="3.15.1";
 /* Versiunea minima care are voie sa SCRIE in cloud. Se trece in gist la fiecare trimitere;
    un dispozitiv ramas pe un build mai vechi decat atat nu mai poate suprascrie datele —
    doar citeste si se actualizeaza singur. Asa nu mai poate un singur telefon uitat deschis
@@ -5729,6 +5731,9 @@ function startApp(){_dirty=computeDirty();applyTheme();try{bkpMigrate();}catch(e
    `v` = cheia de „văzut deja"; `label` = versiunea afișată.
    ============================================================================ */
 var NEWS=[
+ {v:"3.15.1",label:"3.15.1",d:"26.09.2026",quiet:1,t:"Întrunirea publică are turnul",items:[
+  {ic:"tower",t:"Turnul, în locul casei",s:"Întrunirea publică se recunoaște acum după turn — în bara Programărilor, în Arhivă și pe foile tipărite."}
+ ]},
  {v:"3.15.0",label:"3.15",d:"26.09.2026",t:"Când lipsești, iar foile de avizier arată mai bine",items:[
   {ic:"user",t:"Când lipsești",s:"În Profilul meu, la „Când lipsesc”, îți treci zilele de vacanță sau în care lipsești din alt motiv. Atunci nu vei fi pus la nimic. Le poți trece și pentru cei din familia ta.",go:"meu",gl:"Deschide profilul"},
   {ic:"ppl",who:"ed",t:"Cine lipsește nu mai poate fi ales",s:"La toate foile (VCP, sarcini, întrunirea publică, mărturia publică, teren), cine lipsește în ziua aceea stă la coada listei, cu „Lipsește”, și nu poate fi pus. Nici auto-atribuirea nu-l mai ia."},
@@ -7026,7 +7031,7 @@ var _arhLastSub=null;
    Așa e la fel pentru toți: se citește într-un loc, se scrie în altul.
    ============================================================================ */
 var progSub="vcp";
-function _progTabs(){return [["vcp","Viața creștină",IC.book],["wm","Întrunirea publică",IC.home],["sarc","Sarcini",IC.mark],["cal","Calendar",IC.cal]];}
+function _progTabs(){return [["vcp","Viața creștină",IC.book],["wm","Întrunirea publică",IC.tower],["sarc","Sarcini",IC.mark],["cal","Calendar",IC.cal]];}
 /* O SINGURĂ săptămână pentru tot ecranul: cele trei foi sunt trei fețe ale aceleiași
    săptămâni, deci schimbată pe una, e schimbată pe toate. Înainte fiecare foaie își ținea
    săptămâna ei și o uita la ieșire: treceai de pe „Viața creștină" pe „Întrunirea publică"
@@ -7097,7 +7102,7 @@ function _arhGroups(){var g=[];
   sub:"programul întrunirilor, teren, mărturia publică, sarcinile și curățenia",
   tabs:[
    ["vcped","Viața creștină",IC.book,"programul întrunirii din timpul săptămânii — teme, cântări, atribuiri"],
-   ["wm","Întrunirea publică",IC.home,"sfârșit de săptămână: vorbitor, titlu, președinte, cititor, rugăciune, ospitalitate"],
+   ["wm","Întrunirea publică",IC.tower,"sfârșit de săptămână: vorbitor, titlu, președinte, cititor, rugăciune, ospitalitate"],
    ["mp","Mărturia publică",IC.ppl,"locațiile, turele pe zile și ore, cu numele de la fiecare tură"],
    ["teren","Întrunirile de teren",IC.clock,"întrunirile pentru predicare: ziua, ora, locul și fratele care conduce"],
    ["sarc","Sarcini",IC.mark,"audio-video, oameni de ordine, podium și grupa de curățenie"],
@@ -9918,10 +9923,8 @@ var KAMB={c:"#C77F1A",a:"#C77F1A",d:"#6b4710",t:"#f7ecd8",z:"#fefbf5",l:"#ead9b8
 var KPAL={wm:KAMB,sarc:KAMB,mp:KAMB,teren:KAMB};
 /* iconurile se desenează din casete (un <svg> nu trece de motorul care face PDF-ul) */
 function _kIc(mod){
- /* întrunirea publică: casa, ca în bara aplicației — acoperișul e un pătrat rotit, ușa are culoarea foii */
- if(mod==="wm")return _icBox("left:27%;top:17%;width:46%;height:46%;transform:rotate(45deg);border-radius:1.5px")
-  +_icBox("left:26%;top:45%;width:48%;height:37%;border-radius:0 0 1.5px 1.5px")+_icBox("left:43%;top:60%;width:14%;height:22%;background:#C77F1A");
- if(mod==="sarc")return ALL_IC_DUTY;
+ /* întrunirea publică: turnul, ca în aplicație */
+ if(mod==="wm")return _towerIc("#C77F1A");
  /* mărturia publică: o revistă — coperta albă, cu titlul, poza și rândurile în culoarea foii, și încă una în spate */
  if(mod==="mp")return _icBox("left:33%;top:10%;width:47%;height:66%;border-radius:1.5px;background:rgba(255,255,255,.5)")
   +_icBox("left:22%;top:17%;width:47%;height:68%;border-radius:1.5px")
@@ -11907,10 +11910,16 @@ function _icBox(st){return '<span class="icb" style="'+st+'"></span>';}
    spre deosebire de un pupitru desenat din bare, care ieșea ca litera „T". */
 /* desenele stau într-un pătrat de 24 px, dar nu până la muchii: le lăsăm o margine de
    jur împrejur, ca iconurile programului, altfel par înghesuite în chenar */
-var ALL_IC_WM=_icBox("left:42%;top:16%;width:16%;height:33%;border-radius:999px")     /* capsula */
+/* turnul întrunirii publice, desenat din casete: trei creneluri, capul, o treaptă, corpul și
+   ușa arcuită în culoarea pătratului (col) — același desen ca iconul din aplicație */
+function _towerIc(col){return _icBox("left:17%;top:16%;width:14%;height:16%")+_icBox("left:43%;top:16%;width:14%;height:16%")+_icBox("left:69%;top:16%;width:14%;height:16%")
+ +_icBox("left:17%;top:31%;width:66%;height:14%")+_icBox("left:24%;top:44%;width:52%;height:6%")+_icBox("left:30%;top:49%;width:40%;height:35%")
+ +_icBox("left:43%;top:65%;width:14%;height:19%;border-radius:50% 50% 0 0;background:"+col);}
+var ALL_IC_WM_MIC=_icBox("left:42%;top:16%;width:16%;height:33%;border-radius:999px")     /* capsula */
  +_icBox("left:32%;top:39%;width:36%;height:23%;background:transparent;border:1.9px solid #fff;border-top:0;border-radius:0 0 999px 999px") /* arcul */
  +_icBox("left:47.5%;top:60%;width:5%;height:14%")                                    /* tija */
  +_icBox("left:35%;top:73%;width:30%;height:6%;border-radius:1px");                   /* talpa */
+var ALL_IC_WM=_towerIc(ALL_C_WM);/* pe foaia completă, tot turnul — ca peste tot în aplicație */
 var ALL_IC_DUTY=_icBox("left:37%;top:19%;width:26%;height:26%;border-radius:50%")     /* capul */
  +_icBox("left:24%;top:55%;width:52%;height:26%;border-radius:50% 50% 2px 2px");      /* umerii */
 /* calendar pentru întrunirea din timpul săptămânii */
@@ -12050,7 +12059,7 @@ function _arhLiteTabs(){var t=[];
  t.push(["cur","Curățenie generală",IC.check,"congregația de serviciu, fratele responsabil și bifa lunară"]);
  t.push(["mp","Mărturia publică",IC.ppl,"locațiile, turele pe zile și ore, cu numele de la fiecare tură"]);
  t.push(["teren","Întrunirile de teren",IC.clock,"întrunirile pentru predicare: ziua, ora, locul și fratele care conduce"]);
- if(_mayEditWm())t.push(["wm","Întrunirea publică",IC.home,"vorbitor, titlu, președinte, cititor, rugăciune, ospitalitate"]);
+ if(_mayEditWm())t.push(["wm","Întrunirea publică",IC.tower,"vorbitor, titlu, președinte, cititor, rugăciune, ospitalitate"]);
  if(_mayEditDuty())t.push(["sarc","Sarcini",IC.mark,"audio-video, oameni de ordine, podium și grupa de curățenie"]);
  return t;}
 function _arhLiteSecOf(k){return _arhLiteTabs().find(function(t){return t[0]===k;})||null;}
@@ -13839,8 +13848,8 @@ TUT.D["prog.vcp"]={t:"Programări · Viața creștină",sub:"programul întrunir
 ]};
 
 /* ------------------------------------------------------------------ Programări · Întrunirea publică */
-TUT.D["prog.wm"]={t:"Programări · Întrunirea publică",sub:"sfârșitul de săptămână, pe scurt",ic:IC.home,s:[
- {k:"intro",ic:IC.home,eb:"Programări",h:'Sfârșitul de săptămână, <span class="thl">într-un tabel</span>',
+TUT.D["prog.wm"]={t:"Programări · Întrunirea publică",sub:"sfârșitul de săptămână, pe scurt",ic:IC.tower,s:[
+ {k:"intro",ic:IC.tower,eb:"Programări",h:'Sfârșitul de săptămână, <span class="thl">într-un tabel</span>',
   p:"Vorbitorul și congregația lui, titlul discursului, președintele, cititorul, rugăciunile și ospitalitatea — săptămână de săptămână."},
  {k:"demo",eb:"Pas cu pas",h:"Cum citești foaia",
   steps:[["Apeși „Întrunirea publică”","A doua foaie din bara de sus."],
@@ -13998,7 +14007,7 @@ TUT.D["arh.vcped"]={t:"Viața creștină",sub:"temele săptămânii și cine are
 ]};
 
 /* ------------------------------------------------------------------ Întrunirea publică (editare) */
-TUT.D["arh.wm"]={t:"Întrunirea publică",sub:"vorbitor, titlu și posturile de sfârșit de săptămână",ic:IC.home,s:[
+TUT.D["arh.wm"]={t:"Întrunirea publică",sub:"vorbitor, titlu și posturile de sfârșit de săptămână",ic:IC.tower,s:[
  {k:"intro",ic:IC.star,eb:"Planificări",h:'Foaia de <span class="thl">duminică</span>',
   p:"Vorbitorul și congregația lui, titlul discursului, președintele, cititorul, rugăciunile și ospitalitatea — pentru fiecare sfârșit de săptămână."},
  {k:"demo",eb:"Pas cu pas",h:"Cum completezi o duminică",
@@ -15240,7 +15249,7 @@ function _fndBuild(q){
    var sp=(typeof wmSpeakerExp==="function")?wmSpeakerExp(o):"";
    var sc=Math.max(alkScore(o.tt,q),alkScore(sp,q),alkScore((typeof wmCong==="function")?wmCong(o):"",q));
    if(!sc)return;
-   _fndPush(out,sc-5,IC.home,"Întrunirea publică",o.tt||"Cuvântare publică",
+   _fndPush(out,sc-5,IC.tower,"Întrunirea publică",o.tt||"Cuvântare publică",
     String(w&&w.date||"")+(sp?(" · "+sp):""),function(){fndGoWm(wi);});});
  }catch(e){logErr("căutare: wm "+e.message,e.stack);}
 
@@ -15335,7 +15344,7 @@ function _fndSections(){
  L.push({t:"Profilul meu",k:"raportul, orele, sarcinile mele",ic:IC.ppl,a:function(){findClose();go("meu");}});
  if(_fndAllowed("prog")){
   L.push({t:"Programări — Viața creștină",k:"programul întrunirii din timpul săptămânii",ic:IC.book,a:function(){findClose();progSub="vcp";go("prog");}});
-  L.push({t:"Programări — Întrunirea publică",k:"vorbitor, titlu, ospitalitate",ic:IC.home,a:function(){findClose();progSub="wm";go("prog");}});
+  L.push({t:"Programări — Întrunirea publică",k:"vorbitor, titlu, ospitalitate",ic:IC.tower,a:function(){findClose();progSub="wm";go("prog");}});
   L.push({t:"Programări — Sarcini",k:"audio-video, ordine, podium",ic:IC.mark,a:function(){findClose();progSub="sarc";go("prog");}});
   L.push({t:"Programări — Calendar",k:"luna întreagă, cu întruniri și sarcini",ic:IC.cal,a:function(){findClose();progSub="cal";go("prog");}});}
  if(_fndAllowed("bros"))L.push({t:"Vestitori",k:"lista congregației, fișele și grupele",ic:IC.ppl,a:function(){findClose();go("bros");}});
