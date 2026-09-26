@@ -688,7 +688,7 @@ Object.assign(IC,{
  box:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h18v13H3z"/><path d="M3 7l2-4h14l2 4"/><path d="M10 11h4"/></svg>',
  mark:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15.5 4.5l4 4-9.5 9.5H6v-4z"/><path d="M12.5 7.5l4 4M5 21h14"/></svg>'
 });
-const VERSION="3.15.2";
+const VERSION="3.15.3";
 /* Versiunea minima care are voie sa SCRIE in cloud. Se trece in gist la fiecare trimitere;
    un dispozitiv ramas pe un build mai vechi decat atat nu mai poate suprascrie datele —
    doar citeste si se actualizeaza singur. Asa nu mai poate un singur telefon uitat deschis
@@ -5731,8 +5731,9 @@ function startApp(){_dirty=computeDirty();applyTheme();try{bkpMigrate();}catch(e
    `v` = cheia de „văzut deja"; `label` = versiunea afișată.
    ============================================================================ */
 var NEWS=[
- {v:"3.15.2",label:"3.15.2",d:"26.09.2026",quiet:1,t:"Întrunirea publică are turnul",items:[
-  {ic:"tower",t:"Turnul, în locul casei",s:"Întrunirea publică se recunoaște acum după turn — în bara Programărilor, în Arhivă și pe foile tipărite."}
+ {v:"3.15.3",label:"3.15.3",d:"26.09.2026",quiet:1,t:"Întrunirea publică are turnul",items:[
+  {ic:"tower",t:"Turnul, în locul casei",s:"Întrunirea publică se recunoaște acum după turn — în bara Programărilor, în Arhivă și pe foile tipărite."},
+  {ic:"book",who:"ed",t:"Foile tipărite, mai liniștite",s:"Banda fiecărei săptămâni e acum subțire și deschisă la culoare, ca privirea să cadă pe nume."}
  ]},
  {v:"3.15.0",label:"3.15",d:"26.09.2026",t:"Când lipsești, iar foile de avizier arată mai bine",items:[
   {ic:"user",t:"Când lipsești",s:"În Profilul meu, la „Când lipsesc”, îți treci zilele de vacanță sau în care lipsești din alt motiv. Atunci nu vei fi pus la nimic. Le poți trece și pentru cei din familia ta.",go:"meu",gl:"Deschide profilul"},
@@ -9919,7 +9920,7 @@ function dutyPostMove(pid,d){if(!_needDuty())return;var ps=dutyPosts();var i=ps.
    ============================================================================ */
 /* c = banda săptămânii (accentul foilor, #C77F1A — scrisul alb e mare și gros, deci se citește),
    a = accentul (linia, pătrățelul), d = scrisul maro, t = nuanța etichetelor, z = rândurile alternate, l = liniile */
-var KAMB={c:"#C77F1A",a:"#C77F1A",d:"#6b4710",t:"#f7ecd8",z:"#fefbf5",l:"#ead9b8"};
+var KAMB={c:"#C77F1A",a:"#C77F1A",d:"#6b4710",t:"#f7ecd8",z:"#fefbf5",l:"#ead9b8",b:"#f2e2c2"};/* b = banda săptămânii: deschisă, ca să nu sară în ochi */
 var KPAL={wm:KAMB,sarc:KAMB,mp:KAMB,teren:KAMB};
 /* iconurile se desenează din casete (un <svg> nu trece de motorul care face PDF-ul) */
 function _kIc(mod){
@@ -9974,9 +9975,11 @@ function _kCSS(mod){var P=KPAL[mod];return ""
  +".krl{height:2.2px;background:"+P.a+";margin:2.6mm 0 2mm;border-radius:2px}"
  +".kmeta{display:flex;justify-content:space-between;font-size:10pt;font-weight:700;color:"+P.d+";margin-bottom:5.5mm}.kmeta span+span{color:#6b737d;font-weight:400}"
  +".ktb{width:100%;border-collapse:separate;border-spacing:0;table-layout:fixed;border:1px solid "+P.l+";border-radius:2.6mm;overflow:hidden;margin:0 0 5mm;background:#fff;page-break-inside:avoid;break-inside:avoid}"
- +".ktb .kwh th{background:"+P.c+";color:#fff;text-align:left;font-size:14pt;font-weight:700;letter-spacing:.2px;padding:2.4mm 3.4mm;border:0}"
- +".ktb .kwh .kin{width:6.4mm;height:6.4mm;border-radius:1.6mm;margin-right:2.4mm;vertical-align:-1.6mm;background:rgba(255,255,255,.2)}"
- +".ktb .kas{float:right;font-size:9.5pt;font-weight:700;opacity:.92;margin-top:.9mm}"
+ /* banda săptămânii: subțire și deschisă, cu scrisul maro și o linie fină chihlimbarie dedesubt —
+    plină, pe tot rândul, lua ochii de la nume */
+ +".ktb .kwh th{background:"+P.b+";color:"+P.d+";text-align:left;font-size:12pt;font-weight:700;letter-spacing:.2px;padding:1.6mm 3mm;border:0;border-bottom:1.4px solid "+P.a+"}"
+ +".ktb .kwh .kin{width:5.2mm;height:5.2mm;border-radius:1.3mm;margin-right:2mm;vertical-align:-1.2mm;background:"+P.a+"}"
+ +".ktb .kas{float:right;font-size:9pt;font-weight:700;color:"+P.d+";opacity:.8;margin-top:.6mm}"
  /* colțurile rotunjite se pun și pe celulele de la margini: motorul PDF nu taie întotdeauna fundalul după chenarul tabelului */
  +".ktb .kwh th{border-radius:2.4mm 2.4mm 0 0}.ktb tr:last-child td:first-child{border-bottom-left-radius:2.4mm}.ktb tr:last-child td:last-child{border-bottom-right-radius:2.4mm}"
  +".ktb .kch th{background:"+P.t+";color:"+P.d+";font-size:8.8pt;font-weight:700;text-transform:uppercase;letter-spacing:.6px;text-align:left;padding:1.8mm 3mm;border-bottom:1px solid "+P.l+"}"
@@ -10008,7 +10011,7 @@ function pdfDuty(list){var D=dutyD(),posts=dutyPosts();
   if(evNoMeet(w))return {h:34,html:'<table class="ktb">'+head+_kEvRow(w,4)+'</table>'};
   var cells=posts.map(function(p){return [p.n,o[p.id]?esc(expNameS(o[p.id])||broDisp(o[p.id])):""];});
   var rows=_kPairs(cells)+'<tr class="kx"><td class="kl">Grupă (curățenie)</td><td class="kv" colspan="3">'+esc(_grpCell(dutyGrpShort(o)))+'</td></tr>';
-  return {h:11.6+Math.ceil(posts.length/2)*9.8+10.5+6,html:'<table class="ktb">'+head+rows+'</table>'};});
+  return {h:9.6+Math.ceil(posts.length/2)*9.8+10.5+6,html:'<table class="ktb">'+head+rows+'</table>'};});
  _kOut("sarc",D.title||"Sarcini",list,items);}
 function dutyPdfSheet(){var cw=vcpCurWeek();
  var H='<div class="muted" style="margin:0 2px 10px">Alege ce intră în PDF.</div>';
@@ -11033,7 +11036,7 @@ function pdfFt(list){var D=ftD();
     +'<td class="kp">'+esc(r.off?"nu se ține":(r.loc||"—"))+'</td><td class="kv">'+esc(r.off?"—":(r.nm||"—"))+'</td></tr>';}).join("");
   var html='<table class="ktb">'+_kCols([50,66,0])+_kBand("teren",3,(mk?(mk+" "):"")+"Săptămâna "+tc(w.date),"")
    +'<tr class="kch"><th>Ziua</th><th>Locația</th><th>Responsabil</th></tr>'+body+'</table>';
-  return {h:18.6+rows.length*9.4+6,html:html};});
+  return {h:16.6+rows.length*9.4+6,html:html};});
  var tail=notes.length?('<div class="knts">'+notes.map(function(n){return '<div>'+esc(n)+'</div>';}).join("")+'</div>'):"";
  _kOut("teren",D.title||"Întrunirile pentru serviciul de Teren",list,items,tail);}
 function ftPdfSheet(){var cw=vcpCurWeek();
@@ -11729,7 +11732,7 @@ function pdfMp(list){var D=mpD();
    return '<tr>'+dc+'<td class="kp"><b>'+esc(mpLocName(r.s.loc)||"")+'</b></td><td class="kp">'+esc(r.s.h||"")+(r.s.n?('<span>'+esc(r.s.n)+'</span>'):'')+'</td>'+nm+'</tr>';}).join("");
   var html='<table class="ktb">'+_kCols(ws)+_kBand("mp",cols,"Săptămâna "+tc(w.date),w.event?evLabel(w):"")
    +'<tr class="kch"><th>Ziua</th><th>Locația</th><th>Tura</th><th colspan="'+maxCap+'" style="text-align:center">Nume</th></tr>'+body+'</table>';
-  return {h:18.6+rows.length*14+6,html:html};});
+  return {h:16.6+rows.length*14+6,html:html};});
  _kOut("mp",D.title||"Mărturia Publică",list,items);}
 function mpPdfSheet(){var cw=vcpCurWeek();
  var H='<div class="muted" style="margin:0 2px 10px">Alege ce intră în PDF.</div>';
@@ -11767,7 +11770,7 @@ function _wmCard(wi){var w=S.weeks[wi],o=wmOf(wi),dt=wmDateOf(wi);
  rows+=_kPairs(cells);
  if((o.note||"").trim())rows+='<tr><td class="kl">Notă</td><td class="kv" colspan="3">'+esc(o.note)+'</td></tr>';
  var n=2+Math.ceil(cells.length/2)+(((o.note||"").trim())?1:0);
- return {h:11.6+n*9.8+6,html:'<table class="ktb">'+head+rows+'</table>'};}
+ return {h:9.6+n*9.8+6,html:'<table class="ktb">'+head+rows+'</table>'};}
 function pdfWm(list){var D=wmD();
  list=(list||[]).filter(function(i){return S.weeks[i];});
  if(!list.length){toast("Nicio săptămână de tipărit");return;}
