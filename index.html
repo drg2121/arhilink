@@ -682,13 +682,13 @@ Object.assign(IC,{
  mic:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2.8" width="6" height="11.2" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0"/><path d="M12 17.5V21M8.5 21h7"/></svg>',
  home:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 10.5 12 3.5l8.5 7"/><path d="M5.5 9v11.5h13V9"/><path d="M10 20.5v-5h4v5"/></svg>',
  /* întrunirea publică: turnul cu creneluri (ca pe sigla Turnului de veghe) */
- tower:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 21V12L4 10V4h3v3h3.5V4h3v3H17V4h3v6l-3 2v9z"/><path d="M4 10h16"/><path d="M10.5 21v-3a1.5 1.5 0 0 1 3 0v3"/></svg>',
+ tower:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6.2h16v3.3l-2.6 2.1V21H6.6v-9.4L4 9.5z"/><path d="M10.2 21v-2.6a1.8 1.8 0 0 1 3.6 0V21"/><g fill="currentColor" stroke="none"><rect x="3.1" y="2.6" width="2.2" height="3.6" rx=".4"/><rect x="7" y="2.6" width="2.2" height="3.6" rx=".4"/><rect x="10.9" y="2.6" width="2.2" height="3.6" rx=".4"/><rect x="14.8" y="2.6" width="2.2" height="3.6" rx=".4"/><rect x="18.7" y="2.6" width="2.2" height="3.6" rx=".4"/></g></svg>',
  info:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 11.5v4.5"/><circle cx="12" cy="7.8" r="0.9" fill="currentColor" stroke="none"/></svg>',
  book:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg>',
  box:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h18v13H3z"/><path d="M3 7l2-4h14l2 4"/><path d="M10 11h4"/></svg>',
  mark:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15.5 4.5l4 4-9.5 9.5H6v-4z"/><path d="M12.5 7.5l4 4M5 21h14"/></svg>'
 });
-const VERSION="3.15.1";
+const VERSION="3.15.2";
 /* Versiunea minima care are voie sa SCRIE in cloud. Se trece in gist la fiecare trimitere;
    un dispozitiv ramas pe un build mai vechi decat atat nu mai poate suprascrie datele —
    doar citeste si se actualizeaza singur. Asa nu mai poate un singur telefon uitat deschis
@@ -5731,7 +5731,7 @@ function startApp(){_dirty=computeDirty();applyTheme();try{bkpMigrate();}catch(e
    `v` = cheia de „văzut deja"; `label` = versiunea afișată.
    ============================================================================ */
 var NEWS=[
- {v:"3.15.1",label:"3.15.1",d:"26.09.2026",quiet:1,t:"Întrunirea publică are turnul",items:[
+ {v:"3.15.2",label:"3.15.2",d:"26.09.2026",quiet:1,t:"Întrunirea publică are turnul",items:[
   {ic:"tower",t:"Turnul, în locul casei",s:"Întrunirea publică se recunoaște acum după turn — în bara Programărilor, în Arhivă și pe foile tipărite."}
  ]},
  {v:"3.15.0",label:"3.15",d:"26.09.2026",t:"Când lipsești, iar foile de avizier arată mai bine",items:[
@@ -11912,9 +11912,11 @@ function _icBox(st){return '<span class="icb" style="'+st+'"></span>';}
    jur împrejur, ca iconurile programului, altfel par înghesuite în chenar */
 /* turnul întrunirii publice, desenat din casete: trei creneluri, capul, o treaptă, corpul și
    ușa arcuită în culoarea pătratului (col) — același desen ca iconul din aplicație */
-function _towerIc(col){return _icBox("left:17%;top:16%;width:14%;height:16%")+_icBox("left:43%;top:16%;width:14%;height:16%")+_icBox("left:69%;top:16%;width:14%;height:16%")
- +_icBox("left:17%;top:31%;width:66%;height:14%")+_icBox("left:24%;top:44%;width:52%;height:6%")+_icBox("left:30%;top:49%;width:40%;height:35%")
- +_icBox("left:43%;top:65%;width:14%;height:19%;border-radius:50% 50% 0 0;background:"+col);}
+function _towerIc(col){var t="";[15,30,45,60,75].forEach(function(x){t+=_icBox("left:"+x+"%;top:15%;width:10%;height:11%;border-radius:1px");});/* cinci creneluri */
+ return t+_icBox("left:15%;top:25%;width:70%;height:13%")/* capul */+_icBox("left:20%;top:37%;width:60%;height:5%")/* cornișa */
+  +_icBox("left:25%;top:41%;width:50%;height:45%")/* corpul */
+  +_icBox("left:48%;top:48%;width:4%;height:10%;border-radius:1px;background:"+col)/* fanta */
+  +_icBox("left:42%;top:67%;width:16%;height:19%;border-radius:50% 50% 0 0;background:"+col);}/* ușa */
 var ALL_IC_WM_MIC=_icBox("left:42%;top:16%;width:16%;height:33%;border-radius:999px")     /* capsula */
  +_icBox("left:32%;top:39%;width:36%;height:23%;background:transparent;border:1.9px solid #fff;border-top:0;border-radius:0 0 999px 999px") /* arcul */
  +_icBox("left:47.5%;top:60%;width:5%;height:14%")                                    /* tija */
