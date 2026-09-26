@@ -686,7 +686,7 @@ Object.assign(IC,{
  box:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h18v13H3z"/><path d="M3 7l2-4h14l2 4"/><path d="M10 11h4"/></svg>',
  mark:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15.5 4.5l4 4-9.5 9.5H6v-4z"/><path d="M12.5 7.5l4 4M5 21h14"/></svg>'
 });
-const VERSION="3.13.0";
+const VERSION="3.14.0";
 /* Versiunea minima care are voie sa SCRIE in cloud. Se trece in gist la fiecare trimitere;
    un dispozitiv ramas pe un build mai vechi decat atat nu mai poate suprascrie datele —
    doar citeste si se actualizeaza singur. Asa nu mai poate un singur telefon uitat deschis
@@ -1133,7 +1133,7 @@ function curYM(){var d=new Date();return d.getFullYear()+"-"+("0"+(d.getMonth()+
 function archOf(b){var a=(b&&b.arch&&b.arch.k)?b.arch:null;return (a&&a.end&&curYM()>=a.end)?null:a;}
 /* toate perioadele, inclusiv cele încheiate — pe ele se bazează istoricul lunilor */
 function archAll(b){var h=((b&&b.archPast)||[]).slice();if(b&&b.arch&&b.arch.k)h.push(b.arch);return h;}
-function archLabel(a){return (a&&a.st==="mutat")?"Mutat":"Altele";}
+function archLabel(a){return (a&&a.st==="mutat")?"Mutat":((a&&a.st==="nou")?"Venit din altă congregație":"Altele");}
 function archReason(a){if(!a)return "";return archLabel(a)+((a.note||"").trim()?(" — "+a.note.trim()):"");}
 /* arhivat la luna k (implicit luna curentă) — „AAAA-LL" se compară cronologic ca șir */
 function isArch(b,k){k=String(k||curYM());var h=archAll(b);
@@ -2865,7 +2865,11 @@ function bfTab(p){bfLastTab=p;
  document.querySelectorAll("#edform .bf-pane").forEach(function(x){x.classList.toggle("on",x.dataset.p===p);});
  try{var sh=document.querySelector(".sheet"),t=document.querySelector("#edform .bf-tabs");if(sh&&t){var top=t.getBoundingClientRect().top-sh.getBoundingClientRect().top;if(top<60)sh.scrollTop+=top-70;}}catch(e){}}
 /* antetul și numărătorile se refac la fiecare modificare din fișă */
-function edSumAll(){try{_pioFromChg();}catch(e){}
+/* surorile nu pot fi numite bătrân sau slujitor auxiliar: la „Soră" rândul „Numire" dispare și se golește */
+function _bfGenRol(){var g=document.getElementById("bg"),w=document.getElementById("bfRolW");if(!g||!w)return;
+ var f=g.value==="F";w.style.display=f?"none":"";
+ var r=document.getElementById("br");if(f&&r&&r.value){r.value="";var x=w.querySelector('input[name="brR"][value=""]');if(x)x.checked=true;}}
+function edSumAll(){try{_bfGenRol();}catch(e){}try{_pioFromChg();}catch(e){}
  try{
  var g=function(id){var e=document.getElementById(id);return e?String(e.value||"").trim():"";};
  var set=function(id,t){var e=document.getElementById(id);if(e)e.textContent=t||"";};
@@ -2913,12 +2917,12 @@ function editBro(id,openSec){if(!_needEdit())return;ensureEdCSS();ensureBfCSS();
    info=`<div class="bf-info"><div class="bf-inf"><span class="k">Urmează</span>${nxH}</div><div class="bf-inf"><span class="k">Raportul pe ${esc(RO_MONTHS[rd.getMonth()])}</span>${rs?'<b class="ok">✓ trimis</b>':'<b class="no">netrimis</b>'}</div></div>`;}
   else info=`<div class="bf-info one"><div class="bf-inf"><span class="k">Urmează</span>${nxH}</div></div>`;}
  /* --- Date --- */
- const rolV=(b.rol==="Bătrân"||b.rol==="Slujitor")?b.rol:"";
+ const rolV=(b.gen!=="F"&&(b.rol==="Bătrân"||b.rol==="Slujitor"))?b.rol:"";
  const paneD=`<label class="fl">Nume (ca în PDF, ex. PRICHINDEL Marius)</label><input id="bn" class="fld" oninput="bdAuto(this.value)" value="${q(b.name)}" placeholder="NUME Prenume">
   <label class="fl">Cum apare pe foi și în PDF</label><input id="bd" class="fld" oninput="this.dataset.custom='1'" data-custom="${(b.disp&&b.disp!==shortName(b.name||""))?"1":""}" value="${q(b.disp||shortName(b.name||""))}">
   ${sw("bde",b.dispExp!==false,'Numele scurt în PDF <span class="bf-swh">prenumele doar cu inițiala</span>')}
   <label class="fl">Gen</label>${seg("bgR","bg",b.gen==="F"?"F":"M",[["M","Frate"],["F","Soră"]])}
-  <label class="fl">Numire</label>${seg("brR","br",rolV,[["","Fără numire"],["Slujitor","Slujitor"],["Bătrân","Bătrân"]])}
+  <div id="bfRolW"${b.gen==="F"?' style="display:none"':''}><label class="fl">Numire</label>${seg("brR","br",rolV,[["","Fără numire"],["Slujitor","Slujitor"],["Bătrân","Bătrân"]])}</div>
   <label class="fl">Stare</label>${seg("baR","ba",b.active!==false?"1":"0",[["1","Activ"],["0","Inactiv"]])}
   <label class="fl">Privilegiu</label><select id="bpio" class="fld" style="margin-top:0"><option value="" ${(!b.pio&&b.isPub!==false)?"selected":""}>Vestitor</option><option value="Vestitor nebotezat" ${b.pio==="Vestitor nebotezat"?"selected":""}>Vestitor nebotezat</option><option value="Pionier" ${b.pio==="Pionier"?"selected":""}>Pionier regular</option><option value="Pionier auxiliar" ${b.pio==="Pionier auxiliar"?"selected":""}>Pionier auxiliar (permanent)</option><option value="Pionier special" ${b.pio==="Pionier special"?"selected":""}>Pionier special</option><option value="Misionar" ${b.pio==="Misionar"?"selected":""}>Misionar</option><option value="Cursant" ${(b.pio==="Cursant"||b.isPub===false)?"selected":""}>Cursant</option></select>
   <div class="two" style="margin-top:2px"><div><label class="fl">Privilegiul e valabil din</label><select id="bpiofrom" class="fld" style="margin-top:0" onchange="_pioFromChg()">${_pioFromOpts(b.pioFrom||"")}</select></div>
@@ -2991,7 +2995,10 @@ function saveBro(bid,exists){if(!_needEdit())return;const name=$("#bn").value.tr
  const isPub=(pio!=="Cursant");
  let grp=$("#bgrp")?$("#bgrp").value:((S.bros.find(x=>x.id===bid)||{}).grp||"");
  if(pio==="Cursant")grp="";/* cursanții nu fac parte din grupele de serviciu */
- const o={id:bid,name,disp,dispExp,famIds,canPartner,pio,pioFrom:pioFrom||"",pioPrev:pioFrom?pioPrev:"",phone,email,addr,ecn,ecp,ec2n,ec2p,ec3n,ec3p,cT,cC,hope,bdate,baptism,isPub,grp,duties,wm:wmParts,mpl,ft:ftLead,gen:$("#bg").value,rol:$("#br").value,active:$("#ba").value==="1",roles,rSeed:1};
+ const gen=$("#bg").value,rol=(gen==="F")?"":$("#br").value;/* o soră nu poate fi bătrân sau slujitor */
+ /* ce nu e în formular (perioadele de arhivă, venirea din altă congregație) rămâne cum era — înainte
+    fișa se rescria de la zero și o salvare ștergea, de exemplu, arhivarea persoanei */
+ const o=Object.assign({},_oldB||{},{id:bid,name,disp,dispExp,famIds,canPartner,pio,pioFrom:pioFrom||"",pioPrev:pioFrom?pioPrev:"",phone,email,addr,ecn,ecp,ec2n,ec2p,ec3n,ec3p,cT,cC,hope,bdate,baptism,isPub,grp,duties,wm:wmParts,mpl,ft:ftLead,gen,rol,active:$("#ba").value==="1",roles,rSeed:1});
  if(exists){const i=S.bros.findIndex(x=>x.id===bid);S.bros[i]=o;}else S.bros.push(o);
  syncFamily(o.id,o.famIds||[]);if(typeof userSyncBro==="function")userSyncBro(o,!exists);logAct((exists?"Vestitor modificat: ":"Vestitor adăugat: ")+(o.name||""));save();closeSheet();renderBros();toast("Salvat");}
 function syncFamily(id,fam){S.bros.forEach(function(b){if(b.id===id)return;b.famIds=b.famIds||[];var has=b.famIds.indexOf(id)>=0;if(fam.indexOf(b.id)>=0){if(!has)b.famIds.push(id);}else if(has){b.famIds=b.famIds.filter(function(x){return x!==id;});}});}
@@ -3046,8 +3053,11 @@ function archYears(id){var set={},R=(S.reports||{})[id]||{},b=(S.bros||[]).find(
 /* --- blocul din fișa vestitorului --- */
 function archEditSum(b){var a=archOf(b);return a?(archLabel(a)+" · "+archWhen(a)):"în congregație";}
 function archEditBlock(b){var a=archOf(b),h='';
- var past=archAll(b).filter(function(p){return p.end&&curYM()>=p.end;});
- var pastTxt=past.length?('<div class="muted" style="margin:6px 2px 0;font-size:11.5px">A mai fost în arhivă: '+past.map(function(p){return esc(monthName(p.k)+" – "+monthName(ymShift(p.end,-1)));}).join(", ")+'</div>'):'';
+ var past=archAll(b).filter(function(p){return p.end&&curYM()>=p.end&&p.st!=="nou";});
+ /* perioada dinainte de venire (vestitor adus din fișa altei congregații): lunile acelea sunt doar pe fișa lui */
+ var came=archAll(b).filter(function(p){return p.st==="nou"&&p.end&&curYM()>=p.end;}).pop();
+ var pastTxt=(came?('<div class="muted" style="margin:6px 2px 0;font-size:11.5px">'+esc((came.note||"Venit din altă congregație").trim())+' — în congregație din '+esc(monthName(came.end))+'. Rapoartele de dinainte sunt pe fișa lui, dar nu intră în S-1 și nici în listele lunilor acelea.</div>'):'')
+  +(past.length?('<div class="muted" style="margin:6px 2px 0;font-size:11.5px">A mai fost în arhivă: '+past.map(function(p){return esc(monthName(p.k)+" – "+monthName(ymShift(p.end,-1)));}).join(", ")+'</div>'):'');
  if(a)return h
   +'<div class="hint" style="margin-top:11px;border-left:3px solid var(--acc)">'+esc(archWhen(a).charAt(0).toUpperCase()+archWhen(a).slice(1))+' · '+esc(archReason(a))+'.<br>Nu apare în listele congregației și nu intră la numărul de vestitori în lunile acelea. Restul lunilor rămân neatinse.</div>'
   +'<button class="miniact" style="margin-top:8px;width:100%;justify-content:center" onclick="archRestoreSheet(\''+b.id+'\')">'+(a.end?"Schimbă luna revenirii":"Readu în congregație")+'</button>'+pastTxt;
@@ -3461,7 +3471,7 @@ function grpName(id){var g=grpsAll().find(function(x){return x.id===id;});return
 function grpOf(b){if(!b||!b.grp)return "";return grpsAll().some(function(g){return g.id===b.grp;})?b.grp:"";}
 function grpMembers(gid,onlyActive){return (S.bros||[]).filter(function(b){return grpOf(b)===gid&&!isArchNow(b)&&(!onlyActive||b.active!==false);});}
 function grpTags(b,g){var t=[];if(g&&g.sup===b.id)t.push("S");if(g&&g.asis===b.id)t.push("A");
- if(b.rol==="Bătrân")t.push("B");else if(b.rol==="Slujitor")t.push("SA");
+ if(b.gen!=="F"){if(b.rol==="Bătrân")t.push("B");else if(b.rol==="Slujitor")t.push("SA");}
  var p=pioNow(b);if(p==="Pionier")t.push("PR");else if(p==="Pionier auxiliar")t.push("PA");else if(p==="Pionier special")t.push("PS");else if(p==="Misionar")t.push("M");else if(p==="Vestitor nebotezat")t.push("VN");
  return t.join("/");}
 function grpSortMembers(list,g){return list.slice().sort(function(a,b){
@@ -5689,6 +5699,11 @@ function startApp(){_dirty=computeDirty();applyTheme();try{bkpMigrate();}catch(e
    `v` = cheia de „văzut deja"; `label` = versiunea afișată.
    ============================================================================ */
 var NEWS=[
+ {v:"3.14.0",label:"3.14",d:"26.09.2026",t:"Fișa S-21 pe orice an, vestitori veniți din altă parte",items:[
+  {ic:"user",t:"Fișa S-21, pe anul pe care îl alegi",s:"Din Profilul meu, „Fișa S-21” te întreabă acum anul de serviciu: cel în curs sau unul trecut în care ai rapoarte.",go:"meu",gl:"Deschide profilul"},
+  {ic:"ppl",who:"ed",t:"Vestitor venit din altă congregație, dintr-o fișă",s:"În Vestitori, din butonul rotund: „Adaugă din fișă”. Vin datele de pe S-21 și rapoartele de acolo; lunile dinainte de venire rămân doar pe fișa lui, nu intră în S-1."},
+  {ic:"ppl",who:"ed",t:"Surorile nu mai pot fi numite",s:"În fișa vestitorului, la „Soră”, rândul „Numire” (bătrân / slujitor auxiliar) dispare."}
+ ]},
  {v:"3.13.0",label:"3.13",d:"26.09.2026",t:"Alegerea persoanelor și înștiințările, refăcute",items:[
   {ic:"ppl",who:"ed",t:"Fereastra de alegere, mai clară",s:"Sus vezi ce alegi și cine poate fi pus. Dedesubt, cei potriviți vin primii, cu o pastilă care arată de când n-au mai avut ceva; primul liber e „recomandat”. Apeși pe nume pentru istoric, „Alege” îl pune."},
   {ic:"bell",t:"Înștiințări fără emoticoane",s:"Reamintirile pentru raport, temele noi, întrunirea de mâine sau curățenia apar sus, într-un card cu iconița lor și un buton care te duce direct acolo."},
@@ -7221,6 +7236,7 @@ function arhFabGrp(){var H='';
 /* FAB Vestitori (slidere): adaugă + PDF-urile și uneltele grupelor, mutate din pagină */
 function brosFabSheet(){var H='';
  H+='<button class="pmrow" onclick="arhFabGo(function(){editBro(null);},brosFabSheet)">'+IC.plus+'<span><b>Adaugă vestitor</b> — fișă nouă</span></button>';
+ if(_canEditArh())H+='<button class="pmrow" onclick="closeSheet();broImportSheet()">'+IC.dl+'<span><b>Adaugă din fișă (.json)</b> — venit din altă congregație, cu rapoartele de acolo</span></button>';
  H+='<button class="pmrow" onclick="arhFabGo(function(){grpEdit(null);},brosFabSheet)">'+IC.plus+'<span><b>Grupă nouă</b> — de serviciu</span></button>';
  if(grpsAll().length)H+='<button class="pmrow" onclick="closeSheet();pdfGrupe()">'+IC.pdf+'<span><b>Grupele de serviciu (PDF)</b> — listă pentru avizier</span></button>';
  if(_isAdmin())H+='<button class="pmrow" onclick="arhFabGo(function(){pdfContactsPick();},brosFabSheet)">'+IC.pdf+'<span><b>Date de contact + urgență</b> (confidențial) — pe grupă / total</span></button>';
@@ -8071,7 +8087,7 @@ function arhMeuHtml(){ensureGrpCSS();ensureMeuCSS();try{arhEnsureCSS();}catch(e)
  var hoursNow=hlHoursOn(b,curK),conOk=_conConf(b)||b.active===false;
  var qa=[{t:"Raportul",ic:IC.edit,go:"hlReport('"+meuK+"')",a:!dueSent,dot:!dueSent},
   hoursNow?{t:"Adaugă ore",ic:IC.clock,go:"hlAddSheet('"+curK+"')"}:{t:"Programul",ic:IC.cal,go:"go('prog')"},
-  {t:"Fișa S-21",ic:IC.pdf,go:"pdfS21('"+my+"',"+start+")"},
+  {t:"Fișa S-21",ic:IC.pdf,go:"meuS21()"},
   {t:"Datele mele",ic:IC.ppl,go:"meContact()",dot:!conOk}];
  var h=_muHero({name:b.name,ini:initials(b.name),chips:chips,qa:qa,menu:1})+(nudges?('<div class="mu-nudges">'+nudges+'</div>'):'');
  /* raportul lunii: luna de raportat (sau cea aleasă din listă) și starea ei */
@@ -8132,11 +8148,21 @@ function meuGoCal(){if(!_tabAllowed("prog")){toast("Programările nu-ți sunt di
  progSub="cal";go("prog");}
 function meuGoWm(wi){if(!_tabAllowed("prog")){toast("Programările nu-ți sunt disponibile");return;}
  wmW=wi;progW=wi;progSub="wm";go("prog");}
+/* „Fișa S-21" din profil: se alege anul de serviciu — cel în curs sau unul trecut în care ai rapoarte */
+function _s21YearsOf(id){var set={},min=curTheoStart()-2;set[curTheoStart()]=1;
+ [(S.reports||{})[id],(S.repFlags||{})[id]].forEach(function(o){Object.keys(o||{}).forEach(function(k){var y=theoStartOf(k);if(y>=min)set[y]=1;});});
+ return Object.keys(set).map(Number).sort(function(a,b){return b-a;});}
+function meuS21(){var my=_myBro();if(!my){toast("Contul nu e legat de un vestitor");return;}
+ var ys=_s21YearsOf(my),cur=curTheoStart();
+ if(ys.length<2){pdfS21(my,ys[0]);return;}
+ sheet("","Fișa mea S-21",'<div class="muted" style="margin:0 2px 10px">Alege anul de serviciu.</div>'
+  +ys.map(function(y){var n=theoMonths(y).filter(function(m){return repHas(my,m.k);}).length;
+   return '<button class="pmrow" onclick="closeSheet();pdfS21(\''+my+'\','+y+')">'+IC.pdf+'<span><b>Anul '+theoLabel(y)+'</b> — '
+    +(y===cur?'în curs, ':'')+(n?(n+(n===1?' lună raportată':' luni raportate')):'nicio lună raportată')+'</span></button>';}).join(""));}
 /* meniul profilului: fișă, contact, PIN */
 function meuMenu(){var my=_myBro();if(!my){toast("Contul nu e legat de un vestitor");return;}
- var start=(arhTheo!=null?arhTheo:curTheoStart());
  sheet("","Profilul meu",
-  '<button class="pmrow" onclick="closeSheet();pdfS21(\''+my+'\','+start+')">'+IC.pdf+'<span><b>Fișa mea S-21</b> — descarcă PDF-ul cu rapoartele anului</span></button>'
+  '<button class="pmrow" onclick="closeSheet();meuS21()">'+IC.pdf+'<span><b>Fișa mea S-21</b> — alegi anul de serviciu și descarci PDF-ul</span></button>'
  +'<button class="pmrow" onclick="closeSheet();meContact()">'+IC.edit+'<span><b>Datele mele de contact</b> — telefon, e-mail, adresă, urgență</span></button>'
  +(_curUser()?('<button class="pmrow" onclick="closeSheet();mePinSheet()">'+IC.gear+'<span><b>Schimbă PIN-ul</b> — cu care intri în aplicație</span></button>'):''));}
 
@@ -11976,6 +12002,59 @@ function repSheetImport(id){if(!_canEditReport(id))return;
   logAct("Fișă încărcată: "+(b.name||"")+" · "+n+" luni");save();
   repCard(id,+(d.start||curTheoStart()));
   okSplash("Fișa a fost încărcată",n+" luni adăugate");});}
+/* Vestitor venit din altă congregație, adus dintr-o fișă .json: datele de pe S-21 (numele, nașterea,
+   botezul, numirea, speranța), rapoartele lunilor de acolo și, opțional, ce poate primi la noi.
+   „from" = luna din care raportează la noi. Lunile de dinainte devin o perioadă în afara
+   congregației (b.archPast, st:"nou") — nu intră în S-1, în liste sau la „cine lipsește" pe
+   lunile acelea, dar rămân pe fișa lui S-21. Datele nu stau în cod (pagina e publică): vin din
+   fișier și de aici pleacă doar în datele congregației.
+   Dacă persoana există deja (același nume), se adaugă lunile de pe fișă; nașterea și botezul doar dacă lipsesc. */
+function _s21FileRep(r){return {p:(r.p!=null&&!r.p)?0:1,st:numOrNull(r.st),aux:r.aux?1:0,h:numOrNull(r.h),cr:numOrNull(r.cr),
+ o:String(r.o||"").slice(0,200),sf:String(r.sf||(r.aux?"Pionier auxiliar":"")),src:"fisa",t:Date.now()};}
+function _s21FileDate(v){v=String(v||"").trim().replace(/\//g,"-");return /^\d{4}-\d{2}-\d{2}$/.test(v)?v:"";}
+function broImportSheet(){if(!_needEdit())return;if(!_canEditArh()){toast("Rapoartele le adaugă doar cine are acces la Arhivă");return;}
+ arhPickFile(".json").then(async function(f){if(!f)return;
+  var d;try{d=JSON.parse(await f.text());}catch(e){toast("Fișier invalid");return;}
+  if(!d||d._alk!=="s21"||!String(d.name||"").trim()){toast("Nu e o fișă ArhiLink (.json)");return;}
+  var rows=(d.rows&&typeof d.rows==="object")?d.rows:{};
+  var ks=Object.keys(rows).filter(function(k){return /^\d{4}-\d{2}$/.test(k)&&rows[k]&&typeof rows[k]==="object";}).sort();
+  var name=String(d.name).replace(/\s+/g," ").trim(),key=arhTokens(name).join(" ");
+  var from=/^\d{4}-\d{2}$/.test(d.from||"")?d.from:"";
+  var yrs={};ks.forEach(function(k){yrs[theoStartOf(k)]=1;});
+  var yTxt=Object.keys(yrs).map(Number).sort().map(theoLabel).join(", ");
+  var ex=(S.bros||[]).find(function(x){return arhTokens(x.name).join(" ")===key;});
+  if(ex){var over=ks.filter(function(k){return !!repOf(ex.id,k);}).length;
+   if(!(await uiConfirm("„"+ex.name+"” e deja în listă. Se adaugă "+ks.length+" luni din fișă"+(yTxt?(" ("+yTxt+")"):"")
+     +(over?(", iar "+over+" dintre ele, care există deja, se înlocuiesc"):"")+". Nașterea și botezul se completează doar dacă lipsesc.",{title:"Încarci fișa?",yes:"Încarcă"})))return;
+   ks.forEach(function(k){repTombClear(ex.id,k);setRep(ex.id,k,_s21FileRep(rows[k]));});
+   if(!ex.bdate&&_s21FileDate(d.bdate))ex.bdate=_s21FileDate(d.bdate);
+   if(!ex.baptism&&_s21FileDate(d.baptism))ex.baptism=_s21FileDate(d.baptism);
+   logAct("Fișă încărcată: "+ex.name+" · "+ks.length+" luni");save();_rerenderBrosTab();
+   repCard(ex.id,ks.length?theoStartOf(ks[ks.length-1]):curTheoStart());okSplash("Fișa a fost încărcată",ks.length+" luni adăugate");return;}
+  var gen=d.gen==="F"?"F":"M",rol=(gen!=="F"&&(d.rol==="Bătrân"||d.rol==="Slujitor"))?d.rol:"";
+  var pio=["","Vestitor nebotezat","Pionier","Pionier auxiliar","Pionier special","Misionar"].indexOf(d.pio||"")>=0?(d.pio||""):"";
+  var nb={id:"b"+Date.now(),name:name,disp:shortName(name),dispExp:true,gen:gen,rol:rol,active:true,pio:pio,pioFrom:"",pioPrev:"",
+   hope:d.hope==="uns"?"uns":"alte_oi",bdate:_s21FileDate(d.bdate),baptism:_s21FileDate(d.baptism),isPub:pio!=="Cursant",grp:"",famIds:[],canPartner:true,
+   roles:[],duties:[],wm:[],mpl:[],ft:0,phone:"",email:"",addr:"",cT:0,cC:0};
+  var pick=function(v,all){return v==="*"?all.slice():(Array.isArray(v)?all.filter(function(x){return v.indexOf(x)>=0;}):null);};
+  var roles=pick(d.roles,ROLES.filter(function(r){return meetsS38(nb,r);}));
+  if(roles){nb.roles=roles;nb.rSeed=1;}else ensureBroRoles([nb]);/* fără listă: ce se propune oricui, după numire și gen */
+  nb.duties=pick(d.duties,DUTY_CATS.map(function(c){return c[0];}))||[];
+  nb.wm=pick(d.wm,WM_CATS.map(function(c){return c[0];}))||[];
+  /* lunile dinainte de venire: de la cea mai veche de pe fișă (cel puțin începutul celor 3 ani păstrați) */
+  if(from){var k0=theoMonths(curTheoStart()-2)[0].k;if(ks.length&&ks[0]<k0)k0=ks[0];
+   if(k0<from)nb.archPast=[{st:"nou",note:String(d.cong||"").trim()?("Venit din congregația "+String(d.cong).trim()):"Venit din altă congregație",k:k0,end:from,t:Date.now(),by:(_curUser()&&_curUser().n)||""}];}
+  var numTxt=rol==="Bătrân"?"bătrân":(rol==="Slujitor"?"slujitor auxiliar":(gen==="F"?"soră":"frate"));
+  if(!(await uiConfirm("Se adaugă „"+name+"” ("+numTxt+", fără grupă)"+(ks.length?(", cu "+ks.length+" luni de pe fișa S-21"+(yTxt?(" ("+yTxt+")"):"")):"")+"."
+    +(from?("\nRaportează la noi din "+monthName(from)+": lunile de dinainte rămân doar pe fișa lui, nu intră în S-1."):"")
+    +(roles?("\nPoate primi: "+roles.length+" părți la Viața creștină"+(nb.duties.length?(", "+nb.duties.length+" sarcini"):"")+"."):""),{title:"Adaugi vestitorul?",yes:"Adaugă"})))return;
+  S.bros.push(nb);
+  ks.forEach(function(k){repTombClear(nb.id,k);setRep(nb.id,k,_s21FileRep(rows[k]));});
+  try{if(typeof userSyncBro==="function")userSyncBro(nb,true);}catch(e){}
+  logAct("Vestitor adăugat din fișă: "+name+(ks.length?(" · "+ks.length+" luni"):""));save();_rerenderBrosTab();
+  repCard(nb.id,ks.length?theoStartOf(ks[ks.length-1]):curTheoStart());
+  okSplash(name+" a fost adăugat",ks.length?(ks.length+" luni de pe fișa S-21"):"");});}
+function _rerenderBrosTab(){try{if(tab==="bros")renderBros();else if(tab==="arh")renderArh();}catch(e){}}
 function repCard(id,start){var b=(S.bros||[]).find(function(x){return x.id===id;});if(!b)return;
   if(start==null)start=curTheoStart();
   var months=theoMonths(start);var h=0,cr=0,st=0,rep=0,aux=0;
@@ -12108,9 +12187,11 @@ function s21PageHtml(bro,start){var months=theoMonths(start);var b=bro;var pY=pi
     +'<div class="s21top"><div><span class="b">Numele:</span> '+esc(b.name||"")+'</div>'
     +'<div class="s21row"><span><span class="b">Data nașterii:</span> '+arhFmtDate(b.bdate)+'</span><span>'+arhCheckbox(b.gen!=="F")+'Bărbat</span><span>'+arhCheckbox(b.gen==="F")+'Femeie</span></div>'
     +'<div class="s21row"><span><span class="b">Data botezului:</span> '+arhFmtDate(b.baptism)+'</span><span>'+arhCheckbox((b.hope||"alte_oi")!=="uns")+'Alte oi</span><span>'+arhCheckbox(b.hope==="uns")+'Uns</span></div>'
-    +'<div class="s21priv"><span>'+arhCheckbox(b.rol==="Bătrân")+'Bătrân</span><span>'+arhCheckbox(b.rol==="Slujitor")+'Slujitor auxiliar</span><span>'+arhCheckbox(pY==="Pionier")+'Pionier regular</span><span>'+arhCheckbox(pY==="Pionier special")+'Pionier special</span><span>'+arhCheckbox(pY==="Misionar")+'Misionar</span></div></div>';
+    +'<div class="s21priv"><span>'+arhCheckbox(b.gen!=="F"&&b.rol==="Bătrân")+'Bătrân</span><span>'+arhCheckbox(b.gen!=="F"&&b.rol==="Slujitor")+'Slujitor auxiliar</span><span>'+arhCheckbox(pY==="Pionier")+'Pionier regular</span><span>'+arhCheckbox(pY==="Pionier special")+'Pionier special</span><span>'+arhCheckbox(pY==="Misionar")+'Misionar</span></div></div>';
   var rows="",totH=0;
-  months.forEach(function(m){var r=repOf(b.id,m.k);var c=broCat(b,m.k);var showH=catHasHours(c);
+  months.forEach(function(m){var r=repOf(b.id,m.k);var c=broCat(b,m.k);
+    /* orele intră la pionieri; în plus, cele copiate de pe fișa din altă congregație rămân cum erau scrise acolo */
+    var showH=catHasHours(c)||!!(r&&r.src==="fisa"&&r.h!=null);
     var hv=(r&&r.h!=null)?r.h:null;if(showH&&hv!=null)totH+=(+hv||0);
     var oreCell=(showH&&hv!=null)?(hv+(r&&r.cr?' <span style="color:#444">(+Cr '+r.cr+')</span>':'')):"";
     var note=(b.pioFrom&&String(b.pioFrom).slice(0,7)===m.k&&b.pio)?(_pioLong(b.pio)+" din "+RO_MONTHS[m.m0]):"";
@@ -13500,7 +13581,7 @@ TUT.D["vestitor"]={t:"Pentru vestitori",sub:"ce faci tu în aplicație, pas cu p
   ["Nu am fost în predicare luna asta.",'Scoate bifa <b>Activ</b> și trimite raportul așa. E important să ajungă și asta, ca să nu te caute nimeni.'],
   ["Nu văd câmpul de ore.",'Vestitorul obișnuit nu trece ore. Apar doar dacă bifezi <b>Pionier auxiliar</b> pentru luna aceea, sau dacă ești pionier.'],
   ["Unde îmi văd atribuirile?",'În <b>Profilul meu</b>, la „Ce urmează”: zilele care vin, cu partea ta și ora ei, tura ta și sarcina ta.'],
-  ["Cum îmi iau fișa S-21?",'Tot din <b>Profilul meu</b> — scurtătura „Fișa S-21” de sus.']]},
+  ["Cum îmi iau fișa S-21?",'Tot din <b>Profilul meu</b> — scurtătura „Fișa S-21” de sus. Alegi anul de serviciu: cel în curs sau unul trecut.']]},
  {k:"recap",h:"Atât ai de făcut",p:"O dată pe lună, două minute.",
   chips:["Profilul meu","Completează raportul","Trimite — pleacă singur"]}
 ]};
@@ -13544,7 +13625,7 @@ TUT.D["meu"]={t:"Profilul meu",sub:"raportul, atribuirile și evenimentele tale"
   ["tip","Luna de raportat e cea trecută","În septembrie raportezi august. Cardul „Raportul” îți spune mereu care e."],
   ["ok","Poți raporta și pe parcurs","Alegi luna în curs din „Altă lună”. Salvezi acum, completezi mai târziu — se trimite la fel."],
   ["ok","Orele se adună singure în raport","Din „Orele mele” apeși „Completează raportul”: orele întregi și studiile sunt deja trecute, iar minutele rămase trec în luna următoare."],
-  ["tip","Fișa S-21 se descarcă de aici","Scurtătura „Fișa S-21” de sus scoate PDF-ul anului tău de serviciu."],
+  ["tip","Fișa S-21 se descarcă de aici","Scurtătura „Fișa S-21” de sus scoate PDF-ul — alegi anul de serviciu, și unul din trecut."],
   ["no","Nu vezi rapoartele altora","Profilul e strict al tău, chiar dacă ai și alte drepturi în aplicație."]]},
  {k:"recap",h:"Profilul meu, pe scurt",p:"Raportul, ce urmează și orele tale — pe o singură pagină.",
   chips:["„Raportul” — luna de raportat","„Ce urmează” — pe zile, cu ora","„Istoric” — lunile scăpate"]}
