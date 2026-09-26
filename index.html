@@ -688,7 +688,7 @@ Object.assign(IC,{
  box:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h18v13H3z"/><path d="M3 7l2-4h14l2 4"/><path d="M10 11h4"/></svg>',
  mark:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15.5 4.5l4 4-9.5 9.5H6v-4z"/><path d="M12.5 7.5l4 4M5 21h14"/></svg>'
 });
-const VERSION="3.15.3";
+const VERSION="3.15.4";
 /* Versiunea minima care are voie sa SCRIE in cloud. Se trece in gist la fiecare trimitere;
    un dispozitiv ramas pe un build mai vechi decat atat nu mai poate suprascrie datele —
    doar citeste si se actualizeaza singur. Asa nu mai poate un singur telefon uitat deschis
@@ -1523,7 +1523,7 @@ function lastWeekOf(id){let last=-1;S.weeks.forEach((w,wi)=>{const pl=S.plans[wi
    Textul apare la apăsare lungă / hover, ca să se vadă exact ce nu e în regulă. */
 function asgWarn(role,key,pl){
  var cur=(pl&&pl.a&&pl.a[key])||"";if(!cur)return "";
- if(_awSee()){var _ap=awayAny(cur,awDVcp(curW));if(_ap)return broDisp(cur)+" lipsește atunci ("+awWhy(_ap)+", "+awRange(_ap)+") — alege pe altcineva";}
+ if(_awSee()){var _ap=awayAny(cur,awDVcp(curW));if(_ap)return broDisp(cur)+" lipsește atunci ("+awRange(_ap)+") — alege pe altcineva";}
  if(Object.keys(pl.a).some(function(k){return k!==key&&pl.a[k]===cur;}))return "Aceeași persoană apare de două ori în această săptămână";
  var b=(S.bros||[]).find(function(x){return x.id===cur;});if(!b)return "";
  var FIXED=["open_pr","close_pr","pres","cond","cit"],part=null;
@@ -5731,9 +5731,10 @@ function startApp(){_dirty=computeDirty();applyTheme();try{bkpMigrate();}catch(e
    `v` = cheia de „văzut deja"; `label` = versiunea afișată.
    ============================================================================ */
 var NEWS=[
- {v:"3.15.3",label:"3.15.3",d:"26.09.2026",quiet:1,t:"Întrunirea publică are turnul",items:[
+ {v:"3.15.4",label:"3.15.4",d:"26.09.2026",quiet:1,t:"Întrunirea publică are turnul",items:[
   {ic:"tower",t:"Turnul, în locul casei",s:"Întrunirea publică se recunoaște acum după turn — în bara Programărilor, în Arhivă și pe foile tipărite."},
-  {ic:"book",who:"ed",t:"Foile tipărite, mai liniștite",s:"Banda fiecărei săptămâni e acum subțire și deschisă la culoare, ca privirea să cadă pe nume."}
+  {ic:"book",who:"ed",t:"Foile tipărite, mai liniștite",s:"Banda fiecărei săptămâni e acum subțire și deschisă la culoare, ca privirea să cadă pe nume."},
+  {ic:"user",t:"„Când lipsesc”, mai discret",s:"Doar zilele, fără motiv. Când n-ai trecut nimic, în profil rămâne un singur rând."}
  ]},
  {v:"3.15.0",label:"3.15",d:"26.09.2026",t:"Când lipsești, iar foile de avizier arată mai bine",items:[
   {ic:"user",t:"Când lipsești",s:"În Profilul meu, la „Când lipsesc”, îți treci zilele de vacanță sau în care lipsești din alt motiv. Atunci nu vei fi pus la nimic. Le poți trece și pentru cei din familia ta.",go:"meu",gl:"Deschide profilul"},
@@ -7906,13 +7907,13 @@ function awDWeek(wi){return awDVcp(wi).concat(awDWm(wi));}/* sarcinile țin de a
 function awDDay(wi,dow){var d=_wkDayDate(wi,dow);return d?[d]:[];}
 /* motivul și atenționările le văd doar administratorii */
 function _awSee(){return _isAdmin();}
-function awWhy(p){return (p&&p.r==="alt")?(String(p.n||"").trim()||"alt motiv"):"vacanță";}
+
 function awRange(p){if(!p)return "";var a=_awDt(p.f),b=_awDt(p.t||p.f),y=new Date().getFullYear();
  var ey=function(d){return d.getFullYear()!==y?(" "+d.getFullYear()):"";};
  if(p.f===(p.t||p.f))return a.getDate()+" "+_MU_MS[a.getMonth()]+ey(a);
  var same=a.getMonth()===b.getMonth()&&a.getFullYear()===b.getFullYear();
  return a.getDate()+(same?"":(" "+_MU_MS[a.getMonth()]+(a.getFullYear()!==b.getFullYear()?ey(a):"")))+" – "+b.getDate()+" "+_MU_MS[b.getMonth()]+ey(b);}
-function awTxt(p){return _awSee()?("Lipsește: "+awWhy(p)+" · "+awRange(p)):("Lipsește atunci · "+awRange(p));}
+function awTxt(p){return "Lipsește · "+awRange(p);}
 function ensureAwCSS(){if(document.getElementById("awcss"))return;var st=document.createElement("style");st.id="awcss";st.textContent=
  ".awbn{display:flex;gap:11px;align-items:flex-start;background:rgba(244,124,124,.12);border:1px solid rgba(244,124,124,.45);border-radius:16px;padding:12px 14px;margin:0 0 12px;color:var(--ink)}"
 +".app.light .awbn{background:rgba(192,57,43,.06);border-color:rgba(192,57,43,.3)}"
@@ -7923,11 +7924,14 @@ function ensureAwCSS(){if(document.getElementById("awcss"))return;var st=documen
 +".awc{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;line-height:1.3;border-radius:8px;padding:3px 8px;margin-top:5px;background:rgba(244,124,124,.14);color:var(--maroon)}"
 +".app.light .awc{color:var(--secRed);background:rgba(192,57,43,.08)}.awc svg{width:12px;height:12px;flex:0 0 auto}"
 +".pk-row.off .pk-av,.pk-row.off .pk-nm{opacity:.5}.pk-go.off{background:var(--surf2);color:var(--ink3);box-shadow:none;cursor:not-allowed;border:1px solid var(--bd)}"
-+".awrow{display:flex;align-items:center;gap:11px;padding:11px 14px;border-top:1px solid var(--bd)}.awrow:first-child{border-top:0}"
-+".awrow .awd{flex:0 0 auto;width:40px;height:40px;border-radius:12px;display:grid;place-items:center;background:var(--accsoft);color:var(--acc)}.awrow .awd svg{width:19px;height:19px}"
++".awrow{display:flex;align-items:center;gap:10px;padding:8px 10px 8px 12px;border-top:1px solid var(--bd);cursor:pointer}.awrow:first-child{border-top:0}"
++".awmini{display:flex;align-items:center;gap:10px;width:100%;padding:10px 12px;border:0;background:transparent;color:var(--ink);font:inherit;text-align:left;cursor:pointer}"
++".awmini .awt b{display:inline;font-size:14px}.awmini .awt span{display:inline;margin-left:6px;font-size:12.5px;color:var(--ink3)}.awmini .awp{flex:0 0 auto;color:var(--acc);display:flex}.awmini .awp svg{width:19px;height:19px}"
++".awnow{display:inline-block;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.3px;color:var(--maroon);background:rgba(244,124,124,.14);border-radius:999px;padding:1px 7px;margin-left:6px;vertical-align:1px}.app.light .awnow{color:var(--secRed)}"
++".awrow .awd,.awmini .awd{flex:0 0 auto;width:30px;height:30px;border-radius:9px;display:grid;place-items:center;background:var(--accsoft);color:var(--acc)}.awrow .awd svg,.awmini .awd svg{width:16px;height:16px}"
 +".awrow.now .awd{background:rgba(244,124,124,.16);color:var(--maroon)}.app.light .awrow.now .awd{color:var(--secRed)}"
-+".awrow .awt{flex:1;min-width:0}.awrow .awt b{display:block;font-size:14.5px}.awrow .awt span{display:block;font-size:12px;color:var(--ink3);margin-top:2px}"
-+".awrow .awx{flex:0 0 auto;width:34px;height:34px;border:1px solid var(--bd);border-radius:10px;background:var(--surf);color:var(--ink3);font-size:18px;line-height:1;cursor:pointer}";
++".awrow .awt,.awmini .awt{flex:1;min-width:0}.awrow .awt b{font-size:14px}.awrow .awt span:not(.awnow){display:block;font-size:12px;color:var(--ink3);margin-top:1px}"
++".awrow .awx{flex:0 0 auto;width:30px;height:30px;border:1px solid var(--bd);border-radius:10px;background:var(--surf);color:var(--ink3);font-size:18px;line-height:1;cursor:pointer}";
  document.head.appendChild(st);}
 /* eticheta roșie de lângă un nume dintr-o foaie (doar pentru administratori) */
 function awChip(id,ds){if(!_awSee()||!id)return "";var p=awayAny(id,ds);if(!p)return "";ensureAwCSS();
@@ -7952,7 +7956,7 @@ function awConfOf(id){var out=[],c=vcpCurWeek();if(c<0)c=0;
 /* atenționarea din capul unei foi: cine lipsește și ce avea (doar pentru administratori) */
 function awBanner(wi,mod){if(!_awSee())return "";var L=awConf(wi).filter(function(x){return !mod||x.mod===mod;});if(!L.length)return "";ensureAwCSS();
  return '<div class="awbn" role="alert"><span class="awi">'+_PK_IC.warn+'</span><div><b>'+(L.length===1?"Cineva de aici lipsește atunci":"Unii de aici lipsesc atunci")+'</b>'
-  +L.map(function(x){return '<div class="l"><b>'+esc(broDisp(x.id))+'</b> — '+esc(x.what)+' · lipsește ('+esc(awWhy(x.p))+', '+esc(awRange(x.p))+')</div>';}).join("")
+  +L.map(function(x){return '<div class="l"><b>'+esc(broDisp(x.id))+'</b> — '+esc(x.what)+' · lipsește ('+esc(awRange(x.p))+')</div>';}).join("")
   +'<div class="s">Doar administratorii văd această atenționare. Alege pe altcineva.</div></div></div>';}
 /* în liste: cei care lipsesc coboară la coadă și nu mai pot fi aleși */
 function _awLast(list,ds){list.forEach(function(o){o.aw=awayAny(o.b.id,ds);});
@@ -7970,33 +7974,30 @@ function _awCan(id){var my=_myBro();if(!id)return false;if(_isAdmin())return tru
  return _awFamIds(_awB(my)).indexOf(id)>=0;}
 function _awNm(id){var my=_myBro();return id===my?"Eu":broDisp(id);}
 function _awRowHtml(p,id,showNm){var today=_ymd(new Date()),now=p.f<=today;
- var why=p.r==="alt"?(String(p.n||"").trim()||"Altceva"):"Vacanță";
- return '<div class="awrow'+(now?" now":"")+'"><span class="awd">'+IC.cal+'</span><span class="awt"><b>'+esc(awRange(p))+'</b><span>'+(showNm?('<b style="display:inline;font-size:12px;color:var(--ink2)">'+esc(_awNm(id))+'</b> · '):'')+esc(now?"acum · ":"")+esc(why)+'</span></span>'
-  +'<button class="btn ghost sm" onclick="meAwaySheet(\''+p.id+'\',\''+id+'\')">Schimbă</button><button class="awx" title="Șterge" aria-label="Șterge" onclick="meAwayDel(\''+p.id+'\',\''+id+'\')">×</button></div>';}
+ return '<div class="awrow'+(now?" now":"")+'" role="button" tabindex="0" onclick="meAwaySheet(\''+p.id+'\',\''+id+'\')"><span class="awd">'+IC.cal+'</span><span class="awt"><b>'+esc(awRange(p))+'</b>'+(now?'<span class="awnow">acum</span>':'')
+  +(showNm?('<span>'+esc(_awNm(id))+'</span>'):'')+'</span>'
+  +'<button class="awx" title="Șterge" aria-label="Șterge" onclick="event.stopPropagation();meAwayDel(\''+p.id+'\',\''+id+'\')">×</button></div>';}
 function _awUpcoming(id){var today=_ymd(new Date());return awList(_awB(id)).filter(function(p){return (p.t||p.f)>=today;}).sort(function(x,y){return x.f<y.f?-1:1;});}
 function _meAwayHtml(b){ensureAwCSS();
  var fam=b?_awFamIds(b):[],base=b?[b.id]:[],rows=[];
  if(!b&&!_isAdmin())return "";
  base.concat(fam).forEach(function(id){_awUpcoming(id).forEach(function(p){rows.push({p:p,id:id});});});
  rows.sort(function(x,y){return x.p.f<y.p.f?-1:(x.p.f>y.p.f?1:0);});
- var h='<div class="mu-h">Când lipsesc<button class="lk" onclick="meAwaySheet()">Adaugă'+IC.plus+'</button></div><div class="mu-card">';
- if(!rows.length)h+='<div class="mu-empty"><span class="i">'+IC.cal+'</span><div><b>Pleci în vacanță sau lipsești?</b><div class="muted">Trece aici zilele și nu vei primi nimic de făcut atunci — nici la întruniri, nici la mărturie sau teren.'+(fam.length?' Le poți pune și pentru familia ta.':'')+'</div></div></div>';
- else h+=rows.map(function(r){return _awRowHtml(r.p,r.id,fam.length>0);}).join("");
- h+='</div>';
- if(!b)h='<div class="mu-h">Când lipsește cineva<button class="lk" onclick="meAwaySheet()">Adaugă'+IC.plus+'</button></div>';
- /* administratorii văd și pe toți ceilalți care lipsesc de acum încolo */
- if(_isAdmin()){var mine={};base.concat(fam).forEach(function(id){mine[id]=1;});var oth=[];
+ var oth=[];
+ if(_isAdmin()){var mine={};base.concat(fam).forEach(function(id){mine[id]=1;});
   (S.bros||[]).forEach(function(x){if(mine[x.id]||x.active===false||isArchNow(x))return;_awUpcoming(x.id).forEach(function(p){oth.push({p:p,id:x.id});});});
-  oth.sort(function(x,y){return x.p.f<y.p.f?-1:(x.p.f>y.p.f?1:0);});
-  h+='<div class="mu-h">Cine mai lipsește'+(oth.length?('<span class="n">'+oth.length+'</span>'):'')+'</div><div class="mu-card">'
-   +(oth.length?oth.map(function(r){return _awRowHtml(r.p,r.id,true);}).join(""):'<div class="mu-empty"><span class="i">'+IC.ppl+'</span><div><b>Nimeni altcineva</b><div class="muted">Ca administrator, poți pune zilele în care lipsește oricine — din „Adaugă”, mai sus.</div></div></div>')
-   +'</div>';}
+  oth.sort(function(x,y){return x.p.f<y.p.f?-1:(x.p.f>y.p.f?1:0);});}
+ /* nimic trecut: un singur rând discret, care deschide adăugarea */
+ if(!rows.length&&!oth.length)return '<div class="mu-card"><button class="awmini" onclick="meAwaySheet()"><span class="awd">'+IC.cal+'</span><span class="awt"><b>'+(b?"Când lipsesc":"Când lipsește cineva")+'</b><span>nicio perioadă</span></span><span class="awp">'+IC.plus+'</span></button></div>';
+ var h='<div class="mu-h">'+(b?"Când lipsesc":"Când lipsește cineva")+'<button class="lk" onclick="meAwaySheet()">Adaugă'+IC.plus+'</button></div>';
+ if(rows.length)h+='<div class="mu-card">'+rows.map(function(r){return _awRowHtml(r.p,r.id,r.id!==(b&&b.id));}).join("")+'</div>';
+ /* administratorii văd și pe ceilalți care lipsesc de acum încolo — doar dacă e cineva */
+ if(oth.length)h+='<div class="mu-h">Cine mai lipsește<span class="n">'+oth.length+'</span></div><div class="mu-card">'+oth.map(function(r){return _awRowHtml(r.p,r.id,true);}).join("")+'</div>';
  return h;}
-var _awR="vac";
 function meAwaySheet(eid,forId){var my=_myBro();var me=_awB(my);
  if(!me&&!_isAdmin()){toast("Contul nu e legat de un vestitor");return;}
  var tid=forId||my||"";if(tid&&!_awCan(tid)){toast("Poți pune doar pentru tine și familia ta");return;}
- var tb=_awB(tid),p=(eid&&tb)?awList(tb).find(function(x){return x.id===eid;}):null,t=_ymd(new Date());_awR=(p&&p.r==="alt")?"alt":"vac";
+ var tb=_awB(tid),p=(eid&&tb)?awList(tb).find(function(x){return x.id===eid;}):null,t=_ymd(new Date());
  /* pentru cine: eu, familia mea și — la administratori — oricine din congregație */
  var who="";
  if(!p){var fam=me?_awFamIds(me):[],opts=[];
@@ -8011,25 +8012,21 @@ function meAwaySheet(eid,forId){var my=_myBro();var me=_awB(my);
  var self=(tid===my);
  sheet("",p?"Schimbă perioada":(self||who?"Când lipsești":("Când lipsește "+broDisp(tid))),
   (p&&!self?('<div class="muted" style="margin:0 2px 8px"><b>'+esc(broDisp(tid))+'</b></div>'):'')
- +'<div class="muted" style="margin:0 2px 12px">În zilele acestea nu va fi pus nimic: părți la întruniri, sarcini, mărturia publică sau teren.</div>'
+ +'<div class="muted" style="margin:0 2px 12px">În zilele acestea nu va fi pus la nimic.</div>'
  +who
  +'<div class="two"'+(who?' style="margin-top:12px"':'')+'><div><label class="fl" style="margin-top:0">De la</label><input id="awF" class="fld" type="date" min="'+t+'" value="'+esc(p?p.f:t)+'" onchange="var e=document.getElementById(\'awT\');if(e&&(!e.value||e.value<this.value))e.value=this.value;e.min=this.value"></div>'
  +'<div><label class="fl" style="margin-top:0">Până la (inclusiv)</label><input id="awT" class="fld" type="date" min="'+esc(p?p.f:t)+'" value="'+esc(p?(p.t||p.f):"")+'"></div></div>'
- +'<label class="fl">Motivul</label><div class="bf-seg" role="radiogroup" style="display:flex">'
- +[["vac","Vacanță"],["alt","Altceva"]].map(function(o){return '<label style="flex:1"><input type="radio" name="awRR" value="'+o[0]+'" '+(_awR===o[0]?"checked":"")+' onchange="_awR=this.value;document.getElementById(\'awNW\').style.display=this.value===\'alt\'?\'\':\'none\'"><span>'+o[1]+'</span></label>';}).join("")+'</div>'
- +'<div id="awNW" style="'+(_awR==="alt"?"":"display:none")+'"><label class="fl">Pe scurt</label><input id="awN" class="fld" maxlength="60" value="'+esc(p?(p.n||""):"")+'" placeholder="ex. deplasare, spital, examen"></div>'
- +'<div class="hint" style="margin-top:12px">Doar administratorii văd motivul. Dacă e deja pus la ceva în zilele acestea, ei văd o atenționare în foaia respectivă și pun pe altcineva.</div>'
  +'<div class="rowflex" style="gap:9px;margin-top:18px">'+(p?('<button class="btn danger sm" style="width:auto" onclick="meAwayDel(\''+p.id+'\',\''+tid+'\')">Șterge</button>'):'')+'<div class="spacer"></div><button class="btn ghost sm" style="width:auto" onclick="closeSheet()">Anulează</button><button class="btn pri sm" style="width:auto" onclick="meAwaySave(\''+(p?p.id:"")+'\',\''+tid+'\')">Salvează</button></div>');
  try{ensureEdCSS();ensureBfCSS();}catch(e){}}
 function meAwaySave(eid,forId){var w=$("#awWho"),tid=(w&&w.value)||forId||_myBro();
  if(!_awCan(tid)){toast("Poți pune doar pentru tine și familia ta");return;}
  var b=_awB(tid);if(!b)return;
- var f=($("#awF")||{}).value||"",t=($("#awT")||{}).value||f,r=_awR==="alt"?"alt":"vac",n=r==="alt"?(($("#awN")||{}).value||"").trim().slice(0,60):"";
+ var f=($("#awF")||{}).value||"",t=($("#awT")||{}).value||f;
  if(!/^\d{4}-\d{2}-\d{2}$/.test(f)){toast("Alege ziua de început");return;}
  if(!/^\d{4}-\d{2}-\d{2}$/.test(t))t=f;
  if(t<f){toast("Ziua de sfârșit e înaintea celei de început");return;}
  if(t<_ymd(new Date())){toast("Perioada s-a încheiat deja");return;}
- var L=awList(b).slice(),o={id:eid||("a"+Date.now().toString(36)),f:f,t:t,r:r,n:n};
+ var L=awList(b).slice(),o={id:eid||("a"+Date.now().toString(36)),f:f,t:t};
  var i=eid?L.findIndex(function(x){return x.id===eid;}):-1;if(i>=0)L[i]=o;else L.push(o);
  _meAwayApply(b,L,o);}
 async function meAwayDel(eid,forId){var tid=forId||_myBro();if(!_awCan(tid))return;var b=_awB(tid);if(!b)return;
