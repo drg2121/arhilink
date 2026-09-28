@@ -690,7 +690,7 @@ Object.assign(IC,{
  box:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h18v13H3z"/><path d="M3 7l2-4h14l2 4"/><path d="M10 11h4"/></svg>',
  mark:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15.5 4.5l4 4-9.5 9.5H6v-4z"/><path d="M12.5 7.5l4 4M5 21h14"/></svg>'
 });
-const VERSION="3.15.5";
+const VERSION="3.15.6";
 /* Versiunea minima care are voie sa SCRIE in cloud. Se trece in gist la fiecare trimitere;
    un dispozitiv ramas pe un build mai vechi decat atat nu mai poate suprascrie datele —
    doar citeste si se actualizeaza singur. Asa nu mai poate un singur telefon uitat deschis
@@ -1315,8 +1315,8 @@ function openWeek(i){if(_wkDraft&&_wkDraft.i!==i&&!_wkGuard())return;wkOpen=true
   +(_canEditVcp()?`<button class="miniact" onclick="mailWeekSheet(${i})" title="Trimite temele pe e-mail">✉ E-mail</button>`:``)+`</div>`;
  const head=w.event?`<div class="group gp" style="padding:15px 16px 11px"><div class="nm" style="font-size:17px;font-weight:800">${tc(w.date)}</div><div class="mt" style="font-size:13px;margin-top:3px"><span style="color:var(--acc);font-weight:700">${esc(w.event)}${w.eventName?' — '+esc(w.eventName):''}</span>${w.bible?' · '+esc(w.bible):''}</div></div>`:'';
  const isVisit=isVisitEv(w);
- if(evNoMeet(w)){$("#body").innerHTML=bar+head
-   +`<div class="evb"><div class="et">${esc(evLabel(w))}</div>${w.eventName?'<div class="ed" style="color:var(--ink);font-weight:700;font-size:15px">'+esc(w.eventName)+'</div>':''}<div class="ed">În această săptămână nu se ține întrunirea, deci nu se face nicio planificare (S-38).</div></div>`
+ if(evNoMid(w)){$("#body").innerHTML=bar+head
+   +`<div class="evb"><div class="et">${esc(evLabel(w))}</div>${w.eventName?'<div class="ed" style="color:var(--ink);font-weight:700;font-size:15px">'+esc(w.eventName)+'</div>':''}<div class="ed">În această săptămână nu se ține întrunirea${evNoMeet(w)?"":" din timpul săptămânii"}, deci nu se face nicio planificare (S-38).</div></div>`
    +`<button class="btn ghost" style="margin-bottom:10px" onclick="clearEvent(${i})">Folosește program normal</button>`;
   _arhNavPrepend();_keepScroll(_keep,_sb,_wy);return;}
  const meta={Comori:["Comori din Cuvântul lui Dumnezeu","C",IC.gem],Predicare:["Să fim mai eficienți în predicare","P",IC.wheat],Viata:["Viața de creștin","V",IC.sheep]};
@@ -1465,7 +1465,7 @@ function renderVcp(i){_fabDl(vcpDlSheet);_vcpStyle();
  if(vcpW<0||!S.weeks.length){$("#body").innerHTML='<div class="empty" style="padding:40px 10px">Nicio săptămână în caiet.</div>';_progNavFix();return;}
  _bindVcpSwipe();
  const w=S.weeks[vcpW];ensureIds(w);const pl=S.plans[vcpW]||{a:{},songs:{}};const a=pl.a||{};const dn=pl.done||{};
- const me=_myBro(),T=vcpTimes(vcpW),isVisit=isVisitEv(w),noMeet=evNoMeet(w);
+ const me=_myBro(),T=vcpTimes(vcpW),isVisit=isVisitEv(w),noMeet=evNoMid(w);
  /* capul săptămânii: săgețile, data mare, citirea, apoi ziua, ora și evenimentul */
  const np=`<button class="wkb" onclick="renderVcp(${vcpW-1})" ${vcpW<=0?"disabled":""} title="Săptămâna anterioară" aria-label="Săptămâna anterioară">${IC.back}</button>`;
  const nn=`<button class="wkb" onclick="renderVcp(${vcpW+1})" ${vcpW>=S.weeks.length-1?"disabled":""} title="Săptămâna următoare" aria-label="Săptămâna următoare">${IC.fwd}</button>`;
@@ -1478,7 +1478,7 @@ function renderVcp(i){_fabDl(vcpDlSheet);_vcpStyle();
  const bar=`<div class="vw-head vcpbar"><div class="vw-nav">${np}<div class="vw-ttl">${st?`<div class="vw-st${ws==="past"?" past":""}">${st}</div>`:''}<div class="vw-date">${esc(tc(w.date))}</div>${w.bible?`<div class="vw-bib">${esc(w.bible)}</div>`:''}</div>${nn}</div>`
   +(info.length?`<div class="vw-info">${info.join("")}</div>`:'')
   +(w.event?`<div class="vw-ev">${IC.star}<span>${esc(evLabel(w))}${w.eventName?(' — '+esc(w.eventName)):''}</span></div>`:'')+`</div>`;
- if(noMeet){$("#body").innerHTML=`<div class="vw">${bar}<div class="evb"><div class="et">${esc(evLabel(w))}</div>${w.eventName?'<div class="ed" style="color:var(--ink);font-weight:700;font-size:15px">'+esc(w.eventName)+'</div>':''}<div class="ed">În această săptămână nu se ține întrunirea (S-38).</div></div></div>`;_progNavFix();window.scrollTo(0,0);const b0=$("#body");if(b0)b0.scrollTop=0;return;}
+ if(noMeet){$("#body").innerHTML=`<div class="vw">${bar}<div class="evb"><div class="et">${esc(evLabel(w))}</div>${w.eventName?'<div class="ed" style="color:var(--ink);font-weight:700;font-size:15px">'+esc(w.eventName)+'</div>':''}<div class="ed">În această săptămână nu se ține întrunirea${evNoMeet(w)?"":" din timpul săptămânii"} (S-38).</div></div></div>`;_progNavFix();window.scrollTo(0,0);const b0=$("#body");if(b0)b0.scrollTop=0;return;}
  const _awd=awDVcp(vcpW);
  const nmv=key=>{const id=a[key];if(!id)return '<span class="vnone">—</span>';const cl=[dn[key]?'titlehl':'',(me&&id===me)?'me':''].filter(Boolean).join(" ");
   return '<b'+(cl?(' class="'+cl+'"'):'')+'>'+esc(broDisp(id))+'</b>'+awChip(id,_awd);};
@@ -1625,7 +1625,7 @@ function autoSheet(){
   if(old){_nOld++;return;}
   const mk=monthLabel(monthKey(w.date))+" "+(_wkMonthKey(idx).split("|")[0]||"");
   if(mk!==_lastM){_lastM=mk;_rows.push(`<div class="aomh">${esc(mk)}</div>`);}
-  const noMeet=evNoMeet(w);
+  const noMeet=evNoMid(w);
   _rows.push(`<label class="aow${noMeet?' aodis':''}${idx===_cw?' aonow':''}">`
    +`<input type="checkbox" class="auto-wk" value="${idx}" ${(idx===curW&&!noMeet)?"checked":""} ${noMeet?"disabled":""} onchange="autoCount()">`
    +`<span>${esc(tc(w.date))}${idx===_cw?'<span class="aotag">acum</span>':''}`
@@ -1761,7 +1761,7 @@ function autoRun(){
  let nA=0,nS=0;const miss={};
  selW.forEach(wi=>{
   const w=S.weeks[wi];ensureIds(w);
-  if(evNoMeet(w))return;
+  if(evNoMid(w))return;
   const pl=S.plans[wi]=S.plans[wi]||{a:{}};pl.a=pl.a||{};
   const slots=[];
   if(selRoles["Rugăciune"])slots.push({key:"open_pr",role:"Rugăciune",part:null});
@@ -2520,10 +2520,16 @@ const EVT_PRE=["Congres de circumscripție","Congres regional","Comemorarea mor�
    redenumi, le poți schimba tipul sau le poți șterge. Tipul hotărăște ce face aplicația:
      visit — program normal, cu Studiul Bibliei înlocuit de cuvântarea de serviciu (30 min.)
      none  — nu se ține întrunirea în acea săptămână (congres, Comemorare)
+     wkend — doar sfârșitul săptămânii e luat (ex. o întrunire specială): întrunirea din timpul
+             săptămânii se ține normal și are sarcini, întrunirea publică nu se ține
+     mid   — invers: nu se ține întrunirea din timpul săptămânii, cea de la sfârșit de săptămână
+             se ține normal și are sarcini
      mark  — program normal, săptămâna e doar marcată cu numele evenimentului
    Unde nu e întrunire nu se face nici planificarea de Sarcini (audio-video, ordine, curățenie). */
 var EV_KINDS=[["visit","Vizita supraveghetorului de circumscripție","Program normal, dar Studiul Bibliei e înlocuit cu o cuvântare de serviciu de 30 de minute (S-38 §21)"],
  ["none","Nu se ține întrunirea","Săptămâna rămâne fără program — congres (§22), Comemorarea (§23)"],
+ ["wkend","Nu se ține doar întrunirea de la sfârșit de săptămână","Întrunirea din timpul săptămânii se ține normal și i se programează sarcinile; întrunirea publică nu se ține (ex. o întrunire specială)"],
+ ["mid","Nu se ține doar întrunirea din timpul săptămânii","Întrunirea publică de la sfârșit de săptămână se ține normal și i se programează sarcinile; programul VCP nu se face"],
  ["mark","Program normal, doar marcat","Întrunirea se ține ca de obicei; săptămâna e doar marcată cu numele evenimentului"]];
 function evKindLbl(k){var r=EV_KINDS.find(function(x){return x[0]===k;});return r?r[1]:k;}
 var EV_SEED=[
@@ -2543,13 +2549,26 @@ function evOf(w){if(!w||!w.event)return null;var L=evTypes(),t=null;
  var e=String(w.event);
  if(/supraveghetor/i.test(e))return {id:"",n:e,k:"visit"};
  return {id:"",n:e,k:"none"};/* necunoscut → ca înainte: fără program */}
+/* evNoMeet — nu se ține nicio întrunire (nici sarcini, nici curățenie); evNoMid — nu se ține
+   întrunirea din timpul săptămânii (VCP); evNoWm — nu se ține întrunirea publică (sfârșit de săptămână) */
 function evNoMeet(w){var t=evOf(w);return !!(t&&t.k==="none");}
+function evNoMid(w){var t=evOf(w);return !!(t&&(t.k==="none"||t.k==="mid"));}
+function evNoWm(w){var t=evOf(w);return !!(t&&(t.k==="none"||t.k==="wkend"));}
+/* săptămâna în care se ține doar una din întruniri: sarcinile sunt doar pentru aceea */
+function evDutyNote(wi){var w=S.weeks[wi];if(!w||evNoMeet(w))return "";
+ var nm=evNoMid(w),nw=evNoWm(w);if(!nm&&!nw)return "";
+ var d=nm?wmDateOf(wi):_wkDayDate(wi,meetDayVal());
+ return "Sarcinile sunt doar pentru întrunirea "+(nm?"de la sfârșit de săptămână":"din timpul săptămânii")
+  +(d?(" ("+RO_DAYS[d.getDay()].toLowerCase()+" "+d.getDate()+" "+RO_MONTHS[d.getMonth()]+")"):"")
+  +". "+(nm?"Întrunirea din timpul săptămânii":"Întrunirea publică")+" nu se ține.";}
 function evVisit(w){var t=evOf(w);return !!(t&&t.k==="visit");}
 function evLabel(w){var t=evOf(w);return (t&&t.n)||(w&&w.event)||"";}
 /* ce se întâmplă în acea săptămână, pe scurt — pentru „Profilul meu" */
 function evShortWhat(w){var t=evOf(w);if(!t)return "";
  if(t.k==="none")return "Nu se țin întruniri în această săptămână";
  if(t.k==="visit")return "Program normal · Studiul Bibliei e înlocuit de cuvântarea de serviciu (30 min.)";
+ if(t.k==="wkend")return "Întrunirea din timpul săptămânii se ține normal · la sfârșit de săptămână nu se ține întrunirea publică";
+ if(t.k==="mid")return "Nu se ține întrunirea din timpul săptămânii · întrunirea publică se ține normal";
  return "Program normal · săptămâna e doar marcată";}
 /* evenimentele care urmează, cu data lor din caiet: doar cele puse pe o săptămână (vizită, congres,
    Comemorare…) și doar cât timp săptămâna nu a trecut. Cele din trecut nu se mai arată nimănui. */
@@ -3677,7 +3696,7 @@ function pushEveMaintain(){try{
  var md=meetDayVal(),now=Date.now(),eveH=(+PUSH().eveH||18);
  var byW={};
  (S.bros||[]).forEach(function(b){if(b.active===false||isArchNow(b))return;var e=_pubEmail(b);if(!e)return;
-  myAssignments(b.id).forEach(function(a){var w=S.weeks[a.wi];if(!w||evNoMeet(w))return;
+  myAssignments(b.id).forEach(function(a){var w=S.weeks[a.wi];if(!w||evNoMid(w))return;
    var g=byW[a.wi];if(!g){var mt=_isoDate(weekISO(w.date));if(!mt)return;
     mt.setDate(mt.getDate()+((md-mt.getDay()+7)%7));
     var eve=new Date(mt.getFullYear(),mt.getMonth(),mt.getDate()-1,eveH,0,0,0).getTime();
@@ -4669,7 +4688,7 @@ function renderSet(){if(!_isAdmin()){renderSetLimited();return;}$("#fab").style.
  +_setCard(IC.star,"Evenimente",
    (function(){var L=evTypes();var used=(S.weeks||[]).filter(function(w){return w&&w.event;}).length;
     return L.length+" tipuri"+(used?(' · <span class="on">'+used+(used===1?" săptămână marcată":" săptămâni marcate")+'</span>'):' · <span class="off">nicio săptămână marcată</span>');})(),
-   `<div class="muted" style="margin:0 0 8px">Vizita supraveghetorului, congresele și Comemorarea — conform Instrucțiunilor S-38. La vizită programul se ține normal, dar Studiul Bibliei e înlocuit cu cuvântarea de serviciu (30 min.); în săptămâna de congres sau de Comemorare nu se ține întrunirea, deci nu se face nici planificarea de Sarcini.</div>
+   `<div class="muted" style="margin:0 0 8px">Vizita supraveghetorului, congresele și Comemorarea — conform Instrucțiunilor S-38. La vizită programul se ține normal, dar Studiul Bibliei e înlocuit cu cuvântarea de serviciu (30 min.); în săptămâna de congres sau de Comemorare nu se ține întrunirea, deci nu se face nici planificarea de Sarcini. Un eveniment poate lua și doar una din întruniri — doar cea de la sfârșit de săptămână (ex. o întrunire specială) sau doar cea din timpul săptămânii; cealaltă se ține normal și i se programează sarcinile.</div>
     <button class="btn pri sm" style="width:100%" onclick="evSheet()">Gestionează evenimentele</button>`)
  +_setCard(IC.book||IC.gem,"Referințe (broșuri)",
    (function(){var R=(st.refs&&Object.keys(st.refs))||[];
@@ -5167,6 +5186,7 @@ function _startupChores(){if(_choresDone)return;_choresDone=true;
  try{ftSeedRun();}catch(e){try{logErr("startupChores/ftSeedRun: "+_errMsg(e),e&&e.stack,"boot");}catch(_e){}}
  try{_ftNoteDrop();}catch(e){try{logErr("startupChores/_ftNoteDrop: "+_errMsg(e),e&&e.stack,"boot");}catch(_e){}}
  try{_ftEvDrop();}catch(e){try{logErr("startupChores/_ftEvDrop: "+_errMsg(e),e&&e.stack,"boot");}catch(_e){}}
+ try{_evSpecWkend();}catch(e){try{logErr("startupChores/_evSpecWkend: "+_errMsg(e),e&&e.stack,"boot");}catch(_e){}}
  try{_sessRefresh();_sessSave();}catch(e){}}
 function fmtSync(t){var d=new Date(t),n=new Date(),hh=("0"+d.getHours()).slice(-2),mm=("0"+d.getMinutes()).slice(-2);return d.toDateString()===n.toDateString()?(hh+":"+mm):(("0"+d.getDate()).slice(-2)+"."+("0"+(d.getMonth()+1)).slice(-2)+" "+hh+":"+mm);}
 function updateSyncInfo(){var el=$("#syncInfo");if(!el)return;var t=0;try{t=+localStorage.getItem(KEY+"_sync")||0;}catch(e){}
@@ -5733,6 +5753,9 @@ function startApp(){_dirty=computeDirty();applyTheme();try{bkpMigrate();}catch(e
    `v` = cheia de „văzut deja"; `label` = versiunea afișată.
    ============================================================================ */
 var NEWS=[
+ {v:"3.15.6",label:"3.15.6",d:"28.09.2026",t:"Săptămâni în care se ține doar o întrunire",items:[
+  {ic:"cal",who:"admin",t:"Evenimentul poate lua doar o întrunire",s:"În Setări → Evenimente, la „Ce se întâmplă în acea săptămână”, sunt două variante noi: nu se ține doar întrunirea de la sfârșit de săptămână (ex. o întrunire specială) sau nu se ține doar cea din timpul săptămânii. Cealaltă întrunire se ține normal și i se programează sarcinile."}
+ ]},
  {v:"3.15.5",label:"3.15.5",d:"26.09.2026",quiet:1,t:"Întrunirea publică are turnul",items:[
   {ic:"tower",t:"Turnul, în locul casei",s:"Întrunirea publică se recunoaște acum după turn — în bara Programărilor, în Arhivă și pe foile tipărite."},
   {ic:"book",who:"ed",t:"Foile tipărite, mai liniștite",s:"Banda fiecărei săptămâni e acum subțire și deschisă la culoare, ca privirea să cadă pe nume."},
@@ -6462,7 +6485,7 @@ function weekBlock(i){const w=S.weeks[i];ensureIds(w);const pl=S.plans[i]||{a:{}
  const SEC={Comori:["Comori din Cuvântul lui Dumnezeu","#117a8b",IC.gem],Predicare:["Să fim mai eficienți în predicare","#b8740a",IC.wheat],Viata:["Viața de creștin","#c0392b",IC.sheep]};
  const R=(time,label,role,right,col,dl)=>`<tr><td class="ptm">${time}</td><td class="plb"><span style="color:${col||'#333'}">•</span>&nbsp;${dl?'<span class="hl">'+esc(label)+'</span>':esc(label)}</td><td>${role?'<b>'+role+'</b> ':''}${right||''}</td></tr>`;
  let body;
- if(evNoMeet(w)){body=`<div class="pev"><div class="pevt">${esc(evLabel(w))}</div>${w.eventName?'<div class="pevs" style="font-weight:700;color:#333">'+esc(w.eventName)+'</div>':''}<div class="pevs">${esc(tc(w.date))}</div><div class="pevs" style="margin-top:6px">Nu se țin întruniri în această săptămână.</div></div>`;}
+ if(evNoMid(w)){body=`<div class="pev"><div class="pevt">${esc(evLabel(w))}</div>${w.eventName?'<div class="pevs" style="font-weight:700;color:#333">'+esc(w.eventName)+'</div>':''}<div class="pevs">${esc(tc(w.date))}</div><div class="pevs" style="margin-top:6px">${evNoMeet(w)?"Nu se țin întruniri în această săptămână.":"Nu se ține întrunirea din timpul săptămânii."}</div></div>`;}
  else{rows.push(R(t,songLine(pl.songs?.open??w.songs[0]),"Rugăciune",nm("open_pr"),null,dn["s_open"]));t=addMin(t,5);
   rows.push(R(t,"Cuvinte introductive (1 min.)","Președinte",nm("pres")));t=addMin(t,1);
   let last=null,mid=false,secCol=null;
@@ -6550,7 +6573,7 @@ function s89FilterUI(){return '<div class="muted" style="margin:0 2px 8px;font-s
 function s89FT(which){var el=document.getElementById("s89f-"+which);if(!el)return;var open=el.style.display==="none";el.style.display=open?"flex":"none";var a=document.getElementById("s89fa-"+which);if(a)a.textContent=open?"\u25b4":"\u25be";}
 function s89SetF(which,val){s89F[which]=(s89F[which]===val?"":val);var box=document.getElementById("s89f-"+which);if(box){[].forEach.call(box.querySelectorAll(".fchip"),function(b){if(b.getAttribute("data-v")===s89F[which])b.classList.add("on");else b.classList.remove("on");});}var lab=document.getElementById("s89fl-"+which);if(lab)lab.textContent=s89Flabel(which);}
 function s89BroA(id){var b=S.bros.find(function(x){return x.id===id;});return {gen:b?(b.gen||""):"",pio:b?pioNow(b):""};}
-function s89Collect(idxs){var out=[];idxs.forEach(function(wi){var w=S.weeks[wi];if(!w)return;ensureIds(w);if(evNoMeet(w))return;var a=(S.plans[wi]||{a:{}}).a||{};(w.parts||[]).forEach(function(p){var role=partRole(p);if(!isStudentPart(p,role))return;var pair=hasPartner(p,role);var key=pair?(p.id+"_a"):p.id;var id=pair?a[key]:asgOf(a,p);var br=s89BroA(id);out.push({date:weekDateLabel(wi),mon:tc(w.date),num:p.num||"",name:nameOf(id||"",pair),partner:pair?nameOf(a[p.id+"_b"]||"",true):"",detail:s89Detail(w,p),gen:br.gen,pio:pioNow(br)});});});return out;}
+function s89Collect(idxs){var out=[];idxs.forEach(function(wi){var w=S.weeks[wi];if(!w)return;ensureIds(w);if(evNoMid(w))return;var a=(S.plans[wi]||{a:{}}).a||{};(w.parts||[]).forEach(function(p){var role=partRole(p);if(!isStudentPart(p,role))return;var pair=hasPartner(p,role);var key=pair?(p.id+"_a"):p.id;var id=pair?a[key]:asgOf(a,p);var br=s89BroA(id);out.push({date:weekDateLabel(wi),mon:tc(w.date),num:p.num||"",name:nameOf(id||"",pair),partner:pair?nameOf(a[p.id+"_b"]||"",true):"",detail:s89Detail(w,p),gen:br.gen,pio:pioNow(br)});});});return out;}
 function s89One(wi,pid){var w=S.weeks[wi];if(!w)return;var a=(S.plans[wi]||{a:{}}).a||{};var p=(w.parts||[]).find(function(x){return x.id===pid;});if(!p)return;var role=partRole(p);var pair=hasPartner(p,role);s89Show([{date:weekDateLabel(wi),mon:tc(w.date),num:p.num||"",name:nameOf(pair?(a[pid+"_a"]||""):(asgOf(a,p)||""),pair),partner:pair?nameOf(a[pid+"_b"]||"",true):"",detail:s89Detail(w,p)}]);}
 function s89Week(wi){var sl=s89Collect([wi]);if(!sl.length){toast("Nicio tem\u0103 de cursant");return;}s89Show(sl);}
 function s89ckAll(v){document.querySelectorAll(".s89wk").forEach(function(c){c.checked=!!v;});}
@@ -7905,7 +7928,7 @@ function awayAny(id,ds){for(var i=0;i<(ds||[]).length;i++){var p=awayOn(id,ds[i]
 /* zilele în care se ține ce se planifică */
 function awDVcp(wi){var d=_wkDayDate(wi,meetDayVal());return d?[d]:[];}
 function awDWm(wi){var d=wmDateOf(wi);return d?[d]:[];}
-function awDWeek(wi){return awDVcp(wi).concat(awDWm(wi));}/* sarcinile țin de ambele întruniri ale săptămânii */
+function awDWeek(wi){var w=S.weeks[wi];return (evNoMid(w)?[]:awDVcp(wi)).concat(evNoWm(w)?[]:awDWm(wi));}/* sarcinile țin de întrunirile care se țin în săptămâna aceea */
 function awDDay(wi,dow){var d=_wkDayDate(wi,dow);return d?[d]:[];}
 /* motivul și atenționările le văd doar administratorii */
 function _awSee(){return _isAdmin();}
@@ -7948,9 +7971,9 @@ function _vcpKeyLbl(wi,key){var FX={cond:"Conducător la studiul Bibliei",cit:"C
 function awConf(wi){var out=[],w=S.weeks[wi];if(!w)return out;
  var add=function(id,ds,what,mod){if(!id||!what)return;var p=awayAny(id,ds);if(p)out.push({id:id,p:p,what:what,mod:mod,wi:wi});};
  var noMeet=evNoMeet(w);
- try{var pl=S.plans[wi];if(pl&&pl.a&&!noMeet){var d1=awDVcp(wi);Object.keys(pl.a).forEach(function(k){if(pl.a[k])add(pl.a[k],d1,_vcpKeyLbl(wi,k),"vcp");});}}catch(e){}
+ try{var pl=S.plans[wi];if(pl&&pl.a&&!evNoMid(w)){var d1=awDVcp(wi);Object.keys(pl.a).forEach(function(k){if(pl.a[k])add(pl.a[k],d1,_vcpKeyLbl(wi,k),"vcp");});}}catch(e){}
  try{if(!noMeet){var o=dutyOf(wi),d2=awDWeek(wi);dutyPosts().forEach(function(p){add(o[p.id],d2,"Sarcini · "+p.n,"sarc");});}}catch(e){}
- try{if(!noMeet){var ow=wmOf(wi),d3=awDWm(wi);add(ow.sp,d3,"Cuvântarea publică","wm");wmPosts().forEach(function(p){add(ow[p.id],d3,"Întrunirea publică · "+p.n,"wm");});}}catch(e){}
+ try{if(!evNoWm(w)){var ow=wmOf(wi),d3=awDWm(wi);add(ow.sp,d3,"Cuvântarea publică","wm");wmPosts().forEach(function(p){add(ow[p.id],d3,"Întrunirea publică · "+p.n,"wm");});}}catch(e){}
  try{mpShifts().forEach(function(x){if(mpOff(wi,x.id))return;var d4=awDDay(wi,x.d);mpSlots(wi,x.id).forEach(function(id){add(id,d4,"Mărturia publică · "+(mpLocName(x.loc)||"")+(x.h?(", "+x.h):""),"mp");});});}catch(e){}
  try{ftSlots().forEach(function(x){if(ftOff(wi,x.id))return;add(ftWho(wi,x.id),awDDay(wi,x.d),"Întrunirea pentru teren · "+RO_DAYS[+x.d]+(x.h?(" "+x.h):""),"teren");});}catch(e){}
  return out;}
@@ -8240,10 +8263,10 @@ function _muItems(my){var out=[],t0=new Date();t0.setHours(0,0,0,0);var md=meetD
  var day=function(d){return d?new Date(d.getFullYear(),d.getMonth(),d.getDate()):null;};
  var add=function(o){o.d=day(o.d);if(!o.d)return;if(!o.wk&&o.d<t0)return;out.push(o);};
  var cut=function(s,pre,sfx){s=String(s||"");if(pre&&s.indexOf(pre)===0)s=s.slice(pre.length);if(sfx&&s.slice(-sfx.length)===sfx)s=s.slice(0,-sfx.length);return s;};
- try{myAssignments(my).forEach(function(it){var w=S.weeks[it.wi];if(!w||evNoMeet(w))return;
+ try{myAssignments(my).forEach(function(it){var w=S.weeks[it.wi];if(!w||evNoMid(w))return;
   var tm=it.key?vcpKeyTime(it.wi,it.key):"";
   add({d:_wkDayDate(it.wi,md),k:"vcp",t:it.label,s:[tm?("ora "+tm):"",it.partner?("cu "+it.partner):""].filter(Boolean).join(" · "),go:"meuGoWeek("+it.wi+")"});});}catch(e){logErr("profil: VCP "+e.message,e.stack);}
- try{myDuties(my).forEach(function(it){var dm=day(_wkDayDate(it.wi,md)),dw=day(wmDateOf(it.wi));
+ try{myDuties(my).forEach(function(it){var dm=evNoMid(S.weeks[it.wi])?null:day(_wkDayDate(it.wi,md)),dw=evNoWm(S.weeks[it.wi])?null:day(wmDateOf(it.wi));
   var d=(dm&&dm>=t0)?dm:((dw&&dw>=t0)?dw:null);if(!d)return;
   add({d:d,k:"duty",t:it.label,s:"la întrunirile săptămânii",go:"meuGoDuty("+it.wi+")"});});}catch(e){logErr("profil: sarcini "+e.message,e.stack);}
  try{myWm(my).forEach(function(it){var d=wmDateOf(it.wi),sfx=d?(" · "+_fmtDayShort(d)):"",t=cut(it.label,"",sfx),s="";
@@ -9777,7 +9800,8 @@ function dutyWeekHtml(wi){var w=S.weeks[wi],o=dutyOf(wi),ed=_canEditDuty(),posts
   +'<button class="wkb" onclick="dutyGo('+(wi+1)+')" '+(np(wi+1)?"":"disabled")+' title="Săptămâna următoare">'+IC.fwd+'</button></div><span class="wkspace">'+_progEditBtn()+'</span></div>';
  if(evNoMeet(w))return h+'<div class="evb" style="margin-top:10px"><div class="et">'+esc(evLabel(w))+'</div><div class="ed">În această săptămână nu se ține întrunirea, deci nu se repartizează sarcini (S-38).</div></div>';
  if(w.event)h+='<div class="group gp" style="padding:14px 16px 11px"><div class="nm" style="font-size:16.5px;font-weight:800">Săptămâna '+esc(tc(w.date))+'</div>'
-  +'<div class="mt" style="font-size:12.5px;margin-top:3px"><span style="color:var(--acc);font-weight:700">'+esc(w.event)+'</span>'+(w.bible?(' · '+esc(w.bible)):'')+'</div></div>';
+  +'<div class="mt" style="font-size:12.5px;margin-top:3px"><span style="color:var(--acc);font-weight:700">'+esc(w.event)+'</span>'+(w.bible?(' · '+esc(w.bible)):'')+'</div>'
+  +(evDutyNote(wi)?('<div class="mt" style="font-size:12px;margin-top:5px">'+esc(evDutyNote(wi))+'</div>'):'')+'</div>';
  h+=awBanner(wi,"sarc");
  h+='<div class="group" style="overflow:hidden">';
  /* Semnul „!” e o unealtă de repartizare: îi spune celui care pune oamenii că persoana mai
@@ -10024,7 +10048,7 @@ function pdfDuty(list){var D=dutyD(),posts=dutyPosts();
  list=(list||[]).filter(function(i){return S.weeks[i];});
  if(!list.length){toast("Nicio săptămână de tipărit");return;}
  var items=list.map(function(wi){var w=S.weeks[wi],o=dutyOf(wi);
-  var d1=_wkDayDate(wi,meetDayVal()),d2=wmDateOf(wi);
+  var d1=evNoMid(w)?null:_wkDayDate(wi,meetDayVal()),d2=evNoWm(w)?null:wmDateOf(wi);
   var as=evNoMeet(w)?"":[d1,d2].filter(Boolean).map(function(d){return RO_DAYS[d.getDay()]+" "+d.getDate()+" "+_MU_MS[d.getMonth()];}).join(" · ");
   var head=_kCols([37,0,37,0])+_kBand("sarc",4,"Săptămâna "+tc(w.date),as);
   /* fără întrunire nu se repartizează sarcini — rămâne doar semnul evenimentului */
@@ -11161,6 +11185,23 @@ function _ftEvDrop(){if(!S.settings)S.settings={};
    try{logAct("Vizita supraveghetorului serviciului a ieșit din evenimente — se pune acum din foaia întrunirilor de teren"+(n?(" ("+n+" săpt. mutate)"):""));}catch(e){}}
  }catch(e){}
  S.settings._ftEvV=2;save();}
+/* Întrunirea specială de la Ploiești ține doar sfârșitul săptămânii, dar fusese pusă ca „Nu se
+   ține întrunirea" — așa dispăreau și întrunirea de miercuri, și sarcinile ei. O trecem o singură
+   dată pe „Nu se ține doar întrunirea de la sfârșit de săptămână". Congresele, Comemorarea și vizita nu se ating. */
+function _evSpecWkend(){if(!S.settings)S.settings={};
+ if(S.settings._evWkV)return;
+ try{var L=evTypes(),n=0,re=/ploiest|special/,keep=/congres|comemor|supraveghetor/;
+  L.forEach(function(t){var nm=_piNorm(t.n);if(t.k==="none"&&re.test(nm)&&!keep.test(nm)){t.k="wkend";n++;}});
+  (S.weeks||[]).forEach(function(w){if(!w||!w.event)return;var t=evOf(w);if(!t||t.k!=="none")return;
+   var nm=_piNorm(w.event);if(keep.test(nm)||!/ploiest/.test(_piNorm(w.event+" "+(w.eventName||""))))return;
+   if(t.id){t.k="wkend";n++;return;}
+   /* eveniment vechi, ținut doar cu numele: îl punem în listă, ca tipul să se poată schimba */
+   var nt=L.find(function(x){return x.n===w.event;});
+   if(!nt){nt={id:"e"+Date.now()+"_"+n,n:w.event,k:"wkend"};L.push(nt);n++;}
+   w.evId=nt.id;});
+  if(n)try{logAct("Întrunirea specială de la Ploiești: nu se ține doar întrunirea de la sfârșit de săptămână — întrunirea din timpul săptămânii și sarcinile ei rămân");}catch(e){}
+ }catch(e){}
+ S.settings._evWkV=1;save();}
 function _ftNoteDrop(){if(!S.settings)S.settings={};
  if(S.settings._ftNoteV)return;
  var D=S.ft,chg=false;
@@ -11357,7 +11398,7 @@ function myWm(broId){var out=[];if(!broId)return out;var D=wmD(),posts=wmPosts()
  return out.sort(function(a,b){return a.wi-b.wi;});}
 /* ospitalitatea e pe grupă: cine e în grupa respectivă o vede în „Profilul meu" */
 function myWmHost(broId){var out=[],gid=myCleanGrp(broId);if(!gid)return out;var D=wmD();
- Object.keys(D.a).forEach(function(k){var wi=+k;var w=S.weeks[wi];if(!w||evNoMeet(w))return;
+ Object.keys(D.a).forEach(function(k){var wi=+k;var w=S.weeks[wi];if(!w||evNoWm(w))return;
   var o=D.a[k]||{};if(!_cleanIsMine({grp:o.grp,grpT:o.grpT},gid))return;
   out.push({wi:wi,date:w.date,event:w.event||"",dt:wmDateOf(wi)});});
  return out.sort(function(a,b){return a.wi-b.wi;});}
@@ -11375,21 +11416,21 @@ function wmListHtml(){var D=wmD(),ed=_canEditWm();
  if(!S.weeks.length)return h+'<div class="empty" style="padding:26px 8px">Nicio săptămână în caiet.<br><span class="muted">Importă caietul din Setări → Import caiet.</span></div>';
  var cw=vcpCurWeek(),ns=wmSlots();
  /* ce a mai rămas de completat: se vede de sus, nu doar deschizând săptămână cu săptămână */
- h+=_gapsBar(_gapsNext(8,function(i){var w=S.weeks[i];return evNoMeet(w)?null:(ns-wmFilled(i));}),"wmGo","locuri de completat");
+ h+=_gapsBar(_gapsNext(8,function(i){var w=S.weeks[i];return evNoWm(w)?null:(ns-wmFilled(i));}),"wmGo","locuri de completat");
  var years=_wkYearGroups();
  years.forEach(function(Y){var yk="wmy"+Y.y;var yo=grpOpen(yk);
   var _vis=Y.ms.filter(function(M){return !wkArchIs(Y.y+"|"+M.mk);});if(!_vis.length)return;
   h+='<div class="ygroup"><button class="yhead" onclick="toggleGrp(\''+yk+'\')"><span class="mchev '+(yo?"op":"")+'">'+IC.chev+'</span><span class="yttl">'+Y.y+'</span></button><div class="ybody" id="g_'+yk+'" style="display:'+(yo?"block":"none")+'">';
   _vis.forEach(function(M){var mk2=yk+"|"+M.mk;var _ak=Y.y+"|"+M.mk;
    var so=(S.ui&&S.ui.open&&S.ui.open[mk2]!==undefined)?S.ui.open[mk2]:(M.items.indexOf(cw)>=0);
-   var nPl=M.items.filter(function(i){return !evNoMeet(S.weeks[i]);}).length;
-   var nAs=M.items.reduce(function(a,i){return a+(evNoMeet(S.weeks[i])?0:wmFilled(i));},0);
+   var nPl=M.items.filter(function(i){return !evNoWm(S.weeks[i]);}).length;
+   var nAs=M.items.reduce(function(a,i){return a+(evNoWm(S.weeks[i])?0:wmFilled(i));},0);
    h+='<div class="mgroup"><div class="mhead" style="display:flex;align-items:center">'
     +'<button class="mhead" style="flex:1;border:0;background:none;padding:0" onclick="toggleGrp(\''+mk2+'\')"><span class="mchev '+(so?"op":"")+'">'+IC.chev+'</span><span class="mttl">'+monthLabel(M.mk)+'</span><span class="mcount">'+nAs+'/'+(nPl*ns)+'</span></button>'
     +(ed?('<button class="pico" title="Arhivează luna" style="flex:0 0 auto;margin-left:6px" onclick="event.stopPropagation();wkArchSet(\''+_ak+'\',1)">'+(IC.box||IC.trash)+'</button>'):'')
     +'</div><div class="mbody" id="g_'+mk2+'" style="display:'+(so?"block":"none")+'">';
    M.items.forEach(function(i){var w=S.weeks[i];var dt=wmDateOf(i);
-    if(evNoMeet(w)){h+='<div class="dwrow" style="opacity:.75;cursor:default"><span class="dwn" style="background:transparent;color:var(--ink3)">—</span>'
+    if(evNoWm(w)){h+='<div class="dwrow" style="opacity:.75;cursor:default"><span class="dwn" style="background:transparent;color:var(--ink3)">—</span>'
       +'<span class="dwi"><span class="dwt">'+esc(dt?_fmtDayShort(dt):tc(w.date))+'</span><span class="dws">'+esc(evLabel(w))+' · nu se ține întrunirea</span></span></div>';return;}
     var o=wmOf(i);var f=wmFilled(i);
     var sp=wmSpeaker(o);
@@ -11446,7 +11487,7 @@ function wmWeekHtml(wi){_vcpStyle();ensureWmvCSS();
   +'<button class="wkb" onclick="wmGo('+(wi+1)+')" '+(np(wi+1)?"":"disabled")+' title="Săptămâna următoare" aria-label="Săptămâna următoare">'+IC.fwd+'</button></div>'
   +(info.length?('<div class="vw-info">'+info.join("")+'</div>'):'')
   +(w.event?('<div class="vw-ev">'+IC.star+'<span>'+esc(evLabel(w))+(w.eventName?(' — '+esc(w.eventName)):'')+'</span></div>'):'')+'</div>';
- if(evNoMeet(w))return h+'<div class="evb"><div class="et">'+esc(evLabel(w))+'</div><div class="ed">În această săptămână nu se ține întrunirea de la sfârșit de săptămână, deci nu se repartizează nimic.</div></div></div>';
+ if(evNoWm(w))return h+'<div class="evb"><div class="et">'+esc(evLabel(w))+'</div><div class="ed">În această săptămână nu se ține întrunirea de la sfârșit de săptămână, deci nu se repartizează nimic.</div></div></div>';
  /* ce ai tu de făcut la întrunirea asta */
  var mine=[];if(me&&o.sp===me)mine.push("Ții cuvântarea publică");
  posts.forEach(function(p){if(me&&o[p.id]===me)mine.push(p.n);});
@@ -11780,8 +11821,8 @@ function arhFabMp(){var ed=_canEditMp();
 /* ============ PDF: Întrunirea publică (în pachetul „FOILE DE AVIZIER") ============ */
 function _wmCard(wi){var w=S.weeks[wi],o=wmOf(wi),dt=wmDateOf(wi);
  var ttl=dt?(RO_DAYS[dt.getDay()]+" "+dt.getDate()+" "+RO_MONTHS_CAP[dt.getMonth()]):tc(w.date);
- var head=_kCols([30,0,30,0])+_kBand("wm",4,ttl,(w.event&&!evNoMeet(w))?evLabel(w):("săptămâna "+_pkWk(wi)));
- if(evNoMeet(w))return {h:34,html:'<table class="ktb">'+head+_kEvRow(w,4)+'</table>'};
+ var head=_kCols([30,0,30,0])+_kBand("wm",4,ttl,(w.event&&!evNoWm(w))?evLabel(w):("săptămâna "+_pkWk(wi)));
+ if(evNoWm(w))return {h:34,html:'<table class="ktb">'+head+_kEvRow(w,4)+'</table>'};
  var tt=(o.tt||"").trim(),tn=+o.tn||ptNumOf(tt);
  var rows='<tr><td class="kl">Titlu</td><td class="kv" colspan="3">'+(tt?('„'+esc(tt)+'”'+(tn?(' <span class="km">· nr. '+tn+'</span>'):'')):'')+'</td></tr>'
   +'<tr><td class="kl">Vorbitor</td><td class="kv">'+esc(wmSpeakerExp(o))+'</td><td class="kl">Congregația</td><td class="kv">'+esc(wmCong(o))+'</td></tr>';
@@ -11802,7 +11843,7 @@ function wmPdfSheet(){var cw=vcpCurWeek();
   H+='<button class="pmrow" onclick="closeSheet();pdfWm(['+four.join(",")+'])">'+IC.pdf+'<span><b>Următoarele '+four.length+' săptămâni</b> — ca foaia de pe avizier</span></button>';}
  var ms=_wkMonthList();
  H+='<div class="pmlbl" style="margin-top:12px">Pe luni</div>';
- ms.forEach(function(M){var n=M.items.reduce(function(a,i){return a+(evNoMeet(S.weeks[i])?0:wmFilled(i));},0);
+ ms.forEach(function(M){var n=M.items.reduce(function(a,i){return a+(evNoWm(S.weeks[i])?0:wmFilled(i));},0);
   H+='<button class="pmrow" onclick="closeSheet();pdfWm(['+M.items.join(",")+'])">'+IC.pdf+'<span><b>'+esc(M.lbl)+'</b> — '+M.items.length+' săpt. · '+n+' atribuiri</span></button>';});
  /* două luni odată: cum se tipărește de obicei foaia */
  if(ms.length>1){H+='<div class="pmlbl" style="margin-top:12px">Două luni</div>';
@@ -11976,7 +12017,7 @@ function _allNote(col,txt){
  return '<tr><td class="ptm"></td><td class="plb" colspan="2"><span style="color:'+col+'">•</span>&nbsp;<b>'+esc(txt)+'</b></td></tr>';}
 function _allWmBox(wi){var o=wmOf(wi),dt=wmDateOf(wi),w=S.weeks[wi];
  var hd=(wmD().title||"Întrunirea Publică")+(dt?(" — "+_fmtDayShort(dt)):"");
- if(evNoMeet(w))return _allSec(ALL_C_WM,ALL_IC_WM,hd,_allNote(ALL_C_WM,String(evLabel(w)).toUpperCase()));
+ if(evNoWm(w))return _allSec(ALL_C_WM,ALL_IC_WM,hd,_allNote(ALL_C_WM,String(evLabel(w)).toUpperCase()));
  var rows=_allRow(ALL_C_WM,"Vorbitor",wmSpeakerExp(o))
   +_allRow(ALL_C_WM,"Congregația",wmCong(o))
   +_allRow(ALL_C_WM,"Titlu",o.tt||"");
@@ -15531,7 +15572,7 @@ function _calMap(y,m){
   var m0=new Date(y,m,1),m1=new Date(y,m+1,0);
   if(we<m0||ws>m1)return;
   var mine=_calMineWeek(wi,me);
-  var noMeet=(typeof evNoMeet==="function")&&evNoMeet(w);
+  var noMeet=(typeof evNoMid==="function")&&evNoMid(w);
   var ev=(typeof evLabel==="function")?evLabel(w):"";
   /* întrunirea din timpul săptămânii */
   var dMid=_wkDayDate(wi,meetDayVal());
@@ -15542,7 +15583,7 @@ function _calMap(y,m){
     mine:!!mine.mid.length,go:"fndGoWeek("+wi+")"});}
   /* întrunirea de la sfârșitul săptămânii */
   var dW=_wkDayDate(wi,meetDayWVal());
-  if(dW&&!noMeet){
+  if(dW&&!evNoWm(w)){
    var o=wmOf(wi);
    put(dW,{k:"wend",h:"",t:"Întrunirea publică",
     s:[(o&&o.tt)||"",mine.wend.length?("ai: "+mine.wend.join(", ")):""].filter(Boolean).join(" · "),
