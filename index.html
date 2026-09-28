@@ -305,10 +305,29 @@ label.fl{display:block;font-size:11.5px;color:var(--ink2);margin:12px 0 5px;font
  .wkbar.vcpbar .wkpos{flex:0 0 auto;font-size:13.5px}
 }
 .pact{display:flex;gap:2px;margin-top:7px}
-.pmrow{display:flex;align-items:center;gap:13px;width:100%;background:var(--bg);color:var(--ink);border:1px solid var(--bd);border-radius:12px;padding:13px 14px;margin-bottom:9px;font-size:15px;font-weight:600;cursor:pointer;text-align:left}
-.pmrow svg{width:20px;height:20px;flex:0 0 auto;color:var(--ink3)}
+/* rândurile din meniuri: iconița într-un pătrat colorat, titlul, iar dedesubt pe scurt ce face
+   (_pmPolish mută singur „— descrierea" pe rândul al doilea) */
+.pmrow{display:flex;align-items:center;gap:12px;width:100%;min-height:58px;background:var(--bg);color:var(--ink);border:1px solid var(--bd);border-radius:14px;padding:10px 12px;margin-bottom:8px;font-size:15px;font-weight:600;line-height:1.3;cursor:pointer;text-align:left}
+.pmrow>svg{width:20px;height:20px;flex:0 0 auto;color:var(--ink3)}
+.pmrow .pmi{width:38px;height:38px;border-radius:12px;display:grid;place-items:center;flex:0 0 auto;background:var(--accsoft);color:var(--acc)}
+.pmrow .pmi svg{width:19px;height:19px;color:var(--acc)}
+.pmrow>span:last-child{flex:1;min-width:0}
+.pmrow .pmt>b{display:block;font-weight:700}
+/* listele din foile de configurare (posturi, locații, ture): rânduri lipite, fără pătratul iconiței */
+.pmlist{background:var(--bg);border:1px solid var(--bd);border-radius:14px;overflow:hidden;margin-bottom:8px}
+.pmlist .pmrow{margin:0;border:0;border-top:1px solid var(--bd);border-radius:0;background:transparent;min-height:52px;padding:10px 14px}
+.pmlist .pmrow:first-child{border-top:0}
+.pmlist .pmrow .pmi{display:none}
+.pmlist .pmrow::after{content:'';width:7px;height:7px;border-right:2px solid var(--ink3);border-bottom:2px solid var(--ink3);transform:rotate(-45deg);flex:0 0 auto;margin-right:4px}
+.pmlist .pmrow.pmadd{color:var(--acc)}.pmlist .pmrow.pmadd::after{display:none}
+.pmlist .pmrow.pmadd .pmi{display:grid;width:22px;height:22px;background:transparent}
+.pmnote{font-size:12px;color:var(--ink3);line-height:1.45;margin:0 2px 8px}
+.pmrow .pms{display:block;font-size:12.5px;font-weight:500;color:var(--ink2);line-height:1.35;margin-top:2px}
+.pmrow .pms .muted{font-size:12px}
+.pmrow.on{border-color:var(--acc);background:var(--accsoft)}
 .pmrow.danger,.pmrow.danger svg{color:var(--maroon)}
-.pmrow.danger{border-color:var(--maroon)}
+.pmrow.danger{border-color:rgba(244,124,124,.45)}
+.pmrow.danger .pmi{background:rgba(244,124,124,.14)}.pmrow.danger .pmi svg{color:var(--maroon)}
 .pmlbl{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--ink3);margin:18px 2px 10px}
 .pmchips{display:flex;flex-wrap:wrap;gap:8px}
 .pmchip{font-size:13.5px;font-weight:700;border:1.5px solid var(--bd);background:var(--bg);color:var(--ink2);border-radius:999px;padding:8px 15px;cursor:pointer}
@@ -690,7 +709,7 @@ Object.assign(IC,{
  box:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h18v13H3z"/><path d="M3 7l2-4h14l2 4"/><path d="M10 11h4"/></svg>',
  mark:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15.5 4.5l4 4-9.5 9.5H6v-4z"/><path d="M12.5 7.5l4 4M5 21h14"/></svg>'
 });
-const VERSION="3.16.0";
+const VERSION="3.17.0";
 /* Versiunea minima care are voie sa SCRIE in cloud. Se trece in gist la fiecare trimitere;
    un dispozitiv ramas pe un build mai vechi decat atat nu mai poate suprascrie datele —
    doar citeste si se actualizeaza singur. Asa nu mai poate un singur telefon uitat deschis
@@ -1305,15 +1324,12 @@ function openWeek(i){if(_wkDraft&&_wkDraft.i!==i&&!_wkGuard())return;wkOpen=true
  const nn=`<button class="wkb" onclick="openWeek(${i+1})" ${i>=S.weeks.length-1?"disabled":""} title="Săptămâna următoare">${IC.fwd}</button>`;
  /* întoarcerea la lista de săptămâni stă în bara Arhivei, de sus; aici era a doua săgeată
     „înapoi", pe rândul următor, arătând spre altundeva decât prima */
- const bar=`<div class="wkbar"><span class="wkspace"></span>`
-  +`<div class="wknavc">${np}<span class="wkpos">${esc(tc(w.date))}${(!w.event&&w.bible)?`<small class="wkbib">${esc(w.bible)}</small>`:''}</span>${nn}</div>`
-  +`<span class="wkspace"></span></div>`
-  +`<div class="wksavebar" id="wkSaveSlot">${(_wkDraft&&_wkDraft.dirty)?'<button class="btn pri sm" onclick="wkCommit()">Salvează</button><button class="btn ghost sm" onclick="wkCancel()">Anulează</button>':''}</div>`
-  +`<div class="ebar2">`
-  +`<button class="miniact" onclick="editStart()">${IC.clock} ${S.settings.start}</button>`
-  +`<button class="miniact" onclick="autoSheet()">${IC.auto} Auto</button>`
-  +(_canEditVcp()?`<button class="miniact" onclick="mailWeekSheet(${i})" title="Trimite temele pe e-mail">✉ E-mail</button>`:``)+`</div>`;
- const head=w.event?`<div class="group gp" style="padding:15px 16px 11px"><div class="nm" style="font-size:17px;font-weight:800">${tc(w.date)}</div><div class="mt" style="font-size:13px;margin-top:3px"><span style="color:var(--acc);font-weight:700">${esc(w.event)}${w.eventName?' — '+esc(w.eventName):''}</span>${w.bible?' · '+esc(w.bible):''}</div></div>`:'';
+ const bar=_wkHeadHtml(i,"openWeek",{acts:[
+   `<button class="vw-ed" onclick="editStart()" title="Ora întrunirii">${IC.clock}${esc(S.settings.start||"")}</button>`,
+   `<button class="vw-ed" onclick="autoSheet()">${IC.auto}Auto</button>`,
+   _canEditVcp()?`<button class="vw-ed" onclick="mailWeekSheet(${i})" title="Trimite temele pe e-mail">${_IC_MAIL}E-mail</button>`:""]})
+  +`<div class="wksavebar" id="wkSaveSlot">${(_wkDraft&&_wkDraft.dirty)?'<button class="btn pri sm" onclick="wkCommit()">Salvează</button><button class="btn ghost sm" onclick="wkCancel()">Anulează</button>':''}</div>`;
+ const head='';
  const isVisit=isVisitEv(w);
  if(evNoMid(w)){$("#body").innerHTML=bar+head
    +`<div class="evb"><div class="et">${esc(evLabel(w))}</div>${w.eventName?'<div class="ed" style="color:var(--ink);font-weight:700;font-size:15px">'+esc(w.eventName)+'</div>':''}<div class="ed">În această săptămână nu se ține întrunirea${evNoMeet(w)?"":" din timpul săptămânii"}, deci nu se face nicio planificare (S-38).</div></div>`
@@ -1455,6 +1471,25 @@ function vcpKeyTime(wi,key){const o=vcpTimes(wi);if(!o)return "";
 /* cântarea: numărul îngroșat, titlul dedesubt, mai discret */
 function _vcpSong(n){const t=S.songs[String(n)];return '<b>Cântarea '+esc(String(n))+'</b>'+(t?('<span class="vsn">'+esc(t)+'</span>'):'');}
 /* ce spune capul foii despre săptămână: aceasta, următoarea sau una trecută */
+/* capul săptămânii, la fel pe toate foile: săgețile, starea (aceasta / viitoare / trecută), data
+   mare, dedesubt citirea sau zilele, evenimentul, apoi acțiunile foii ca pastile */
+var _IC_MAIL='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>';
+function _wkHeadHtml(wi,goFn,o){o=o||{};_vcpStyle();var w=S.weeks[wi];if(!w)return "";
+ var ok=function(i){return i>=0&&i<S.weeks.length;};
+ var ws=_vcpWkState(wi),st=ws==="now"?"Săptămâna aceasta":(ws==="next"?"Săptămâna viitoare":(ws==="past"?"Săptămână trecută":""));
+ var sub=(o.sub!=null)?o.sub:(w.bible||""),acts=(o.acts||[]).filter(Boolean);
+ return '<div class="vw-head"><div class="vw-nav">'
+  +'<button class="wkb" onclick="'+goFn+'('+(wi-1)+')" '+(ok(wi-1)?"":"disabled")+' aria-label="Săptămâna anterioară">'+IC.back+'</button>'
+  +'<div class="vw-ttl">'+(st?('<div class="vw-st'+(ws==="past"?" past":"")+'">'+st+'</div>'):'')+'<div class="vw-date">'+esc(o.date||tc(w.date))+'</div>'+(sub?('<div class="vw-bib">'+esc(sub)+'</div>'):'')+'</div>'
+  +'<button class="wkb" onclick="'+goFn+'('+(wi+1)+')" '+(ok(wi+1)?"":"disabled")+' aria-label="Săptămâna următoare">'+IC.fwd+'</button></div>'
+  +(w.event?('<div class="vw-ev">'+IC.star+'<span>'+esc(evLabel(w))+(w.eventName?(' — '+esc(w.eventName)):'')+'</span></div>'):'')
+  +(acts.length?('<div class="vw-info">'+acts.join("")+'</div>'):'')+'</div>';}
+/* „Modifică" din Programări (cine are drept), ca pastilă în capul săptămânii */
+function _progEditPill(){return _progEditBtn()?'<button class="vw-ed" onclick="progEdit()">'+IC.edit+'Modifică</button>':'';}
+/* zilele întrunirilor care se țin în săptămâna asta (pentru sarcini) */
+function _wkMeetDays(wi){var w=S.weeks[wi],o=[];
+ [evNoMid(w)?null:_wkDayDate(wi,meetDayVal()),evNoWm(w)?null:wmDateOf(wi)].forEach(function(d){if(d)o.push(RO_DAYS[d.getDay()]+" "+d.getDate()+" "+_MU_MS[d.getMonth()]);});
+ return o.join(" · ");}
 function _vcpWkState(i){const d=_weekStartDate(i);if(!d)return "";const t=new Date();t.setHours(0,0,0,0);
  const e=new Date(d.getFullYear(),d.getMonth(),d.getDate()+6);if(t>=d&&t<=e)return "now";if(t>e)return "past";
  return (d-t)<=7*864e5?"next":"";}
@@ -2504,7 +2539,10 @@ function addPart(sec){if(!_needEdit())return;const w=S.weeks[curW];ensureIds(w);
  else{ins=0;while(ins<w.parts.length&&ord[w.parts[ins].sec]<=ord[sec])ins++;}
  w.parts.splice(ins,0,np);save();openWeek(curW);editPart(np.id);}
 function movePart(id,dir){if(!_needEdit())return;const w=S.weeks[curW];ensureIds(w);const idx=w.parts.findIndex(p=>p.id===id);if(idx<0)return;const j=idx+dir;if(j<0||j>=w.parts.length||w.parts[j].sec!==w.parts[idx].sec){toast("Deja la cap\u0103tul sec\u021biunii");return;}var t=w.parts[idx];w.parts[idx]=w.parts[j];w.parts[j]=t;logAct("Parte reordonat\u0103");save();closeSheet();openWeek(curW);}
-async function editStart(){const v=await uiPrompt("Ora de start a întrunirii",S.settings.start,{msg:"Format HH:MM",attrs:'inputmode="numeric" placeholder="19:00"'});if(v){S.settings.start=v.trim();save();openWeek(curW);}}
+function editStart(){ensureSxCSS();
+ sheet("","Ora întrunirii",'<div class="sx-time" style="justify-content:center;margin:6px 0 4px">'+_sxTimeSel("start")+'</div>'
+  +'<div class="bf-note" style="text-align:center;margin:10px 2px 0">Pentru toate săptămânile. Se schimbă și din Setări.</div>'
+  +'<button class="btn pri" style="width:100%;margin-top:16px" onclick="_sxTimeSet(\'start\');closeSheet();openWeek(curW)">Gata</button>');}
 const EVT_PRE=["Congres de circumscripție","Congres regional","Comemorarea morții lui Cristos","Vizita supraveghetorului de circumscripție"];
 /* ============================================================================
    EVENIMENTE (Setări → Evenimente) — după Instrucțiunile S-38
@@ -3827,7 +3865,7 @@ function pushDiag(){
   +(!em?'<button class="btn ghost sm" style="width:100%;margin-top:9px" onclick="closeSheet();meContact()">Completează-mi e-mailul</button>':'');
  sheet("","Diagnostic notificări",H);}
 /* --- cardul „Notificări" pentru rolurile fără drept de administrare --- */
-function _setLimNotif(){var h='<div class="group gp"><h2>Notificări</h2>';
+function _setLimNotif(){var h='<div class="setcard" style="padding:14px">';
  if(!pushReady())return h+'<div class="muted">Notificările push nu sunt configurate încă de administrator. Reamintirile locale apar la deschiderea aplicației.</div></div>';
  var em=myPushEmail();
  if(notifPerm()==="granted"){h+='<div class="muted">Notificările push sunt <b>active</b> pe acest dispozitiv'+(em?' pentru <b>'+esc(em)+'</b>':'')+' — teme noi, reamintirea din ajun, curățenia grupei și raportul vin direct pe telefon, chiar și cu aplicația închisă.</div><button class="btn ghost sm" style="width:100%;margin-top:10px" onclick="pushTestBtn()">Trimite un test</button>';}
@@ -4665,92 +4703,45 @@ function renderSet(){if(!_isAdmin()){renderSetLimited();return;}$("#fab").style.
     cardul de sincronizare — și cu ele tot ecranul, deci și ieșirea din el. */
  if(!st.gh)st.gh={token:"",gist:""};
  const ghOn=!!(st.gh&&st.gh.token);
- const stCSS=`<style>
- .setcard{background:var(--surf);border:1px solid var(--bd);border-radius:16px;margin-bottom:10px;overflow:hidden}
- .setcard>summary{list-style:none;display:flex;align-items:center;gap:12px;padding:13px 14px;cursor:pointer;user-select:none}
- .setcard>summary::-webkit-details-marker{display:none}
- .setcard>summary::after{content:'';width:7px;height:7px;border-right:2px solid var(--ink3);border-bottom:2px solid var(--ink3);transform:rotate(-45deg);transition:transform .18s;flex:0 0 auto;margin-left:2px}
- .setcard[open]>summary::after{transform:rotate(45deg)}
- .setcard[open]>summary{border-bottom:1px solid var(--bd)}
- .sic{width:38px;height:38px;border-radius:12px;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,var(--accsoft),transparent);border:1px solid var(--bd);color:var(--acc);flex:0 0 auto}
- .sic svg{width:19px;height:19px}
- .sinfo{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
- .stt{font-weight:700;font-size:14.5px;color:var(--ink)}
- .ssb{font-size:11.5px;color:var(--ink2);line-height:1.35;overflow:hidden;text-overflow:ellipsis}
- .ssb .on{color:var(--tealtx,var(--teal));font-weight:700}.ssb .off{color:var(--ink3);font-weight:600}.ssb .warn{color:var(--maroon);font-weight:700}
- .setbody{padding:12px 14px 14px}
- </style>`;
+ const stCSS=_setCSS();
+ const sw=(on,fn,lbl,sub)=>`<label class="bf-sw"><span>${lbl}${sub?`<span class="bf-swh">${sub}</span>`:""}</span><input type="checkbox" ${on?"checked":""} onchange="${fn}"><i></i></label>`;
+ const R=(st.refs&&Object.keys(st.refs))||[],nArch=Object.keys(st.wkArch||{}).length;
  $("#body").innerHTML=stCSS
+ +'<div class="setsec">Congregația</div>'
  +_setCard(IC.home,"Congregație și întrunire",_congSub(),_setCongBody(),true,"cong")
  +_setCard(IC.star,"Evenimente",_evSub(),_evListHtml(),false,"ev")
- +_setCard(IC.book||IC.gem,"Referințe (broșuri)",
-   (function(){var R=(st.refs&&Object.keys(st.refs))||[];
-    return R.length?('<span class="on">'+R.length+(R.length===1?" broșură":" broșuri")+'</span> · lecțiile apar la butonul „i"')
-                   :'<span class="off">niciuna</span> — trimiterile din caiet apar oricum, fără titlul lecției';})(),
-   `<div class="muted" style="margin:0 0 8px">Caietul trimite la lecția la care lucrează cursantul („lmd lecția 4, punctul 3"). Încarcă aici broșura (.epub din JW Library) și la butonul <b>„i"</b> apar și titlul lecției, și textul punctului. O încarci o dată, ajunge la toți.</div>
-    <button class="btn pri sm" style="width:100%" onclick="refSheet()">Gestionează referințele</button>`)
- +_setCard(IC.box||IC.trash,"Luni arhivate",
-   (function(){var n=Object.keys((st.wkArch)||{}).length;
-    return n?('<span class="on">'+n+(n===1?" lună dată deoparte":" luni date deoparte")+'</span> · de aici le aduci înapoi')
-            :'<span class="off">niciuna</span> — lunile încheiate se pot da deoparte din Programări';})(),
-   `<div class="muted" style="margin:0 0 8px">O lună arhivată nu mai apare în Programări, în foile de planificat și nici în lista de descărcări, dar datele ei rămân întregi. O arhivezi din butonul de pe capul lunii, în Arhivă → Planificări.</div>
-    <button class="btn pri sm" style="width:100%" onclick="wkArchSheet()">Vezi lunile arhivate</button>`)
  +_setCard(IC.ppl,"Utilizatori",_usersSub(),_usersCardBody(),false,"usr")
- +_setCard(IC.auto,"Microsoft Forms — rapoarte & prezență",
-   odSet?`<span class="on">activ</span>${(st.od.tRap||st.od.tPrez)?` · Raport <b${(st.od.nRap||0)>=180?' class="warn"':''}>${st.od.nRap||0}${st.od.clr?'/200':''}</b> · Prezență <b>${st.od.nPrez||0}${st.od.clr?'/200':''}</b>`:''}`:`<span class="off">nesetat</span> — lipește linkurile OneDrive`,
-   `<div class="muted" style="margin:0 0 10px">Aduce răspunsurile din fișierele Excel ale formularelor. Linkul: Forms → <b>Răspunsuri → Deschide în Excel</b>, apoi în OneDrive: <b>Partajare → Oricine are linkul poate vizualiza</b> (fără parolă) → lipește aici.<br><b>Important:</b> la OneDrive personal, Forms scrie în Excel doar când fișierul e deschis în Excel pentru web (cel mai sigur, deschis <b>din Forms</b>: Răspunsuri → „Deschide în Excel”) — „Adu” singur găsește fișierul vechi. Butoanele <b>Excel →</b> deschid Forms sau fișierul, așteaptă răspunsurile noi și importă la final.</div>
-    <label class="fl">Link OneDrive „Raport de activitate"</label><input class="fld" value="${esc((st.od&&st.od.rap)||'')}" placeholder="https://1drv.ms/…" onchange="_od().rap=this.value.trim();save()">
-    <label class="fl" style="margin-top:8px">Link OneDrive „Prezența întruniri"</label><input class="fld" value="${esc((st.od&&st.od.prez)||'')}" placeholder="https://1drv.ms/…" onchange="_od().prez=this.value.trim();save()">
-    <div class="muted" style="margin:12px 0 4px;font-size:12px">Opțional, dar recomandat: linkul paginii <b>Forms → Răspunsuri</b> al fiecărui formular (adresa din bara browserului). Cu el, „Excel →” deschide Forms, iar tu apeși acolo „Deschide în Excel” — singurul mod care trage sigur răspunsurile noi.</div>
-    <label class="fl">Link Forms — răspunsuri „Raport de activitate"</label><input class="fld" value="${esc((st.od&&st.od.frap)||'')}" placeholder="https://forms.office.com/…" onchange="_od().frap=this.value.trim();save()">
-    <label class="fl" style="margin-top:8px">Link Forms — răspunsuri „Prezența întruniri"</label><input class="fld" value="${esc((st.od&&st.od.fprez)||'')}" placeholder="https://forms.office.com/…" onchange="_od().fprez=this.value.trim();save()">
-    <div class="two" style="margin-top:12px"><button class="btn pri sm" onclick="odRefresh('rap')">${IC.auto} Excel → rapoarte</button><button class="btn pri sm" onclick="odRefresh('prez')">${IC.auto} Excel → prezență</button></div>
-    <div class="two" style="margin-top:8px"><button class="btn ghost sm" onclick="odPullRap()">${IC.dl} Adu rapoartele</button><button class="btn ghost sm" onclick="odPullPrez()">${IC.dl} Adu prezența</button></div>
-    <button class="btn ghost sm" style="width:100%;margin-top:8px" onclick="odCheckClear()">Verifică dacă poți goli Forms</button>
-    <label class="aow" style="margin-top:12px"><input type="checkbox" ${(st.od&&st.od.auto===false)?"":"checked"} onchange="_od().auto=this.checked;save()"><span><b>Adu automat</b> — la deschidere și la fiecare <input type="number" min="10" value="${Math.max(10,(st.od&&+st.od.every)||60)}" class="fld" style="width:64px;display:inline-block;padding:4px 6px;margin:0 3px" onchange="_od().every=Math.max(10,(+this.value)||60);this.value=_od().every;save()"> minute</span></label>
-    ${(st.od&&(st.od.tRap||st.od.tPrez))?`<div class="muted" style="margin-top:9px;font-size:11.5px">${st.od.clr?`Se numără doar răspunsurile de după golirea Forms (${fmtDT(st.od.clr)}) · limita: 200/formular.`:`Numerele arată rândurile din fișier (includ și ce ai șters din Forms — contorul real de 200 îl vezi în Forms).`}</div>`:''}`+`<button class="btn ghost sm" style="width:100%;margin-top:8px" onclick="formsSheet()">Lista de nume pentru Forms</button>`)
- +_setCard(IC.sync,"Sincronizare GitHub",
-   ghOn?`<span class="on">conectat</span> · automat ${st.autoSync!==false?"pornit":"oprit"} · gist ${st.gh.gist?"✓":"— la prima salvare"}`:`<span class="off">neconectat</span> — pune tokenul ca să sincronizezi între dispozitive`,
-   `<div class="muted" style="margin:0 0 8px">Gist privat. Pune același token + gist pe telefon și laptop.</div>
-    <label class="fl">Token (Personal Access Token)</label><input class="fld" type="password" autocomplete="off" value="${esc(st.gh.token||"")}" placeholder="ghp_…" onchange="S.settings.gh.token=this.value.trim();_ghAuthBad=false;_rlUntil=0;save()">
-    <label class="fl" style="margin-top:8px">Gist ID</label><input class="fld" value="${esc(st.gh.gist||"")}" placeholder="gol = creează la prima salvare" onchange="S.settings.gh.gist=this.value.trim();save()">
-    <div class="two" style="margin-top:13px"><button class="btn ghost sm" onclick="ghPull()">${IC.dl} Adu</button><button class="btn pri sm" onclick="ghPush()">${IC.sync} Salvează</button></div>
-    <div class="two" style="margin-top:9px"><button class="btn ghost sm" onclick="ghPaste()">Lipește cod</button><button class="btn ghost sm" onclick="ghPairCode()">Cod împerechere</button></div>
-    <div class="muted" style="margin-top:9px;font-size:11.5px">Laptop: token → <b>Salvează</b> → <b>Cod împerechere</b> → copiază. Telefon: <b>Lipește cod</b> → gata.</div>
-    <label class="aow" style="margin-top:12px"><input type="checkbox" ${st.autoSync!==false?"checked":""} onchange="S.settings.autoSync=this.checked;save()"><span><b>Sincronizare automată</b> — urcă la fiecare modificare, aduce la deschidere</span></label>
-    <div style="display:flex;align-items:center;gap:10px;margin-top:10px"><span style="font-size:13px;color:var(--ink2)">Interval (secunde, min 2):</span><input type="number" min="2" value="${Math.max(2,st.syncSec||2)}" class="fld" style="width:74px" onchange="S.settings.syncSec=Math.max(2,(+this.value)||2);this.value=S.settings.syncSec;save()"></div>
-    ${_guardLine()}`)
- +_setCard(IC.info,"Notificări",
-   (pushReady()? (notifPerm()==="granted"?`<span class="on">push activ pe acest dispozitiv</span> · vin și cu aplicația închisă`:`<span class="warn">push configurat</span> — activează-l și pe acest dispozitiv`) : `<span class="off">push neconfigurat</span> · doar reamintiri locale, la deschiderea aplicației`),
-   `<div class="muted" style="margin:0 0 10px"><b>Notificări push în browser</b>, prin serverul Firebase comun cu FamLink (proiect famlink-push) — ajung pe telefon și desktop chiar și cu aplicația închisă:<br>
-    · <b>teme noi</b> — la trimiterea temelor, fiecare vestitor primește push cu temele lui (pe lângă e-mail);<br>
-    · <b>în ajun</b> — în seara dinaintea întrunirii, serverul reamintește automat temele de mâine;<br>
-    · <b>raportul</b> — push automat pe 1 ale lunii celor fără raport + „Reamintește-le tuturor" instant;<br>
-    · <b>curățenia</b> — grupa de serviciu află pe loc când e programată și primește reamintirea luni, la începutul săptămânii;<br>
-    · <b>administratorii</b> — află pe loc când sosesc rapoarte/prezențe trimise din aplicație.<br>
-    Cheia fiecărui cont e <b>e-mailul din fișa vestitorului asociat</b>. E-mailurile cu teme rămân neschimbate.</div>
-    <label class="fl">URL funcție push (Cloud Functions — se termină în /api)</label><input class="fld" value="${esc((st.push&&st.push.url)||"")}" placeholder="https://europe-west1-famlink-push.cloudfunctions.net/api" onchange="S.settings.push=Object.assign({},PUSH(),{url:this.value.trim()});save();try{fcmRegister(true)}catch(e){};renderSet()">
-    <label class="fl" style="margin-top:8px">Secret (PUSH_SECRET — identic cu functions/.env de pe server)</label>
-    <div class="rowflex" style="gap:8px"><input class="fld" id="pshSec" type="password" value="${esc((st.push&&st.push.secret)||"")}" onchange="S.settings.push=Object.assign({},PUSH(),{secret:this.value.trim()});save();try{fcmRegister(true)}catch(e){};renderSet()"><button class="btn ghost sm" style="width:auto" onclick="var i=document.getElementById('pshSec');i.type=i.type==='password'?'text':'password'">Arată</button></div>
-    ${pushReady()?`<div class="two" style="margin-top:10px">${notifPerm()==="granted"?`<button class="btn ghost sm" onclick="fcmRegister(true);toast('Dispozitivul a fost reînregistrat ✓')">Reînregistrează dispozitivul</button>`:(_pushNeedsInstall()?`<button class="btn pri sm" onclick="pushIosHelp()">Pe iPhone: instalează întâi</button>`:`<button class="btn pri sm" onclick="notifAsk()">Activează pe acest dispozitiv</button>`)}<button class="btn ghost sm" onclick="pushTestBtn()">Trimite un test</button></div>
-    <button class="btn ghost sm" style="width:100%;margin-top:8px" onclick="pushDiag()">Diagnostic notificări — ce lipsește pe acest dispozitiv</button>
-    <div class="hint" style="margin-top:8px">${myPushEmail()?("Acest dispozitiv primește notificările pentru <b>"+esc(myPushEmail())+"</b>. Fiecare membru le activează pe dispozitivul lui (iPhone: întâi „Adaugă la ecranul principal”)."):"Contul tău nu are e-mail în fișa vestitorului asociat — completează-l ca să primești și tu push."}</div>
-    <label class="fl" style="margin-top:10px">Ce se trimite (valabil pentru toți)</label>
-    <label class="famrow"><input type="checkbox" ${pushOn("t")?"checked":""} onchange="_pushTog('t',this.checked)"><span>Teme noi, la „E-mail teme" / „Doar push"</span></label>
-    <label class="famrow"><input type="checkbox" ${pushOn("e")?"checked":""} onchange="_pushTog('e',this.checked)"><span>Reamintire în ajunul întrunirii, la ora <select class="fld" style="width:auto;display:inline-block;padding:4px 8px" onclick="event.stopPropagation()" onchange="S.settings.push=Object.assign({},PUSH(),{eveH:+this.value});save()">${[17,18,19,20].map(function(h){return '<option value="'+h+'"'+(((+((st.push||{}).eveH))||18)===h?' selected':'')+'>'+h+':00</option>';}).join("")}</select></span></label>
-    <label class="famrow"><input type="checkbox" ${pushOn("r")?"checked":""} onchange="_pushTog('r',this.checked)"><span>Raport: automat pe 1 ale lunii + „Reamintește-le tuturor"</span></label>
-    <label class="famrow"><input type="checkbox" ${pushOn("c")?"checked":""} onchange="_pushTog('c',this.checked)"><span>Curățenie: anunț grupei când e programată + reamintire luni dimineața</span></label>
-    <label class="famrow"><input type="checkbox" ${pushOn("a")?"checked":""} onchange="_pushTog('a',this.checked)"><span>Push la administratori când sosesc rapoarte/prezențe din aplicație</span></label>`:`<div class="hint" style="margin-top:8px">Folosești serverul deja instalat pentru FamLink: pune aici același <b>URL /api</b> și același <b>secret</b>, apoi dă o dată <b>firebase deploy --only functions</b> cu backendul actualizat (v2, cu ArhiLink). Ghid complet: <b>PUSH-SETUP-ARHILINK.md</b>.</div>`}
-    <div class="muted" style="margin-top:10px;font-size:11.5px">Reamintirile locale de până acum rămân ca rezervă (apar la deschiderea aplicației). Setările de aici se sincronizează la toți; permisiunea se dă pe fiecare dispozitiv.</div>`)
- +_setCard(IC.fwd,"E-mail congregație (Gmail)",
-   (st.mailHook||"").trim()?`<span class="on">configurat</span> · temele se trimit automat de pe adresa congregației`:`<span class="off">neconfigurat</span> — temele se pot deschide doar manual în Gmail`,
-   `<div class="muted" style="margin:0 0 10px">După planificare, din săptămână apeși <b>✉ E-mail</b> și fiecare vestitor primește temele lui + link Google Calendar + atașament <b>.ics</b> care se deschide direct în calendarul de pe iPhone/Apple sau Outlook. Ca trimiterea să fie automată de pe Gmail-ul congregației, instalează o singură dată scriptul de mai jos.</div>
-    <label class="fl">Link Apps Script (se termină în /exec)</label><input class="fld" value="${esc(st.mailHook||"")}" placeholder="https://script.google.com/macros/s/…/exec" onchange="S.settings.mailHook=this.value.trim();save();renderSet()">
-    <div class="two" style="margin-top:10px"><button class="btn ghost sm" onclick="mailTest()">Trimite un test</button><button class="btn ghost sm" onclick="var el=document.getElementById('asHelp');el.style.display=el.style.display==='none'?'block':'none'">Instrucțiuni instalare</button></div>
-    <button class="btn ghost sm" style="width:100%;margin-top:8px" onclick="boxCheck()">Verifică scriptul (rapoartele din aplicație)</button>
-    <div id="asHelp" style="display:none;margin-top:10px">
-     <div class="muted" style="font-size:12px;line-height:1.6">1. Intră pe <b>script.google.com</b> logat cu <b>Gmail-ul congregației</b> → „Proiect nou".<br>2. Șterge tot și lipește codul de mai jos → Salvează.<br>3. <b>Implementare → Implementare nouă → Aplicație web</b> → Execute as: <b>Me</b> · Who has access: <b>Anyone</b> → Deploy → autorizează contul.<br>4. Copiază URL-ul (se termină în <b>/exec</b>) și lipește-l în câmpul de mai sus → „Trimite un test".</div>
-     <div class="muted" style="font-size:12px;line-height:1.6;margin-top:8px"><b>Ai deja scriptul vechi?</b> Înlocuiește tot codul cu cel de mai jos, apoi <b>Implementare → Gestionare implementări → ✏ → Versiune nouă → Deploy</b> (linkul /exec rămâne același). Versiunea nouă face două lucruri: trimite e-mailuri (ca înainte) și <b>primește rapoartele/datele de contact trimise de vestitori din aplicație</b>, pe care aplicația ta le importă automat.</div>
+
+ +'<div class="setsec">Legături</div>'
+ +_setCard(IC.sync,"Sincronizare",
+   ghOn?`<span class="on">conectat</span> · automat ${st.autoSync!==false?"pornit":"oprit"}`:`<span class="off">neconectat</span> — pune tokenul GitHub`,
+   `<label class="fl" style="margin-top:0">Token GitHub</label><input class="fld" type="password" autocomplete="off" value="${esc(st.gh.token||"")}" placeholder="ghp_…" onchange="S.settings.gh.token=this.value.trim();_ghAuthBad=false;_rlUntil=0;save()">
+    <label class="fl" style="margin-top:10px">Gist ID</label><input class="fld" value="${esc(st.gh.gist||"")}" placeholder="gol = se creează la prima salvare" onchange="S.settings.gh.gist=this.value.trim();save()">
+    <div class="two" style="margin-top:12px"><button class="btn ghost sm" onclick="ghPull()">${IC.dl} Adu</button><button class="btn pri sm" onclick="ghPush()">${IC.sync} Salvează</button></div>
+    <div class="bf-box" style="margin-top:12px">${sw(st.autoSync!==false,"S.settings.autoSync=this.checked;save()","Sincronizare automată","urcă la fiecare modificare, aduce la deschidere")}</div>
+    <div class="bf-lbl" style="margin-top:14px">Alt dispozitiv</div>
+    <div class="two"><button class="btn ghost sm" onclick="ghPairCode()">Cod de împerechere</button><button class="btn ghost sm" onclick="ghPaste()">Lipește codul</button></div>
+    <details class="sx-more"><summary>Mai multe</summary>
+     <div class="sx-time" style="margin-top:2px"><span>Interval (secunde)</span><input type="number" min="2" value="${Math.max(2,st.syncSec||2)}" class="fld" style="width:90px" onchange="S.settings.syncSec=Math.max(2,(+this.value)||2);this.value=S.settings.syncSec;save()"></div>
+     ${_guardLine()}</details>`,false,"gh")
+ +_setCard((typeof CIC!=="undefined"&&CIC.bell)||IC.info,"Notificări",
+   (pushReady()? (notifPerm()==="granted"?`<span class="on">active pe acest dispozitiv</span>`:`<span class="warn">neactivate aici</span> — activează-le pe acest dispozitiv`) : `<span class="off">server neconfigurat</span> · doar reamintiri la deschidere`),
+   (pushReady()?(`<div class="two">${notifPerm()==="granted"?`<button class="btn ghost sm" onclick="fcmRegister(true);toast('Dispozitivul a fost reînregistrat ✓')">Reînregistrează</button>`:(_pushNeedsInstall()?`<button class="btn pri sm" onclick="pushIosHelp()">iPhone: instalează întâi</button>`:`<button class="btn pri sm" onclick="notifAsk()">Activează aici</button>`)}<button class="btn ghost sm" onclick="pushTestBtn()">Trimite un test</button></div>
+    <div class="bf-note" style="margin:8px 2px 0">${myPushEmail()?("Pe acest dispozitiv vin pentru <b>"+esc(myPushEmail())+"</b>."):"Contul tău n-are e-mail în fișa vestitorului — fără el nu primești push."}</div>
+    <div class="bf-lbl" style="margin-top:14px">Ce se trimite, tuturor</div>
+    <div class="bf-box">${sw(pushOn("t"),"_pushTog('t',this.checked)","Teme noi","la „E-mail teme” sau „Doar push”")}${sw(pushOn("e"),"_pushTog('e',this.checked)","Reamintire în ajunul întrunirii","")}${sw(pushOn("r"),"_pushTog('r',this.checked)","Raportul","pe 1 ale lunii și la „Reamintește-le tuturor”")}${sw(pushOn("c"),"_pushTog('c',this.checked)","Curățenia grupei","când e programată și luni dimineața")}${sw(pushOn("a"),"_pushTog('a',this.checked)","Rapoarte sosite","doar la administratori")}</div>
+    <div class="sx-time"><span>Ora reamintirii din ajun</span><select class="fld" style="width:auto;margin:0" onchange="S.settings.push=Object.assign({},PUSH(),{eveH:+this.value});save()">${[17,18,19,20].map(function(h){return '<option value="'+h+'"'+(((+((st.push||{}).eveH))||18)===h?' selected':'')+'>'+h+':00</option>';}).join("")}</select></div>
+    <button class="btn ghost sm" style="width:100%;margin-top:12px" onclick="pushDiag()">Ce lipsește pe acest dispozitiv?</button>`):`<div class="bf-note" style="margin:0 2px 10px">Pune URL-ul și secretul serverului de push (același ca la FamLink). Ghid: <b>PUSH-SETUP-ARHILINK.md</b>.</div>`)
+   +`<details class="sx-more"${pushReady()?"":" open"}><summary>Serverul de push</summary>
+     <label class="fl" style="margin-top:2px">URL funcție (se termină în /api)</label><input class="fld" value="${esc((st.push&&st.push.url)||"")}" placeholder="https://europe-west1-famlink-push.cloudfunctions.net/api" onchange="S.settings.push=Object.assign({},PUSH(),{url:this.value.trim()});save();try{fcmRegister(true)}catch(e){};renderSet()">
+     <label class="fl" style="margin-top:10px">Secret (PUSH_SECRET)</label>
+     <div class="rowflex" style="gap:8px"><input class="fld" id="pshSec" type="password" style="margin:0" value="${esc((st.push&&st.push.secret)||"")}" onchange="S.settings.push=Object.assign({},PUSH(),{secret:this.value.trim()});save();try{fcmRegister(true)}catch(e){};renderSet()"><button class="btn ghost sm" style="width:auto" onclick="var i=document.getElementById('pshSec');i.type=i.type==='password'?'text':'password'">Arată</button></div></details>`,false,"push")
+ +_setCard(_IC_MAIL,"E-mail congregație",
+   (st.mailHook||"").trim()?`<span class="on">configurat</span> · temele pleacă de pe Gmail-ul congregației`:`<span class="off">neconfigurat</span> — temele se trimit manual`,
+   `<label class="fl" style="margin-top:0">Link Apps Script (se termină în /exec)</label><input class="fld" value="${esc(st.mailHook||"")}" placeholder="https://script.google.com/macros/s/…/exec" onchange="S.settings.mailHook=this.value.trim();save();renderSet()">
+    <div class="two" style="margin-top:10px"><button class="btn ghost sm" onclick="mailTest()">Trimite un test</button><button class="btn ghost sm" onclick="boxCheck()">Verifică scriptul</button></div>
+    <details class="sx-more"><summary>Cum se instalează scriptul</summary>
+     <div class="muted" style="font-size:12px;line-height:1.6">1. <b>script.google.com</b>, logat cu Gmail-ul congregației → „Proiect nou”.<br>2. Lipești codul de mai jos → Salvează.<br>3. <b>Implementare → Implementare nouă → Aplicație web</b> · Execute as: <b>Me</b> · Who has access: <b>Anyone</b> → Deploy.<br>4. Copiezi URL-ul <b>/exec</b> în câmpul de sus → „Trimite un test”.<br><b>Ai scriptul vechi?</b> Înlocuiești codul, apoi <b>Gestionare implementări → ✏ → Versiune nouă</b> (linkul rămâne același).</div>
      <pre style="background:var(--surf2);border:1px solid var(--bd);border-radius:10px;padding:10px;font-size:11px;overflow:auto;margin-top:8px">function doPost(e){
   var d={};try{d=JSON.parse(e.postData.contents)||{};}catch(err){}
   var P=PropertiesService.getScriptProperties();
@@ -4776,38 +4767,46 @@ function renderSet(){if(!_isAdmin()){renderSetLimited();return;}$("#fab").style.
   return _j({ok:1});
 }
 function doGet(e){return _j({ok:1,ver:3});}
-function _j(o){return ContentService.createTextOutput(JSON.stringify(o)).setMimeType(ContentService.MimeType.JSON);}</pre></div>
-    <div class="muted" style="margin-top:8px;font-size:11.5px">Adresele de e-mail se completează în fișa fiecărui vestitor. Aplicația ține minte ce a trimis și bifează automat doar temele noi sau modificate.</div>`)
- +_setCard(IC.arch,"Import caiet (.epub)",
-   `detaliile temelor din caietul lunii (JW Library)`,
-   `<div class="muted" style="margin:0 0 8px">Încarcă un .epub (mwb) — adaugă detaliile temelor (schiță, versete, lecție) la butonul „i" și săptămânile lunilor noi. Nu șterge alocările.</div>
-    <button class="btn ghost sm" style="width:100%" onclick="$('#imepub').click()">Alege .epub</button>
-    <input type="file" id="imepub" accept=".epub" style="display:none" onchange="importEpub(this)">`)
- +_setCard(IC.edit,"Import plan (text)",
-   `repartizările dintr-un text lipit — Viața creștină, întrunirea publică, mărturia publică`,
-   `<div class="muted" style="margin:0 0 8px">Lipești textul foii și se pun președintele, rugăciunile, temele după numărul lor, cântările, evenimentele, vorbitorul de la întrunirea publică și turele mărturiei publice. Se verifică întâi și nimic nu intră până nu apeși „Aplică".</div>
-    <button class="btn ghost sm" style="width:100%" onclick="planImportSheet()">Deschide importul</button>`)
- +_setCard(IC.hist,"Backup",
-   `salvează / restaurează totul dintr-un fișier .json`,
-   `<div class="two" style="margin-top:2px"><button class="btn ghost sm" onclick="exportJSON()">Backup (.json)</button><button class="btn ghost sm" onclick="$('#imp').click()">Restaurează (.json)</button></div>
-    <button class="btn ghost sm" style="width:100%;margin-top:6px" onclick="bkpSheet()">Restaurează din backup automat</button>
+function _j(o){return ContentService.createTextOutput(JSON.stringify(o)).setMimeType(ContentService.MimeType.JSON);}</pre></details>`,false,"mail")
+ +_setCard(IC.auto,"Microsoft Forms",
+   odSet?`<span class="on">activ</span>${(st.od.tRap||st.od.tPrez)?` · Raport <b${(st.od.nRap||0)>=180?' class="warn"':''}>${st.od.nRap||0}${st.od.clr?'/200':''}</b> · Prezență <b>${st.od.nPrez||0}${st.od.clr?'/200':''}</b>`:''}`:`<span class="off">nesetat</span> — rapoarte și prezență din Forms`,
+   `<div class="bf-lbl" style="margin-top:0">Raport de activitate</div>
+    <input class="fld" value="${esc((st.od&&st.od.rap)||'')}" placeholder="Link OneDrive al fișierului Excel" onchange="_od().rap=this.value.trim();save()">
+    <input class="fld" style="margin-top:8px" value="${esc((st.od&&st.od.frap)||'')}" placeholder="Link Forms → Răspunsuri (opțional)" onchange="_od().frap=this.value.trim();save()">
+    <div class="two" style="margin-top:8px"><button class="btn pri sm" onclick="odRefresh('rap')">${IC.auto} Excel →</button><button class="btn ghost sm" onclick="odPullRap()">${IC.dl} Adu</button></div>
+    <div class="bf-lbl" style="margin-top:16px">Prezența</div>
+    <input class="fld" value="${esc((st.od&&st.od.prez)||'')}" placeholder="Link OneDrive al fișierului Excel" onchange="_od().prez=this.value.trim();save()">
+    <input class="fld" style="margin-top:8px" value="${esc((st.od&&st.od.fprez)||'')}" placeholder="Link Forms → Răspunsuri (opțional)" onchange="_od().fprez=this.value.trim();save()">
+    <div class="two" style="margin-top:8px"><button class="btn pri sm" onclick="odRefresh('prez')">${IC.auto} Excel →</button><button class="btn ghost sm" onclick="odPullPrez()">${IC.dl} Adu</button></div>
+    <div class="bf-box" style="margin-top:14px">${sw(!(st.od&&st.od.auto===false),"_od().auto=this.checked;save()","Adu automat","la deschidere și din când în când")}</div>
+    <div class="sx-time"><span>La fiecare (minute)</span><input type="number" min="10" value="${Math.max(10,(st.od&&+st.od.every)||60)}" class="fld" style="width:90px" onchange="_od().every=Math.max(10,(+this.value)||60);this.value=_od().every;save()"></div>
+    ${(st.od&&(st.od.tRap||st.od.tPrez))?`<div class="bf-note" style="margin:10px 2px 0">${st.od.clr?`Se numără răspunsurile de după golirea Forms (${fmtDT(st.od.clr)}) · limita: 200/formular.`:`Numerele sunt rândurile din fișier; contorul real de 200 îl vezi în Forms.`}</div>`:''}
+    <details class="sx-more"><summary>Mai multe</summary>
+     <div class="two" style="margin-top:2px"><button class="btn ghost sm" onclick="odCheckClear()">Pot goli Forms?</button><button class="btn ghost sm" onclick="formsSheet()">Lista de nume</button></div>
+     <div class="muted" style="font-size:12px;line-height:1.55;margin-top:10px">Linkul OneDrive: Forms → <b>Răspunsuri → Deschide în Excel</b>, apoi în OneDrive <b>Partajare → Oricine are linkul poate vizualiza</b>. La OneDrive personal, Forms scrie în Excel doar cât fișierul e deschis în Excel pentru web — de aceea „Excel →” deschide întâi Forms, aștepți răspunsurile noi, apoi importă.</div></details>`,false,"od")
+
+ +'<div class="setsec">Caietul</div>'
+ +_setLink(IC.arch,"Import caiet (.epub)","temele și săptămânile lunilor noi, din JW Library","$('#imepub').click()")
+ +'<input type="file" id="imepub" accept=".epub" style="display:none" onchange="importEpub(this)">'
+ +_setLink(IC.edit,"Import plan (text)","repartizările dintr-o foaie lipită","planImportSheet()")
+ +_setLink(IC.book,"Referințe (broșuri)",R.length?('<span class="on">'+R.length+(R.length===1?" broșură":" broșuri")+'</span> · lecțiile la butonul „i”'):'<span class="off">niciuna</span> — adaugă broșura la care trimite caietul',"refSheet()")
+ +_setLink(IC.box||IC.trash,"Luni arhivate",nArch?('<span class="on">'+nArch+(nArch===1?" lună":" luni")+'</span> · de aici le aduci înapoi'):'<span class="off">niciuna</span>',"wkArchSheet()")
+
+ +'<div class="setsec">Aplicația</div>'
+ +`<div class="setcard setlink" style="cursor:default"><span class="sic">${st.theme==="light"?IC.sun:IC.moon}</span><span class="sinfo"><span class="stt">Aspect</span><span class="ssb">${st.theme==="light"?"tema Zi":"tema Noapte"}</span></span>`
+  +'<div class="bf-seg sx-seg">'+[["light","Zi"],["dark","Noapte"]].map(function(o){return '<label><input type="radio" name="sxTheme" '+((st.theme==="light")===(o[0]==="light")?"checked":"")+' onchange="_setTheme(\''+o[0]+'\')"><span>'+o[1]+'</span></label>';}).join("")+'</div></div>'
+ +_setCard(IC.hist,"Backup","tot, într-un fișier .json",
+   `<div class="two"><button class="btn ghost sm" onclick="exportJSON()">${IC.dl} Salvează</button><button class="btn ghost sm" onclick="$('#imp').click()">Restaurează</button></div>
+    <button class="btn ghost sm" style="width:100%;margin-top:8px" onclick="bkpSheet()">Din backup automat</button>
     <input type="file" id="imp" accept=".json" style="display:none" onchange="importJSON(this)">
-    <div class="muted" style="margin-top:8px;font-size:11.5px">„Backup" salvează tot: date + token + Gist ID. Pe alt dispozitiv: „Restaurează" → ai înapoi totul.</div>`)
- +_setCard(st.theme==="light"?IC.sun:IC.moon,"Aspect",
-   st.theme==="light"?"tema Zi":"tema Noapte",
-   `<label class="fl">Temă</label>
-    <select class="fld" onchange="S.settings.theme=this.value;save();applyTheme();renderSet()">
-     <option value="dark" ${st.theme==="dark"?"selected":""}>Noapte</option>
-     <option value="light" ${st.theme==="light"?"selected":""}>Zi</option></select>`)
- +_setCard(IC.clock,"Istoric activitate",
-   "cine a făcut modificări și când",
-   `<button class="btn ghost sm" style="width:100%" onclick="openHistory()">Deschide istoricul</button>`)
- +_setCard(IC.star,"Ce e nou",
-   `ultimele schimbări din aplicație${NEWS.length?` · v${esc(NEWS[0].label||NEWS[0].v)}`:""}`,
-   `<div class="muted" style="margin:0 0 8px">Panoul apare o singură dată, la prima deschidere după o actualizare. De aici îl poți redeschide oricând.</div>
-    <button class="btn ghost sm" style="width:100%" onclick="openNews(false)">Vezi ce e nou${NEWS.length?` (${esc(NEWS[0].label||NEWS[0].v)})`:""}</button>`)
+    <div class="bf-note" style="margin:10px 2px 0">Fișierul are tot: datele, tokenul și Gist ID-ul.</div>`,false,"bkp")
+ +_setLink(IC.clock,"Istoric activitate","cine a făcut modificări și când","openHistory()")
+ +_setLink(IC.star,"Ce e nou",NEWS.length?("v"+esc(NEWS[0].label||NEWS[0].v)+" · "+esc(NEWS[0].t||"")):"ultimele schimbări","openNews(false)")
  +`<div class="ver">ArhiLink · v${VERSION}</div>`;
 }
+/* rând simplu din Setări: se apasă și deschide direct ce trebuie (fără card de desfăcut) */
+function _setLink(icon,title,sub,onclick){return '<button class="setcard setlink btnrow" onclick="'+onclick+'"><span class="sic">'+icon+'</span><span class="sinfo"><span class="stt">'+title+'</span><span class="ssb">'+sub+'</span></span></button>';}
+function _setTheme(v){S.settings.theme=v;save();applyTheme();renderSet();}
 
 /* ---- Setări: stilul comun al celor trei carduri refăcute (congregație, evenimente, utilizatori).
    Se sprijină pe clasele din fișa vestitorului (bf-seg, bf-chip, bf-sw, bf-lbl), ca să arate la fel. */
@@ -4830,7 +4829,8 @@ function ensureSxCSS(){if(document.getElementById("sxcss"))return;var st=documen
 +".sx-stat{background:var(--bg);border:1px solid var(--bd);border-radius:12px;padding:9px 10px;min-width:0}.sx-stat b{display:block;font-size:19px;font-weight:800;line-height:1.1}.sx-stat span{font-size:11px;color:var(--ink3);font-weight:700}"
 +".sx-bar{display:flex;gap:8px;align-items:center;margin-bottom:10px}.sx-bar .brosrch{flex:1;margin:0}"
 +".sx-flt{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 10px}"
-+".sx-time{display:flex;align-items:center;gap:10px;margin-top:8px}.sx-time span{font-size:13px;font-weight:700;color:var(--ink2)}.sx-time .fld{width:130px;margin:0}"
++".sx-time{display:flex;align-items:center;gap:10px;margin-top:8px}.sx-time>span{font-size:13px;font-weight:700;color:var(--ink2)}.sx-time>.fld{width:130px;margin:0}"
++".sx-hm{display:flex;align-items:center;gap:6px}.sx-hm .fld{width:78px;margin:0;text-align:center;text-align-last:center;font-size:17px;font-weight:700;font-variant-numeric:tabular-nums;padding:9px 6px}.sx-hm b{font-size:18px;color:var(--ink2)}"
 +".sx-seg input:checked+span{background:var(--acc);color:#fff;box-shadow:0 1px 3px rgba(0,0,0,.18)}"
 +".sx-seg7 span{padding:9px 0;font-size:13px}"
 +".sx-more{margin-top:16px}.sx-more>summary{list-style:none;cursor:pointer;font-size:13px;font-weight:700;color:var(--ink2);padding:8px 2px;display:flex;align-items:center;gap:6px}"
@@ -4846,19 +4846,30 @@ var _SX_SEND='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-
 /* ---- Congregație și întrunire ---- */
 var _SX_DAYS=[[1,"Lu"],[2,"Ma"],[3,"Mi"],[4,"Jo"],[5,"Vi"],[6,"Sâ"],[0,"Du"]];
 function _sxTime(v){var m=String(v||"").trim().match(/^(\d{1,2})[:.](\d{2})$/);return m?(("0"+m[1]).slice(-2)+":"+m[2]):"";}
-function _congSub(){var st=S.settings;return esc(st.cong||"—")+" · "+esc(RO_DAYS[meetDayVal()])+" "+esc(st.start||"")+" · "+esc(RO_DAYS[meetDayWVal()]);}
+function _congSub(){var st=S.settings;return esc(st.cong||"—")+" · "+esc(RO_DAYS[meetDayVal()])+" "+esc(st.start||"")+" · "+esc(RO_DAYS[meetDayWVal()])+(st.startW?(" "+esc(st.startW)):"");}
 function _sxSeg(nm,opts,cur,fn,cls){return '<div class="bf-seg sx-seg'+(cls?" "+cls:"")+'">'+opts.map(function(o){
   return '<label><input type="radio" name="'+nm+'" value="'+o[0]+'" '+(cur===o[0]?"checked":"")+' onchange="'+fn+'('+o[0]+')"><span>'+esc(o[1])+'</span></label>';}).join("")+'</div>';}
 function _sxMd(v){S.settings.meetDay=+v;save();_setSubUpd("cong",_congSub());}
 function _sxMw(v){S.settings.meetDayW=+v;save();_setSubUpd("cong",_congSub());}
 function _sxStart(v){v=_sxTime(v);if(!v)return;S.settings.start=v;save();_setSubUpd("cong",_congSub());}
+/* ora pe 24 de ore, din două liste (ora și minutele) — pe iPhone se alege din roată, iar 19:00
+   rămâne 19:00, nu „7". `key` e câmpul din S.settings: start (miercuri) sau startW (weekend). */
+function _sxTimeSel(key,opt){var cur=_sxTime(S.settings[key]),h=cur?+cur.slice(0,2):-1,m=cur?+cur.slice(3):0;
+ var ho=(opt?'<option value="">—</option>':'')+Array.from({length:24},function(_,i){return '<option value="'+i+'"'+(i===h?" selected":"")+'>'+("0"+i).slice(-2)+'</option>';}).join("");
+ var mo=Array.from({length:12},function(_,i){var v=i*5;return '<option value="'+v+'"'+(v===m?" selected":"")+'>'+("0"+v).slice(-2)+'</option>';}).join("");
+ if(m%5)mo+='<option value="'+m+'" selected>'+("0"+m).slice(-2)+'</option>';
+ return '<div class="sx-hm"><select class="fld" id="sxH_'+key+'" onchange="_sxTimeSet(\''+key+'\')" aria-label="Ora">'+ho+'</select><b>:</b><select class="fld" id="sxM_'+key+'" onchange="_sxTimeSet(\''+key+'\')" aria-label="Minutele">'+mo+'</select></div>';}
+function _sxTimeSet(key){var h=$("#sxH_"+key),m=$("#sxM_"+key);if(!h||!m)return;
+ if(h.value===""){delete S.settings[key];}else S.settings[key]=("0"+h.value).slice(-2)+":"+("0"+m.value).slice(-2);
+ save();_setSubUpd("cong",_congSub());}
 function _setCongBody(){var st=S.settings;
  return '<label class="fl" style="margin-top:0">Congregația</label><input class="fld" value="'+esc(st.cong||"")+'" onchange="S.settings.cong=this.value.trim();save();$(\'#topSub\').textContent=S.settings.cong;_setSubUpd(\'cong\',_congSub())">'
   +'<div class="bf-lbl" style="margin-top:14px">Întrunirea din timpul săptămânii</div>'
   +_sxSeg("sxMd",_SX_DAYS,meetDayVal(),"_sxMd","sx-seg7")
-  +'<div class="sx-time"><span>Ora</span><input class="fld" type="time" value="'+esc(_sxTime(st.start))+'" onchange="_sxStart(this.value)"></div>'
+  +'<div class="sx-time"><span>Ora</span>'+_sxTimeSel("start")+'</div>'
   +'<div class="bf-lbl" style="margin-top:14px">Întrunirea de la sfârșit de săptămână</div>'
   +_sxSeg("sxMw",[[6,"Sâmbătă"],[0,"Duminică"]],meetDayWVal(),"_sxMw")
+  +'<div class="sx-time"><span>Ora</span>'+_sxTimeSel("startW",1)+'</div>'
   +'<label class="fl" style="margin-top:14px">Supraveghetorul de circumscripție</label><input class="fld" value="'+esc(st.co||"")+'" placeholder="Numele lui" onchange="S.settings.co=this.value.trim();save()">'
   /* fără conturi nu știm cine modifică: numele pentru istoric se scrie de mână */
   +(_users().length?'':('<label class="fl" style="margin-top:10px">Numele tău, pentru istoric</label><input class="fld" value="'+esc(_userGet())+'" placeholder="ex. Cosmin" onchange="try{localStorage.setItem(KEY+\'_user\',this.value.trim())}catch(e){}">'));}
@@ -5812,6 +5823,12 @@ function startApp(){_dirty=computeDirty();applyTheme();try{bkpMigrate();}catch(e
    `v` = cheia de „văzut deja"; `label` = versiunea afișată.
    ============================================================================ */
 var NEWS=[
+ {v:"3.17.0",label:"3.17",d:"28.09.2026",t:"Setări pe secțiuni, ora de weekend, meniuri mai limpezi",items:[
+  {ic:"clock",who:"admin",t:"Ora, pe 24 de ore — și pentru weekend",s:"Ora întrunirii se alege din două liste (19 : 00), nu se mai scrie. Întrunirea de la sfârșit de săptămână are și ea oră: apare în calendar, pe foaie și în Profilul meu."},
+  {ic:"home",who:"admin",t:"Setările, pe secțiuni",s:"Congregația, Legături, Caietul și Aplicația. Importurile, referințele și istoricul se deschid dintr-o apăsare, iar explicațiile lungi stau sub „Mai multe”."},
+  {ic:"book",who:"ed",t:"Capul săptămânii, la fel peste tot",s:"În Arhivă, Viața creștină, Sarcini, Mărturia publică, Terenul și Întrunirea publică au capul din Programări. „Înapoi” e unul singur, sus; ora, Auto și E-mail sunt sub dată."},
+  {ic:"pdf",t:"Meniurile, mai limpezi",s:"La descărcări și în meniurile foilor, fiecare rând are iconița lui, titlul și dedesubt pe scurt ce face."}
+ ]},
  {v:"3.16.0",label:"3.16",d:"28.09.2026",t:"Setări mai simple, săptămâni cu o singură întrunire",items:[
   {ic:"home",who:"admin",t:"Congregație și întrunire, dintr-o privire",s:"Ziua și ora întrunirilor se aleg dintr-o atingere, fără explicații lungi. Parola paginii publice a trecut la Utilizatori → Mai multe."},
   {ic:"cal",who:"admin",t:"Evenimente cu comutatoare",s:"Lista evenimentelor și ce urmează stau direct în card. La fiecare eveniment alegi ce întrunire se ține — cea din timpul săptămânii, cea de la sfârșit de săptămână, amândouă sau niciuna — iar săptămânile se bifează dintr-o grilă pe luni. Cealaltă întrunire își păstrează programul și sarcinile."},
@@ -6310,7 +6327,7 @@ function _usersNoAcc(){var linked={};_users().forEach(function(u){if(u.bro)linke
 function _usersSub(){var n=_users().length;return n?('<span class="on">'+n+(n===1?" cont":" conturi")+'</span> · cine intră și ce poate face'):'<span class="off">niciun cont</span> — creează conturi cu PIN';}
 function _usersCardBody(){var c={admin:0,editor:0,vestitor:0,alt:0};_users().forEach(function(u){if(!u.off)c[_usrGrp(u)]++;});
  var na=_usersNoAcc(),cu=_curUser();
- return '<div class="sx-stats"><div class="sx-stat"><b>'+c.admin+'</b><span>Administratori</span></div><div class="sx-stat"><b>'+c.editor+'</b><span>Editori</span></div><div class="sx-stat"><b>'+(c.vestitor+c.alt)+'</b><span>Ceilalți</span></div></div>'
+ return '<div class="sx-stats"><div class="sx-stat"><b>'+c.admin+'</b><span>Administratori</span></div><div class="sx-stat"><b>'+c.editor+'</b><span>Editori</span></div><div class="sx-stat"><b>'+(c.vestitor+c.alt)+'</b><span>Vestitori</span></div></div>'
   +'<button class="btn pri sm" style="width:100%" onclick="usersSheet()">Vezi utilizatorii</button>'
   +(na?('<button class="btn ghost sm" style="width:100%;margin-top:8px" onclick="usersGenerate()">Creează cont pentru '+na+(na===1?' vestitor':' vestitori')+' fără cont</button>'):'')
   +(cu?('<button class="btn ghost sm" style="width:100%;margin-top:8px" onclick="userLogout()">Ieși din cont ('+esc(cu.n)+')</button>'):'');}
@@ -6433,12 +6450,38 @@ async function usersRepin(){if(!_isAdmin()){toast("Doar administratorul");return
  old.forEach(function(u){var pin=_genPin(used);u.p=_hash(pin);u.pin=pin;u.pt=Date.now();});
  logAct("PIN-uri noi generate pentru "+old.length+" utilizatori (parole vechi)");save();_usersRefresh();usersPins();}
 
-function renderSetLimited(){$("#fab").style.display="none";var st=S.settings;var cu=_curUser();
- $("#body").innerHTML='<div class="group gp"><h2>Aspect</h2><label class="fl">Temă</label><select class="fld" onchange="S.settings.theme=this.value;save();applyTheme()"><option value="dark" '+(st.theme==="dark"?"selected":"")+'>Noapte</option><option value="light" '+(st.theme==="light"?"selected":"")+'>Zi</option></select></div><div class="group gp"><h2>Cont</h2><div class="muted">Conectat ca <b>'+esc(cu?cu.n:"")+'</b> — '+_roleLbl(cu?cu.r:"viewer")+'.</div><button class="btn ghost sm" style="width:100%;margin-top:10px" onclick="userLogout()">Schimbă utilizatorul / Ieși</button><div class="gatetip" style="margin-top:12px">Setările de sincronizare și utilizatori sunt disponibile doar administratorului. Sfat: adaugă aplicația la ecranul principal ca să nu se șteargă datele.</div></div>'+_setLimNotif()+_newsSetCard()+'<div class="ver">ArhiLink · v'+VERSION+'</div>';}
-/* același card „Ce e nou", și pentru cine nu are setările complete */
-function _newsSetCard(){if(!NEWS.length)return "";
- return '<div class="group gp"><h2>Ce e nou</h2><div class="muted">Ultimele schimbări din aplicație · v'+esc(NEWS[0].label||NEWS[0].v)+'</div>'
-  +'<button class="btn ghost sm" style="width:100%;margin-top:10px" onclick="openNews(false)">Vezi ce e nou</button></div>';}
+/* stilul paginii de Setări (și al celei pentru cei fără drept de administrator) */
+function _setCSS(){return `<style>
+ .setcard{background:var(--surf);border:1px solid var(--bd);border-radius:16px;margin-bottom:10px;overflow:hidden}
+ .setcard>summary{list-style:none;display:flex;align-items:center;gap:12px;padding:13px 14px;cursor:pointer;user-select:none}
+ .setcard>summary::-webkit-details-marker{display:none}
+ .setcard>summary::after{content:'';width:7px;height:7px;border-right:2px solid var(--ink3);border-bottom:2px solid var(--ink3);transform:rotate(-45deg);transition:transform .18s;flex:0 0 auto;margin-left:2px}
+ .setcard[open]>summary::after{transform:rotate(45deg)}
+ .setcard[open]>summary{border-bottom:1px solid var(--bd)}
+ .sic{width:38px;height:38px;border-radius:12px;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,var(--accsoft),transparent);border:1px solid var(--bd);color:var(--acc);flex:0 0 auto}
+ .sic svg{width:19px;height:19px}
+ .sinfo{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+ .stt{font-weight:700;font-size:14.5px;color:var(--ink)}
+ .ssb{font-size:11.5px;color:var(--ink2);line-height:1.35;overflow:hidden;text-overflow:ellipsis}
+ .ssb .on{color:var(--tealtx,var(--teal));font-weight:700}.ssb .off{color:var(--ink3);font-weight:600}.ssb .warn{color:var(--maroon);font-weight:700}
+ .setbody{padding:12px 14px 14px}
+ .setsec{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.55px;color:var(--ink3);margin:20px 4px 8px}
+ .setsec:first-of-type{margin-top:2px}
+ .setlink{display:flex;align-items:center;gap:12px;width:100%;padding:13px 14px;font:inherit;color:inherit;text-align:left;cursor:pointer}
+ .setlink.btnrow::after{content:'';width:7px;height:7px;border-right:2px solid var(--ink3);border-bottom:2px solid var(--ink3);transform:rotate(-45deg);flex:0 0 auto;margin-right:4px}
+ .setlink:active{background:var(--surf2)}
+ .setlink .bf-seg{flex:0 0 auto;width:150px}
+ .setbody .two .btn{min-width:0}
+ </style>`;}
+function renderSetLimited(){$("#fab").style.display="none";var st=S.settings;var cu=_curUser();ensureBfCSS();ensureSxCSS();
+ $("#body").innerHTML=_setCSS()
+  +'<div class="setsec">Contul meu</div>'
+  +_setLink(IC.ppl,esc(cu?cu.n:"—"),esc(_roleLbl(cu?cu.r:"viewer"))+' · apasă ca să ieși sau să schimbi utilizatorul',"userLogout()")
+  +'<div class="setcard setlink" style="cursor:default"><span class="sic">'+(st.theme==="light"?IC.sun:IC.moon)+'</span><span class="sinfo"><span class="stt">Aspect</span><span class="ssb">'+(st.theme==="light"?"tema Zi":"tema Noapte")+'</span></span>'
+  +'<div class="bf-seg sx-seg">'+[["light","Zi"],["dark","Noapte"]].map(function(o){return '<label><input type="radio" name="sxTheme" '+((st.theme==="light")===(o[0]==="light")?"checked":"")+' onchange="S.settings.theme=\''+o[0]+'\';save();applyTheme();renderSetLimited()"><span>'+o[1]+'</span></label>';}).join("")+'</div></div>'
+  +'<div class="setsec">Notificări</div>'+_setLimNotif()
+  +(NEWS.length?('<div class="setsec">Aplicația</div>'+_setLink(IC.star,"Ce e nou","v"+esc(NEWS[0].label||NEWS[0].v)+" · "+esc(NEWS[0].t||""),"openNews(false)")):'')
+  +'<div class="ver">ArhiLink · v'+VERSION+'</div>';}
 
 async function recoverAdmin(){var tok=await uiPrompt("Recuperare acces administrator","",{msg:"Introdu tokenul GitHub (cel din Sincronizare) ca să reintri ca administrator.",attrs:'type="password" autocomplete="off" placeholder="ghp_…"',yes:"Recuperează"});if(tok==null)return;tok=tok.trim();if(!tok)return;var stored=(S.settings&&S.settings.gh&&S.settings.gh.token)||"";if(stored&&tok===stored){sessionStorage.setItem("alkUser",JSON.stringify({n:"Administrator",r:"admin"}));sessionStorage.setItem("alkUnlocked","1");_gateClose();startApp();toast("Acces restabilit. Intră la Setări, Utilizatori și schimbă parolele.");}else if(!stored){toast("Niciun token salvat. Folosește butonul Din fișier cu un backup mai vechi.");}else{toast("Token greșit");}}
 function showLock(){var lg=_logo(),nm=_userGet();_gateMount((lg?'<img class="gatelogo" src="'+lg+'" alt="">':'')+'<div class="gateh">ArhiLink</div>'+(nm?'<div class="gatesub">'+esc(nm)+'</div>':'')+'<input class="fld" id="lkPass" type="password" placeholder="Parolă" style="margin-top:12px" onkeydown="if(event.key===\'Enter\')lockTry()"><button class="btn pri" style="margin-top:12px" onclick="lockTry()">Deblochează</button><div class="gatetip" id="lkErr"></div>');setTimeout(function(){var i=$("#lkPass");if(i)i.focus();},120);}
@@ -6794,7 +6837,35 @@ function _hscrollBind(){try{
    var nx=Math.max(0,Math.min(max,el.scrollLeft+d));
    if(nx!==el.scrollLeft){el.scrollLeft=nx;e.preventDefault();}
   },{passive:false});});}catch(e){}}
-function sheet(_x,title,html){const bk=$("#sheetBack");if(bk)bk.style.display="none";$("#sheetHd").textContent=title;$("#sheetBody").innerHTML=html;$("#ov").classList.add("show");}
+function sheet(_x,title,html){const bk=$("#sheetBack");if(bk)bk.style.display="none";$("#sheetHd").textContent=title;$("#sheetBody").innerHTML=html;_pmPolish($("#sheetBody"));$("#ov").classList.add("show");}
+/* Rândurile de meniu sunt scrise peste tot la fel: iconița, apoi „<b>Titlu</b> — ce face".
+   Aici le așezăm pe două rânduri — iconița în pătratul ei, titlul, dedesubt descrierea mică —
+   fără să rescriem fiecare meniu. Rulează o singură dată pe rând (data-pm). */
+function _pmPolish(root){try{if(!root)return;
+ [].forEach.call(root.querySelectorAll(".pmrow:not([data-pm])"),function(r){r.setAttribute("data-pm","1");
+  var ic=r.firstElementChild;
+  if(ic&&ic.tagName.toLowerCase()==="svg"){var w=document.createElement("span");w.className="pmi";r.insertBefore(w,ic);w.appendChild(ic);}
+  var sp=r.lastElementChild;if(!sp||sp.tagName.toLowerCase()!=="span"||sp.classList.contains("pmi"))return;
+  var b=sp.firstElementChild;
+  /* titlul trebuie să fie primul lucru din rând (fără text înainte) */
+  if(!b||b.tagName.toLowerCase()!=="b"||(sp.firstChild!==b&&String(sp.firstChild.textContent||"").trim()))return;
+  var rest=[],n=b.nextSibling;while(n){rest.push(n);n=n.nextSibling;}
+  if(!rest.length){sp.classList.add("pmt");return;}
+  var t0=rest[0];
+  /* „— descriere" / „· detalii" / „(notă)" trec dedesubt; altfel („la grupa X") titlul continuă */
+  if(t0.nodeType===3){var m=String(t0.textContent).match(/^\s*([—–·-]|\()/);if(!m)return;
+   t0.textContent=String(t0.textContent).replace(/^\s*[—–·-]\s*/,"").replace(/^\s+/,"");}
+  else if(!(t0.nodeType===1&&/^(br|span)$/i.test(t0.tagName)))return;
+  var sm=document.createElement("span");sm.className="pms";
+  rest.forEach(function(x){sm.appendChild(x);});
+  while(sm.firstChild&&sm.firstChild.nodeName==="BR")sm.removeChild(sm.firstChild);
+  sp.appendChild(sm);sp.classList.add("pmt");});
+}catch(e){}}
+/* și rândurile desenate după deschiderea foii (sau direct în pagină) */
+(function(){try{var mo=new MutationObserver(function(ms){for(var i=0;i<ms.length;i++){var t=ms[i].target;
+  if(t&&t.querySelector&&t.querySelector(".pmrow:not([data-pm])")){_pmPolish(t);}}});
+ var go=function(){["sheetBody","body"].forEach(function(id){var e=document.getElementById(id);if(e)mo.observe(e,{childList:true,subtree:true});});};
+ if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",go);else go();}catch(e){}})();
 /* Cât timp o foaie e deschisă, sincronizarea se ține deoparte (`editBusy`) — nu îmbinăm date
    sub mâna cuiva care tocmai alege ceva. Dar aproape toate modificările se fac ÎNTR-O foaie
    (alegerea unei persoane, importul planului), așa că trimiterea rămânea pe seama următoarei
@@ -7296,10 +7367,10 @@ function _arhNavHtml(){var g=_arhGrpOf(arhGrp);if(!g)return "";
  var sec=_arhSecOf(g,arhSub);
  /* cu o săptămână deschisă, întoarcerea firească e la lista de săptămâni, nu la grupul de
     secțiuni — altfel ies două butoane „înapoi" unul sub altul, arătând în locuri diferite */
- var wk=(arhSub==="vcped"&&wkOpen);
+ var wk=(arhSub==="vcped"&&wkOpen)?"wkBackList()":(arhSub==="sarc"&&dutyW>=0)?"dutyBack()":(arhSub==="mp"&&mpW>=0)?"mpBack()":(arhSub==="teren"&&ftW>=0)?"ftBack()":(arhSub==="wm"&&wmW>=0)?"wmBack()":"";
  /* la fel pentru schița de grupe deschisă: „înapoi" duce la grupe, iar titlul e numele schiței */
  var gp=(arhSub==="grp"&&gpOpen)?gpGet(gpOpen):null;
- return '<div class="arhnav"><button class="arhback" onclick="'+(wk?'wkBackList()':gp?'gpClose()':'arhGrpBack()')+'">'
+ return '<div class="arhnav"><button class="arhback" onclick="'+(wk?wk:gp?'gpClose()':'arhGrpBack()')+'">'
   +IC.back+' '+esc(wk?"Săptămâni":gp?"Grupe":g.n)+'</button>'
   +'<span class="ahtt2">'+esc(gp?(gp.name||"Schiță"):(sec?sec[1]:""))+'</span></div>';}
 /* Subtabul VCP e chiar editorul de săptămâni, care își scrie singur ecranul. După el
@@ -8357,6 +8428,7 @@ function _muItems(my){var out=[],t0=new Date();t0.setHours(0,0,0,0);var md=meetD
   add({d:d,k:"duty",t:it.label,s:"la întrunirile săptămânii",go:"meuGoDuty("+it.wi+")"});});}catch(e){logErr("profil: sarcini "+e.message,e.stack);}
  try{myWm(my).forEach(function(it){var d=wmDateOf(it.wi),sfx=d?(" · "+_fmtDayShort(d)):"",t=cut(it.label,"",sfx),s="";
   if(t.indexOf("Cuvântarea publică — ")===0){s=t.slice(21);t="Cuvântarea publică";}else t=cut(t,"Întrunirea publică — ","");
+  if(S.settings.startW)s=["ora "+S.settings.startW,s].filter(Boolean).join(" · ");
   add({d:d,k:"wm",t:t,s:s,go:"meuGoWm("+it.wi+")"});});}catch(e){logErr("profil: întrunirea publică "+e.message,e.stack);}
  try{myWmHost(my).forEach(function(g){add({d:g.dt,k:"host",t:"Ospitalitatea",s:"la întrunirea publică",go:"meuGoWm("+g.wi+")"});});}catch(e){logErr("profil: ospitalitate "+e.message,e.stack);}
  try{myMp(my).forEach(function(it){var sfx=it.dt?(" · "+_fmtDayShort(it.dt)):"";
@@ -9872,22 +9944,11 @@ function dutyListHtml(){var D=dutyD(),ed=_canEditDuty();
    h+='</div></div>';});
   h+='</div></div>';});
  return h;}
-/* În „Programări" nu există listă de săptămâni din care ai venit: foaia ESTE ecranul, iar
-   secțiunea o spune selectorul de sus. Butonul „înapoi" de aici n-avea unde să ducă. */
-function _wkBack(label,fn){return (tab==="prog")?'<span class="wkspace"></span>'
- :('<button class="bk" onclick="'+fn+'">'+IC.back+' '+label+'</button>');}
-/* fără butonul din stânga, bara se ține centrată ca la „Viața creștină" — aceleași reguli */
-function _wkBarCls(){return "wkbar"+(tab==="prog"?" vcpbar":"");}
 function dutyWeekHtml(wi){var w=S.weeks[wi],o=dutyOf(wi),ed=_canEditDuty(),posts=dutyPosts();
  var np=function(i){return (i>=0&&i<S.weeks.length);};
- var h=_secBar("sarc")+'<div class="'+_wkBarCls()+'">'+_wkBack("Sarcini","dutyBack()")
-  +'<div class="wknavc"><button class="wkb" onclick="dutyGo('+(wi-1)+')" '+(np(wi-1)?"":"disabled")+' title="Săptămâna anterioară">'+IC.back+'</button>'
-  +'<span class="wkpos">'+esc(tc(w.date))+((!w.event&&w.bible)?('<small class="wkbib">'+esc(w.bible)+'</small>'):'')+'</span>'
-  +'<button class="wkb" onclick="dutyGo('+(wi+1)+')" '+(np(wi+1)?"":"disabled")+' title="Săptămâna următoare">'+IC.fwd+'</button></div><span class="wkspace">'+_progEditBtn()+'</span></div>';
+ var h=_secBar("sarc")+_wkHeadHtml(wi,"dutyGo",{sub:_wkMeetDays(wi),acts:[_progEditPill()]});
  if(evNoMeet(w))return h+'<div class="evb" style="margin-top:10px"><div class="et">'+esc(evLabel(w))+'</div><div class="ed">În această săptămână nu se ține întrunirea, deci nu se repartizează sarcini (S-38).</div></div>';
- if(w.event)h+='<div class="group gp" style="padding:14px 16px 11px"><div class="nm" style="font-size:16.5px;font-weight:800">Săptămâna '+esc(tc(w.date))+'</div>'
-  +'<div class="mt" style="font-size:12.5px;margin-top:3px"><span style="color:var(--acc);font-weight:700">'+esc(w.event)+'</span>'+(w.bible?(' · '+esc(w.bible)):'')+'</div>'
-  +(evDutyNote(wi)?('<div class="mt" style="font-size:12px;margin-top:5px">'+esc(evDutyNote(wi))+'</div>'):'')+'</div>';
+ if(evDutyNote(wi))h+='<div class="hint" style="margin:0 0 10px">'+esc(evDutyNote(wi))+'</div>';
  h+=awBanner(wi,"sarc");
  h+='<div class="group" style="overflow:hidden">';
  /* Semnul „!” e o unealtă de repartizare: îi spune celui care pune oamenii că persoana mai
@@ -9996,14 +10057,14 @@ function dutySet(id){if(!_dpk)return;if(!_needDuty())return;var wi=_dpk.wi,pid=_
 /* --- posturile: adăugare / redenumire / ștergere --- */
 function dutyTitleSheet(){if(!_needDuty())return;var D=dutyD();
  sheet("","Foaia de sarcini",
-  '<label class="fl">Titlu (apare în PDF)</label><input class="fld" id="duT" value="'+esc(D.title||"")+'">'
+  '<label class="fl" style="margin-top:0">Titlu (apare în PDF)</label><input class="fld" id="duT" value="'+esc(D.title||"")+'">'
  +'<label class="fl" style="margin-top:12px">Actualizat</label><input class="fld" id="duU" value="'+esc(D.upd||"")+'" placeholder="'+esc(fmtDMY(new Date()))+'">'
- +'<div class="pmlbl" style="margin-top:16px">Posturile de pe foaie</div>'
- +'<div class="muted" style="margin:0 2px 8px;font-size:11.5px">Categoria hotărăște cine apare în listă: în fișa vestitorului bifezi la ce poate fi pus. Fără bifă nu se poate atribui nimeni.</div>'
- +dutyPosts().map(function(p,i){var n=dutyPoolN(p.c);
+ +'<button class="btn pri sm" style="width:100%;margin-top:12px" onclick="dutyTitleSave()">Salvează titlul</button>'
+ +'<div class="pmlbl" style="margin-top:20px">Posturile de pe foaie</div>'
+ +'<div class="pmnote">Cine poate fi pus se bifează în fișa vestitorului.</div>'
+ +'<div class="pmlist">'+dutyPosts().map(function(p,i){var n=dutyPoolN(p.c);
    return '<button class="pmrow" onclick="dutyPostSheet(\''+p.id+'\')">'+IC.edit+'<span><b>'+esc(p.n)+'</b> — '+esc(dutyCatLbl(p.c))+' · '+(n?(n+" bifați"):'<b style="color:var(--maroon)">niciun bifat</b>')+'</span></button>';}).join("")
- +'<button class="pmrow" onclick="dutyPostSheet(\'\')">'+IC.plus+'<span><b>Adaugă un post</b></span></button>'
- +'<button class="btn pri" style="width:100%;margin-top:16px" onclick="dutyTitleSave()">Salvează titlul</button>');}
+ +'<button class="pmrow pmadd" onclick="dutyPostSheet(\'\')">'+IC.plus+'<span><b>Adaugă un post</b></span></button></div>');}
 function dutyTitleSave(){if(!_needDuty())return;var D=dutyD();
  D.title=($("#duT")?$("#duT").value:"").trim()||"Sarcini";
  var u=($("#duU")?$("#duU").value:"").trim();
@@ -10592,12 +10653,8 @@ function _wkYearGroups(){var base=+(S.settings.baseYear||2026),year=base,prev=-1
  return years;}
 function mpWeekHtml(wi){var w=S.weeks[wi],ed=_canEditMp();
  var np=function(i){return (i>=0&&i<S.weeks.length);};
- var h=_secBar("mp")+'<div class="'+_wkBarCls()+'">'+_wkBack("Mărturia publică","mpBack()")
-  +'<div class="wknavc"><button class="wkb" onclick="mpGo('+(wi-1)+')" '+(np(wi-1)?"":"disabled")+' title="Săptămâna anterioară">'+IC.back+'</button>'
-  +'<span class="wkpos">'+esc(tc(w.date))+'</span>'
-  +'<button class="wkb" onclick="mpGo('+(wi+1)+')" '+(np(wi+1)?"":"disabled")+' title="Săptămâna următoare">'+IC.fwd+'</button></div><span class="wkspace"></span></div>';
- if(w.event)h+='<div class="evb" style="padding:12px 14px;margin-bottom:10px"><div class="et" style="font-size:15px">'+esc(w.event)+'</div><div class="ed">mărturia publică se ține și în săptămânile cu evenimente — scoate tura dacă nu se ține</div></div>';
- else if(ed)h+='<div class="hint" style="margin:0 0 10px">Turele pe zile și ore, cu numele de la fiecare. În săptămânile cu evenimente mărturia se ține tot — scoate tura dacă nu se ține.</div>';
+ var h=_secBar("mp")+_wkHeadHtml(wi,"mpGo",{sub:""});
+ if(w.event&&ed)h+='<div class="hint" style="margin:0 0 10px">Mărturia publică se ține și în săptămâna cu eveniment — scoate tura care nu se ține.</div>';
  h+=awBanner(wi,"mp");
  var ss=mpShiftsSorted();
  if(!ss.length)return h+'<div class="empty" style="padding:26px 8px">Nicio tură pe foaie.</div>';
@@ -10688,19 +10745,19 @@ function mpSet(id){if(!_mpk)return;if(!_needMp())return;var wi=_mpk.wi,sid=_mpk.
  if(busy.length)toast(broDisp(id)+" are deja "+dutyBusyTxt(busy),6000);}
 /* --- foaia: titlu, locații, ture --- */
 function mpTitleSheet(){if(!_needMp())return;var D=mpD();
- var H='<label class="fl">Titlu (apare în PDF)</label><input class="fld" id="mpT" value="'+esc(D.title||"")+'">'
+ var H='<label class="fl" style="margin-top:0">Titlu (apare în PDF)</label><input class="fld" id="mpT" value="'+esc(D.title||"")+'">'
   +'<label class="fl" style="margin-top:12px">Actualizat</label><input class="fld" id="mpU" value="'+esc(D.upd||"")+'" placeholder="'+esc(fmtDMY(new Date()))+'">'
-  +'<div class="pmlbl" style="margin-top:16px">Locațiile</div>'
-  +'<div class="muted" style="margin:0 2px 8px;font-size:11.5px">Locația hotărăște cine apare în listă: în fișa vestitorului bifezi la ce locații poate merge.</div>'
-  +mpLocs().map(function(l){var n=mpPoolN(l.id);var us=mpShifts().filter(function(s){return s.loc===l.id;}).length;
+  +'<button class="btn pri sm" style="width:100%;margin-top:12px" onclick="mpTitleSave()">Salvează titlul</button>'
+  +'<div class="pmlbl" style="margin-top:20px">Locațiile</div>'
+  +'<div class="pmnote">Cine poate merge se bifează în fișa vestitorului.</div>'
+  +'<div class="pmlist">'+mpLocs().map(function(l){var n=mpPoolN(l.id);var us=mpShifts().filter(function(s){return s.loc===l.id;}).length;
     return '<button class="pmrow" onclick="mpLocSheet(\''+l.id+'\')">'+IC.edit+'<span><b>'+esc(l.n)+'</b> — '+us+(us===1?" tură":" ture")+' · '+(n?(n+" bifați"):'<b style="color:var(--maroon)">niciun bifat</b>')+'</span></button>';}).join("")
-  +'<button class="pmrow" onclick="mpLocSheet(\'\')">'+IC.plus+'<span><b>Adaugă o locație</b></span></button>'
-  +'<div class="pmlbl" style="margin-top:16px">Turele săptămânii</div>'
-  +'<div class="muted" style="margin:0 2px 8px;font-size:11.5px">Se repetă în fiecare săptămână. Dacă o tură nu se ține într-o anumită săptămână, o scoți din săptămâna respectivă, nu de aici.</div>'
-  +(mpShiftsSorted().map(function(s){
+  +'<button class="pmrow pmadd" onclick="mpLocSheet(\'\')">'+IC.plus+'<span><b>Adaugă o locație</b></span></button></div>'
+  +'<div class="pmlbl" style="margin-top:20px">Turele săptămânii</div>'
+  +'<div class="pmnote">Se repetă săptămânal. O tură care nu se ține o scoți din săptămâna ei.</div>'
+  +'<div class="pmlist">'+(mpShiftsSorted().map(function(s){
     return '<button class="pmrow" onclick="mpShiftSheet(\''+s.id+'\')">'+IC.edit+'<span><b>'+esc(RO_DAYS[+s.d])+'</b> · '+esc(mpLocName(s.loc)||"—")+' · '+esc(s.n||"")+(s.h?(" ("+esc(s.h)+")"):"")+' · '+mpCap(s)+' locuri</span></button>';}).join("")||'<div class="muted" style="padding:8px 4px">Nicio tură încă.</div>')
-  +'<button class="pmrow" onclick="mpShiftSheet(\'\')">'+IC.plus+'<span><b>Adaugă o tură</b></span></button>'
-  +'<button class="btn pri" style="width:100%;margin-top:16px" onclick="mpTitleSave()">Salvează titlul</button>';
+  +'<button class="pmrow pmadd" onclick="mpShiftSheet(\'\')">'+IC.plus+'<span><b>Adaugă o tură</b></span></button></div>';
  sheet("","Foaia Mărturia publică",H);}
 function mpTitleSave(){if(!_needMp())return;var D=mpD();
  D.title=($("#mpT")?$("#mpT").value:"").trim()||"Mărturia Publică";
@@ -10944,11 +11001,7 @@ function ftListHtml(){var D=ftD(),ed=_canEditFt();
  return h;}
 function ftWeekHtml(wi){var w=S.weeks[wi],ed=_canEditFt();
  var np=function(i){return (i>=0&&i<S.weeks.length);};
- var h=_secBar("teren")+'<div class="'+_wkBarCls()+'">'+_wkBack("Întrunirile de teren","ftBack()")
-  +'<div class="wknavc"><button class="wkb" onclick="ftGo('+(wi-1)+')" '+(np(wi-1)?"":"disabled")+' title="Săptămâna anterioară">'+IC.back+'</button>'
-  +'<span class="wkpos">'+esc(tc(w.date))+'</span>'
-  +'<button class="wkb" onclick="ftGo('+(wi+1)+')" '+(np(wi+1)?"":"disabled")+' title="Săptămâna următoare">'+IC.fwd+'</button></div><span class="wkspace"></span></div>';
- if(ed)h+='<div class="hint" style="margin:0 0 10px">Fratele care conduce întrunirea pentru predicare, în fiecare zi de pe foaie.</div>';
+ var h=_secBar("teren")+_wkHeadHtml(wi,"ftGo",{sub:""});
  var ev=_ftEvTxt(wi),ssl=ftSSLbl(wi);
  if(ev)h+='<div class="ftnote">'+esc(ev)+'</div>';
  if(ed)h+='<button class="ftssb'+(ssl?' on':'')+'" onclick="ftSSPick('+wi+')">'+IC.star
@@ -11068,19 +11121,19 @@ function ftSet(id){if(!_ftk)return;if(!_needFt())return;var wi=_ftk.wi,sid=_ftk.
  closeSheet();_ftk=null;renderArhRoute();}
 /* --- foaia: titlu, locuri, zile --- */
 function ftTitleSheet(){if(!_needFt())return;var D=ftD();
- var H='<label class="fl">Titlu (apare în PDF)</label><input class="fld" id="ftT" value="'+esc(D.title||"")+'">'
+ var H='<label class="fl" style="margin-top:0">Titlu (apare în PDF)</label><input class="fld" id="ftT" value="'+esc(D.title||"")+'">'
   +'<label class="fl" style="margin-top:12px">Actualizat</label><input class="fld" id="ftU" value="'+esc(D.upd||"")+'" placeholder="'+esc(fmtDMY(new Date()))+'">'
-  +'<div class="pmlbl" style="margin-top:16px">Locurile</div>'
-  +'<div class="muted" style="margin:0 2px 8px;font-size:11.5px">Locul obișnuit se pune pe fiecare zi. Într-o săptămână anume îl poți schimba din foaia săptămânii.</div>'
-  +ftLocs().map(function(l){var us=ftSlots().filter(function(s){return s.loc===l.id;}).length;
+  +'<button class="btn pri sm" style="width:100%;margin-top:12px" onclick="ftTitleSave()">Salvează titlul</button>'
+  +'<div class="pmlbl" style="margin-top:20px">Locurile</div>'
+  +'<div class="pmnote">Locul obișnuit al fiecărei zile; pe o săptămână anume îl schimbi din foaia ei.</div>'
+  +'<div class="pmlist">'+ftLocs().map(function(l){var us=ftSlots().filter(function(s){return s.loc===l.id;}).length;
     return '<button class="pmrow" onclick="ftLocSheet(\''+l.id+'\')">'+IC.edit+'<span><b>'+esc(l.n)+'</b> — '+us+(us===1?" zi":" zile")+'</span></button>';}).join("")
-  +'<button class="pmrow" onclick="ftLocSheet(\'\')">'+IC.plus+'<span><b>Adaugă un loc</b></span></button>'
-  +'<div class="pmlbl" style="margin-top:16px">Zilele săptămânii</div>'
-  +'<div class="muted" style="margin:0 2px 8px;font-size:11.5px">Se repetă în fiecare săptămână. Dacă într-o săptămână nu se ține, o scoți din săptămâna respectivă, nu de aici.</div>'
-  +(ftSlotsSorted().map(function(s){
+  +'<button class="pmrow pmadd" onclick="ftLocSheet(\'\')">'+IC.plus+'<span><b>Adaugă un loc</b></span></button></div>'
+  +'<div class="pmlbl" style="margin-top:20px">Zilele săptămânii</div>'
+  +'<div class="pmnote">Se repetă săptămânal. O zi care nu se ține o scoți din săptămâna ei.</div>'
+  +'<div class="pmlist">'+(ftSlotsSorted().map(function(s){
     return '<button class="pmrow" onclick="ftSlotSheet(\''+s.id+'\')">'+IC.edit+'<span><b>'+esc(RO_DAYS[+s.d])+'</b> · '+esc(s.h||"—")+' · '+esc(ftLocName(s.loc)||"—")+'</span></button>';}).join("")||'<div class="muted" style="padding:8px 4px">Nicio zi încă.</div>')
-  +'<button class="pmrow" onclick="ftSlotSheet(\'\')">'+IC.plus+'<span><b>Adaugă o zi</b></span></button>'
-  +'<button class="btn pri" style="width:100%;margin-top:16px" onclick="ftTitleSave()">Salvează titlul</button>';
+  +'<button class="pmrow pmadd" onclick="ftSlotSheet(\'\')">'+IC.plus+'<span><b>Adaugă o zi</b></span></button></div>';
  sheet("","Foaia Întrunirile de teren",H);}
 function ftTitleSave(){if(!_needFt())return;var D=ftD();
  D.title=($("#ftT")?$("#ftT").value:"").trim()||"Întrunirile pentru serviciul de Teren";
@@ -11564,8 +11617,8 @@ function wmWeekHtml(wi){_vcpStyle();ensureWmvCSS();
  var dt=wmDateOf(wi),ws=_vcpWkState(wi);
  var st=ws==="now"?"Săptămâna aceasta":(ws==="next"?"Săptămâna viitoare":(ws==="past"?"Săptămână trecută":""));
  var info=[];
- if(tab==="arh")info.push('<button class="vw-ed" onclick="wmBack()">'+IC.back+'Toate săptămânile</button>');
- else if(_tabAllowed("arh")&&_mayEditWm())info.push('<button class="vw-ed" onclick="progEdit()" title="Modifică în Arhivă">'+IC.edit+'Modifică</button>');
+ if(S.settings.startW)info.push('<span>'+IC.clock+esc(S.settings.startW)+'</span>');
+ if(tab!=="arh"&&_tabAllowed("arh")&&_mayEditWm())info.push('<button class="vw-ed" onclick="progEdit()" title="Modifică în Arhivă">'+IC.edit+'Modifică</button>');
  var h=_secBar("wm")+'<div class="vw wmv"><div class="vw-head'+(tab==="prog"?" vcpbar":"")+'"><div class="vw-nav">'
   +'<button class="wkb" onclick="wmGo('+(wi-1)+')" '+(np(wi-1)?"":"disabled")+' title="Săptămâna anterioară" aria-label="Săptămâna anterioară">'+IC.back+'</button>'
   +'<div class="vw-ttl">'+(st?('<div class="vw-st'+(ws==="past"?" past":"")+'">'+st+'</div>'):'')+'<div class="vw-date">'+esc(dt?(RO_DAYS[dt.getDay()]+" "+dt.getDate()+" "+RO_MONTHS[dt.getMonth()]):tc(w.date))+'</div>'
@@ -11812,15 +11865,14 @@ function wmSet(id){if(!_wpk)return;if(!_needWm())return;var wi=_wpk.wi,pid=_wpk.
 /* --- foaia întrunirii publice: titlu + posturi --- */
 function wmTitleSheet(){if(!_needWm())return;var D=wmD();
  sheet("","Foaia Întrunirea publică",
-  '<label class="fl">Titlu (apare în PDF)</label><input class="fld" id="wmT" value="'+esc(D.title||"")+'">'
+  '<label class="fl" style="margin-top:0">Titlu (apare în PDF)</label><input class="fld" id="wmT" value="'+esc(D.title||"")+'">'
  +'<label class="fl" style="margin-top:12px">Actualizat</label><input class="fld" id="wmU" value="'+esc(D.upd||"")+'" placeholder="'+esc(fmtDMY(new Date()))+'">'
- +'<div class="muted" style="margin:10px 2px 0;font-size:11.5px">Ziua întrunirii ('+esc(RO_DAYS[meetDayWVal()])+') se schimbă din Setări → Congregație și întrunire.</div>'
- +'<div class="pmlbl" style="margin-top:16px">Posturile de pe foaie</div>'
- +'<div class="muted" style="margin:0 2px 8px;font-size:11.5px">Vorbitorul, titlul și ospitalitatea sunt mereu pe foaie. Aici adaugi restul (președinte, cititor, rugăciune, conducător).</div>'
- +wmPosts().map(function(p){var n=wmPoolN(p.c);
+ +'<button class="btn pri sm" style="width:100%;margin-top:12px" onclick="wmTitleSave()">Salvează titlul</button>'
+ +'<div class="pmlbl" style="margin-top:20px">Posturile de pe foaie</div>'
+ +'<div class="pmnote">Vorbitorul, titlul și ospitalitatea sunt mereu pe foaie. Ziua ('+esc(RO_DAYS[meetDayWVal()].toLowerCase())+') se schimbă din Setări.</div>'
+ +'<div class="pmlist">'+wmPosts().map(function(p){var n=wmPoolN(p.c);
    return '<button class="pmrow" onclick="wmPostSheet(\''+p.id+'\')">'+IC.edit+'<span><b>'+esc(p.n)+'</b> — '+esc(wmCatLbl(p.c))+' · '+(n?(n+" bifați"):'<b style="color:var(--maroon)">niciun bifat</b>')+'</span></button>';}).join("")
- +'<button class="pmrow" onclick="wmPostSheet(\'\')">'+IC.plus+'<span><b>Adaugă un post</b></span></button>'
- +'<button class="btn pri" style="width:100%;margin-top:16px" onclick="wmTitleSave()">Salvează titlul</button>');}
+ +'<button class="pmrow pmadd" onclick="wmPostSheet(\'\')">'+IC.plus+'<span><b>Adaugă un post</b></span></button></div>');}
 function wmTitleSave(){if(!_needWm())return;var D=wmD();
  D.title=($("#wmT")?$("#wmT").value:"").trim()||"Întrunirea Publică";
  var u=($("#wmU")?$("#wmU").value:"").trim();
@@ -11906,7 +11958,7 @@ function arhFabMp(){var ed=_canEditMp();
 
 /* ============ PDF: Întrunirea publică (în pachetul „FOILE DE AVIZIER") ============ */
 function _wmCard(wi){var w=S.weeks[wi],o=wmOf(wi),dt=wmDateOf(wi);
- var ttl=dt?(RO_DAYS[dt.getDay()]+" "+dt.getDate()+" "+RO_MONTHS_CAP[dt.getMonth()]):tc(w.date);
+ var ttl=(dt?(RO_DAYS[dt.getDay()]+" "+dt.getDate()+" "+RO_MONTHS_CAP[dt.getMonth()]):tc(w.date))+(S.settings.startW?(", ora "+S.settings.startW):"");
  var head=_kCols([30,0,30,0])+_kBand("wm",4,ttl,(w.event&&!evNoWm(w))?evLabel(w):("săptămâna "+_pkWk(wi)));
  if(evNoWm(w))return {h:34,html:'<table class="ktb">'+head+_kEvRow(w,4)+'</table>'};
  var tt=(o.tt||"").trim(),tn=+o.tn||ptNumOf(tt);
@@ -12102,7 +12154,7 @@ function _allRow(col,label,value){
 function _allNote(col,txt){
  return '<tr><td class="ptm"></td><td class="plb" colspan="2"><span style="color:'+col+'">•</span>&nbsp;<b>'+esc(txt)+'</b></td></tr>';}
 function _allWmBox(wi){var o=wmOf(wi),dt=wmDateOf(wi),w=S.weeks[wi];
- var hd=(wmD().title||"Întrunirea Publică")+(dt?(" — "+_fmtDayShort(dt)):"");
+ var hd=(wmD().title||"Întrunirea Publică")+(dt?(" — "+_fmtDayShort(dt)):"")+(S.settings.startW?(", "+S.settings.startW):"");
  if(evNoWm(w))return _allSec(ALL_C_WM,ALL_IC_WM,hd,_allNote(ALL_C_WM,String(evLabel(w)).toUpperCase()));
  var rows=_allRow(ALL_C_WM,"Vorbitor",wmSpeakerExp(o))
   +_allRow(ALL_C_WM,"Congregația",wmCong(o))
@@ -15671,7 +15723,7 @@ function _calMap(y,m){
   var dW=_wkDayDate(wi,meetDayWVal());
   if(dW&&!evNoWm(w)){
    var o=wmOf(wi);
-   put(dW,{k:"wend",h:"",t:"Întrunirea publică",
+   put(dW,{k:"wend",h:(S.settings&&S.settings.startW)||"",t:"Întrunirea publică",
     s:[(o&&o.tt)||"",mine.wend.length?("ai: "+mine.wend.join(", ")):""].filter(Boolean).join(" · "),
     mine:!!mine.wend.length,go:"fndGoWm("+wi+")"});}
   /* evenimentul săptămânii, când nu anulează întrunirea (vizite, congrese, Comemorarea) */
