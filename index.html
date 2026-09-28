@@ -218,8 +218,23 @@ html:has(.app.light),body:has(.app.light){background:#ffffff}
 .foldopt svg{width:16px;height:16px;flex:0 0 auto;color:var(--ink3)}
 .foldopt.nou{color:var(--acc);font-weight:700}
 .foldopt.nou svg{color:var(--acc)}
-select.fld{margin-top:7px;font-size:14px;padding:9px 11px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='none' stroke='%2371737f' stroke-width='2'%3E%3Cpath d='M2 4l4 4 4-4'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:30px}
+select.fld{margin-top:7px;font-size:16px;padding:10px 11px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='none' stroke='%2371737f' stroke-width='2'%3E%3Cpath d='M2 4l4 4 4-4'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:30px}
 .fld:focus,select.fld:focus{border-color:var(--acc);box-shadow:0 0 0 3px var(--accsoft)}
+/* foile (ferestrele de jos): același formular peste tot — etichete clare, câmpuri înalte,
+   explicațiile mici și estompate, butoanele la fel de înalte */
+#sheetBody label.fl{font-size:12.5px;color:var(--ink2);margin:16px 2px 7px}
+#sheetBody>label.fl:first-child{margin-top:2px}
+#sheetBody .fld{border-radius:12px;min-height:48px}
+#sheetBody select.fld{margin-top:0}
+#sheetBody textarea.fld{min-height:120px;line-height:1.45}
+#sheetBody>.muted{font-size:12.5px;line-height:1.5;color:var(--ink3)}
+#sheetBody .btn{border-radius:14px;min-height:48px}
+#sheetBody .btn.sm{min-height:44px}
+#sheetBody .btn.pri{box-shadow:0 4px 14px rgba(217,132,15,.22)}
+#sheetBody .btn.danger{border-color:rgba(244,124,124,.4)}
+#sheetBody .edsec{color:var(--ink3);font-size:11px;letter-spacing:.55px;border-top:1px solid var(--bd);margin:22px 2px 10px}
+#sheetBody .hint{font-size:12px;line-height:1.5;border-radius:12px;padding:10px 12px}
+#sheetBody .two{gap:10px}
 label.fl{display:block;font-size:11.5px;color:var(--ink2);margin:12px 0 5px;font-weight:700;letter-spacing:.02em}
 .two{display:grid;grid-template-columns:1fr 1fr;gap:9px}
 /* buttons */
@@ -2392,10 +2407,10 @@ function refSheet(){if(!_isAdmin()){toast("Doar administratorul");return;}
    +'<div class="muted" style="font-size:11.5px;margin-top:2px">'+(d.lessons||0)+' lecții'+(d.by?(' · '+esc(d.by)):'')+' · '+fmtDT(d.t)+'</div></span></button>'
    +'<button class="btn ghost sm" style="width:auto;flex:0 0 auto;color:var(--maroon)" onclick="refDel(\''+c+'\')">Șterge</button></div>';}).join("");
  sheet("Referințe","Referințe",
-  '<div class="muted" style="margin:0 2px 12px">Broșurile la care trimite caietul. Când apeși <b>„i"</b> la o temă pentru cursanți vezi lecția la care lucrează — iar dacă broșura e încărcată aici, vezi și titlul lecției și textul punctului. Le încarcă doar administratorul; ajung singure la toți.</div>'
+  '<div class="muted" style="margin:0 2px 12px">Broșurile la care trimite caietul: la butonul <b>„i”</b> al temei apar titlul lecției și textul punctului.</div>'
   +(rows||'<div class="muted" style="margin:0 2px 12px">Nicio broșură încărcată încă.</div>')
   +'<button class="btn pri" style="width:100%;margin-top:12px" onclick="refAdd()">'+IC.plus+' Încarcă o broșură (.epub)</button>'
-  +'<div class="hint" style="margin-top:10px">Formatul <b>.epub</b> din JW Library dă cel mai bun rezultat: titlul lecției și textul fiecărui punct. Un <b>.pdf</b> nu poate fi citit corect (diacriticele se pierd la extragere), iar în <b>.jwpub</b> conținutul e criptat de editor — nu îl deschidem.</div>');}
+  +'<div class="hint" style="margin-top:10px">Doar <b>.epub</b> din JW Library (un .pdf pierde diacriticele, iar .jwpub e criptat).</div>');}
 function refInfo(code){var d=refIdx()[code];if(!d)return;
  var ex=_refCache[code];var keys=ex&&ex.lessons?Object.keys(ex.lessons):[];
  var list=keys.slice(0,40).map(function(k){var L=ex.lessons[k];
@@ -2717,20 +2732,21 @@ function editWeekMeta(i){const w=S.weeks[i];
  if(w.event&&!curId)opts+='<option value="__keep" selected>'+esc(w.event)+' (șters din listă)</option>';
  const evHtml='<label class="fl">Eveniment</label>'
   +'<select id="we" class="fld" onchange="weekEvtChg()">'+opts+'</select>'
-  +'<div class="muted" style="font-size:11.5px;margin-top:5px">Lista se editează din <b>Setări → Evenimente</b>.</div>'
+  +'<div class="muted" style="font-size:11.5px;margin:6px 2px 0">Lista se editează din Setări → Evenimente.</div>'
   +'<div id="evtNm" style="display:'+((w.event&&!vis)?'block':'none')+';margin-top:8px"><label class="fl">Tema / detalii (opțional)</label><input id="wename" class="fld" placeholder="ex. tema congresului" value="'+qa(w.eventName)+'"></div>'
   +'<div id="evtVi" style="display:'+(vis?'block':'none')+';margin-top:8px"><label class="fl">Titlul cuvântării de serviciu (30 min.)</label><input id="wetalk" class="fld" placeholder="Titlul temei ținute de supraveghetor" value="'+qa(w.coTalk)+'"><div class="muted" style="margin-top:6px">Supraveghetor: <b>'+esc(S.settings.co||"— setează în Setări → Congregație —")+'</b><br>Studiul Bibliei e înlocuit de această cuvântare, iar cântarea de încheiere o alege supraveghetorul (S-38 §21).</div></div>';
+ const sgs=(w.songs||[]);const sgIn=(k,lbl)=>`<div><label class="fl">${lbl}</label><input id="wsg${k}" class="fld" inputmode="numeric" style="text-align:center" value="${sgs[k]!=null?sgs[k]:""}"></div>`;
+ ensureBfCSS();ensureSxCSS();
  sheet("Săptămână","Detalii săptămână",`
-  <label class="fl">Titlu / dată</label><input id="wd" class="fld" value="${qa(w.date)}">
-  <label class="fl">Pasaj biblic</label><input id="wb" class="fld" value="${qa(w.bible)}">
+  <label class="fl">Săptămâna</label><input id="wd" class="fld" value="${qa(w.date)}">
+  <label class="fl">Citirea Bibliei</label><input id="wb" class="fld" value="${qa(w.bible)}">
   ${evHtml}
-  <label class="fl">Cântări (3 numere, separate prin virgulă)</label><input id="wsg" class="fld" value="${(w.songs||[]).join(', ')}">
-  <div class="edsec" style="margin-top:18px">Export / tipărire</div>
-  <div class="rowflex" style="gap:9px"><button class="btn ghost sm" style="width:auto;flex:1" onclick="closeSheet();exportPDF(${i})">${IC.pdf} Export PDF</button><button class="btn ghost sm" style="width:auto;flex:1" onclick="closeSheet();pdfFallback([${i}])">${IC.print} Printează</button></div>
-  <div class="rowflex" style="gap:9px;margin-top:9px"><button class="btn ghost sm" style="width:auto;flex:1" onclick="closeSheet();s89Sheet()">Fișe temă (S-89)</button></div>
-  <div class="rowflex" style="gap:9px;margin-top:18px"><button class="btn danger sm" onclick="delWeek(${i})">Șterge</button><div class="spacer"></div>
-   <button class="btn ghost sm" style="width:auto" onclick="closeSheet()">Anulează</button>
-   <button class="btn pri sm" style="width:auto" onclick="saveWeekMeta(${i})">Salvează</button></div>`);}
+  <div class="bf-lbl" style="margin-top:16px">Cântările</div>
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">${sgIn(0,"Început")}${sgIn(1,"Mijloc")}${sgIn(2,"Încheiere")}</div>
+  <button class="btn pri" style="width:100%;margin-top:18px" onclick="saveWeekMeta(${i})">Salvează</button>
+  <details class="sx-more"><summary>Tipărire și altele</summary>
+   <div class="two" style="margin-top:4px"><button class="btn ghost sm" onclick="closeSheet();pdfFallback([${i}])">${IC.print} Printează</button><button class="btn ghost sm" onclick="closeSheet();s89Sheet()">Fișe S-89</button></div>
+   <button class="btn danger sm" style="width:100%;margin-top:10px" onclick="delWeek(${i})">Șterge săptămâna</button></details>`);}
 function weekEvtChg(){const v=$("#we").value,t=v&&v!=="__keep"?evById(v):null,vis=!!(t&&t.k==="visit");
  $("#evtVi").style.display=vis?'block':'none';
  $("#evtNm").style.display=(v&&!vis)?'block':'none';}
@@ -2742,7 +2758,8 @@ function saveWeekMeta(i){const w=S.weeks[i];w.date=$("#wd").value.trim();w.bible
  const vis=evVisit(w),ev=w.event||"";
  const nmv=($("#wename")?$("#wename").value.trim():"");if(ev&&!vis&&nmv)w.eventName=nmv;else delete w.eventName;
  const tk=($("#wetalk")?$("#wetalk").value.trim():"");if(vis&&tk)w.coTalk=tk;else delete w.coTalk;
- const sg=$("#wsg").value.split(",").map(x=>parseInt(x,10)).filter(x=>!isNaN(x));if(sg.length)w.songs=sg.slice(0,3);
+ /* cântările: trei câmpuri; unul gol păstrează ce era */
+ const sg=[0,1,2].map(k=>{const e=$("#wsg"+k);const v=e?parseInt(e.value,10):NaN;return isNaN(v)?((w.songs||[])[k]):v;});if(sg.some(x=>x!=null))w.songs=sg;
  save();closeSheet();openWeek(i);}
 function clearEvent(i){delete S.weeks[i].event;save();openWeek(i);}
 async function delWeek(i){const w=S.weeks[i];if(!(await uiConfirm("Ștergi „"+tc(w.date)+"” și toate alocările ei? Acțiunea nu poate fi anulată.")))return;
@@ -5827,7 +5844,8 @@ var NEWS=[
   {ic:"clock",who:"admin",t:"Ora, pe 24 de ore — și pentru weekend",s:"Ora întrunirii se alege din două liste (19 : 00), nu se mai scrie. Întrunirea de la sfârșit de săptămână are și ea oră: apare în calendar, pe foaie și în Profilul meu."},
   {ic:"home",who:"admin",t:"Setările, pe secțiuni",s:"Congregația, Legături, Caietul și Aplicația. Importurile, referințele și istoricul se deschid dintr-o apăsare, iar explicațiile lungi stau sub „Mai multe”."},
   {ic:"book",who:"ed",t:"Capul săptămânii, la fel peste tot",s:"În Arhivă, Viața creștină, Sarcini, Mărturia publică, Terenul și Întrunirea publică au capul din Programări. „Înapoi” e unul singur, sus; ora, Auto și E-mail sunt sub dată."},
-  {ic:"pdf",t:"Meniurile, mai limpezi",s:"La descărcări și în meniurile foilor, fiecare rând are iconița lui, titlul și dedesubt pe scurt ce face."}
+  {ic:"pdf",t:"Meniurile, mai limpezi",s:"La descărcări și în meniurile foilor, fiecare rând are iconița lui, titlul și dedesubt pe scurt ce face."},
+  {ic:"edit",who:"ed",t:"Ferestrele de editare, aerisite",s:"„Detalii săptămână” are cântările în trei căsuțe (început, mijloc, încheiere). Toate ferestrele au aceleași câmpuri, explicații mai scurte, iar pe iPhone listele nu mai măresc pagina când le atingi."}
  ]},
  {v:"3.16.0",label:"3.16",d:"28.09.2026",t:"Setări mai simple, săptămâni cu o singură întrunire",items:[
   {ic:"home",who:"admin",t:"Congregație și întrunire, dintr-o privire",s:"Ziua și ora întrunirilor se aleg dintr-o atingere, fără explicații lungi. Parola paginii publice a trecut la Utilizatori → Mai multe."},
@@ -6749,7 +6767,7 @@ function openExportPick(){_exGrps=_exGroups();
  sheet("Export","Descarcă (PDF)",
   '<div class="muted" style="margin:2px 2px 10px">Alege lunile sau săptămânile, apoi ce vrei să descarci.</div>'
   +('<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">'+modeBtns+'</div>')
-  +'<div class="rowflex" style="gap:8px;margin-bottom:4px"><button class="btn ghost sm" style="width:auto" onclick="exckAll(1)">Toate</button><button class="btn ghost sm" style="width:auto" onclick="exckAll(0)">Niciuna</button></div>'
+  +'<div class="rowflex" style="gap:8px;margin:2px 0 8px"><button class="miniact" onclick="exckAll(1)">Toate</button><button class="miniact" onclick="exckAll(0)">Niciuna</button></div>'
   +'<div style="max-height:44vh;overflow:auto;padding-bottom:2px">'+H+'</div>'
   +'<div class="muted" id="exHint" style="margin:10px 2px 0;font-size:12px">'+_exHint()+'</div>'
   +'<div class="rowflex" style="gap:9px;margin-top:12px"><div class="spacer"></div><button class="btn ghost sm" style="width:auto" onclick="closeSheet()">Anulează</button>'
