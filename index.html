@@ -5844,10 +5844,10 @@ function startApp(){_dirty=computeDirty();applyTheme();try{bkpMigrate();}catch(e
    ============================================================================ */
 var NEWS=[
  {v:"4.0.0",label:"4.0",d:"07.10.2026",t:"Programul VCP se predă cu ghid",items:[
-  {ic:"book",who:"vcp",t:"Ghidul responsabilului VCP",s:"Pentru cine ține programul întrunirii din timpul săptămânii: luna întreagă, în șapte pași arătați pe telefon — cine ține fiecare parte, Auto (opțional), săptămânile speciale, anunțurile, fișele S-89, schimbările de ultim moment și caietul (opțional). Se deschide singur o dată; apoi stă în butonul rotund din Viața creștină.",go:"vcpg",gl:"Deschide ghidul"},
+  {ic:"book",who:function(){return _vcpgOk();},t:"Ghidul responsabilului VCP",s:"Pentru cine ține programul întrunirii din timpul săptămânii: luna întreagă, în șapte pași arătați pe telefon — cine ține fiecare parte, Auto (opțional), săptămânile speciale, anunțurile, fișele S-89, schimbările de ultim moment și caietul (opțional). Se deschide singur o dată; apoi stă în butonul rotund din Viața creștină.",go:"vcpg",gl:"Deschide ghidul"},
   {ic:"cal",who:"vcp",t:"Ce mai e de făcut, deasupra listei",s:"În Arhivă → Viața creștină, panoul „Următoarele săptămâni” arată la fiecare câte locuri sunt fără nume și câți frați și-au primit partea, plus până când ține caietul importat. Apeși rândul și se deschide săptămâna."},
   {ic:"arch",who:"vcp",t:"Caietul, importat și de editorul VCP",s:"„Import caiet (.epub)”, „Import plan” și „Luni arhivate” sunt acum și în butonul rotund din Viața creștină, și în Setări, la cine are programul VCP — nu doar la administrator. Pozele din caiet ajung și ele la toți."},
-  {ic:"ppl",who:"admin",t:"Cum predai programul VCP",s:"Setări → Utilizatori → fratele care preia → rol Editor, modulul „Viața creștină (VCP)” → Salvează, apoi îi trimiți invitația. La prima deschidere primește singur ghidul."}
+  {ic:"ppl",who:function(){return _isAdmin()&&_vcpgWho();},t:"Cum predai programul VCP",s:"Setări → Utilizatori → fratele care preia → rol Editor, modulul „Viața creștină (VCP)” → Salvează, apoi îi trimiți invitația. La prima deschidere primește singur ghidul."}
  ]},
  {v:"3.17.0",label:"3.17",d:"28.09.2026",t:"Setări pe secțiuni, ora de weekend, meniuri mai limpezi",items:[
   {ic:"clock",who:"admin",t:"Ora, pe 24 de ore — și pentru weekend",s:"Ora întrunirii se alege din două liste (19 : 00), nu se mai scrie. Întrunirea de la sfârșit de săptămână are și ea oră: apare în calendar, pe foaie și în Profilul meu."},
@@ -6098,12 +6098,23 @@ function _firstRunTut(n){try{n=n||0;
   ||(typeof _users==="function"&&_users().length&&!_curUser());
  if(busy){if(n<60)setTimeout(function(){_firstRunTut(n+1);},1500);return;}
  tutOpen(_vcpgFor()?"vcp":(_canEdit()?"start":"vestitor"));}catch(e){}}
-/* Ghidul responsabilului VCP se deschide singur o dată pentru fiecare om care primește programul
-   VCP fără să fie administrator: la prima deschidere a aplicației (în locul turului „start") sau,
-   pentru cine o folosea deja, la prima deschidere după ce i s-a dat modulul. Cheia poartă numele,
+/* Ghidul responsabilului VCP se deschide singur o dată pentru fiecare din cei doi care îl văd (vezi
+   VCPG_WHO): la prima deschidere a aplicației (în locul turului „start") sau, pentru cine o folosea
+   deja, la prima deschidere după actualizare ori după ce i s-a dat modulul VCP. Cheia poartă numele,
    ca pe un telefon folosit de doi frați să-l vadă fiecare. */
 function _vcpgKey(){var u=_curUser();return KEY+"_vcpg_"+String((u&&u.n)||_userGet()||"anon").toLowerCase();}
-function _vcpgFor(){try{return _users().length>0&&!_isAdmin()&&_canEditVcp();}catch(e){return false;}}
+/* Ghidul îl văd doar doi frați: cel care preia programul (Horațiu Cochirleea) și cel care i-l
+   predă (Cosmin Drăghici). Se recunosc după numele contului sau al vestitorului legat de cont,
+   fără diacritice, în orice ordine („COCHIRLEEA Horațiu" = „Horatiu Cochirleea"); numele de
+   familie se potrivește după început, ca o literă în plus sau în minus să nu-l scoată afară. */
+var VCPG_WHO=[["horatiu","cochirle"],["cosmin","draghici"]];
+function _vcpgWho(){try{var u=_curUser();if(!u)return false;var ns=[u.n||""];
+ if(u.bro){var b=(S.bros||[]).find(function(x){return x.id===u.bro;});if(b)ns.push(b.name||"");}
+ return ns.some(function(n){var t=fold(String(n)).split(/[^a-z]+/).filter(Boolean);
+  return VCPG_WHO.some(function(w){return w.every(function(p){return t.some(function(x){return x.indexOf(p)===0;});});});});}
+ catch(e){return false;}}
+function _vcpgOk(){try{return _canEditVcp()&&_vcpgWho();}catch(e){return false;}}
+function _vcpgFor(){try{return _users().length>0&&_vcpgOk();}catch(e){return false;}}
 function _vcpgMark(){try{if(_vcpgFor())localStorage.setItem(_vcpgKey(),String(Date.now()));}catch(e){}}
 function _vcpgPending(){try{return _vcpgFor()&&!localStorage.getItem(_vcpgKey());}catch(e){return false;}}
 function _vcpgAuto(n){try{n=n||0;if(!_vcpgPending()||typeof tutOpen!=="function")return;
@@ -6117,7 +6128,7 @@ function _vcpgAuto(n){try{n=n||0;if(!_vcpgPending()||typeof tutOpen!=="function"
    nimic de aflat dintr-o actualizare nu-l mai vede deloc. Panoul arată cea mai nouă actualizare
    care are ceva pentru tine; cele de dinainte rămân doar cu titlul, sub „Actualizările anterioare". */
 function _nwItem(it){return Array.isArray(it)?{ic:it[0],t:it[1],s:it[2]}:it;}
-function _nwVis(it){if(it.who==="vcp")return _canEditVcp();if(it.who==="ed")return _canEdit();if(it.who==="admin")return _isAdmin();return true;}
+function _nwVis(it){if(typeof it.who==="function")return !!it.who();if(it.who==="vcp")return _canEditVcp();if(it.who==="ed")return _canEdit();if(it.who==="admin")return _isAdmin();return true;}
 function _nwItems(n){return ((n&&n.items)||[]).map(_nwItem).filter(_nwVis);}
 /* cea mai nouă actualizare (dintre primele „upto") cu ceva pentru tine; cele mărunte, doar la cerere */
 function _nwPick(skipQuiet,upto){var L=(upto==null)?NEWS:NEWS.slice(0,upto);
@@ -6156,7 +6167,7 @@ var _NW_COL=[["var(--acc)","var(--accsoft)"],["var(--tealtx)","rgba(53,195,179,.
 var _NW_IC={user:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>'};
 /* „25.09.2026" → „25 septembrie 2026" */
 function _nwDate(d){var m=String(d||"").match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})$/);return m?(+m[1]+" "+RO_MONTHS[+m[2]-1]+" "+m[3]):String(d||"");}
-function _nwCanGo(k){if(k==="vcpg")return _canEditVcp();if(k==="meu")return _tabAllowed("meu");if(k==="vcp"||k==="wmv")return _tabAllowed("prog");if(k==="bros")return _tabAllowed("bros");if(k==="arh")return _tabAllowed("arh");return false;}
+function _nwCanGo(k){if(k==="vcpg")return _vcpgOk();if(k==="meu")return _tabAllowed("meu");if(k==="vcp"||k==="wmv")return _tabAllowed("prog");if(k==="bros")return _tabAllowed("bros");if(k==="arh")return _tabAllowed("arh");return false;}
 function newsGo(k){if(NEWS[0])markNewsSeen(NEWS[0].v);closeSheet();
  if(k==="vcpg"){setTimeout(function(){tutOpen("vcp");},150);return;}
  if(k==="vcp"||k==="wmv"){progSub=(k==="vcp")?"vcp":"wm";go("prog");}else go(k);}
@@ -6525,7 +6536,7 @@ function renderSetLimited(){$("#fab").style.display="none";var st=S.settings;var
    +_setLink(IC.arch,"Import caiet (.epub)","temele și săptămânile lunilor noi, din JW Library","vcpEpubPick()")
    +_setLink(IC.edit,"Import plan (text)","repartizările dintr-o foaie lipită","planImportSheet()")
    +_setLink(IC.box||IC.trash,"Luni arhivate","de aici le aduci înapoi","wkArchSheet()")
-   +_setLink(IC.book,"Ghidul responsabilului VCP","luna, pas cu pas: caietul, numele, anunțurile","tutOpen('vcp')")):'')
+   +(_vcpgOk()?_setLink(IC.book,"Ghidul responsabilului VCP","luna, pas cu pas: cine ține, anunțurile, caietul","tutOpen('vcp')"):'')):'')
   +'<div class="setsec">Notificări</div>'+_setLimNotif()
   +(NEWS.length?('<div class="setsec">Aplicația</div>'+_setLink(IC.star,"Ce e nou","v"+esc(NEWS[0].label||NEWS[0].v)+" · "+esc(NEWS[0].t||""),"openNews(false)")):'')
   +'<div class="ver">ArhiLink · v'+VERSION+'</div>';}
@@ -7491,7 +7502,7 @@ function vcpListFab(){
  +'<button class="pmrow" onclick="arhFabGo(planImportSheet,vcpListFab)">'+IC.edit+'<span><b>Import plan</b> — lipești textul foii</span></button>'
  +'<button class="pmrow" onclick="closeSheet();openExportPick()">'+IC.pdf+'<span><b>Descarcă pe perioadă</b> — mai multe săptămâni</span></button>'
  +'<button class="pmrow" onclick="arhFabGo(wkArchSheet,vcpListFab)">'+(IC.box||IC.trash)+'<span><b>Luni arhivate</b> — de aici le aduci înapoi</span></button>'
- +'<button class="pmrow" onclick="closeSheet();tutOpen(\'vcp\')">'+IC.book+'<span><b>Ghidul responsabilului VCP</b> — luna, pas cu pas</span></button>');}
+ +(_vcpgOk()?('<button class="pmrow" onclick="closeSheet();tutOpen(\'vcp\')">'+IC.book+'<span><b>Ghidul responsabilului VCP</b> — luna, pas cu pas</span></button>'):''));}
 /* „Import caiet" de oriunde: câmpul de fișier din Setări există doar pe pagina administratorului,
    așa că îl punem o dată lângă `.app`. Alegerea fișierului trebuie deschisă chiar din apăsare —
    iOS n-o deschide dintr-un setTimeout. */
@@ -13800,7 +13811,7 @@ function _tutHide(){var o=document.getElementById("tutov");if(o)o.classList.remo
 
 function tutOpen(key,back){
  tutCSS();try{_vgCSS();}catch(e){}if(key==="install"&&typeof _instPrep==="function")_instPrep();
- if(key==="vcp")try{_vcpgMark();}catch(e){}
+ if(key==="vcp"){if(!_vcpgOk())key="arh.vcped";else try{_vcpgMark();}catch(e){}}
  var d=TUT.D[TUT.A[key]||key]||TUT.D[TUT.A[_tutFallback(key)]||_tutFallback(key)]||TUT.D.start;
  if(!d)return;
  _tutK=key;_tutSl=_tutSlidesOf(d);_tutBack=back||null;
@@ -13891,7 +13902,7 @@ function _tutTitle(k){var d=TUT.D[TUT.A[k]||k];return d?d.t:"";}
 function tutIndex(){tutCSS();_tutStop();_tutHide();
  ensureArhHomeCSS();try{arhEnsureCSS();}catch(e){}/* „a-hd", capul de grupă, stă în foaia Arhivei */
  var groups=[
-  ["Programul VCP",_canEditVcp()?["vcp"]:[]],
+  ["Programul VCP",_vcpgOk()?["vcp"]:[]],
   ["Pentru toți",["start","install","vestitor","meu","prog.vcp","prog.wm","prog.sarc"]],
   ["Planificări",["arh","arh.vcped","arh.wm","arh.mp","arh.teren","arh.sarc","arh.cur"]],
   ["Rapoarte și evidențe",["arh.sumar","arh.rap","arh.pio600","arh.prez","arh.grp","arh.resp","arh.arhv","arh.scr","arh.exp"]],
@@ -15312,7 +15323,7 @@ var _VGS={
 };
 
 TUT.D["vcp"]={t:"Ghidul responsabilului VCP",sub:"luna întreagă, pas cu pas: cine ține, anunțurile, fișele, caietul",ic:IC.book,
- only:function(){return _canEditVcp();},s:[
+ only:function(){return _vcpgOk();},s:[
 
  /* ---- coperta: bun venit și ritmul lunii ---- */
  {k:"hello",show:1,eb:"Programul Viața creștină",
@@ -15853,7 +15864,7 @@ function vcpPanelHtml(){if(!_canEditVcp()||!S.weeks||!S.weeks.length)return "";_
    +'<span>'+(ws==="now"?"săptămâna aceasta":(ws==="next"?"săptămâna viitoare":esc(r.w.bible||"")))+'</span></span>'
    +'<span class="vp-s"><span class="vp-st '+cls+'">'+esc(st)+'</span>'+an+'</span><span class="vp-ch">'+IC.chev+'</span></button>';}).join("");
  return '<div class="vpan"><div class="vp-hd"><b>Următoarele săptămâni</b>'
-  +'<button class="vp-g" onclick="tutOpen(\'vcp\')">'+IC.book+'Ghid</button></div>'
+  +(_vcpgOk()?('<button class="vp-g" onclick="tutOpen(\'vcp\')">'+IC.book+'Ghid</button>'):'')+'</div>'
   +(rows||'<div class="muted" style="padding:6px 2px 4px">Nicio săptămână de programat.</div>')+cov+'</div>';}
 function _vcpPanelCSS(){if(document.getElementById("vpcss"))return;var s=document.createElement("style");s.id="vpcss";s.textContent=
  ".vpan{background:var(--surf);border:1px solid var(--bd);border-radius:16px;padding:12px 12px 10px;margin-bottom:12px;box-shadow:0 1px 2px rgba(0,0,0,.04)}"
@@ -15886,7 +15897,7 @@ function _vcpPanelCSS(){if(document.getElementById("vpcss"))return;var s=documen
    +'Semnul <b>?</b> din antet deschide de fiecare dată tutorialul secțiunii în care te afli. '
    +'De aici le poți deschide pe toate.</div>'
    +'<button class="btn ghost sm" style="width:100%" onclick="tutIndex()">Vezi toate tutorialele</button>'
-   +(_canEditVcp()?'<button class="btn ghost sm" style="width:100%;margin-top:8px" onclick="tutOpen(\'vcp\')">Ghidul responsabilului VCP</button>':'')
+   +(_vcpgOk()?'<button class="btn ghost sm" style="width:100%;margin-top:8px" onclick="tutOpen(\'vcp\')">Ghidul responsabilului VCP</button>':'')
    +'<button class="btn ghost sm" style="width:100%;margin-top:8px" onclick="tutOpen(\'start\')">Bun venit în ArhiLink</button>'
    +'<button class="btn ghost sm" style="width:100%;margin-top:8px" onclick="tutOpen(\'vestitor\')">Pentru vestitori</button>'
    +'<button class="btn ghost sm" style="width:100%;margin-top:8px" onclick="tutInstall()">Aplicația pe ecranul principal</button>';}
