@@ -15658,6 +15658,8 @@ function _vgCSS(){if(document.getElementById("vgcss"))return;var s=document.crea
  ".tsl.vgx{align-items:center;gap:0;padding:16px 16px 26px}"
 +"@media(min-width:700px){.tsl.vgx{flex-direction:column;justify-content:flex-start;align-items:center}}"
 +".tsl.vgx>*{width:100%;max-width:520px;flex:0 0 auto}"
+ /* foile de citit se derulează doar în jos: nimic nu are voie să le lărgească spre lateral */
++".tsl.vgx{overflow-x:hidden;overscroll-behavior-x:none}"
 +".vg-hero{position:relative;text-align:center;border-radius:22px;padding:22px 18px 18px;overflow:hidden;"
 +"background:radial-gradient(120% 90% at 0% 0%,rgba(34,165,150,.20),transparent 60%),radial-gradient(110% 90% at 100% 0%,rgba(214,95,95,.16),transparent 60%),radial-gradient(120% 100% at 50% 100%,rgba(245,160,40,.22),transparent 65%),var(--surf);"
 +"border:1px solid var(--bd);box-shadow:0 10px 30px rgba(0,0,0,.10)}"
@@ -15669,7 +15671,7 @@ function _vgCSS(){if(document.getElementById("vgcss"))return;var s=document.crea
 +".vg-hc{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin-top:13px}"
 +".vg-hc span{font-size:11.5px;font-weight:700;color:var(--ink2);background:var(--surf2);border:1px solid var(--bd);border-radius:999px;padding:4px 10px}"
 +".vg-hc span:first-child{background:var(--accsoft);border-color:transparent;color:var(--acc)}"
-+".vg-rh{font-size:11.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--ink3);margin:20px 4px 9px}"
++".vg-rh{font-size:11.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--ink3);margin:20px 0 9px;padding:0 4px}"
  /* ritmul lunii: o linie verticală cu bulinele pașilor, fiecare pas se apasă */
 +".vg-tl{position:relative;display:flex;flex-direction:column;gap:8px}"
 +".vg-tl::before{content:'';position:absolute;left:21px;top:22px;bottom:22px;width:2px;border-radius:2px;"
