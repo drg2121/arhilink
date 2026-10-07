@@ -724,7 +724,7 @@ Object.assign(IC,{
  box:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h18v13H3z"/><path d="M3 7l2-4h14l2 4"/><path d="M10 11h4"/></svg>',
  mark:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15.5 4.5l4 4-9.5 9.5H6v-4z"/><path d="M12.5 7.5l4 4M5 21h14"/></svg>'
 });
-const VERSION="3.17.0";
+const VERSION="4.0.0";
 /* Versiunea minima care are voie sa SCRIE in cloud. Se trece in gist la fiecare trimitere;
    un dispozitiv ramas pe un build mai vechi decat atat nu mai poate suprascrie datele —
    doar citeste si se actualizeaza singur. Asa nu mai poate un singur telefon uitat deschis
@@ -776,7 +776,9 @@ function ensureNtcCSS(){if(document.getElementById("ntccss"))return;var st=docum
    curățenia, S-1), iar una peste alta ar fi acoperit tot capul ecranului. */
 var _ntcQ=[],_ntcOn=false;
 function notice(o){_ntcQ.push(o);if(!_ntcOn)_ntcNext();}
-function _ntcNext(){var o=_ntcQ.shift();if(!o){_ntcOn=false;return;}_ntcOn=true;_ntcShow(o,function(){setTimeout(_ntcNext,220);});}
+/* cât e deschis un tutorial, înștiințările așteaptă la rând: altfel îi acoperă antetul */
+function _ntcNext(){if(_ntcQ.length&&document.querySelector(".app.tutopen")){_ntcOn=true;setTimeout(_ntcNext,1500);return;}
+ var o=_ntcQ.shift();if(!o){_ntcOn=false;return;}_ntcOn=true;_ntcShow(o,function(){setTimeout(_ntcNext,220);});}
 function _ntcShow(o,done){try{ensureNtcCSS();
  var w=document.getElementById("ntcw");if(!w){w=document.createElement("div");w.id="ntcw";w.className="ntcw";(document.querySelector(".app")||document.body).appendChild(w);}
  var ICS={bell:(typeof CIC!=="undefined"&&CIC.bell)||IC.info,cal:IC.cal,clock:IC.clock,check:IC.check,edit:IC.edit,pdf:IC.pdf,ppl:IC.ppl,
@@ -1121,7 +1123,8 @@ async function _ciGistEnsure(){var g=S.settings.gh;if(!g||!g.token)throw new Err
  g.gist4=d.id;S.settings.imgGist=d.id;if(d.owner&&d.owner.login)S.settings.imgOwner=d.owner.login;save();return d.id;}
 /* urcă pozele temelor date, în tranșe mici (un PATCH cu tot caietul ar fi prea mare) */
 async function caietImgPush(keys){var n=0;
- try{if(!_isAdmin()||!(S.settings.gh&&S.settings.gh.token))return 0;
+ /* și responsabilul VCP: linkul lui de editor aduce aceeași cheie de scriere ca a administratorului */
+ try{if(!_canEditVcp()||!(S.settings.gh&&S.settings.gh.token))return 0;
   var ci=caietImgGet(),idx=caietIdx(),todo=[];
   (keys||[]).forEach(function(k){var arr=ci[k];if(!arr||!arr.length)return;
    var body=JSON.stringify(arr);if(body.length>3.5e6)return;/* prea mare pentru un fișier de gist */
@@ -1285,7 +1288,7 @@ function wkArchDo(k,v){var A=wkArch();if(v)A[k]=1;else delete A[k];
  try{if(tab==="arh")renderArhRoute();else if(tab==="prog")renderProg();}catch(e){}
  toast(v?"Luna a fost arhivată":"Luna a revenit în listă");}
 async function wkArchSet(k,v){if(!_canEditVcp()){toast("Doar administratorii/editorii VCP");return;}
- if(v&&!(await uiConfirm("„"+_wkArchLbl(k)+"” nu va mai apărea în Programări, în foile de planificat și în lista de descărcări.\n\nNimic nu se șterge — datele rămân întregi, iar luna se aduce înapoi oricând din Setări → Luni arhivate.",
+ if(v&&!(await uiConfirm("„"+_wkArchLbl(k)+"” nu va mai apărea în Programări, în foile de planificat și în lista de descărcări.\n\nNimic nu se șterge — datele rămân întregi, iar luna se aduce înapoi oricând din „Luni arhivate” (butonul rotund al listei sau Setări).",
    {title:"Arhivezi luna?",yes:"Arhivează",no:"Renunț"})))return;
  wkArchDo(k,v);}
 /* Setări → Luni arhivate: de aici se aduc înapoi */
@@ -1300,7 +1303,7 @@ function wkArchSheet(){var A=wkArch(),ks=Object.keys(A);
 function wkArchBack(k){wkArchDo(k,0);wkArchSheet();}
 function renderWeeks(){
  wkOpen=false;$("#fab").style.display="none";const b=$("#body");
- let h=`<div class="ebar" style="margin-bottom:10px"><div class="lead" style="margin:0">Caiet · ${S.weeks.length} săptămâni</div><div class="spacer"></div><button class="miniact" onclick="openExportPick()">${IC.pdf} Descarcă PDF</button></div>`;
+ let h=vcpPanelHtml()+`<div class="ebar" style="margin-bottom:10px"><div class="lead" style="margin:0">Caiet · ${S.weeks.length} săptămâni</div><div class="spacer"></div><button class="miniact" onclick="openExportPick()">${IC.pdf} Descarcă PDF</button></div>`;
  const base=+(S.settings.baseYear||2026);let year=base,prev=-1;const years=[],ym={};
  S.weeks.forEach((w,i)=>{const mi=monthIdx(w.date);if(prev>=0&&mi>=0&&mi<prev)year++;if(mi>=0)prev=mi;
   if(!(year in ym)){ym[year]=years.length;years.push({y:year,ms:[],mm:{}});}
@@ -5840,6 +5843,12 @@ function startApp(){_dirty=computeDirty();applyTheme();try{bkpMigrate();}catch(e
    `v` = cheia de „văzut deja"; `label` = versiunea afișată.
    ============================================================================ */
 var NEWS=[
+ {v:"4.0.0",label:"4.0",d:"07.10.2026",t:"Programul VCP se predă cu ghid",items:[
+  {ic:"book",who:"vcp",t:"Ghidul responsabilului VCP",s:"Pentru cine ține programul întrunirii din timpul săptămânii: luna întreagă, în șapte pași arătați pe telefon — cine ține fiecare parte, Auto (opțional), săptămânile speciale, anunțurile, fișele S-89, schimbările de ultim moment și caietul (opțional). Se deschide singur o dată; apoi stă în butonul rotund din Viața creștină.",go:"vcpg",gl:"Deschide ghidul"},
+  {ic:"cal",who:"vcp",t:"Ce mai e de făcut, deasupra listei",s:"În Arhivă → Viața creștină, panoul „Următoarele săptămâni” arată la fiecare câte locuri sunt fără nume și câți frați și-au primit partea, plus până când ține caietul importat. Apeși rândul și se deschide săptămâna."},
+  {ic:"arch",who:"vcp",t:"Caietul, importat și de editorul VCP",s:"„Import caiet (.epub)”, „Import plan” și „Luni arhivate” sunt acum și în butonul rotund din Viața creștină, și în Setări, la cine are programul VCP — nu doar la administrator. Pozele din caiet ajung și ele la toți."},
+  {ic:"ppl",who:"admin",t:"Cum predai programul VCP",s:"Setări → Utilizatori → fratele care preia → rol Editor, modulul „Viața creștină (VCP)” → Salvează, apoi îi trimiți invitația. La prima deschidere primește singur ghidul."}
+ ]},
  {v:"3.17.0",label:"3.17",d:"28.09.2026",t:"Setări pe secțiuni, ora de weekend, meniuri mai limpezi",items:[
   {ic:"clock",who:"admin",t:"Ora, pe 24 de ore — și pentru weekend",s:"Ora întrunirii se alege din două liste (19 : 00), nu se mai scrie. Întrunirea de la sfârșit de săptămână are și ea oră: apare în calendar, pe foaie și în Profilul meu."},
   {ic:"home",who:"admin",t:"Setările, pe secțiuni",s:"Congregația, Legături, Caietul și Aplicația. Importurile, referințele și istoricul se deschid dintr-o apăsare, iar explicațiile lungi stau sub „Mai multe”."},
@@ -6088,14 +6097,27 @@ function _firstRunTut(n){try{n=n||0;
  var busy=document.querySelector(".gate")||document.getElementById("gate")||sheetOpen()
   ||(typeof _users==="function"&&_users().length&&!_curUser());
  if(busy){if(n<60)setTimeout(function(){_firstRunTut(n+1);},1500);return;}
- tutOpen(_canEdit()?"start":"vestitor");}catch(e){}}
+ tutOpen(_vcpgFor()?"vcp":(_canEdit()?"start":"vestitor"));}catch(e){}}
+/* Ghidul responsabilului VCP se deschide singur o dată pentru fiecare om care primește programul
+   VCP fără să fie administrator: la prima deschidere a aplicației (în locul turului „start") sau,
+   pentru cine o folosea deja, la prima deschidere după ce i s-a dat modulul. Cheia poartă numele,
+   ca pe un telefon folosit de doi frați să-l vadă fiecare. */
+function _vcpgKey(){var u=_curUser();return KEY+"_vcpg_"+String((u&&u.n)||_userGet()||"anon").toLowerCase();}
+function _vcpgFor(){try{return _users().length>0&&!_isAdmin()&&_canEditVcp();}catch(e){return false;}}
+function _vcpgMark(){try{if(_vcpgFor())localStorage.setItem(_vcpgKey(),String(Date.now()));}catch(e){}}
+function _vcpgPending(){try{return _vcpgFor()&&!localStorage.getItem(_vcpgKey());}catch(e){return false;}}
+function _vcpgAuto(n){try{n=n||0;if(!_vcpgPending()||typeof tutOpen!=="function")return;
+ var tv=document.getElementById("tutov");if(tv&&tv.classList.contains("on"))return;
+ var busy=document.getElementById("gate")||sheetOpen()||(_users().length&&!_curUser());
+ if(busy){if(n<60)setTimeout(function(){_vcpgAuto(n+1);},1500);return;}
+ tutOpen("vcp");}catch(e){}}
 /* „Ce e nou" — doar ce contează pentru cine citește.
    Fiecare noutate poate spune cui i se adresează (who:"ed" = administratori și editori) și unde
    te duce (go). Actualizările mărunte (quiet:1) nu mai deschid panoul singure, iar cine n-are
    nimic de aflat dintr-o actualizare nu-l mai vede deloc. Panoul arată cea mai nouă actualizare
    care are ceva pentru tine; cele de dinainte rămân doar cu titlul, sub „Actualizările anterioare". */
 function _nwItem(it){return Array.isArray(it)?{ic:it[0],t:it[1],s:it[2]}:it;}
-function _nwVis(it){if(it.who==="ed")return _canEdit();if(it.who==="admin")return _isAdmin();return true;}
+function _nwVis(it){if(it.who==="vcp")return _canEditVcp();if(it.who==="ed")return _canEdit();if(it.who==="admin")return _isAdmin();return true;}
 function _nwItems(n){return ((n&&n.items)||[]).map(_nwItem).filter(_nwVis);}
 /* cea mai nouă actualizare (dintre primele „upto") cu ceva pentru tine; cele mărunte, doar la cerere */
 function _nwPick(skipQuiet,upto){var L=(upto==null)?NEWS:NEWS.slice(0,upto);
@@ -6103,6 +6125,7 @@ function _nwPick(skipQuiet,upto){var L=(upto==null)?NEWS:NEWS.slice(0,upto);
 function maybeShowNews(){if(!NEWS.length)return;
  if(_firstRun)return;
  if(_isFirstRun()){_firstRun=true;markNewsSeen(NEWS[0].v);setTimeout(function(){_firstRunTut(0);},1600);return;}
+ if(_vcpgPending()){markNewsSeen(NEWS[0].v);setTimeout(function(){_vcpgAuto(0);},1600);return;}
  var seen=newsSeen();if(seen===NEWS[0].v)return;
  var si=NEWS.findIndex(function(x){return x.v===seen;});
  var n=_nwPick(true,si<0?null:si);
@@ -6133,8 +6156,9 @@ var _NW_COL=[["var(--acc)","var(--accsoft)"],["var(--tealtx)","rgba(53,195,179,.
 var _NW_IC={user:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>'};
 /* „25.09.2026" → „25 septembrie 2026" */
 function _nwDate(d){var m=String(d||"").match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})$/);return m?(+m[1]+" "+RO_MONTHS[+m[2]-1]+" "+m[3]):String(d||"");}
-function _nwCanGo(k){if(k==="meu")return _tabAllowed("meu");if(k==="vcp"||k==="wmv")return _tabAllowed("prog");if(k==="bros")return _tabAllowed("bros");if(k==="arh")return _tabAllowed("arh");return false;}
+function _nwCanGo(k){if(k==="vcpg")return _canEditVcp();if(k==="meu")return _tabAllowed("meu");if(k==="vcp"||k==="wmv")return _tabAllowed("prog");if(k==="bros")return _tabAllowed("bros");if(k==="arh")return _tabAllowed("arh");return false;}
 function newsGo(k){if(NEWS[0])markNewsSeen(NEWS[0].v);closeSheet();
+ if(k==="vcpg"){setTimeout(function(){tutOpen("vcp");},150);return;}
  if(k==="vcp"||k==="wmv"){progSub=(k==="vcp")?"vcp":"wm";go("prog");}else go(k);}
 function openNews(auto,n){n=n||_nwPick(false)||NEWS[0];if(!n)return;ensureNewsCSS();
  if(auto)markNewsSeen(NEWS[0].v);/* și dacă închide din fundal, nu-l mai vede a doua oară */
@@ -6497,6 +6521,11 @@ function renderSetLimited(){$("#fab").style.display="none";var st=S.settings;var
   +_setLink(IC.ppl,esc(cu?cu.n:"—"),esc(_roleLbl(cu?cu.r:"viewer"))+' · apasă ca să ieși sau să schimbi utilizatorul',"userLogout()")
   +'<div class="setcard setlink" style="cursor:default"><span class="sic">'+(st.theme==="light"?IC.sun:IC.moon)+'</span><span class="sinfo"><span class="stt">Aspect</span><span class="ssb">'+(st.theme==="light"?"tema Zi":"tema Noapte")+'</span></span>'
   +'<div class="bf-seg sx-seg">'+[["light","Zi"],["dark","Noapte"]].map(function(o){return '<label><input type="radio" name="sxTheme" '+((st.theme==="light")===(o[0]==="light")?"checked":"")+' onchange="S.settings.theme=\''+o[0]+'\';save();applyTheme();renderSetLimited()"><span>'+o[1]+'</span></label>';}).join("")+'</div></div>'
+  +(_canEditVcp()?('<div class="setsec">Caietul</div>'
+   +_setLink(IC.arch,"Import caiet (.epub)","temele și săptămânile lunilor noi, din JW Library","vcpEpubPick()")
+   +_setLink(IC.edit,"Import plan (text)","repartizările dintr-o foaie lipită","planImportSheet()")
+   +_setLink(IC.box||IC.trash,"Luni arhivate","de aici le aduci înapoi","wkArchSheet()")
+   +_setLink(IC.book,"Ghidul responsabilului VCP","luna, pas cu pas: caietul, numele, anunțurile","tutOpen('vcp')")):'')
   +'<div class="setsec">Notificări</div>'+_setLimNotif()
   +(NEWS.length?('<div class="setsec">Aplicația</div>'+_setLink(IC.star,"Ce e nou","v"+esc(NEWS[0].label||NEWS[0].v)+" · "+esc(NEWS[0].t||""),"openNews(false)")):'')
   +'<div class="ver">ArhiLink · v'+VERSION+'</div>';}
@@ -7453,10 +7482,24 @@ function _arhFab(){var f=$("#fab");if(!f)return;var ed=_canEditArh(),ad=_isAdmin
  else if(arhSub==="con")cfg={ic:IC.dl,fn:function(){conPdf();}};
  if(!cfg){f.style.display="none";return;}
  f.innerHTML=cfg.ic;f.title="Descarcă / unelte";f.style.display="flex";f.onclick=cfg.fn;}
+/* Uneltele listei de săptămâni. Cine ține programul VCP fără să fie administrator nu are în
+   Setări rândurile „Caietul" — de aceea importul caietului și lunile arhivate stau și aici,
+   unde lucrează el, plus drumul spre ghidul lui. */
 function vcpListFab(){
  sheet("Viața creștină","Unelte",
-  '<button class="pmrow" onclick="arhFabGo(planImportSheet,vcpListFab)">'+IC.edit+'<span><b>Import plan</b> — lipești textul foii</span></button>'
- +'<button class="pmrow" onclick="closeSheet();openExportPick()">'+IC.pdf+'<span><b>Descarcă pe perioadă</b> — mai multe săptămâni</span></button>');}
+  '<button class="pmrow" onclick="closeSheet();vcpEpubPick()">'+IC.arch+'<span><b>Import caiet (.epub)</b> — temele lunilor noi, din JW Library</span></button>'
+ +'<button class="pmrow" onclick="arhFabGo(planImportSheet,vcpListFab)">'+IC.edit+'<span><b>Import plan</b> — lipești textul foii</span></button>'
+ +'<button class="pmrow" onclick="closeSheet();openExportPick()">'+IC.pdf+'<span><b>Descarcă pe perioadă</b> — mai multe săptămâni</span></button>'
+ +'<button class="pmrow" onclick="arhFabGo(wkArchSheet,vcpListFab)">'+(IC.box||IC.trash)+'<span><b>Luni arhivate</b> — de aici le aduci înapoi</span></button>'
+ +'<button class="pmrow" onclick="closeSheet();tutOpen(\'vcp\')">'+IC.book+'<span><b>Ghidul responsabilului VCP</b> — luna, pas cu pas</span></button>');}
+/* „Import caiet" de oriunde: câmpul de fișier din Setări există doar pe pagina administratorului,
+   așa că îl punem o dată lângă `.app`. Alegerea fișierului trebuie deschisă chiar din apăsare —
+   iOS n-o deschide dintr-un setTimeout. */
+function vcpEpubPick(){if(!_canEditVcp()){toast("Doar administratorii/editorii VCP");return;}
+ var i=document.getElementById("imepubV");
+ if(!i){i=document.createElement("input");i.type="file";i.id="imepubV";i.accept=".epub";i.style.display="none";
+  i.onchange=function(){importEpub(i);};(document.querySelector(".app")||document.body).appendChild(i);}
+ i.value="";i.click();}
 function arhFabGo(fn,back){closeSheet();fn();_sheetBackTo(back);}
 function arhFabSumar(){
  var inact='<div class="muted" style="display:flex;align-items:center;gap:7px;margin:12px 2px 2px;font-size:12px">Considerat inactiv după <select onchange="arhSetInactive(this.value)" style="background:var(--surf);color:var(--ink);border:1px solid var(--bd);border-radius:7px;padding:3px 6px;font-size:12px">'+[3,4,5,6].map(function(n){return '<option value="'+n+'" '+(arhInactiveN()===n?"selected":"")+'>'+n+'</option>';}).join("")+'</select> luni la rând fără raport</div>';
@@ -13585,6 +13628,8 @@ function _tutEm(h){var lg="";try{lg=_logo();}catch(e){}
  return String(h||"").replace(/(\d*\.?\d+)px/g,function(m,v){return (Math.round(v/9.5*1000)/1000)+"em";})
   .replace(/<span class="tp-lg"><\/span>/g,lg?('<img class="tp-lg" src="'+lg+'" alt="">'):'<span class="tp-lg"></span>');}
 function _tutSlide(o,idx){
+ if(o.k==="hello")return _vgHello(o,idx);
+ if(o.k==="check")return _vgCheck(o,idx);
  if(o.k!=="demo"){/* rezervă: tutorial fără demonstrație — câteva carduri, atât */
   return '<div class="tsl txt" data-i="'+idx+'">'+(o.h?'<h2 class="th2">'+o.h+'</h2>':'')+'<div class="tcards">'
    +(o.items||[]).map(function(it){return '<div class="tcard"><span class="tci">'+(it[0]||IC.info)+'</span>'
@@ -13744,7 +13789,7 @@ function _tutMount(){var o=document.getElementById("tutov");if(o)return o;
 /* Doar demonstrațiile se arată. Textele lungi de altădată (cardurile, regulile, întrebările,
    recapitularea) au rămas în date, dar nu se mai randează — omul vrea să VADĂ cum se face.
    Un tutorial fără nicio demonstrație (Arhivați, Scrisori) își arată cardurile, scurt. */
-function _tutSlidesOf(d){var s=(d.s||[]).filter(function(x){return x.k==="demo";});
+function _tutSlidesOf(d){var s=(d.s||[]).filter(function(x){return x.k==="demo"||x.show;});
  if(s.length)return s;
  var c=(d.s||[]).find(function(x){return x.k==="cards";});
  return c?[c]:[];}
@@ -13754,7 +13799,8 @@ function _tutHide(){var o=document.getElementById("tutov");if(o)o.classList.remo
  document.documentElement.style.overflow="";}
 
 function tutOpen(key,back){
- tutCSS();if(key==="install"&&typeof _instPrep==="function")_instPrep();
+ tutCSS();try{_vgCSS();}catch(e){}if(key==="install"&&typeof _instPrep==="function")_instPrep();
+ if(key==="vcp")try{_vcpgMark();}catch(e){}
  var d=TUT.D[TUT.A[key]||key]||TUT.D[TUT.A[_tutFallback(key)]||_tutFallback(key)]||TUT.D.start;
  if(!d)return;
  _tutK=key;_tutSl=_tutSlidesOf(d);_tutBack=back||null;
@@ -13845,6 +13891,7 @@ function _tutTitle(k){var d=TUT.D[TUT.A[k]||k];return d?d.t:"";}
 function tutIndex(){tutCSS();_tutStop();_tutHide();
  ensureArhHomeCSS();try{arhEnsureCSS();}catch(e){}/* „a-hd", capul de grupă, stă în foaia Arhivei */
  var groups=[
+  ["Programul VCP",_canEditVcp()?["vcp"]:[]],
   ["Pentru toți",["start","install","vestitor","meu","prog.vcp","prog.wm","prog.sarc"]],
   ["Planificări",["arh","arh.vcped","arh.wm","arh.mp","arh.teren","arh.sarc","arh.cur"]],
   ["Rapoarte și evidențe",["arh.sumar","arh.rap","arh.pio600","arh.prez","arh.grp","arh.resp","arh.arhv","arh.scr","arh.exp"]],
@@ -15177,6 +15224,656 @@ TUT.A["lite.sarc"]="arh.sarc";
 TUT.A["arh.vcp"]="arh.vcped";
 TUT.A["prog.duty"]="prog.sarc";
 
+/* ===========================================================================
+   GHIDUL RESPONSABILULUI VCP (4.0)
+   ---------------------------------------------------------------------------
+   Pentru fratele care preia programul întrunirii din timpul săptămânii. Nu e
+   tutorialul unei secțiuni, ci luna întreagă, în ordinea în care se face:
+   cine ține fiecare parte, Auto (opțional), săptămânile speciale, anunțurile,
+   fișele S-89, schimbările de ultim moment și, la urmă, caietul (opțional:
+   de obicei îl aduce administratorul) — fiecare arătat pe telefonul desenat.
+
+   Pe lângă demonstrații are două foi care se citesc (`show:1`): coperta, cu
+   ritmul lunii (fiecare pas e o scurtătură spre demonstrația lui), și lista
+   de verificare de la sfârșit. Se deschide singur o dată pentru fiecare
+   responsabil VCP (vezi _vcpgAuto); apoi stă în butonul rotund din
+   „Viața creștină", în Setări și în lista de tutoriale.
+
+   Numele care se schimbă pe ecran (Alege → NEDELEA Antonio) se fac cu clase,
+   nu cu text: la reluare motorul pune la loc clasele de pornire, nu și textul.
+   =========================================================================== */
+var VG={
+ ico:function(svg){return '<span class="vg-ico">'+(svg||"")+'</span>';},
+ /* capul săptămânii deschise, ca în Arhivă: săgețile, data, citirea, apoi ora, Auto și E-mail;
+    sub ele bara „Salvează / Anulează", ascunsă până apare o modificare */
+ wk:function(date,bib,o){o=o||{};
+  return '<div class="vg-wh"><div class="tp-row" style="justify-content:space-between">'
+   +'<span class="tp-tag wkp">‹</span><span class="vg-wt"><b>'+esc(date)+'</b><span>'+esc(bib)+'</span></span><span class="tp-tag wkn">›</span></div>'
+   +'<div class="vg-pills"><span class="vg-pl">'+VG.ico(IC.clock)+'19:00</span>'
+   +'<span class="vg-pl"'+(o.auto?(' id="'+o.auto+'"'):'')+'>'+VG.ico(IC.auto)+'Auto</span>'
+   +'<span class="vg-pl"'+(o.mail?(' id="'+o.mail+'"'):'')+'>'+VG.ico(IC.fwd)+'E-mail</span></div>'
+   +(o.ev?('<div class="vg-ev">'+VG.ico(IC.star)+'<span>'+esc(o.ev)+'</span></div>'):'')
+   +(o.save?('<div class="vg-save" id="'+o.save+'"><span class="tp-b pri" id="'+o.save+'_s">Salvează</span><span class="tp-b">Anulează</span></div>'):'')
+   +'</div>';},
+ /* secțiunea din caiet, cu banda ei colorată: C (Comori), P (Predicare), V (Viața de creștin) */
+ sec:function(k,rows){var M={C:["Comori din Cuvântul lui Dumnezeu","c"],P:["Să fim mai eficienți în predicare","p"],V:["Viața de creștin","v"]}[k];
+  return '<div class="tp-c vg-card"><div class="vg-sh '+M[1]+'"><i></i>'+M[0]+'</div>'+rows+'</div>';},
+ /* o parte: ora și durata în stânga, titlul și locurile de nume în dreapta */
+ part:function(tm,mn,title,slots){return '<div class="vg-part"><span class="vg-tm">'+esc(tm)+(mn?('<small>'+esc(mn)+' min</small>'):'')+'</span>'
+  +'<span class="vg-pb"><span class="vg-ptt">'+title+'</span>'+(slots?('<span class="vg-slots">'+slots+'</span>'):'')+'</span></div>';},
+ /* locul unui nume. `to` = numele care apare după alegere (clasa „on" le schimbă) */
+ slot:function(lbl,from,id,to,o){o=o||{};
+  return '<span class="vg-slot"><span class="vg-sl">'+esc(lbl)+'</span><span class="vg-sr">'
+   +'<span class="vg-pk'+(from?'':' ph')+(to?' vg-sw':'')+(o.warn?' warn':'')+'"'+(id?(' id="'+id+'"'):'')+'>'
+   +(o.warn?'<em class="vg-dot"></em>':'')+'<i>'+esc(from||"Alege")+'</i>'+(to?('<b>'+esc(to)+'</b>'):'')+'<s>›</s></span>'
+   +(o.pen?('<span class="vg-pen" id="'+o.pen+'">'+VG.ico(IC.edit)+'</span>'):'')+'</span></span>';},
+ /* capul ferestrei de alegere: secțiunea și ziua, partea, forma, durata și ora */
+ pkHead:function(eye,col,title,sub){return '<div class="vg-pkh" style="--c:'+col+'"><span class="vg-eye">'+esc(eye)+'</span><b>'+esc(title)+'</b><span>'+esc(sub)+'</span></div>';},
+ pkRow:function(av,name,o){o=o||{};
+  return '<div class="vg-pr'+(o.off?' off':'')+'"'+(o.id?(' id="'+o.id+'"'):'')+'><span class="vg-av'+(o.f?' f':'')+'">'+esc(av)+'</span>'
+   +'<span class="vg-pn"><b>'+esc(name)+'</b><span>'+(o.rec?'<em class="vg-rec">recomandat</em>':'')
+   +(o.fr?('<em class="vg-fr '+(o.frc||'')+'">'+esc(o.fr)+'</em>'):'')+(o.off?('<em class="vg-fr r">'+esc(o.off)+'</em>'):'')+'</span></span>'
+   +(o.off?'<span class="vg-go off">Lipsește</span>':('<span class="vg-go vg-sw"'+(o.go?(' id="'+o.go+'"'):'')+'><i>Alege</i><b>✓ Ales</b></span>'))+'</div>';},
+ /* rând de meniu din foile de jos: iconiță, titlu îngroșat, explicație scurtă */
+ mi:function(ic,t,s,id,cls){return '<div class="vg-mi'+(cls?(' '+cls):'')+'"'+(id?(' id="'+id+'"'):'')+'>'+(String(ic||"").indexOf('class="vg-ico"')>=0?ic:VG.ico(ic))+'<span><b>'+esc(t)+'</b>'+(s?(' — '+esc(s)):'')+'</span></div>';},
+ mon:function(t,n,cls){return '<div class="vg-mon'+(cls?(' '+cls):'')+'"><s>›</s><b>'+esc(t)+'</b><span>'+esc(n)+'</span></div>';},
+ wrow:function(d,sub,pill,o){o=o||{};
+  return '<div class="tp-c vg-wr'+(o.cls?(' '+o.cls):'')+'"'+(o.id?(' id="'+o.id+'"'):'')+'>'
+   +'<span class="vg-wav">'+VG.ico(o.ev?IC.star:IC.cal)+'</span><span class="vg-wn"><b>'+esc(d)+(o.now?'<em>acum</em>':'')+'</b><span>'+esc(sub)+'</span></span>'
+   +'<span class="vg-pill'+(o.full?' has':'')+'">'+esc(pill)+'</span></div>';},
+ /* fișierul din alegerea de fișiere a telefonului */
+ file:function(n,s,id){return '<div class="vg-file"'+(id?(' id="'+id+'"'):'')+'><i>EPUB</i><span><b>'+esc(n)+'</b><span>'+esc(s)+'</span></span></div>';},
+ /* rândul unui frate în „E-mail teme": bifa, numele, partea, starea, WhatsApp */
+ mrow:function(nm,part,st,stc,on,o){o=o||{};
+  return '<div class="vg-mr"'+(o.id?(' id="'+o.id+'"'):'')+'><span class="tp-ck'+(on?' on':'')+'"><i></i></span><span class="vg-mn"><b>'+esc(nm)+'</b><span>'+esc(part)+'</span>'
+   +(o.sent?('<em class="vg-sw '+(stc||'')+'" id="'+o.sent+'"><i>'+esc(st)+'</i><b>trimis acum</b></em>'):('<em class="'+(stc||'')+'">'+esc(st)+'</em>'))
+   +(o.wa?('<span class="vg-wa vg-sw" id="'+o.wa+'"><i>WhatsApp</i><b>WhatsApp deschis acum</b></span>'):'')+'</span></div>';},
+ /* fișa S-89, cum iese la tipar */
+ s89:function(nm,mate,nr,d){return '<div class="vg-s89"><b>TEMĂ PENTRU ÎNTRUNIREA<br>VIAȚA CREȘTINĂ ȘI PREDICAREA</b>'
+  +'<span><i>Nume:</i> '+esc(nm)+'</span><span><i>Partener:</i> '+esc(mate||"—")+'</span><span><i>Data:</i> '+esc(d)+'</span><span><i>Nr. temei:</i> '+esc(nr)+'</span>'
+  +'<span class="vg-s89c"><i></i>Sala principală</span></div>';},
+ ydot:'<span class="vg-ico"><span class="vg-yd"></span></span>',
+ ysq:'<span class="vg-ico"><span class="vg-yd sq"></span></span>'
+};
+VG.SEND='<svg viewBox="0 0 24 24" fill="currentColor"><path d="M3.4 20.4 21 12 3.4 3.6 3.4 10l12.6 2-12.6 2z"/></svg>';
+
+/* ecranele care se repetă: lista de săptămâni și cele două secțiuni pline ale săptămânii */
+/* `""` înseamnă „loc gol", nu „lipsește" — de aceea nu `||` */
+function _vgD(v,d){return v==null?d:v;}
+var _VGS={
+ comori:function(o){o=o||{};return VG.sec("C",
+   VG.part("19:06","10","<b>1.</b> Iehova își ține promisiunile",VG.slot("Cuvântare",_vgD(o.p1,"NEDELEA Antonio"),o.p1id,o.p1to))
+  +VG.part("19:16","10","<b>2.</b> Nestemate spirituale",VG.slot("Nestemate","COMANACHE Raymond"))
+  +VG.part("19:26","4","<b>3.</b> Citirea Bibliei",VG.slot("Cursant","PRICHINDEL Marius")));},
+ pred:function(o){o=o||{};return VG.sec("P",
+   VG.part("19:31","3","<b>4.</b> Începe o conversație",VG.slot("Cursant",_vgD(o.a1,"ARON Luminița"),o.a1id,o.a1to)+VG.slot("Partener",_vgD(o.a2,"BROTEA Teodora"),o.a2id,o.a2to))
+  +VG.part("19:35","4","<b>5.</b> Fă vizite ulterioare",VG.slot("Cursant",_vgD(o.b1,"POPESCU Andrei"),o.b1id,o.b1to,o.b1o)+VG.slot("Partener",_vgD(o.b2,"STAN Daniel"),o.b2id,o.b2to))
+  +(o.three?VG.part("19:40","5","<b>6.</b> Explică-ți convingerile",VG.slot("Cursant",_vgD(o.c1,"TATAR Silviu"),o.c1id,o.c1to)+VG.slot("Partener",_vgD(o.c2,"MOISE Ionuț"),o.c2id,o.c2to)):""));}
+};
+
+TUT.D["vcp"]={t:"Ghidul responsabilului VCP",sub:"luna întreagă, pas cu pas: cine ține, anunțurile, fișele, caietul",ic:IC.book,
+ only:function(){return _canEditVcp();},s:[
+
+ /* ---- coperta: bun venit și ritmul lunii ---- */
+ {k:"hello",show:1,eb:"Programul Viața creștină",
+  /* [titlu, când, ce, culoarea bulinei, opțional] — în ordinea demonstrațiilor de mai jos */
+  rh:[["Alegi cine ține fiecare parte","cu 3–4 săptămâni înainte","Apeși pe parte, alegi din listă, salvezi.","c"],
+      ["Lași Auto să umple restul","tot atunci","Locurile goale, pe toată luna, dintr-o apăsare.","p",1],
+      ["Săptămânile speciale","când afli de vizită sau congres","Vizita supraveghetorului, congresul, adunarea.","v"],
+      ["Anunți frații","după ce ai pus numele","E-mail cu calendarul atașat sau WhatsApp.","a"],
+      ["Fișele S-89","pentru cursanți","Toate fișele săptămânii, completate singure.","c"],
+      ["Schimbările de ultim moment","oricând apare ceva","Alt nume, însemnat cu galben, anunțat din nou.","p"],
+      ["Aduci caietul","când apare caietul nou","Import caiet (.epub), dacă nu-l aduce administratorul.","v",1]]},
+
+ /* ---- 1. cine ține fiecare parte ---- */
+ {k:"demo",gk:"names",eb:"Pasul 1 · Cine ține",h:"Alegi cine ține fiecare parte",
+  done:"Partea are un nume",doneSub:"După „Salvează” o vede toată congregația, în Programări.",
+  steps:[["Deschizi săptămâna","Din listă; cea de acum e însemnată."],
+         ["Apeși pe „Alege” la parte","Sus vezi ce alegi: tema, forma, durata, ora."],
+         ["Alegi din listă","Cei potriviți vin primii; pastila spune de când n-au mai avut partea. Cine lipsește stă la coadă."],
+         ["Salvezi","Până la „Salvează” nu se schimbă nimic la ceilalți. „Anulează” te întoarce la cum era."]],
+  sc:[TP.hd()+TP.bd(TP.bc("Planificări","Viața creștină")
+      +VG.mon("Septembrie 2026","4 săpt.")
+      +VG.wrow("7 – 13 Septembrie","IEREMIA 32-33","8 alocate",{id:"g2W",now:1})
+      +VG.wrow("14 – 20 Septembrie","IEREMIA 34-36","gol")
+      +VG.wrow("21 – 27 Septembrie","IEREMIA 37-38","gol"))
+      +TP.fab(VG.ico(IC.tune),"g2F")+TP.nv("arh"),
+      TP.hd()+TP.bd(VG.wk("7 – 13 Septembrie","IEREMIA 32-33",{save:"g2B"})
+      +_VGS.comori({p1:"",p1id:"g2S",p1to:"NEDELEA Antonio"}))
+      +TP.sh("g2K","Alege persoana",
+        VG.pkHead("Comori · Mie 9 sept","var(--secTeal)","1. Iehova își ține promisiunile","Cuvântare · 10 min · ora 19:06")
+       +TP.f("g2Q","Caută vestitor…")
+       +VG.pkRow("NA","NEDELEA Antonio",{rec:1,fr:"acum 14 săpt.",frc:"g",go:"g2A",id:"g2R"})
+       +VG.pkRow("TS","TATAR Silviu",{fr:"acum 9 săpt."})
+       +VG.pkRow("SD","STAN Daniel",{fr:"acum 5 săpt.",frc:"a"})
+       +VG.pkRow("MI","MOISE Ionuț",{off:"lipsește 7–13 sept"}))
+      +TP.fab(VG.ico(IC.dl),"g2F2")+TP.nv("arh")],
+  ov:TP.toast("g2Z"),
+  run:[[0,"step",1],[0,"show"],[200,"curEl","g2W"],[1100,"tap"],[1150,"cls","g2W","sel"],[1450,"scr",1],
+       [2300,"step",2],[2400,"curEl","g2S"],[3300,"tap"],[3600,"sh","g2K"],
+       [4400,"step",3],[4500,"curEl","g2R"],[5800,"curEl","g2A"],[6700,"tap"],[6750,"cls","g2A","on"],
+       [7100,"shx","g2K"],[7250,"cls","g2S","on"],[7300,"cls","g2B","on"],
+       [8000,"step",4],[8100,"curEl","g2B_s"],[9000,"tap"],[9050,"prs","g2B_s"],[9300,"rm","g2B","on"],
+       [9350,"toast","g2Z","Salvat"],[9500,"step",99],[9600,"hide"],[11600,"toastx","g2Z"],
+       [13200,"loop"]]},
+
+ /* ---- 2. auto-atribuirea (opțional) ---- */
+ {k:"demo",gk:"auto",eb:"Pasul 2 · Auto · opțional",h:"Lași aplicația să umple restul",
+  p:"Opțional — poți pune totul și de mână.",
+  done:"Luna e plină",doneSub:"Ce n-ai pus de mână a pus Auto, după aceleași reguli ca lista.",
+  steps:[["Apeși „Auto”","Din capul săptămânii."],
+         ["Alegi săptămânile","Implicit e cea deschisă; „Toate” le ia pe cele care urmează."],
+         ["Lași bifat „Doar pozițiile goale”","Ce ai pus de mână rămâne neatins."],
+         ["Apeși „Atribuie”","Ține cont de cine a avut și când, de cine lipsește și de cerințele S-38."],
+         ["Te uiți, apoi „Salvează”","Jos scrie câte s-au pus. „Anulează” le scoate pe toate deodată."]],
+  sc:[TP.hd()+TP.bd(VG.wk("14 – 20 Septembrie","IEREMIA 34-36",{auto:"g3U"})
+      +_VGS.pred({three:1,a1:"",a1id:"g3a",a1to:"ARON Luminița",a2:"",a2id:"g3b",a2to:"BROTEA Teodora",
+        b1:"",b1id:"g3c",b1to:"POPESCU Andrei",b2:"",b2id:"g3d",b2to:"ARON Ionuț",
+        c1:"",c1id:"g3e",c1to:"TATAR Silviu",c2:"",c2id:"g3f",c2to:"MOISE Ionuț"}))
+      +'<div class="vg-abar" id="g3B"><span><b>Auto-atribuire</b> · 38 puse în 4 săptămâni</span><span class="tp-b">Anulează</span><span class="tp-b pri" id="g3V">Salvează</span></div>'
+      +TP.sh("g3K","Auto-atribuire",
+        '<div class="vg-aoh"><b>Săptămâni</b><span class="vg-sw" id="g3n"><i>1 selectată</i><b>toate (4)</b></span></div>'
+       +'<div class="vg-chips"><span class="tp-b" id="g3T">Toate</span><span class="tp-b">Niciuna</span><span class="tp-b">Doar asta</span></div>'
+       +TP.ck("14 – 20 Septembrie · acum",1,"g3k1")+TP.ck("21 – 27 Septembrie",0,"g3k2")
+       +TP.ck("28 Septembrie – 4 Octombrie",0,"g3k3")+TP.ck("5 – 11 Octombrie",0,"g3k4")
+       +'<div class="vg-aoh"><b>Categorii</b><span>toate (10)</span></div>'
+       +TP.ck("Doar pozițiile goale — nu suprascrie ce ai pus manual",1,"g3E")
+       +TP.b("Atribuie",{pri:1,wide:1,id:"g3A"}))
+      +TP.nv("arh")],
+  ov:TP.ok("g3O","Salvat","38 atribuiri în 4 săptămâni"),
+  run:[[0,"step",1],[0,"show"],[200,"curEl","g3U"],[1100,"tap"],[1150,"prs","g3U"],[1400,"sh","g3K"],
+       [2200,"step",2],[2300,"curEl","g3T"],[3200,"tap"],[3250,"prs","g3T"],
+       [3350,"cls","g3k2","on"],[3450,"cls","g3k3","on"],[3550,"cls","g3k4","on"],[3600,"cls","g3n","on"],
+       [4400,"step",3],[4500,"curEl","g3E"],
+       [6100,"step",4],[6200,"curEl","g3A"],[7100,"tap"],[7150,"prs","g3A"],[7400,"shx","g3K"],
+       [7600,"cls","g3a","on"],[7750,"cls","g3b","on"],[7900,"cls","g3c","on"],[8050,"cls","g3d","on"],
+       [8200,"cls","g3e","on"],[8350,"cls","g3f","on"],[8500,"cls","g3B","on"],
+       [9300,"step",5],[9400,"curEl","g3V"],[10300,"tap"],[10350,"prs","g3V"],[10600,"rm","g3B","on"],
+       [10700,"ok","g3O"],[10800,"step",99],[10900,"hide"],
+       [14800,"loop"]]},
+
+ /* ---- 3. săptămânile speciale ---- */
+ {k:"demo",gk:"ev",eb:"Pasul 3 · Săptămâni speciale",h:"Vizita supraveghetorului, congresul",
+  done:"Foaia s-a schimbat singură",doneSub:"La congres sau la adunare nu mai e nimic de planificat în săptămâna aceea.",
+  steps:[["Apeși butonul rotund al săptămânii","Opțiunile săptămânii deschise."],
+         ["Alegi „Detalii săptămână”","Data, citirea, evenimentul, cântările."],
+         ["Alegi evenimentul","Lista o ține administratorul, în Setări → Evenimente."],
+         ["Scrii tema cuvântării de serviciu","La vizită, studiul Bibliei devine cuvântarea lui de 30 de minute."],
+         ["Salvezi","Programul se așază singur după eveniment."]],
+  sc:[TP.hd()+TP.bd(VG.wk("21 – 27 Septembrie","IEREMIA 37-38")
+      +VG.sec("V",VG.part("19:47","","Cântarea 76","")
+       +VG.part("19:51","15","<b>7.</b> Necesități locale",VG.slot("","TATAR Silviu"))
+       +VG.part("20:06","30","<b>8.</b> Studiul Bibliei în congregație",VG.slot("Conducător","NEDELEA Antonio")+VG.slot("Cititor","COMANACHE Raymond"))))
+      +TP.sh("g4O","Săptămâna — opțiuni",
+        VG.mi(IC.edit,"Detalii săptămână","eveniment special","g4D")
+       +VG.mi(IC.pdf,"Descarcă săptămâna","PDF")
+       +VG.mi(IC.print,"Foaia completă","programul, sarcinile, weekendul")
+       +VG.mi(IC.pdf,"Două săptămâni pe o coală","")
+       +VG.mi(IC.cal,"Descarcă pe perioadă",""))
+      +TP.sh("g4M","Detalii săptămână",
+        TP.l("Săptămâna")+'<div class="vg-fld">21 – 27 Septembrie</div>'
+       +TP.l("Eveniment")+'<div class="vg-fld vg-sel" id="g4E"><span class="vg-sw" id="g4Ev"><i>(fără — program normal)</i><b>Vizita supraveghetorului</b></span><s>▾</s></div>'
+       +'<div class="vg-opts" id="g4L"><span>(fără — program normal)</span><span id="g4V">Vizita supraveghetorului de circumscripție</span><span>Congres regional</span><span>Adunare de circumscripție</span></div>'
+       +'<div class="vg-hid" id="g4H">'+TP.l("Titlul cuvântării de serviciu (30 min.)")+TP.f("g4T","")+'</div>'
+       +TP.b("Salvează",{pri:1,wide:1,id:"g4S"}))
+      +TP.fab(VG.ico(IC.dl),"g4F")+TP.nv("arh"),
+      TP.hd()+TP.bd(VG.wk("21 – 27 Septembrie","IEREMIA 37-38",{ev:"Vizita supraveghetorului de circumscripție"})
+      +VG.sec("V",VG.part("19:47","","Cântarea 76","")
+       +VG.part("19:51","15","<b>7.</b> Necesități locale",VG.slot("","TATAR Silviu"))
+       +VG.part("20:06","30","<b>8.</b> Cuvântare de serviciu — Să rămânem treji spiritual",
+         '<span class="vg-slot"><span class="vg-sl">Supraveghetorul de circumscripție</span></span>')))
+      +TP.fab(VG.ico(IC.dl),"g4F2")+TP.nv("arh")],
+  ov:TP.toast("g4Z"),
+  run:[[0,"step",1],[0,"show"],[200,"curEl","g4F"],[1100,"tap"],[1150,"prs","g4F"],[1400,"sh","g4O"],
+       [2200,"step",2],[2300,"curEl","g4D"],[3200,"tap"],[3250,"cls","g4D","sel"],[3500,"shx","g4O"],[3650,"sh","g4M"],
+       [4400,"step",3],[4500,"curEl","g4E"],[5400,"tap"],[5450,"cls","g4L","on"],
+       [5900,"curEl","g4V"],[6800,"tap"],[6850,"cls","g4V","sel"],[7150,"rm","g4L","on"],[7200,"cls","g4Ev","on"],[7250,"cls","g4H","on"],
+       [8000,"step",4],[8100,"curEl","g4T"],[8900,"tap"],[9000,"type","g4T","Să rămânem treji spiritual",55],
+       [10900,"step",5],[11000,"curEl","g4S"],[11900,"tap"],[11950,"prs","g4S"],[12200,"shx","g4M"],[12350,"scr",1],
+       [12400,"toast","g4Z","Salvat"],[12500,"step",99],[12600,"hide"],[14500,"toastx","g4Z"],
+       [16500,"loop"]]},
+
+ /* ---- 4. anunțurile ---- */
+ {k:"demo",gk:"mail",eb:"Pasul 4 · Anunțurile",h:"Anunți frații: e-mail sau WhatsApp",
+  done:"Toți știu ce au",doneSub:"Cine primește e-mailul are partea și calendarul atașat (Google, iPhone, Outlook).",
+  steps:[["Apeși „E-mail”","Din capul săptămânii."],
+         ["Vezi pe fiecare, cu partea lui","Bifați sunt cei cu teme noi sau schimbate de la ultima trimitere."],
+         ["WhatsApp, pentru cine preferă","Se deschide conversația lui, cu mesajul gata scris. Apeși „Trimite”."],
+         ["Trimiți e-mailurile","Fiecare primește partea, ora și calendarul atașat."]],
+  sc:[TP.hd()+TP.bd(VG.wk("7 – 13 Septembrie","IEREMIA 32-33",{mail:"g5M"})
+      +_VGS.comori())
+      +TP.sh("g5K","E-mail teme — 7–13 Sept",
+        VG.mrow("NEDELEA Antonio","1. Iehova își ține promisiunile","netrimis încă","",1,{sent:"g5s1"})
+       +VG.mrow("PRICHINDEL Marius","3. Citirea Bibliei","netrimis încă","",1,{sent:"g5s2"})
+       +VG.mrow("ARON Luminița","4. Începe o conversație cu BROTEA Teodora","modificat după ultima trimitere","a",1,{id:"g5r3",sent:"g5s3",wa:"g5W"})
+       +VG.mrow("TATAR Silviu","Președinte","trimis 28.08, 19:40","",0)
+       +TP.b("Trimite e-mailurile (3)",{pri:1,wide:1,id:"g5S"}))
+      +TP.nv("arh"),
+      '<div class="vg-wah"><s>‹</s><span class="vg-wav2">AL</span><span><b>ARON Luminița</b><i>online</i></span></div>'
+      +'<div class="vg-wabd"><div class="vg-wab vg-hid" id="g5U">Succes pentru tema repartizată: 4. Începe o conversație — împreună cu BROTEA Teodora (săptămâna 7 – 13 Septembrie)<i>19:42 ✓✓</i></div></div>'
+      +'<div class="vg-wai"><span class="vg-wit" id="g5I">Succes pentru tema repartizată: 4. Începe o conversație — împreună cu BROTEA Teodora (săptămâna 7 – 13 Septembrie)</span><i id="g5P">'+VG.SEND+'</i></div>'],
+  ov:TP.toast("g5Z"),
+  run:[[0,"step",1],[0,"show"],[200,"curEl","g5M"],[1100,"tap"],[1150,"prs","g5M"],[1400,"sh","g5K"],
+       [2200,"step",2],[2300,"curEl","g5r3"],
+       [4300,"step",3],[4400,"curEl","g5W"],[5300,"tap"],[5350,"prs","g5W"],[5650,"scr",1],
+       [6400,"curEl","g5P"],[7300,"tap"],[7350,"cls","g5I","gone"],[7400,"cls","g5U","on"],
+       [8600,"scr",0],[8650,"cls","g5W","on"],
+       [9300,"step",4],[9400,"curEl","g5S"],[10300,"tap"],[10350,"prs","g5S"],
+       [10400,"cls","g5s1","on"],[10450,"cls","g5s2","on"],[10500,"cls","g5s3","on"],[10900,"shx","g5K"],
+       [11000,"toast","g5Z","3 e-mailuri trimise · cu calendarul atașat"],[11100,"step",99],[11200,"hide"],[13600,"toastx","g5Z"],
+       [15200,"loop"]]},
+
+ /* ---- 5. fișele S-89 ---- */
+ {k:"demo",gk:"s89",eb:"Pasul 5 · Fișele S-89",h:"Fișele pentru cursanți, completate singure",
+  done:"Fișele sunt gata",doneSub:"Le salvezi ca PDF, le printezi sau le trimiți cursanților.",
+  steps:[["Butonul rotund → „Detalii săptămână”","Tot din săptămâna deschisă."],
+         ["„Tipărire și altele” → „Fișe S-89”","Jos, sub „Salvează”."],
+         ["„Toate din această săptămână”","Numele, partenerul, data și numărul temei sunt deja scrise."],
+         ["Le salvezi sau le printezi","Patru pe pagină, ca pe hârtia de la sală."]],
+  sc:[TP.hd()+TP.bd(VG.wk("7 – 13 Septembrie","IEREMIA 32-33")
+      +_VGS.pred())
+      +TP.sh("g6O","Săptămâna — opțiuni",
+        VG.mi(IC.edit,"Detalii săptămână","eveniment special","g6D")
+       +VG.mi(IC.pdf,"Descarcă săptămâna","PDF")
+       +VG.mi(IC.print,"Foaia completă","programul, sarcinile, weekendul"))
+      +TP.sh("g6M","Detalii săptămână",
+        TP.l("Săptămâna")+'<div class="vg-fld">7 – 13 Septembrie</div>'
+       +TP.l("Cântările")+'<div class="vg-songs"><span class="vg-fld">97</span><span class="vg-fld">76</span><span class="vg-fld">148</span></div>'
+       +TP.b("Salvează",{pri:1,wide:1})
+       +'<div class="vg-more" id="g6X"><s>›</s>Tipărire și altele</div>'
+       +'<div class="vg-hid" id="g6Y"><div class="vg-two"><span class="tp-b">Printează</span><span class="tp-b" id="g6S">Fișe S-89</span></div></div>')
+      +TP.sh("g6K","Fișe temă (S-89)",
+        TP.m("Pentru Citirea Bibliei și demonstrații. Numele, partenerul, data și nr. temei se completează singure.")
+       +VG.mi(IC.edit,"3. Citirea Bibliei","PRICHINDEL Marius")
+       +VG.mi(IC.edit,"4. Începe o conversație","ARON Luminița")
+       +VG.mi(IC.edit,"5. Fă vizite ulterioare","POPESCU Andrei")
+       +TP.b("Toate din această săptămână",{wide:1,id:"g6A"}))
+      +TP.fab(VG.ico(IC.dl),"g6F")+TP.nv("arh"),
+      '<div class="vg-stage"><div class="vg-sgrid">'
+      +VG.s89("PRICHINDEL Marius","","3","9 sept. 2026")+VG.s89("ARON Luminița","BROTEA Teodora","4","9 sept. 2026")
+      +VG.s89("POPESCU Andrei","STAN Daniel","5","9 sept. 2026")+'<div class="vg-s89 blank"></div>'
+      +'</div><div class="vg-sbar"><span class="tp-b">Printează</span><span class="tp-b pri" id="g6P">Salvează PDF</span></div></div>'],
+  ov:TP.toast("g6Z"),
+  run:[[0,"step",1],[0,"show"],[200,"curEl","g6F"],[1100,"tap"],[1150,"prs","g6F"],[1400,"sh","g6O"],
+       [2000,"curEl","g6D"],[2900,"tap"],[2950,"cls","g6D","sel"],[3200,"shx","g6O"],[3350,"sh","g6M"],
+       [4100,"step",2],[4200,"curEl","g6X"],[5100,"tap"],[5150,"cls","g6Y","on"],[5200,"cls","g6X","op"],
+       [5700,"curEl","g6S"],[6600,"tap"],[6650,"prs","g6S"],[6900,"shx","g6M"],[7050,"sh","g6K"],
+       [7800,"step",3],[7900,"curEl","g6A"],[8800,"tap"],[8850,"prs","g6A"],[9100,"shx","g6K"],[9250,"scr",1],
+       [10200,"step",4],[10300,"curEl","g6P"],[11200,"tap"],[11250,"prs","g6P"],
+       [11400,"toast","g6Z","S-89 · 3 fișe salvate în PDF"],[11500,"step",99],[11600,"hide"],[13800,"toastx","g6Z"],
+       [15400,"loop"]]},
+
+ /* ---- 6. schimbarea de ultim moment ---- */
+ {k:"demo",gk:"chg",eb:"Pasul 6 · Schimbările",h:"Cineva nu poate: schimbi și însemni",
+  done:"Schimbarea se vede pe foaie",doneSub:"La „E-mail”, cel nou e bifat singur: partea lui e nouă.",
+  steps:[["Apeși pe numele de schimbat","Bulina roșie spune de ce: lipsește, e de două ori, nu se potrivește (S-38)."],
+         ["Alegi pe altcineva","Cine lipsește în ziua aceea nu poate fi ales."],
+         ["Îl însemnezi cu galben","Creionul de lângă nume → „Marchează numele (galben)”. Pe foaie se vede ce s-a schimbat."],
+         ["Salvezi, apoi anunți","„E-mail” sau WhatsApp, ca la pasul 4."]],
+  sc:[TP.hd()+TP.bd(VG.wk("7 – 13 Septembrie","IEREMIA 32-33",{save:"g7B"})
+      +'<div class="vg-aw">'+VG.ico(IC.info)+'<span><b>Lipsește în săptămâna asta</b>MOISE Ionuț · 7–13 sept</span></div>'
+      +_VGS.pred({b1:"MOISE Ionuț",b1id:"g7C",b1to:"ARON Ionuț",b1o:{warn:1,pen:"g7E"}}))
+      +TP.sh("g7K","Alege cursantul",
+        VG.pkHead("Predicare · Mie 9 sept","var(--secGold)","5. Fă vizite ulterioare","Cursant · 4 min · ora 19:35")
+       +VG.pkRow("AI","ARON Ionuț",{rec:1,fr:"acum 11 săpt.",frc:"g",go:"g7A"})
+       +VG.pkRow("PA","POPESCU Andrei",{fr:"săptămâna asta",frc:"r"})
+       +VG.pkRow("MI","MOISE Ionuț",{off:"lipsește 7–13 sept"}))
+      +TP.sh("g7M","Fă vizite ulterioare",
+        VG.mi(VG.ydot,"Marchează numele (galben)","","g7Y")
+       +VG.mi(VG.ysq,"Marchează tema (galben)","")
+       +VG.mi(IC.edit,"Editează partea",""))
+      +TP.nv("arh")],
+  ov:TP.toast("g7Z"),
+  run:[[0,"step",1],[0,"show"],[200,"curEl","g7C"],[1300,"tap"],[1600,"sh","g7K"],
+       [2400,"step",2],[2500,"curEl","g7A"],[3400,"tap"],[3450,"cls","g7A","on"],[3800,"shx","g7K"],
+       [3950,"cls","g7C","on"],[4000,"cls","g7B","on"],
+       [4700,"step",3],[4800,"curEl","g7E"],[5700,"tap"],[6000,"sh","g7M"],
+       [6700,"curEl","g7Y"],[7600,"tap"],[7650,"cls","g7Y","sel"],[7900,"shx","g7M"],[8050,"cls","g7C","yl"],
+       [8800,"step",4],[8900,"curEl","g7B_s"],[9800,"tap"],[9850,"prs","g7B_s"],[10100,"rm","g7B","on"],
+       [10150,"toast","g7Z","Salvat"],[10300,"step",99],[10400,"hide"],[12400,"toastx","g7Z"],
+       [14000,"loop"]]},
+
+ /* ---- 7. caietul (opțional: de obicei îl aduce administratorul) ---- */
+ {k:"demo",gk:"caiet",eb:"Pasul 7 · Caietul · opțional",h:"Aduci caietul lunilor care vin",
+  p:"Opțional — dacă nu-l aduce administratorul.",
+  done:"Caietul e în aplicație",doneSub:"Temele, cântările și duratele sunt puse. Tu pui doar oamenii.",
+  steps:[["Deschizi „Viața creștină”","Arhivă → Planificări → Viața creștină."],
+         ["Apeși butonul rotund","Uneltele listei de săptămâni."],
+         ["Alegi „Import caiet (.epub)”","Fișierul .epub al caietului, de pe jw.org sau din JW Library."],
+         ["Alegi fișierul","Aplicația citește temele, cântările, duratele și detaliile."],
+         ["Lunile noi apar în listă","Fiecare săptămână vine cu temele ei, gata de pus nume."]],
+  sc:[TP.hd()+TP.bd(TP.bc("Arhivă","Planificări")
+      +TP.c({t:"Viața creștină",sub:"programul întrunirii din timpul săptămânii",id:"g1P"})
+      +TP.c({t:"Întrunirea publică",sub:"cuvântarea, Turnul de veghe, ospitalitatea"})
+      +TP.c({t:"Sarcini",sub:"audio-video, ordine, podium"})
+      +TP.c({t:"Mărturia publică",sub:"turele pe zile și ore"}))+TP.nv("arh"),
+      TP.hd()+TP.bd(TP.bc("Planificări","Viața creștină")
+      +VG.mon("Octombrie 2026","4 săpt.")
+      +VG.wrow("5 – 11 Octombrie","IEREMIA 47-48","22 alocate",{full:1,now:1})
+      +VG.wrow("12 – 18 Octombrie","IEREMIA 49","22 alocate",{full:1})
+      +VG.wrow("19 – 25 Octombrie","IEREMIA 50","18 alocate",{full:1})
+      +VG.wrow("26 Octombrie – 1 Noiembrie","IEREMIA 51","gol"))
+      +TP.sh("g1T","Unelte",
+        VG.mi(IC.arch,"Import caiet (.epub)","temele lunilor noi","g1I")
+       +VG.mi(IC.edit,"Import plan","lipești textul foii")
+       +VG.mi(IC.pdf,"Descarcă pe perioadă","mai multe săptămâni")
+       +VG.mi(IC.box,"Luni arhivate","de aici le aduci înapoi")
+       +VG.mi(IC.book,"Ghidul responsabilului VCP",""))
+      +TP.sh("g1D","Descărcări",
+        TP.m("Alege fișierul caietului")
+       +VG.file("mwb_M_202611.epub","Caietul · noiembrie–decembrie 2026","g1E")
+       +VG.file("mwb_M_202609.epub","Caietul · septembrie–octombrie 2026"))
+      +TP.fab(VG.ico(IC.tune),"g1F")+TP.nv("arh"),
+      TP.hd()+TP.bd(TP.bc("Planificări","Viața creștină")
+      +VG.mon("Octombrie 2026","4 săpt.")
+      +VG.mon("Noiembrie 2026","5 săpt. noi","vg-new")
+      +'<span id="g1N" class="vg-grp">'
+      +VG.wrow("2 – 8 Noiembrie","temele din caiet","gol",{cls:"vg-new"})
+      +VG.wrow("9 – 15 Noiembrie","temele din caiet","gol",{cls:"vg-new"})
+      +VG.wrow("16 – 22 Noiembrie","temele din caiet","gol",{cls:"vg-new"})+'</span>'
+      +VG.mon("Decembrie 2026","4 săpt. noi","vg-new"))
+      +TP.fab(VG.ico(IC.tune),"g1F2")+TP.nv("arh")],
+  ov:TP.toast("g1Z"),
+  run:[[0,"step",1],[0,"show"],[200,"curEl","g1P"],[1100,"tap"],[1150,"cls","g1P","sel"],[1450,"scr",1],
+       [2200,"step",2],[2300,"curEl","g1F"],[3100,"tap"],[3150,"prs","g1F"],[3400,"sh","g1T"],
+       [4200,"step",3],[4300,"curEl","g1I"],[5200,"tap"],[5250,"cls","g1I","sel"],[5550,"shx","g1T"],[5700,"sh","g1D"],
+       [6500,"step",4],[6600,"curEl","g1E"],[7500,"tap"],[7550,"cls","g1E","sel"],[7850,"shx","g1D"],
+       [8000,"toast","g1Z","56 teme cu detalii · 9 săptămâni noi"],[8050,"scr",2],
+       [8800,"step",5],[8900,"curEl","g1N"],[10600,"toastx","g1Z"],[10900,"step",99],[11000,"hide"],
+       [14500,"loop"]]},
+
+ /* ---- lista de verificare ---- */
+ {k:"check",show:1,eb:"În fiecare lună",h:"Lista ta de verificare",
+  p:"Deasupra listei de săptămâni, panoul „Următoarele săptămâni” îți arată singur ce mai e de făcut.",
+  items:[["Fiecare parte are un nume","Niciun „Alege” rămas în săptămânile care vin."],
+         ["Nicio bulină roșie","Nimeni de două ori, nimeni care lipsește, nimeni nepotrivit (S-38)."],
+         ["Frații și-au primit partea","„anunțați 8/8” în panou: e-mail sau WhatsApp, pentru fiecare."],
+         ["Cursanții au fișa S-89","Detalii săptămână → Tipărire și altele → Fișe S‑89."],
+         ["Foaia e pe avizier","Programări → butonul rotund → Foaia completă."],
+         ["Caietul lunilor care vin e importat","Opțional, dacă nu-l aduce administratorul. Panoul îți spune până când ține."]],
+  tips:[[IC.ppl,"Cine apare în listă","Cei bifați în fișa lor (Vestitori), la ce pot fi puși."],
+        [IC.clock,"Ținta e 1h 45m","Bara de durată de la capătul săptămânii se înroșește peste."],
+        [TIC.quest,"Semnul „?”","Din orice ecran, tutorialul lui. Ghidul acesta: butonul rotund din Viața creștină."]],
+  go:{label:"Viața creștină",run:function(){tutGoArh("plan","vcped");}}}
+]};
+
+/* „Încearcă acum" pe fiecare pas: duce în săptămâna de lucru și deschide exact foaia arătată */
+(function(){var d=TUT.D.vcp;if(!d)return;
+ function wk(){var i=_vcpNextTodo();return i>=0?i:vcpCurWeek();}
+ function inWeek(then){return function(){var i=wk();goVcpEdit(i);if(then)setTimeout(function(){try{then(i);}catch(e){}},420);};}
+ var G={caiet:{label:"Import caiet",run:function(){tutGoArh("plan","vcped");setTimeout(function(){try{vcpListFab();}catch(e){}},420);}},
+  names:{label:"săptămâna de lucru",run:inWeek()},
+  auto:{label:"Auto-atribuire",run:inWeek(function(){autoSheet();})},
+  ev:{label:"Detalii săptămână",run:inWeek(function(i){editWeekMeta(i);})},
+  mail:{label:"E-mail teme",run:inWeek(function(i){mailWeekSheet(i);})},
+  s89:{label:"Fișe S-89",run:inWeek(function(){s89Sheet();})},
+  chg:{label:"săptămâna de lucru",run:inWeek()}};
+ d.s.forEach(function(s){if(s.k==="demo"&&G[s.gk])s.go=G[s.gk];});})();
+
+/* ---------------------------------------------------------------------------
+   Coperta și lista de verificare: cele două foi de citit ale ghidului
+   --------------------------------------------------------------------------- */
+function _vgHello(o,idx){var u=null;try{u=_curUser();}catch(e){}
+ var nm=(!_isAdmin()&&u&&u.n)?_givenName(u.n):"";
+ var lg="";try{lg=_logo();}catch(e){}
+ var nD=(_tutSl||[]).filter(function(x){return x.k==="demo";}).length;
+ var h='<div class="tsl txt vgx" data-i="'+idx+'"><div class="vg-hero">'
+  +(lg?'<img class="vg-hlg" src="'+lg+'" alt="">':'<span class="vg-hlg"></span>')
+  +'<div class="vg-heb">'+esc(o.eb||"")+'</div>'
+  +'<h2 class="vg-hh">'+(nm?('Bun venit, '+esc(nm)+'!'):'Ghidul responsabilului VCP')+'</h2>'
+  +'<div class="vg-hc"><span>'+nD+' pași</span><span>câteva minute</span><span>îl redeschizi oricând</span></div></div>'
+  +'<div class="vg-rh">Ritmul unei luni</div><div class="vg-tl">'
+  +(o.rh||[]).map(function(r,i){
+    return '<button class="vg-ts '+r[3]+'" onclick="tutGo('+(idx+1+i)+')"><span class="vg-tn">'+(i+1)+'</span>'
+     +'<span class="vg-tx"><b>'+esc(r[0])+(r[4]?'<i class="vg-opt">opțional</i>':'')+'</b><em>'+esc(r[1])+'</em><span>'+esc(r[2])+'</span></span>'
+     +'<span class="vg-tc">'+IC.chev+'</span></button>';}).join("")
+  +'</div><button class="vg-start" onclick="tutGo('+(idx+1)+')">Începe cu pasul 1'
+  +'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button></div>';
+ return h;}
+function _vgCheck(o,idx){
+ var ck='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
+ return '<div class="tsl txt vgx" data-i="'+idx+'"><div class="vg-ck-hd"><div class="vg-heb">'+esc(o.eb||"")+'</div>'
+  +'<h2 class="vg-hh sm">'+esc(o.h||"")+'</h2>'+(o.p?('<p class="vg-hp">'+o.p+'</p>'):'')+'</div>'
+  +'<div class="vg-cl">'+(o.items||[]).map(function(it,i){
+    return '<label class="vg-ci"><input type="checkbox"><span class="vg-cb">'+ck+'</span><span class="vg-tx"><b>'+esc(it[0])+'</b><span>'+esc(it[1])+'</span></span></label>';}).join("")+'</div>'
+  +'<div class="vg-rh">Bine de știut</div><div class="vg-tips">'+(o.tips||[]).map(function(t){
+    return '<div class="vg-tip"><span class="vg-tpi">'+t[0]+'</span><span><b>'+esc(t[1])+'</b><span>'+esc(t[2])+'</span></span></div>';}).join("")+'</div>'
+  +(o.go?('<button class="vg-start" onclick="tutTry('+idx+')">Deschide '+esc(o.go.label)
+    +'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>'):'')
+  +'</div>';}
+
+function _vgCSS(){if(document.getElementById("vgcss"))return;var s=document.createElement("style");s.id="vgcss";s.textContent=
+ /* ---- coperta și lista: o coloană lată cât un telefon, centrată ---- */
+ ".tsl.vgx{align-items:center;gap:0;padding:16px 16px 26px}"
++"@media(min-width:700px){.tsl.vgx{flex-direction:column;justify-content:flex-start;align-items:center}}"
++".tsl.vgx>*{width:100%;max-width:520px;flex:0 0 auto}"
++".vg-hero{position:relative;text-align:center;border-radius:22px;padding:22px 18px 18px;overflow:hidden;"
++"background:radial-gradient(120% 90% at 0% 0%,rgba(34,165,150,.20),transparent 60%),radial-gradient(110% 90% at 100% 0%,rgba(214,95,95,.16),transparent 60%),radial-gradient(120% 100% at 50% 100%,rgba(245,160,40,.22),transparent 65%),var(--surf);"
++"border:1px solid var(--bd);box-shadow:0 10px 30px rgba(0,0,0,.10)}"
++".vg-hlg{width:58px;height:58px;border-radius:17px;display:block;margin:0 auto 12px;object-fit:cover;background:#000;box-shadow:0 8px 20px rgba(0,0,0,.25);animation:nwpop .5s cubic-bezier(.2,1.4,.4,1) both}"
++".vg-heb{font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--acc)}"
++".vg-hh{font-size:25px;font-weight:800;letter-spacing:-.5px;line-height:1.15;margin:5px 0 0;color:var(--ink)}"
++".vg-hh.sm{font-size:22px}"
++".vg-hp{font-size:14px;line-height:1.5;color:var(--ink2);margin:9px auto 0;max-width:420px}"
++".vg-hc{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin-top:13px}"
++".vg-hc span{font-size:11.5px;font-weight:700;color:var(--ink2);background:var(--surf2);border:1px solid var(--bd);border-radius:999px;padding:4px 10px}"
++".vg-hc span:first-child{background:var(--accsoft);border-color:transparent;color:var(--acc)}"
++".vg-rh{font-size:11.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--ink3);margin:20px 4px 9px}"
+ /* ritmul lunii: o linie verticală cu bulinele pașilor, fiecare pas se apasă */
++".vg-tl{position:relative;display:flex;flex-direction:column;gap:8px}"
++".vg-tl::before{content:'';position:absolute;left:21px;top:22px;bottom:22px;width:2px;border-radius:2px;"
++"background:linear-gradient(var(--secTeal),var(--secGold),var(--secRed),var(--acc))}"
++".vg-ts{position:relative;display:flex;align-items:center;gap:12px;width:100%;text-align:left;font-family:inherit;color:var(--ink);"
++"background:var(--surf);border:1px solid var(--bd);border-radius:16px;padding:11px 12px 11px 8px;cursor:pointer;"
++"transition:border-color .15s,transform .15s;animation:nwin .38s ease-out both}"
++".vg-ts:hover{border-color:var(--acc)}.vg-ts:active{transform:scale(.985)}"
++".vg-ts:nth-child(2){animation-delay:.05s}.vg-ts:nth-child(3){animation-delay:.1s}.vg-ts:nth-child(4){animation-delay:.15s}"
++".vg-ts:nth-child(5){animation-delay:.2s}.vg-ts:nth-child(6){animation-delay:.25s}.vg-ts:nth-child(n+7){animation-delay:.3s}"
++".vg-tn{position:relative;z-index:1;flex:0 0 auto;width:28px;height:28px;border-radius:50%;display:grid;place-items:center;"
++"font-size:13px;font-weight:800;color:#fff;background:var(--c);box-shadow:0 0 0 4px var(--surf)}"
++".vg-ts.c{--c:var(--secTeal)}.vg-ts.p{--c:var(--secGold)}.vg-ts.v{--c:var(--secRed)}.vg-ts.a{--c:var(--acc)}"
++".vg-tx{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}"
++".vg-tx b{font-size:14.5px;font-weight:800;line-height:1.25}"
++".vg-tx em{font-style:normal;font-size:11px;font-weight:800;color:var(--c,var(--acc));text-transform:uppercase;letter-spacing:.04em}"
++".vg-tx>span{font-size:12.5px;line-height:1.4;color:var(--ink2)}"
++".vg-opt{font-style:normal;font-size:10.5px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--ink2);background:var(--surf2);border:1px solid var(--bd);border-radius:999px;padding:1px 7px;margin-left:7px;vertical-align:2px;white-space:nowrap}"
++".vg-tc{flex:0 0 auto;color:var(--ink3);display:flex}.vg-tc svg{width:16px;height:16px}"
++".vg-start{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;margin-top:16px;border:0;border-radius:14px;"
++"background:var(--acc);color:#fff;font-family:inherit;font-size:15px;font-weight:800;padding:13px 16px;cursor:pointer;box-shadow:0 8px 20px rgba(217,132,15,.28)}"
++".vg-start svg{width:17px;height:17px}"
+ /* lista de verificare: bifele se pot apăsa, dar nu se țin minte — e o listă de citit */
++".vg-ck-hd{text-align:center;padding:6px 4px 2px}"
++".vg-cl{display:flex;flex-direction:column;gap:8px;margin-top:14px}"
++".vg-ci{display:flex;gap:12px;align-items:flex-start;background:var(--surf);border:1px solid var(--bd);border-radius:15px;padding:12px 13px;cursor:pointer;transition:border-color .15s,background .15s}"
++".vg-ci input{position:absolute;opacity:0;pointer-events:none}"
++".vg-cb{flex:0 0 auto;width:24px;height:24px;border-radius:8px;border:2px solid var(--ink3);display:grid;place-items:center;color:transparent;transition:background .15s,border-color .15s,color .15s;margin-top:1px}"
++".vg-cb svg{width:15px;height:15px}"
++".vg-ci:has(input:checked){border-color:var(--teal);background:rgba(53,195,179,.08)}"
++".vg-ci:has(input:checked) .vg-cb{background:var(--teal);border-color:var(--teal);color:#fff}"
++".vg-ci:has(input:checked) .vg-tx b{text-decoration:line-through;text-decoration-color:var(--ink3)}"
++".vg-tips{display:flex;flex-direction:column;gap:8px}"
++".vg-tip{display:flex;gap:11px;align-items:flex-start;padding:4px 4px}"
++".vg-tpi{flex:0 0 auto;width:32px;height:32px;border-radius:10px;background:var(--accsoft);color:var(--acc);display:grid;place-items:center}.vg-tpi svg{width:16px;height:16px}"
++".vg-tip b{display:block;font-size:13.5px;font-weight:800}.vg-tip span span{font-size:12.5px;color:var(--ink2);line-height:1.4}"
+ /* ---- în telefonul desenat (em: se scalează cu telefonul) ---- */
++".vg-ico{display:inline-grid;place-items:center;width:1.15em;height:1.15em;flex:0 0 auto}.vg-ico svg{width:100%;height:100%;display:block}"
++".tp-fab .vg-ico{width:.75em;height:.75em}"
++".vg-sw>b{display:none}.vg-sw.on>i{display:none}.vg-sw.on>b{display:inline}"
++".vg-sw i,.vg-sw b,.vg-pk i,.vg-pk b{font-style:normal;font-weight:inherit}"
++".vg-wh{display:flex;flex-direction:column;gap:.45em;flex:0 0 auto}"
++".vg-wt{display:flex;flex-direction:column;align-items:center;text-align:center;line-height:1.2}"
++".vg-wt b{font-size:1.05em;font-weight:800}.vg-wt span{font-size:.68em;color:var(--ink3);font-weight:700;letter-spacing:.04em}"
++".vg-pills{display:flex;justify-content:center;gap:.4em}"
++".vg-pl{display:inline-flex;align-items:center;gap:.3em;font-size:.7em;font-weight:800;color:var(--ink2);background:var(--surf);border:.1em solid var(--bd);border-radius:99em;padding:.3em .7em;transition:transform .15s,box-shadow .15s}"
++".vg-pl .vg-ico{width:1.05em;height:1.05em;color:var(--acc)}"
++".vg-pl.prs{transform:scale(.92);box-shadow:0 0 0 .35em var(--accsoft)}"
++".vg-ev{display:flex;align-items:center;gap:.4em;justify-content:center;font-size:.72em;font-weight:800;color:var(--acc);background:var(--accsoft);border-radius:.7em;padding:.4em .6em}"
++".vg-save{display:none;gap:.4em}.vg-save.on{display:flex;animation:nwin .3s ease-out both}.vg-save .tp-b{flex:1;padding:.45em .6em;font-size:.8em}"
++".vg-card{padding:.15em 0 .3em;gap:0;overflow:hidden}"
++".vg-sh{display:flex;align-items:center;gap:.5em;font-size:.74em;font-weight:800;padding:.6em .9em;color:#fff}"
++".vg-sh i{width:.9em;height:.9em;border-radius:.25em;background:rgba(255,255,255,.85)}"
++".vg-sh.c{background:var(--secTeal)}.vg-sh.p{background:var(--secGold)}.vg-sh.v{background:var(--secRed)}"
++".vg-part{display:flex;gap:.55em;padding:.5em .8em;border-top:.08em solid var(--bd)}.vg-sh+.vg-part{border-top:0}"
++".vg-tm{flex:0 0 2.75em;white-space:nowrap;font-size:.72em;font-weight:800;color:var(--ink2);display:flex;flex-direction:column;line-height:1.25}"
++".vg-tm small{font-size:.85em;font-weight:700;color:var(--ink3)}"
++".vg-pb{flex:1;min-width:0;display:flex;flex-direction:column;gap:.3em}"
++".vg-ptt{font-size:.8em;font-weight:700;line-height:1.3}.vg-ptt b{font-weight:800}"
++".vg-slots{display:flex;flex-direction:column;gap:.25em}"
++".vg-slot{display:flex;flex-direction:column;gap:.1em}"
++".vg-sl{font-size:.56em;font-weight:800;letter-spacing:.07em;text-transform:uppercase;color:var(--ink3)}"
++".vg-sr{display:flex;gap:.3em;align-items:center}"
++".vg-pk{flex:1;min-width:0;display:flex;align-items:center;gap:.35em;font-size:.76em;font-weight:800;color:var(--ink);background:var(--bg);border:.1em solid var(--bd);border-radius:.6em;padding:.35em .55em;transition:background .25s,border-color .25s}"
++".vg-pk i,.vg-pk b{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}"
++".vg-pk s{text-decoration:none;color:var(--ink3);font-weight:700}"
++".vg-pk.ph{color:var(--ink3);border-style:dashed}.vg-pk.ph.on{color:var(--ink);border-style:solid}"
++".vg-pk.vg-sw.on{animation:vgflash .9s ease}"
++".vg-pk.warn{border-color:var(--secRed)}.vg-pk.warn.on{border-color:var(--bd)}"
++".vg-dot{width:.55em;height:.55em;border-radius:50%;background:var(--secRed);flex:0 0 auto;box-shadow:0 0 0 .2em rgba(214,95,95,.25)}.vg-pk.on .vg-dot{display:none}"
++".vg-pk.yl{background:#fff3a3;border-color:#e6c200;color:#1c1a10}"
++".vg-pen{flex:0 0 auto;width:1.9em;height:1.9em;border:.1em solid var(--bd);border-radius:.55em;background:var(--bg);color:var(--ink3);display:grid;place-items:center}.vg-pen .vg-ico{width:.95em;height:.95em}"
++"@keyframes vgflash{0%{background:var(--accsoft);border-color:var(--acc)}100%{}}"
+ /* lista de săptămâni */
++".vg-mon{display:flex;align-items:center;gap:.45em;font-size:.8em;padding:.2em .2em 0}.vg-mon s{text-decoration:none;color:var(--ink3);transform:rotate(90deg);display:inline-block}"
++".vg-mon b{flex:1;font-weight:800}.vg-mon span{font-size:.85em;color:var(--ink3);font-weight:700}"
++".vg-mon.vg-new b,.vg-mon.vg-new span{color:var(--acc)}"
++".vg-grp{display:flex;flex-direction:column;gap:.632em;border-radius:1.1em}"
++".vg-wr{flex-direction:row;align-items:center;gap:.6em;padding:.55em .7em}"
++".vg-wav{width:1.9em;height:1.9em;border-radius:.6em;background:var(--accsoft);color:var(--acc);display:grid;place-items:center;flex:0 0 auto}.vg-wav .vg-ico{width:1em;height:1em}"
++".vg-wn{flex:1;min-width:0;display:flex;flex-direction:column}.vg-wn b{font-size:.82em;font-weight:800;display:flex;align-items:center;gap:.4em}"
++".vg-wn b em{font-style:normal;font-size:.75em;color:var(--acc);background:var(--accsoft);border-radius:.4em;padding:.05em .4em}"
++".vg-wn>span{font-size:.68em;color:var(--ink3);font-weight:700}"
++".vg-pill{font-size:.64em;font-weight:800;color:var(--ink3);background:var(--surf2);border-radius:99em;padding:.25em .65em;flex:0 0 auto}.vg-pill.has{color:var(--tealtx);background:rgba(53,195,179,.15)}"
++".vg-wr.vg-new{border-color:var(--acc);animation:vgflash 1.4s ease}"
+ /* foile de jos: rânduri de meniu, fișiere, câmpuri */
++".vg-mi{display:flex;align-items:center;gap:.6em;font-size:.8em;padding:.6em .5em;border-radius:.7em;border:.1em solid var(--bd);background:var(--bg);transition:background .2s}"
++".vg-mi .vg-ico{color:var(--acc);width:1.2em;height:1.2em}.vg-mi b{font-weight:800}.vg-mi>span{color:var(--ink2);line-height:1.3}.vg-mi>span b{color:var(--ink)}"
++".vg-mi.sel,.vg-opts span.sel,.vg-file.sel{background:var(--accsoft)!important}"
++".vg-yd{width:.95em;height:.95em;border-radius:50%;background:#fbbf24;border:.12em solid #e0a800;display:block}.vg-yd.sq{border-radius:.25em}"
++".vg-file{display:flex;align-items:center;gap:.6em;padding:.55em .5em;border-radius:.7em;border:.1em solid var(--bd);background:var(--bg)}"
++".vg-file i{font-style:normal;font-size:.55em;font-weight:800;color:#fff;background:#e0742a;border-radius:.4em;padding:.9em .45em;letter-spacing:.04em}"
++".vg-file>span{display:flex;flex-direction:column;min-width:0}.vg-file b{font-size:.8em;font-weight:800}.vg-file span span{font-size:.66em;color:var(--ink3);font-weight:700}"
++".vg-fld{background:var(--bg);border:.1em solid var(--bd);border-radius:.6em;padding:.45em .6em;font-size:.8em;font-weight:700;display:flex;align-items:center}"
++".vg-sel{justify-content:space-between;gap:.4em}.vg-sel s{text-decoration:none;color:var(--ink3)}.vg-sel>span{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}"
++".vg-opts{display:none;flex-direction:column;border:.1em solid var(--bd);border-radius:.6em;overflow:hidden;background:var(--surf)}.vg-opts.on{display:flex;animation:nwin .2s ease-out both}"
++".vg-opts span{font-size:.76em;font-weight:700;padding:.45em .6em;border-top:.08em solid var(--bd)}.vg-opts span:first-child{border-top:0}"
++".vg-hid{display:none}.vg-hid.on{display:flex;flex-direction:column;gap:.4em;animation:nwin .3s ease-out both}"
++".vg-songs{display:grid;grid-template-columns:repeat(3,1fr);gap:.4em}.vg-songs .vg-fld{justify-content:center}"
++".vg-more{display:flex;align-items:center;gap:.4em;font-size:.76em;font-weight:800;color:var(--ink2);padding:.3em .1em}.vg-more s{text-decoration:none;transition:transform .2s;display:inline-block}.vg-more.op s{transform:rotate(90deg)}"
++".vg-two{display:grid;grid-template-columns:1fr 1fr;gap:.4em}.vg-two .tp-b{font-size:.78em;padding:.5em .4em}"
++".vg-chips{display:flex;gap:.35em}.vg-chips .tp-b{font-size:.72em;padding:.35em .7em;border-radius:99em}"
++".vg-aoh{display:flex;align-items:baseline;justify-content:space-between;font-size:.8em;margin-top:.2em}.vg-aoh b{font-weight:800}.vg-aoh span{font-size:.85em;color:var(--acc);font-weight:800}"
++".tp-sh .tp-ck{font-size:.8em}"
++".vg-abar{position:absolute;left:.6em;right:.6em;bottom:3.6em;z-index:5;display:none;align-items:center;gap:.35em;background:var(--surf);border:.1em solid var(--acc);border-radius:.9em;padding:.45em .5em;box-shadow:0 .4em 1.2em rgba(0,0,0,.25)}"
++".vg-abar.on{display:flex;animation:nwin .3s ease-out both}.vg-abar>span:first-child{flex:1;font-size:.66em;line-height:1.3;color:var(--ink2)}.vg-abar b{color:var(--ink)}.vg-abar .tp-b{font-size:.68em;padding:.4em .55em}"
+ /* fereastra de alegere */
++".vg-pkh{display:flex;flex-direction:column;gap:.1em;border-left:.3em solid var(--c);padding:.1em 0 .2em .6em}"
++".vg-eye{font-size:.6em;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--c)}"
++".vg-pkh b{font-size:.86em;font-weight:800;line-height:1.25}.vg-pkh>span:last-child{font-size:.66em;color:var(--ink3);font-weight:700}"
++".vg-pr{display:flex;align-items:center;gap:.5em;padding:.4em .45em;border-radius:.7em;border:.1em solid var(--bd);background:var(--bg)}"
++".vg-pr.off{opacity:.55}"
++".vg-av{width:1.9em;height:1.9em;border-radius:50%;background:rgba(53,195,179,.18);color:var(--tealtx);display:grid;place-items:center;font-size:.66em;font-weight:800;flex:0 0 auto}.vg-av.f{background:rgba(214,95,95,.15);color:var(--secRed)}"
++".vg-pn{flex:1;min-width:0;display:flex;flex-direction:column;gap:.15em}.vg-pn b{font-size:.78em;font-weight:800}.vg-pn>span{display:flex;gap:.3em;flex-wrap:wrap}"
++".vg-pn em{font-style:normal;font-size:.58em;font-weight:800;border-radius:99em;padding:.12em .5em;background:var(--surf2);color:var(--ink2)}"
++".vg-pn em.vg-rec{background:var(--teal);color:#fff}.vg-fr.g{background:rgba(53,195,179,.15)!important;color:var(--tealtx)!important}"
++".vg-fr.a{background:var(--accsoft)!important;color:var(--acc)!important}.vg-fr.r{background:rgba(214,95,95,.14)!important;color:var(--secRed)!important}"
++".vg-go{flex:0 0 auto;font-size:.7em;font-weight:800;color:var(--acc);border:.12em solid var(--acc);border-radius:.6em;padding:.3em .65em}"
++".vg-go.on{background:var(--acc);color:#1c1200}.vg-go.off{color:var(--ink3);border-color:var(--bd)}"
+ /* e-mail teme și WhatsApp */
++".vg-mr{display:flex;gap:.55em;align-items:flex-start;padding:.45em .2em;border-bottom:.08em solid var(--bd)}.vg-mr .tp-ck{margin-top:.15em}"
++".vg-mn{flex:1;min-width:0;display:flex;flex-direction:column;gap:.1em}.vg-mn b{font-size:.78em;font-weight:800}.vg-mn>span{font-size:.68em;color:var(--ink2)}"
++".vg-mn em{font-style:normal;font-size:.62em;color:var(--ink3);font-weight:700}.vg-mn em.a{color:var(--acc)}.vg-mn em.on{color:var(--tealtx)}"
++".vg-wa{align-self:flex-start;margin-top:.25em;font-size:.62em;font-weight:800;color:#1fa855;border:.12em solid #1fa855;border-radius:.6em;padding:.2em .6em;transition:transform .15s}.vg-wa.prs{transform:scale(.92)}.vg-wa.on{border-color:transparent;padding-left:0;color:var(--ink3)}"
++".vg-wah{flex:0 0 auto;display:flex;align-items:center;gap:.6em;background:#0b6b5e;color:#fff;padding:1.7em .8em .7em}"
++".vg-wah s{text-decoration:none;font-size:1.3em}.vg-wah b{display:block;font-size:.86em}.vg-wah i{font-style:normal;font-size:.62em;opacity:.8}"
++".vg-wav2{width:2.1em;height:2.1em;border-radius:50%;background:#d8e8e4;color:#0b6b5e;display:grid;place-items:center;font-size:.7em;font-weight:800}"
++".vg-wabd{flex:1;background:#e9e1d6;display:flex;flex-direction:column;justify-content:flex-end;padding:.8em}"
++".vg-wab{align-self:flex-end;max-width:84%;background:#d9fdd3;color:#111b21;border-radius:.8em .8em .2em .8em;padding:.55em .7em;font-size:.76em;line-height:1.4;box-shadow:0 .1em .2em rgba(0,0,0,.15)}"
++".vg-wab.on{display:block}.vg-wab i{display:block;text-align:right;font-style:normal;font-size:.75em;color:#53bdeb;margin-top:.2em}"
++".vg-wai{flex:0 0 auto;display:flex;align-items:flex-end;gap:.5em;background:#e9e1d6;padding:.4em .6em 1.4em}"
++".vg-wit{flex:1;background:#fff;color:#111b21;border-radius:1.1em;padding:.5em .8em;font-size:.72em;line-height:1.35;min-height:2.2em}.vg-wit.gone{color:transparent}"
++".vg-wai>i{width:2.3em;height:2.3em;border-radius:50%;background:#1fa855;color:#fff;display:grid;place-items:center;flex:0 0 auto}.vg-wai>i svg{width:1.05em;height:1.05em}"
+ /* fișele S-89 la tipar */
++".vg-stage{position:absolute;inset:0;background:#5d6470;display:flex;flex-direction:column;padding:1.8em .7em .7em;gap:.6em}"
++".vg-sgrid{flex:1;display:grid;grid-template-columns:1fr 1fr;grid-auto-rows:1fr;gap:.4em;background:#fff;border-radius:.3em;padding:.5em;box-shadow:0 .4em 1.2em rgba(0,0,0,.3)}"
++".vg-s89{border:.1em dashed #9aa0aa;border-radius:.2em;padding:.45em .4em;display:flex;flex-direction:column;gap:.25em;color:#1a1c25;font-size:.62em;line-height:1.25;animation:nwin .4s ease-out both}"
++".vg-s89:nth-child(2){animation-delay:.08s}.vg-s89:nth-child(3){animation-delay:.16s}"
++".vg-s89>b{font-size:.8em;text-align:center;font-weight:800;letter-spacing:.02em;margin-bottom:.2em}.vg-s89 i{font-style:normal;color:#6b7280}.vg-s89.blank{border-color:#e5e7eb}"
++".vg-s89c{display:flex;align-items:center;gap:.3em;margin-top:auto;font-size:.9em}.vg-s89c i{width:.8em;height:.8em;border:.1em solid #6b7280;display:block}"
++".vg-sbar{display:flex;gap:.4em}.vg-sbar .tp-b{flex:1}"
++".vg-aw{display:flex;gap:.5em;align-items:center;background:rgba(214,95,95,.12);color:var(--secRed);border-radius:.8em;padding:.45em .6em;font-size:.68em;line-height:1.3}"
++".vg-aw b{display:block;color:var(--ink)}.vg-aw>span{color:var(--ink2)}";
+ document.head.appendChild(s);}
+
+/* ===========================================================================
+   PANOUL RESPONSABILULUI VCP — deasupra listei de săptămâni
+   ---------------------------------------------------------------------------
+   Ce mai e de făcut, fără să deschizi fiecare săptămână: următoarele patru
+   săptămâni, cu câte locuri sunt fără nume și câți frați și-au primit partea
+   (e-mail cu aceeași temă sau WhatsApp deschis), plus până când ține caietul
+   importat. Doar pentru cine poate modifica programul VCP. Rândul deschide
+   săptămâna; „Ghid" deschide ghidul responsabilului.
+   =========================================================================== */
+/* locurile de nume ale unei săptămâni, ca în editorul ei (openWeek) */
+function _vcpSlots(wi){var w=S.weeks[wi];if(!w||evNoMid(w))return [];ensureIds(w);
+ var vis=isVisitEv(w),out=["open_pr","pres","close_pr"];
+ (w.parts||[]).forEach(function(p){var role=partRole(p);
+  if(/studiul/i.test(p.title||"")){if(!vis)out.push("cond","cit");}
+  else if(hasPartner(p,role))out.push(p.id+"_a",p.id+"_b");
+  else out.push(p.id);});
+ return out;}
+function _vcpTodo(n){var out=[],cw=vcpCurWeek();if(cw<0)return out;
+ for(var i=cw;i<S.weeks.length&&out.length<n;i++){if(wkArchIs(_wkMonthKey(i)))continue;
+  var w=S.weeks[i],nm=evNoMid(w),a=((S.plans[i]||{}).a)||{},sl=nm?[]:_vcpSlots(i);
+  out.push({i:i,w:w,noMeet:nm,free:sl.filter(function(k){return !a[k];}).length,ann:0,annT:0});}
+ if(!out.length)return out;
+ /* anunțat = e-mail trimis cu exact partea de acum (aceeași amprentă ca în „E-mail teme") sau WhatsApp deschis */
+ var idx={};out.forEach(function(r){idx[r.i]=r;});var ML=S.mailLog||{},WL=S.waLog||{};
+ (S.bros||[]).forEach(function(b){var by={};
+  myAssignments(b.id).forEach(function(e){if(idx[e.wi])(by[e.wi]=by[e.wi]||[]).push(e);});
+  Object.keys(by).forEach(function(wi){var r=idx[wi],key=wi+"|"+b.id;r.annT++;
+   var txt=by[wi].map(function(it){return it.label+(it.partner?" cu "+it.partner:"");}).join("; ");
+   var m=ML[key];if((m&&m.h===_hash(txt))||WL[key])r.ann++;});});
+ return out;}
+/* prima săptămână din cele care urmează cu locuri libere — acolo duce „Încearcă acum" din ghid */
+function _vcpNextTodo(){try{var L=_vcpTodo(6);for(var i=0;i<L.length;i++)if(!L[i].noMeet&&L[i].free)return L[i].i;}catch(e){}return -1;}
+function vcpPanelHtml(){if(!_canEditVcp()||!S.weeks||!S.weeks.length)return "";_vcpPanelCSS();
+ var L=[];try{L=_vcpTodo(4);}catch(e){logErr("panou VCP: "+e.message,e.stack);}
+ var last=S.weeks.length-1,ld=_weekStartDate(last),cov="";
+ if(ld){var end=new Date(ld.getFullYear(),ld.getMonth(),ld.getDate()+6),t=new Date();t.setHours(0,0,0,0);
+  var warn=(end-t)/864e5<35;
+  cov='<button class="vp-cov'+(warn?' w':'')+'" onclick="'+(warn?'vcpEpubPick()':'vcpListFab()')+'">'+IC.arch
+   +'<span>Caietul ține până la <b>'+esc(tc(S.weeks[last].date))+'</b>'+(warn?' — aduce-l pe următorul':'')+'</span>'
+   +(warn?'<em>Importă</em>':'')+'</button>';}
+ var rows=L.map(function(r){var ws=_vcpWkState(r.i),st,cls;
+  if(r.noMeet){st=evLabel(r.w);cls="ev";}
+  else if(r.free){st=r.free+(r.free===1?" loc liber":" locuri libere");cls="fr";}
+  else{st="complet";cls="ok";}
+  var an=(!r.noMeet&&r.annT)?('<span class="vp-an'+(r.ann>=r.annT?' ok':'')+'">anunțați '+r.ann+'/'+r.annT+'</span>'):'';
+  return '<button class="vp-r" onclick="openWeek('+r.i+')"><span class="vp-d"><b>'+esc(tc(r.w.date))+'</b>'
+   +'<span>'+(ws==="now"?"săptămâna aceasta":(ws==="next"?"săptămâna viitoare":esc(r.w.bible||"")))+'</span></span>'
+   +'<span class="vp-s"><span class="vp-st '+cls+'">'+esc(st)+'</span>'+an+'</span><span class="vp-ch">'+IC.chev+'</span></button>';}).join("");
+ return '<div class="vpan"><div class="vp-hd"><b>Următoarele săptămâni</b>'
+  +'<button class="vp-g" onclick="tutOpen(\'vcp\')">'+IC.book+'Ghid</button></div>'
+  +(rows||'<div class="muted" style="padding:6px 2px 4px">Nicio săptămână de programat.</div>')+cov+'</div>';}
+function _vcpPanelCSS(){if(document.getElementById("vpcss"))return;var s=document.createElement("style");s.id="vpcss";s.textContent=
+ ".vpan{background:var(--surf);border:1px solid var(--bd);border-radius:16px;padding:12px 12px 10px;margin-bottom:12px;box-shadow:0 1px 2px rgba(0,0,0,.04)}"
++".vp-hd{display:flex;align-items:center;gap:8px;margin:0 2px 8px}.vp-hd b{flex:1;font-size:13px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--ink3)}"
++".vp-g{display:inline-flex;align-items:center;gap:5px;border:1px solid var(--bd);background:var(--bg);color:var(--ink2);border-radius:999px;padding:4px 10px;font:inherit;font-size:12px;font-weight:700;cursor:pointer}"
++".vp-g svg{width:14px;height:14px;color:var(--acc)}.vp-g:hover{border-color:var(--acc);color:var(--acc)}"
++".vp-r{display:flex;align-items:center;gap:10px;width:100%;text-align:left;font:inherit;color:var(--ink);background:none;border:0;border-top:1px solid var(--bd);padding:10px 2px;cursor:pointer}"
++".vp-r:first-of-type{border-top:0}"
++".vp-d{flex:1;min-width:0;display:flex;flex-direction:column}.vp-d b{font-size:14.5px;font-weight:700}.vp-d span{font-size:12px;color:var(--ink3)}"
++".vp-s{display:flex;flex-direction:column;align-items:flex-end;gap:3px;flex:0 0 auto}"
++".vp-st{font-size:11.5px;font-weight:800;border-radius:999px;padding:3px 9px}"
++".vp-st.fr{background:var(--accsoft);color:var(--acc)}.vp-st.ok{background:rgba(53,195,179,.15);color:var(--tealtx)}.vp-st.ev{background:var(--surf2);color:var(--ink2)}"
++".vp-an{font-size:11px;font-weight:700;color:var(--ink3)}.vp-an.ok{color:var(--tealtx)}"
++".vp-ch{color:var(--ink3);display:flex}.vp-ch svg{width:15px;height:15px}"
++".vp-cov{display:flex;align-items:center;gap:9px;width:100%;margin-top:8px;text-align:left;font:inherit;font-size:12.5px;color:var(--ink2);background:var(--surf2);border:0;border-radius:11px;padding:9px 11px;cursor:pointer}"
++".vp-cov svg{width:16px;height:16px;flex:0 0 auto;color:var(--ink3)}.vp-cov span{flex:1;min-width:0}.vp-cov b{color:var(--ink)}"
++".vp-cov.w{background:var(--accsoft);color:var(--ink)}.vp-cov.w svg{color:var(--acc)}"
++".vp-cov em{font-style:normal;font-weight:800;color:#fff;background:var(--acc);border-radius:8px;padding:4px 10px;flex:0 0 auto}";
+ document.head.appendChild(s);}
+
 /* ---------------------------------------------------------------------------
    Un card „Tutoriale" în Setări, ca lista completă să aibă și un loc al ei —
    semnul „?" rămâne strict pentru secțiunea deschisă. Cardul se pune după ce
@@ -15189,6 +15886,7 @@ TUT.A["prog.duty"]="prog.sarc";
    +'Semnul <b>?</b> din antet deschide de fiecare dată tutorialul secțiunii în care te afli. '
    +'De aici le poți deschide pe toate.</div>'
    +'<button class="btn ghost sm" style="width:100%" onclick="tutIndex()">Vezi toate tutorialele</button>'
+   +(_canEditVcp()?'<button class="btn ghost sm" style="width:100%;margin-top:8px" onclick="tutOpen(\'vcp\')">Ghidul responsabilului VCP</button>':'')
    +'<button class="btn ghost sm" style="width:100%;margin-top:8px" onclick="tutOpen(\'start\')">Bun venit în ArhiLink</button>'
    +'<button class="btn ghost sm" style="width:100%;margin-top:8px" onclick="tutOpen(\'vestitor\')">Pentru vestitori</button>'
    +'<button class="btn ghost sm" style="width:100%;margin-top:8px" onclick="tutInstall()">Aplicația pe ecranul principal</button>';}
@@ -15551,7 +16249,7 @@ function _fndBuild(q){
  /* --- tutoriale --- */
  try{
   if(typeof TUT!=="undefined"&&TUT.D)Object.keys(TUT.D).forEach(function(id){
-   var d=TUT.D[id];if(!d)return;
+   var d=TUT.D[id];if(!d)return;if(d.only&&!d.only())return;
    var sc=Math.max(alkScore(d.t,q),alkScore(d.sub,q)?30:0);
    if(!sc)return;
    _fndPush(out,sc-10,IC.book,"Tutoriale",d.t||id,d.sub||"cum se face",function(){findClose();tutOpen(id);});});
