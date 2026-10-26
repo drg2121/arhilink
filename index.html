@@ -724,7 +724,7 @@ Object.assign(IC,{
  box:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h18v13H3z"/><path d="M3 7l2-4h14l2 4"/><path d="M10 11h4"/></svg>',
  mark:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15.5 4.5l4 4-9.5 9.5H6v-4z"/><path d="M12.5 7.5l4 4M5 21h14"/></svg>'
 });
-const VERSION="4.1.0";
+const VERSION="4.1.1";
 /* Versiunea minima care are voie sa SCRIE in cloud. Se trece in gist la fiecare trimitere;
    un dispozitiv ramas pe un build mai vechi decat atat nu mai poate suprascrie datele —
    doar citeste si se actualizeaza singur. Asa nu mai poate un singur telefon uitat deschis
@@ -1389,8 +1389,11 @@ function openWeek(i){if(_wkDraft&&_wkDraft.i!==i&&!_wkGuard())return;wkOpen=true
 
 /* ===== VCP — Viața creștină și predicarea (doar vizualizare) ===== */
 let vcpW=-1;
+/* luna în care începe săptămâna = prima lună scrisă în dată. monthIdx alege după ordinea din
+   calendar, așa că „29 decembrie – 4 ianuarie" ieșea 29 ianuarie, în anul următor. */
+function _wkStartMonthIdx(date){const m=(date||"").toLowerCase();const L=["ianuarie","februarie","martie","aprilie","mai","iunie","iulie","august","septembrie","octombrie","noiembrie","decembrie"];let best=-1,pos=Infinity;for(let j=0;j<L.length;j++){const p=m.indexOf(L[j]);if(p>=0&&p<pos){pos=p;best=j;}}return best;}
 function _weekStartDate(i){const base=+(S.settings.baseYear||2026);let year=base,prev=-1;
- for(let j=0;j<S.weeks.length;j++){const mi=monthIdx(S.weeks[j].date);if(prev>=0&&mi>=0&&mi<prev)year++;if(mi>=0)prev=mi;
+ for(let j=0;j<S.weeks.length;j++){const mi=_wkStartMonthIdx(S.weeks[j].date);if(prev>=0&&mi>=0&&mi<prev)year++;if(mi>=0)prev=mi;
   if(j===i){const dm=(S.weeks[j].date||"").match(/\d+/);if(mi<0||!dm)return null;return new Date(year,mi,+dm[0]);}}
  return null;}
 function vcpCurWeek(){const today=new Date();today.setHours(0,0,0,0);let up=-1;
@@ -8686,7 +8689,14 @@ function hlAuxOn(b,k){if(pioAt(b,k)==="Pionier auxiliar")return true;var L=hlogO
  if(L&&L.aux!=null)return !!L.aux;var r=repOf(b.id,k);return !!(r&&r.aux);}
 function hlHoursOn(b,k){return hlPio(b,k)||(hlCanAux(b,k)&&hlAuxOn(b,k));}
 function hlGoal(b,k){var L=hlogOf(b.id,k);if(L&&L.goal)return +L.goal;var p=pioAt(b,k);
- if(p==="Pionier")return 50;if(p==="Pionier special"||p==="Misionar")return 100;return 30;}
+ if(p==="Pionier")return 50;if(p==="Pionier special"||p==="Misionar")return 100;return hlVisitMonth(k)?15:30;}
+/* luna vizitei supraveghetorului de circumscripție: pionierul auxiliar are 15 h, nu 30.
+   Vizita stă pe o săptămână din caiet; dacă săptămâna cade peste două luni, contează amândouă. */
+function hlVisitMonth(k){var ws=S.weeks||[];
+ for(var i=0;i<ws.length;i++){if(!ws[i]||!ws[i].event||!evVisit(ws[i]))continue;var d=_weekStartDate(i);if(!d)continue;
+  var e=new Date(d.getFullYear(),d.getMonth(),d.getDate()+6);
+  if(ymOf(d.getFullYear(),d.getMonth())===k||ymOf(e.getFullYear(),e.getMonth())===k)return true;}
+ return false;}
 function hlSumE(L){var n=0;((L&&L.e)||[]).forEach(function(e){n+=(+e.m||0);});return n;}
 /* minutele rămase din luna trecută: raportul merge pe ore întregi, restul trece mai departe */
 function hlCarry(b,k,depth){depth=depth||0;if(depth>24)return 0;var pk=ymShift(k,-1);var L=hlogOf(b.id,pk);
@@ -8741,6 +8751,7 @@ function _meuHoursHtml(my,b){if(!my||!b||b.active===false)return "";try{arhEnsur
   h+='<div class="pio-bar" style="margin:0 0 6px"><div class="pio-fill'+(done?' done':'')+'" style="width:'+pct+'%"></div></div>';
   var sub=['<span>'+pct+'%</span>'];
   if(carry)sub.push('<span>+ '+carry+' min din luna trecută</span>');
+  if(goal===15&&!L.goal&&hlVisitMonth(k))sub.push('<span>luna vizitei supraveghetorului: 15 h</span>');
   sub.push('<span>'+ent.length+(ent.length===1?' notare':' notări')+'</span>');
   if(done)sub.push('<span class="ok">✓ obiectiv atins</span>');
   else if(!ended){var last=new Date(ymY(k),ymM(k)+1,0).getDate(),left=Math.max(1,last-new Date().getDate()+1);sub.push('<span>≈ '+hlFmt(Math.ceil(rem/left))+' pe zi</span>');}
@@ -8780,7 +8791,8 @@ function hlAuxTog(k,on){var L=_hlL(k);if(!L)return;L.aux=on?1:0;L.t=Date.now();s
 function hlPart(k,on){var L=_hlL(k);if(!L)return;L.p=on?1:0;L.t=Date.now();save();hlK=k;renderMeu();}
 function hlSt(k,d){var L=_hlL(k);if(!L)return;L.st=Math.max(0,(+L.st||0)+d);L.t=Date.now();save();hlK=k;renderMeu();}
 function hlGoalSheet(k){var my=_myBro(),b=(S.bros||[]).find(function(x){return x.id===my;});if(!b)return;var cur=hlGoal(b,k);
- var opts=[[15,"15 h","pionier auxiliar, în lunile cu obiectiv redus"],[30,"30 h","pionier auxiliar"],[50,"50 h","pionier regular (600 h pe an)"],[100,"100 h","pionier special"]];
+ var vis=hlVisitMonth(k);
+ var opts=[[15,"15 h",vis?"pionier auxiliar, în luna vizitei supraveghetorului":"pionier auxiliar, în lunile cu obiectiv redus"],[30,"30 h","pionier auxiliar"],[50,"50 h","pionier regular (600 h pe an)"],[100,"100 h","pionier special"]];
  var H='<div class="muted" style="margin:0 2px 10px">Obiectivul pe '+esc(monthName(k))+'. Bara și „pe zi până la obiectiv” se socotesc după el.</div>'
   +opts.map(function(o){return '<button class="pmrow" onclick="hlGoalSet(\''+k+'\','+o[0]+')"><span><b>'+o[1]+'</b> — '+o[2]+(cur===o[0]?' <span class="dtag g">ales</span>':'')+'</span></button>';}).join("")
   +'<div class="pmlbl" style="margin-top:12px">Sau alt număr de ore</div>'
