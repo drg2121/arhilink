@@ -5851,7 +5851,7 @@ var NEWS=[
   {ic:"form",who:function(){return _arhReports();},t:"Cele 3 fișe S-21 cu totaluri",s:"Pe lună: rapoarte, studii și ore pentru 1) pionieri regulari, speciali și misionari, 2) pionieri auxiliari, 3) ceilalți vestitori. Din Export sau bifate la „Fișe S-21”.",go:"arhexp",gl:"Deschide Exportul"},
   {ic:"chart",who:function(){return _arhReports();},t:"Activi, iregulari, inactivi",s:"Activ = a raportat cel puțin o dată în ultimele șase luni; inactiv = șase luni la rând fără raport; iregular = a lipsit cel puțin o lună. Statisticile arată câți sunt și cine. Numărul vestitorilor activi din S-1 se socotește la fel.",go:"arhstat",gl:"Deschide Statisticile"},
   {ic:"clock",who:function(){return _arhReports();},t:"Raport predat după trimiterea S-1",s:"Rămâne pe luna lui (vestitorul nu e iregular), dar intră în S-1 din luna următoare, la numărul de rapoarte. Se vede în Sumar și pe fișele cu totaluri."},
-  {ic:"star",who:function(){return _arhReports();},t:"Pionier regular: ore + credit cel mult 55",s:"Creditul în plus se taie singur, oricum ar intra raportul (formular, Forms, telefonul vestitorului) — și în rapoartele deja introduse."},
+  {ic:"star",who:function(){return _arhReports();},t:"Ore + credit cel mult 55",s:"La oricine are credit (pionierii speciali și misionarii, care raportează la filială, rămân neatinși). Creditul în plus se taie singur, oricum ar intra raportul — și în rapoartele deja introduse, la deschiderea Arhivei."},
   {ic:"check",who:function(){return _arhReports();},t:"De verificat",s:"În Rapoarte: pionierul cu raport fără ore. În Prezență: weekend trecut la „mijloc”, două înregistrări în aceeași săptămână, prezență 0 — de aici vine de obicei o medie de weekend mai mică.",go:"arhrap",gl:"Deschide Rapoartele"}
  ]},
  {v:"4.1.0",label:"4.1",d:"26.10.2026",t:"Fișele S-21 și statisticile, pe orice perioadă",items:[
@@ -7024,14 +7024,17 @@ function repOf(id,k){var r=arhRep()[id];return (r&&r[k])?r[k]:null;}
 function repHas(id,k){if(repOf(id,k))return true;if(repIsTomb(id,k))return false;/* șters manual → „de completat", chiar dacă steagul din cloud încă există */var f=S.repFlags;return !!(f&&f[id]&&f[id][k]);}
 function _repFlagsOf(){var out={};Object.keys(S.reports||{}).forEach(function(id){var o=S.reports[id];if(!o)return;var m={};Object.keys(o).forEach(function(k){if(o[k])m[k]=1;});if(Object.keys(m).length)out[id]=m;});return out;}
 function setRep(id,k,o){var R=arhRep();if(o===null){if(R[id])delete R[id][k];}else{repCapCr(id,k,o);repMarkLate(id,k,o);R[id]=R[id]||{};R[id][k]=o;}}
-/* Pionierul regular: orele plus creditul nu trec de 55 pe lună. Pe orice cale ar intra raportul
-   (formular, Forms, Excel, telefonul vestitorului), creditul se taie până la 55; orele rămân cum sunt.
-   Întoarce cât s-a tăiat (0 = nimic). */
+/* Orele plus creditul nu trec de 55 pe lună — la oricine are credit (pionier regular, fost pionier,
+   credit venit din Forms la un vestitor), nu doar la cine apare azi ca regular în luna aceea.
+   Excepție: pionierii speciali și misionarii, care raportează la filială, cu alte cerințe.
+   Pe orice cale ar intra raportul (formular, Forms, Excel, telefonul vestitorului), creditul se taie
+   până la 55; orele rămân cum sunt. Întoarce cât s-a tăiat (0 = nimic). */
 var CR_MAX=55;
 function repCapCr(id,k,o){if(!o||!o.cr)return 0;var b=(S.bros||[]).find(function(x){return x.id===id;});
-  if(!b||pioAt(b,k)!=="Pionier")return 0;var room=Math.max(0,CR_MAX-(+o.h||0)),cr=+o.cr||0;
+  var p=b?pioAt(b,k):"";if(p==="Pionier special"||p==="Misionar")return 0;var room=Math.max(0,CR_MAX-(+o.h||0)),cr=+o.cr||0;
   if(cr<=room)return 0;o.cr=room||null;return cr-room;}
-/* și ce era deja în date (de dinainte de regulă): o singură trecere, doar la cine poate edita */
+/* și ce era deja în date (de dinainte de regulă, sau sosit prin sincronizare de pe un telefon cu
+   versiunea veche): trece la fiecare deschidere a Arhivei, doar la cine poate edita */
 function repCapAll(){var n=0,R=arhRep();Object.keys(R).forEach(function(id){Object.keys(R[id]||{}).forEach(function(k){if(repCapCr(id,k,R[id][k]))n++;});});
   if(n){logAct("Credit tăiat la "+CR_MAX+" h (ore + credit): "+n+(n===1?" raport":" rapoarte"));save();}return n;}
 /* Raport predat după ce S-1 al lunii lui a fost trimis la filială (sfg 17:14): rămâne pe luna lui
@@ -7505,9 +7508,8 @@ function _arhNavPrepend(){try{
  b.insertAdjacentHTML("afterbegin",_arhNavHtml());
  setTimeout(_hscrollBind,0);}catch(e){}}
 
-var _crCapDone=false;
 function renderArh(){arhInitSel();arhEnsureCSS();$("#fab").style.display="none";
-  if(!_crCapDone&&_canEditArh()){_crCapDone=true;try{var _nc=repCapAll();if(_nc)setTimeout(function(){toast("Credit tăiat la "+CR_MAX+" h (ore + credit) în "+_nc+(_nc===1?" raport de pionier regular":" rapoarte de pionieri regulari"),6000);},700);}catch(e){}}
+  if(_canEditArh()){try{var _nc=repCapAll();if(_nc)setTimeout(function(){toast("Credit tăiat: ore + credit cel mult "+CR_MAX+" — "+_nc+(_nc===1?" raport corectat":" rapoarte corectate"),6000);},700);}catch(e){}}
   if(!arhGrp||!_arhGrpOf(arhGrp)){var _g=_arhGroups();
    if(_g.length===1){arhGrp=_g[0].k;}/* un singur grup: nu mai punem un ecran cu un card */
    else{renderArhHome();_arhLastSub=null;return;}}
@@ -7804,7 +7806,7 @@ function arhEditReport(id,k,pre){if(!_canEditReport(id))return;window._afterRep=
   H+='<div class="two"><div><label class="fl">Ore</label><input id="rp_h" class="fld" type="number" min="0" inputmode="numeric" value="'+(r.h!=null?r.h:"")+'" '+(hoursOn?"":"disabled")+'></div>';
   if(canCredit){H+='<div><label class="fl">Credit ore</label><input id="rp_cr" class="fld" type="number" min="0" inputmode="numeric" value="'+(r.cr!=null?r.cr:"")+'"></div>';}else{H+='<div></div>';}
   H+='</div>';
-  if(canCredit)H+='<div class="muted" style="font-size:11.5px;margin-top:5px">Creditele se afișează pe fișă dar NU se adună în totalurile S-1.'+(pio==="Pionier"?(' Pionier regular: ore + credit cel mult '+CR_MAX+' pe lună — creditul în plus se taie singur.'):'')+'</div>';
+  if(canCredit)H+='<div class="muted" style="font-size:11.5px;margin-top:5px">Creditele se afișează pe fișă dar NU se adună în totalurile S-1.'+(pio==="Pionier"?(' Ore + credit cel mult '+CR_MAX+' pe lună — creditul în plus se taie singur.'):'')+'</div>';
   H+='<label class="fl">Observații</label><input id="rp_o" class="fld" value="'+esc(r.o||"").replace(/"/g,"&quot;")+'">';
   var _own=(id===_myBro());/* propriul raport se TRIMITE (și la admini/editori), nu doar se salvează */
   H+='<div class="rowflex" style="gap:9px;margin-top:18px">'+(repOf(id,k)?'<button class="btn danger sm" onclick="arhDelReport(\''+id+'\',\''+k+'\')">Șterge</button>':'')+'<div class="spacer"></div><button class="btn ghost sm" style="width:auto" onclick="closeSheet()">Anulează</button><button class="btn pri sm" style="width:auto" onclick="arhSaveReport(\''+id+'\',\''+k+'\')">'+(_own?"Trimite":"Salvează")+'</button></div>';
@@ -7821,7 +7823,7 @@ function arhSaveReport(id,k){if(!_canEditReport(id))return;var b=S.bros.find(fun
   if(_own)o.src="me";/* editat chiar de vestitor — protejat la sincronizare */
   var _cut=repCapCr(id,k,o);
   repTombClear(id,k);setRep(id,k,o);logAct("Raport salvat: "+broDisp(id)+" "+monthName(k));save();closeSheet();arhRerender();
-  if(_cut)setTimeout(function(){toast("Creditul a fost redus la "+(o.cr||0)+" h — la pionierul regular, ore + credit cel mult "+CR_MAX,6000);},900);
+  if(_cut)setTimeout(function(){toast("Creditul a fost redus la "+(o.cr||0)+" h — ore + credit cel mult "+CR_MAX,6000);},900);
   if(_own&&(typeof autoOn!=="function"||!autoOn())){
    /* raportul vestitorului chiar PLEACĂ de pe telefon: intră în coadă și se trimite prin cutia poștală a aplicației */
    boxQueue({k:"rep",bro:id,mk:k,name:broDisp(id),by:(_curUser()&&_curUser().n)||"",rep:o});
