@@ -3505,7 +3505,7 @@ function archRepHtml(id,b){var R=(S.reports||{})[id]||{};var ys=archYears(id),H=
     if(catHasHours(c)&&r.h!=null)mp.push(r.h+"h");
     if(r.st)mp.push(r.st+(+r.st===1?" studiu":" studii"));
     if(r.aux)mp.push("pionier auxiliar");
-    if(r.cr)mp.push("Cr "+r.cr);
+    if(repCr(r))mp.push("Cr "+crTxt(r));
     var meta=mp.length?esc(mp.join(" · ")):'<span style="color:var(--teal)">✓ participat</span>';
     return '<div class="item" style="cursor:default"><div class="spacer"><div class="nm">'+esc(m.name+" "+m.y)+'</div><div class="mt">'+meta+'</div></div></div>';}).join("")
    +'</div></details>';});
@@ -5851,7 +5851,7 @@ var NEWS=[
   {ic:"form",who:function(){return _arhReports();},t:"Cele 3 fișe S-21 cu totaluri",s:"Pe lună: rapoarte, studii și ore pentru 1) pionieri regulari, speciali și misionari, 2) pionieri auxiliari, 3) ceilalți vestitori. Din Export sau bifate la „Fișe S-21”.",go:"arhexp",gl:"Deschide Exportul"},
   {ic:"chart",who:function(){return _arhReports();},t:"Activi, iregulari, inactivi",s:"Activ = a raportat cel puțin o dată în ultimele șase luni; inactiv = șase luni la rând fără raport; iregular = a lipsit cel puțin o lună. Statisticile arată câți sunt și cine. Numărul vestitorilor activi din S-1 se socotește la fel.",go:"arhstat",gl:"Deschide Statisticile"},
   {ic:"clock",who:function(){return _arhReports();},t:"Raport predat după trimiterea S-1",s:"Rămâne pe luna lui (vestitorul nu e iregular), dar intră în S-1 din luna următoare, la numărul de rapoarte. Se vede în Sumar și pe fișele cu totaluri."},
-  {ic:"star",who:function(){return _arhReports();},t:"Ore + credit cel mult 55",s:"La oricine are credit (pionierii speciali și misionarii, care raportează la filială, rămân neatinși). Creditul în plus se taie singur, oricum ar intra raportul — și în rapoartele deja introduse, la deschiderea Arhivei."},
+  {ic:"star",who:function(){return _arhReports();},t:"Credit de proiect: ore + credit cel mult 55",s:"Creditul pentru un proiect teocratic se taie singur cât ore + credit să nu treacă de 55, oricum ar intra raportul — și în rapoartele deja introduse. Creditul pentru o școală teocratică are câmpul lui și vine peste, fără plafon. Pionierii speciali și misionarii rămân neatinși."},
   {ic:"check",who:function(){return _arhReports();},t:"De verificat",s:"În Rapoarte: pionierul cu raport fără ore. În Prezență: weekend trecut la „mijloc”, două înregistrări în aceeași săptămână, prezență 0 — de aici vine de obicei o medie de weekend mai mică.",go:"arhrap",gl:"Deschide Rapoartele"}
  ]},
  {v:"4.1.0",label:"4.1",d:"26.10.2026",t:"Fișele S-21 și statisticile, pe orice perioadă",items:[
@@ -7024,12 +7024,17 @@ function repOf(id,k){var r=arhRep()[id];return (r&&r[k])?r[k]:null;}
 function repHas(id,k){if(repOf(id,k))return true;if(repIsTomb(id,k))return false;/* șters manual → „de completat", chiar dacă steagul din cloud încă există */var f=S.repFlags;return !!(f&&f[id]&&f[id][k]);}
 function _repFlagsOf(){var out={};Object.keys(S.reports||{}).forEach(function(id){var o=S.reports[id];if(!o)return;var m={};Object.keys(o).forEach(function(k){if(o[k])m[k]=1;});if(Object.keys(m).length)out[id]=m;});return out;}
 function setRep(id,k,o){var R=arhRep();if(o===null){if(R[id])delete R[id][k];}else{repCapCr(id,k,o);repMarkLate(id,k,o);R[id]=R[id]||{};R[id][k]=o;}}
-/* Orele plus creditul nu trec de 55 pe lună — la oricine are credit (pionier regular, fost pionier,
-   credit venit din Forms la un vestitor), nu doar la cine apare azi ca regular în luna aceea.
+/* Creditul pentru un proiect teocratic (r.cr) se dă cât orele plus creditul să nu treacă de 55 pe
+   lună și nu se mută în altă lună. Creditul pentru o școală teocratică (r.cs) vine PESTE ore și peste
+   creditul de proiect, deci nu intră în plafon. Plafonul se aplică la oricine are credit de proiect
+   (pionier regular, fost pionier, credit venit din Forms), nu doar la cine apare azi ca regular.
    Excepție: pionierii speciali și misionarii, care raportează la filială, cu alte cerințe.
    Pe orice cale ar intra raportul (formular, Forms, Excel, telefonul vestitorului), creditul se taie
    până la 55; orele rămân cum sunt. Întoarce cât s-a tăiat (0 = nimic). */
 var CR_MAX=55;
+/* creditul total al lunii (proiect + școală) și cum se scrie */
+function repCr(r){return r?((+r.cr||0)+(+r.cs||0)):0;}
+function crTxt(r){var a=+r.cr||0,c=+r.cs||0;return c?((a?(a+" + "):"")+c+" școală"):String(a);}
 function repCapCr(id,k,o){if(!o||!o.cr)return 0;var b=(S.bros||[]).find(function(x){return x.id===id;});
   var p=b?pioAt(b,k):"";if(p==="Pionier special"||p==="Misionar")return 0;var room=Math.max(0,CR_MAX-(+o.h||0)),cr=+o.cr||0;
   if(cr<=room)return 0;o.cr=room||null;return cr-room;}
@@ -7054,7 +7059,7 @@ function repIsLate(r,k){return !!(r&&r.lt&&S.s1sent&&S.s1sent[k]);}
 /* „tombstone": o lună ștearsă manual nu trebuie re-importată din Forms la fiecare sincronizare, cât timp
    rândul din Forms e același (aceleași valori). Dacă vine un raport cu alte valori (corectat), se importă. */
 function arhRepDel(){S.repDel=S.repDel||{};return S.repDel;}
-function _repSig(o){o=o||{};return [o.p!=null?o.p:"",o.st!=null?o.st:"",o.aux?1:0,o.h!=null?o.h:"",o.cr!=null?o.cr:""].join("|");}
+function _repSig(o){o=o||{};return [o.p!=null?o.p:"",o.st!=null?o.st:"",o.aux?1:0,o.h!=null?o.h:"",o.cr!=null?o.cr:""].join("|")+(o.cs?("|s"+o.cs):"");}
 function repIsTomb(id,k,sig){var D=S.repDel;var t=D&&D[id]&&D[id][k];if(!t)return false;return sig==null||t.sig===sig;}
 function repTombSet(id,k,sig){var D=arhRepDel();D[id]=D[id]||{};D[id][k]={sig:sig,t:Date.now()};}
 function repTombClear(id,k){var D=S.repDel;if(D&&D[id]){delete D[id][k];if(!Object.keys(D[id]).length)delete D[id];}}
@@ -7078,7 +7083,7 @@ function pioGoal(b,months){var n=0;months.forEach(function(m){if(pioAt(b,m.k)===
 /* rândul unui pionier în lista „Pionieri" și în „Profilul meu" */
 function pioRowOf(b,months){var h=0,cr=0,st=0,rep=0,prM=0,from="";
   months.forEach(function(m){var isPr=(pioAt(b,m.k)==="Pionier");if(isPr){prM++;if(!from)from=m.k;}
-    var r=repOf(b.id,m.k);if(!r)return;h+=(+r.h||0);cr+=(+r.cr||0);st+=(+r.st||0);if(r.p!==0)rep++;});
+    var r=repOf(b.id,m.k);if(!r)return;h+=(+r.h||0);cr+=repCr(r);st+=(+r.st||0);if(r.p!==0)rep++;});
   var goal=prM>=12?600:Math.max(50,prM*50);
   return {b:b,h:Math.round(h),cr:Math.round(cr),st:st,rep:rep,total:Math.round(h+cr),prM:prM,goal:goal,from:(prM<12&&from&&from!==months[0].k)?from:""};}
 /* opțiunile pentru „valabil din" — un an în urmă, un an înainte */
@@ -7661,7 +7666,7 @@ function arhCatList(c){var ids;var title;
   ids=ids.slice().sort(function(a,b){return broName(a).localeCompare(broName(b),"ro");});
   var H='<div class="muted" style="margin:2px 2px 12px">'+monthName(arhYM)+' · '+ids.length+' persoane</div>';
   H+=ids.map(function(id){var r=repOf(id,arhYM);var b=S.bros.find(function(x){return x.id===id;})||{};var cc=broCat(b,arhYM);
-    var meta=r?('<span style="color:var(--teal)">✓ raportat</span>'+(catHasHours(cc)&&r.h!=null?' · '+r.h+'h':'')+(r.st?' · '+r.st+' studii':'')+(r.cr?' · <span class="muted">Cr '+r.cr+'</span>':'')):'<span style="color:var(--maroon)">— fără raport</span>';
+    var meta=r?('<span style="color:var(--teal)">✓ raportat</span>'+(catHasHours(cc)&&r.h!=null?' · '+r.h+'h':'')+(r.st?' · '+r.st+' studii':'')+(repCr(r)?' · <span class="muted">Cr '+esc(crTxt(r))+'</span>':'')):'<span style="color:var(--maroon)">— fără raport</span>';
     return '<button class="item" style="border-bottom:1px solid var(--bd)" onclick="closeSheet();arhEditReport(\''+id+'\',arhYM)"><div class="av">'+(initials(b.name||"")||"·")+'</div><div class="spacer"><div class="nm">'+esc(b.name||"")+'</div><div class="mt">'+meta+'</div></div><span class="chev">'+IC.chev+'</span></button>';}).join("");
   sheet("",title,H);}
 
@@ -7674,7 +7679,7 @@ function arhRapRow(b,c){var start=theoStartOf(arhYM);var r=repOf(b.id,arhYM);var
    if(catHasHours(c)&&r.h!=null)_p.push(r.h+"h");
    if(r.st)_p.push(r.st+(r.st==1?" studiu":" studii"));
    if(r.aux)_p.push("aux");
-   if(r.cr)_p.push("Cr"+r.cr);
+   if(repCr(r))_p.push("Cr "+crTxt(r));
    meta=_p.join(" · ")||"raportat";}
   else meta="de completat";
   return '<div class="a-rrow"><button class="a-rmain" onclick="arhEditReport(\''+b.id+'\',\''+arhYM+'\')"><span class="a-rck '+(done?'on':'')+'">'+(done?IC.check:'')+'</span><span class="a-rinfo"><span class="nm">'+esc(b.name)+'</span><span class="mt">'+esc(meta)+'</span></span></button><button class="a-rs21" onclick="repCard(\''+b.id+'\','+start+')" title="Fișa anuală — toate lunile">S-21</button></div>';}
@@ -7804,9 +7809,10 @@ function arhEditReport(id,k,pre){if(!_canEditReport(id))return;window._afterRep=
   H+='<label class="fl">Studii biblice conduse</label><input id="rp_st" class="fld" type="number" min="0" inputmode="numeric" value="'+(r.st!=null?r.st:"")+'">';
   if(isPubOnly||isPermAux){H+='<label class="ckrow2"><input type="checkbox" id="rp_aux" '+(auxChecked?"checked":"")+' '+(isPermAux?"disabled":'onchange="_rpAuxTog()"')+'> Pionier auxiliar</label>';}
   H+='<div class="two"><div><label class="fl">Ore</label><input id="rp_h" class="fld" type="number" min="0" inputmode="numeric" value="'+(r.h!=null?r.h:"")+'" '+(hoursOn?"":"disabled")+'></div>';
-  if(canCredit){H+='<div><label class="fl">Credit ore</label><input id="rp_cr" class="fld" type="number" min="0" inputmode="numeric" value="'+(r.cr!=null?r.cr:"")+'"></div>';}else{H+='<div></div>';}
+  if(canCredit){H+='<div><label class="fl">Credit proiect teocratic</label><input id="rp_cr" class="fld" type="number" min="0" inputmode="numeric" value="'+(r.cr!=null?r.cr:"")+'"></div>';}else{H+='<div></div>';}
   H+='</div>';
-  if(canCredit)H+='<div class="muted" style="font-size:11.5px;margin-top:5px">Creditele se afișează pe fișă dar NU se adună în totalurile S-1.'+(pio==="Pionier"?(' Ore + credit cel mult '+CR_MAX+' pe lună — creditul în plus se taie singur.'):'')+'</div>';
+  if(canCredit)H+='<label class="fl">Credit școală teocratică</label><input id="rp_cs" class="fld" type="number" min="0" inputmode="numeric" value="'+(r.cs!=null?r.cs:"")+'">';
+  if(canCredit)H+='<div class="muted" style="font-size:11.5px;margin-top:5px">Creditele se afișează pe fișă dar NU se adună în totalurile S-1.'+(pio!=="Pionier special"&&pio!=="Misionar"?(' Proiect: ore + credit cel mult '+CR_MAX+' pe lună — ce trece se taie singur. Școală: vine peste, fără plafon.'):'')+'</div>';
   H+='<label class="fl">Observații</label><input id="rp_o" class="fld" value="'+esc(r.o||"").replace(/"/g,"&quot;")+'">';
   var _own=(id===_myBro());/* propriul raport se TRIMITE (și la admini/editori), nu doar se salvează */
   H+='<div class="rowflex" style="gap:9px;margin-top:18px">'+(repOf(id,k)?'<button class="btn danger sm" onclick="arhDelReport(\''+id+'\',\''+k+'\')">Șterge</button>':'')+'<div class="spacer"></div><button class="btn ghost sm" style="width:auto" onclick="closeSheet()">Anulează</button><button class="btn pri sm" style="width:auto" onclick="arhSaveReport(\''+id+'\',\''+k+'\')">'+(_own?"Trimite":"Salvează")+'</button></div>';
@@ -7814,16 +7820,16 @@ function arhEditReport(id,k,pre){if(!_canEditReport(id))return;window._afterRep=
 function _rpAuxTog(){var a=document.getElementById("rp_aux"),h=document.getElementById("rp_h");if(!a||!h)return;h.disabled=!a.checked;if(h.disabled)h.value="";}
 function arhSaveReport(id,k){if(!_canEditReport(id))return;var b=S.bros.find(function(x){return x.id===id;});var pio=b?pioAt(b,k):"";
   var aux=($("#rp_aux")?($("#rp_aux").checked?1:0):(pio==="Pionier auxiliar"?1:0));
-  var o={p:$("#rp_p").checked?1:0,st:numOrNull($("#rp_st").value),aux:aux,h:numOrNull($("#rp_h").value),cr:($("#rp_cr")?numOrNull($("#rp_cr").value):null),o:$("#rp_o").value.trim(),sf:"",src:"man",t:Date.now()};
+  var o={p:$("#rp_p").checked?1:0,st:numOrNull($("#rp_st").value),aux:aux,h:numOrNull($("#rp_h").value),cr:($("#rp_cr")?numOrNull($("#rp_cr").value):null),cs:($("#rp_cs")?numOrNull($("#rp_cs").value):null),o:$("#rp_o").value.trim(),sf:"",src:"man",t:Date.now()};
   /* vestitorul normal fără auxiliar nu are ore; creditul e doar la pionieri regulari/speciali */
   if(pio===""&&!o.aux)o.h=null;
-  var canCredit=(pio==="Pionier"||pio==="Pionier special"||pio==="Misionar");if(!canCredit)o.cr=null;
+  var canCredit=(pio==="Pionier"||pio==="Pionier special"||pio==="Misionar");if(!canCredit){o.cr=null;o.cs=null;}
   if(b){o.sf=pio==="Pionier"?"Pionier regular":pio==="Pionier special"?"Pionier special":pio==="Misionar"?"Misionar":(o.aux?"Pionier auxiliar":"Vestitor");}
   var _own=(!_canEditArh()&&id===_myBro());
   if(_own)o.src="me";/* editat chiar de vestitor — protejat la sincronizare */
   var _cut=repCapCr(id,k,o);
   repTombClear(id,k);setRep(id,k,o);logAct("Raport salvat: "+broDisp(id)+" "+monthName(k));save();closeSheet();arhRerender();
-  if(_cut)setTimeout(function(){toast("Creditul a fost redus la "+(o.cr||0)+" h — ore + credit cel mult "+CR_MAX,6000);},900);
+  if(_cut)setTimeout(function(){toast("Creditul de proiect a fost redus la "+(o.cr||0)+" h — ore + credit cel mult "+CR_MAX,6000);},900);
   if(_own&&(typeof autoOn!=="function"||!autoOn())){
    /* raportul vestitorului chiar PLEACĂ de pe telefon: intră în coadă și se trimite prin cutia poștală a aplicației */
    boxQueue({k:"rep",bro:id,mk:k,name:broDisp(id),by:(_curUser()&&_curUser().n)||"",rep:o});
@@ -8499,7 +8505,7 @@ function _wkFuture(g,todayISO){var d=_isoDate(weekISO(g.date));
  var cw=(typeof vcpCurWeek==="function")?vcpCurWeek():-1;return cw<0||g.wi>=cw;}
 function _meuInfo(r,b,k){if(!r)return repHas(b.id,k)?'<span style="color:var(--tealtx,var(--teal));font-weight:700">✓ raport trimis</span>':'<span class="muted">neraportat</span>';
   var c=broCat(b,k);var hasH=catHasHours(c)||c==="pub";
-  return (r.p?"✓ predicare":"—")+(r.st?(" · "+r.st+" studii"):"")+((hasH&&r.h!=null)?(" · "+r.h+" ore"):"")+(r.cr?(" · credit "+r.cr):"")+((r.o||"").trim()?(" · „"+esc(r.o)+"”"):"");}
+  return (r.p?"✓ predicare":"—")+(r.st?(" · "+r.st+" studii"):"")+((hasH&&r.h!=null)?(" · "+r.h+" ore"):"")+(repCr(r)?(" · credit "+crTxt(r)):"")+((r.o||"").trim()?(" · „"+esc(r.o)+"”"):"");}
 /* din „Profilul meu" direct la săptămâna de curățenie din Sarcini.
    Cine nu are foaia în Arhivă o are oricum în „Programări" — acolo îl ducem, la aceeași
    săptămână, în loc să-l lăsăm pe un ecran care nu-i spune nimic. */
@@ -8660,7 +8666,7 @@ function _muRepSum(r,b,k){if(!r)return "";var c=broCat(b,k),o=[];
  if(r.p===0)o.push("fără predicare");
  if((catHasHours(c)||r.aux)&&r.h!=null)o.push(r.h+(r.h===1?" oră":" ore"));
  if(r.st)o.push(r.st+(r.st===1?" studiu":" studii"));
- if(r.cr)o.push("credit "+r.cr+" h");
+ if(repCr(r))o.push("credit "+crTxt(r)+" h");
  if(r.aux&&!catHasHours(c))o.push("pionier auxiliar");
  return o.join(" · ");}
 function arhMeuHtml(){ensureGrpCSS();ensureMeuCSS();try{arhEnsureCSS();}catch(e){}
@@ -12566,7 +12572,7 @@ function repSheetImport(id){if(!_canEditReport(id))return;
     +(d.name?(", de la „"+d.name+"”"):"")+(over?(". "+over+" dintre ele există deja și vor fi înlocuite."):".")
     +" Se adaugă la „"+(b.name||"")+"”.",{title:"Încarci fișa?",yes:"Încarcă"})))return;
   var n=0;ks.forEach(function(k){var r=d.rows[k];if(!r||typeof r!=="object")return;
-   var o={p:r.p!=null?r.p:1,st:r.st!=null?r.st:null,aux:r.aux?1:0,h:r.h!=null?r.h:null,cr:r.cr!=null?r.cr:null,
+   var o={p:r.p!=null?r.p:1,st:r.st!=null?r.st:null,aux:r.aux?1:0,h:r.h!=null?r.h:null,cr:r.cr!=null?r.cr:null,cs:r.cs!=null?r.cs:null,
           o:String(r.o||"").slice(0,200),sf:String(r.sf||""),src:"fisa",t:Date.now()};
    repTombClear(id,k);setRep(id,k,o);n++;});
   logAct("Fișă încărcată: "+(b.name||"")+" · "+n+" luni");save();
@@ -12579,7 +12585,7 @@ function repSheetImport(id){if(!_canEditReport(id))return;
    lunile acelea, dar rămân pe fișa lui S-21. Datele nu stau în cod (pagina e publică): vin din
    fișier și de aici pleacă doar în datele congregației.
    Dacă persoana există deja (același nume), se adaugă lunile de pe fișă; nașterea și botezul doar dacă lipsesc. */
-function _s21FileRep(r){return {p:(r.p!=null&&!r.p)?0:1,st:numOrNull(r.st),aux:r.aux?1:0,h:numOrNull(r.h),cr:numOrNull(r.cr),
+function _s21FileRep(r){return {p:(r.p!=null&&!r.p)?0:1,st:numOrNull(r.st),aux:r.aux?1:0,h:numOrNull(r.h),cr:numOrNull(r.cr),cs:numOrNull(r.cs),
  o:String(r.o||"").slice(0,200),sf:String(r.sf||(r.aux?"Pionier auxiliar":"")),src:"fisa",t:Date.now()};}
 function _s21FileDate(v){v=String(v||"").trim().replace(/\//g,"-");return /^\d{4}-\d{2}-\d{2}$/.test(v)?v:"";}
 function broImportSheet(){if(!_needEdit())return;if(!_canEditArh()){toast("Rapoartele le adaugă doar cine are acces la Arhivă");return;}
@@ -12628,14 +12634,14 @@ function _rerenderBrosTab(){try{if(tab==="bros")renderBros();else if(tab==="arh"
 function repCard(id,start){var b=(S.bros||[]).find(function(x){return x.id===id;});if(!b)return;
   if(start==null)start=curTheoStart();
   var months=theoMonths(start);var h=0,cr=0,st=0,rep=0,aux=0;
-  months.forEach(function(m){var r=repOf(id,m.k);if(!r)return;h+=(+r.h||0);cr+=(+r.cr||0);st+=(+r.st||0);if(r.p!==0)rep++;if(r.aux)aux++;});
+  months.forEach(function(m){var r=repOf(id,m.k);if(!r)return;h+=(+r.h||0);cr+=repCr(r);st+=(+r.st||0);if(r.p!==0)rep++;if(r.aux)aux++;});
   var canEd=_canEditReport(id);
   /* categoria din anul ales, nu cea de acum: cineva poate fi pionier doar într-un an */
   var cat="pub";months.forEach(function(m){var c=broCat(b,m.k);if(c==="special")cat="special";else if(c==="reg"&&cat!=="special")cat="reg";else if(c==="aux"&&cat==="pub")cat="aux";});
   var goal=(cat==="reg")?pioGoal(b,months):((cat==="special")?800:0);
   var total=Math.round(h+cr),pct=goal?Math.round(total/goal*100):0,done=goal&&total>=goal;
   var rows=months.map(function(m){var r=repOf(id,m.k);
-    var hv=(r&&r.h!=null)?Math.round(+r.h||0):"";var cv=(r&&r.cr)?Math.round(+r.cr):"";
+    var hv=(r&&r.h!=null)?Math.round(+r.h||0):"";var cv=repCr(r)?Math.round(repCr(r)):"";
     var stv=(r&&r.st!=null&&r.st!=="")?r.st:"";var act=(r&&r.p!==0)?"✓":"";var obs=(r&&r.o)?esc(r.o):"";
     var ax=(r&&r.aux)?"✓":"";
     return '<tr'+(canEd?' onclick="repEditMonth(\''+id+'\',\''+m.k+'\','+start+')"':'')+'><td>'+m.name+'</td>'
@@ -12681,7 +12687,7 @@ function pioFichePage(row,D,start){var b=row.b;var goal=row.goal||D.goal;
   var total=Math.round(row.total);var pct=Math.round(total/goal*100);var done=total>=goal;
   var mrows="",hasObs=false;D.months.forEach(function(m){var r=repOf(b.id,m.k);if(r&&(r.o||"").trim())hasObs=true;});
   D.months.forEach(function(m){var r=repOf(b.id,m.k);
-    var hv=(r&&r.h!=null)?Math.round(+r.h||0):"";var cv=(r&&r.cr)?Math.round(+r.cr):"";
+    var hv=(r&&r.h!=null)?Math.round(+r.h||0):"";var cv=repCr(r)?Math.round(repCr(r)):"";
     mrows+='<tr><td>'+m.name+'</td><td class="c">'+((r&&r.p!==0)?"✓":"")+'</td><td class="c">'+((r&&r.st!=null&&r.st!=="")?r.st:"")+'</td><td class="c">'+(hv!==""?hv:"")+'</td><td class="c">'+(cv!==""?cv:"")+'</td>'+(hasObs?('<td class="obs">'+((r&&r.o)?esc(r.o):"")+'</td>'):'')+'</tr>';});
   var badge=done?'<span class="pf-badge ok">Obiectiv atins</span>':'<span class="pf-badge">'+pct+'% din '+goal+' h</span>';
   return '<div class="page">'
@@ -12845,7 +12851,7 @@ function s21PageHtml(bro,start,per,sec){if(per)return s21PerPageHtml(bro,per,sec
     /* orele intră la pionieri; în plus, cele copiate de pe fișa din altă congregație rămân cum erau scrise acolo */
     var showH=catHasHours(c)||!!(r&&r.src==="fisa"&&r.h!=null);
     var hv=(r&&r.h!=null)?r.h:null;if(showH&&hv!=null)totH+=(+hv||0);
-    var oreCell=(showH&&hv!=null)?(hv+(r&&r.cr?' <span style="color:#444">(+Cr '+r.cr+')</span>':'')):"";
+    var oreCell=(showH&&hv!=null)?(hv+(repCr(r)?' <span style="color:#444">(+Cr '+esc(crTxt(r))+')</span>':'')):"";
     var note=(b.pioFrom&&String(b.pioFrom).slice(0,7)===m.k&&b.pio)?(_pioLong(b.pio)+" din "+RO_MONTHS[m.m0]):"";
     var obs=note+((note&&r&&r.o)?" · ":"")+((r&&r.o)||"");
     rows+='<tr><td>'+m.name+'</td><td class="c">'+(r&&r.p?"✓":"")+'</td><td class="c">'+((r&&r.st!=null&&r.st!=="")?r.st:"")+'</td><td class="c">'+((r&&r.aux)?"✓":"")+'</td><td class="c">'+oreCell+'</td><td>'+esc(obs)+'</td></tr>';});
@@ -12949,7 +12955,7 @@ function s21PerPageHtml(b,ctx,sec){var P=ctx.P,pY=pioAt(b,ctx.refK);
     var r=repOf(b.id,m.k),c=broCat(b,m.k);
     var showH=catHasHours(c)||!!(r&&r.src==="fisa"&&r.h!=null);
     var hv=(r&&r.h!=null)?r.h:null;if(showH&&hv!=null)totH+=(+hv||0);
-    var oreCell=(showH&&hv!=null)?(hv+(r&&r.cr?' <span style="color:#444">(+Cr '+r.cr+')</span>':'')):"";
+    var oreCell=(showH&&hv!=null)?(hv+(repCr(r)?' <span style="color:#444">(+Cr '+esc(crTxt(r))+')</span>':'')):"";
     var note=(b.pioFrom&&String(b.pioFrom).slice(0,7)===m.k&&b.pio)?(_pioLong(b.pio)+" din "+RO_MONTHS[m.m0]):"";
     var obs=note+((note&&r&&r.o)?" · ":"")+((r&&r.o)||"");
     rows+='<tr><td>'+m.name+' <span class="yy">'+m.y+'</span></td><td class="c">'+(r&&r.p?"✓":"")+'</td><td class="c">'+((r&&r.st!=null&&r.st!=="")?r.st:"")+'</td><td class="c">'+((r&&r.aux)?"✓":"")+'</td><td class="c">'+oreCell+'</td><td>'+esc(obs)+'</td></tr>';});
