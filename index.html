@@ -7030,14 +7030,18 @@ function setRep(id,k,o){var R=arhRep();if(o===null){if(R[id])delete R[id][k];}el
    (pionier regular, fost pionier, credit venit din Forms), nu doar la cine apare azi ca regular.
    Excepție: pionierii speciali și misionarii, care raportează la filială, cu alte cerințe.
    Pe orice cale ar intra raportul (formular, Forms, Excel, telefonul vestitorului), creditul se taie
-   până la 55; orele rămân cum sunt. Întoarce cât s-a tăiat (0 = nimic). */
+   până la 55; orele rămân cum sunt, iar la Observații se scrie „(credit extra: N h)". Întoarce cât
+   s-a tăiat (0 = nimic). */
 var CR_MAX=55;
 /* creditul total al lunii (proiect + școală) și cum se scrie */
 function repCr(r){return r?((+r.cr||0)+(+r.cs||0)):0;}
 function crTxt(r){var a=+r.cr||0,c=+r.cs||0;return c?((a?(a+" + "):"")+c+" școală"):String(a);}
 function repCapCr(id,k,o){if(!o||!o.cr)return 0;var b=(S.bros||[]).find(function(x){return x.id===id;});
   var p=b?pioAt(b,k):"";if(p==="Pionier special"||p==="Misionar")return 0;var room=Math.max(0,CR_MAX-(+o.h||0)),cr=+o.cr||0;
-  if(cr<=room)return 0;o.cr=room||null;return cr-room;}
+  if(cr<=room)return 0;var cut=Math.round((cr-room)*10)/10;o.cr=room||null;
+  /* ce s-a tăiat rămâne scris la Observații, în paranteză (se vede și pe S-21) — o singură notă */
+  var base=String(o.o||"").replace(/\s*\(credit extra:[^)]*\)/g,"").trim();
+  o.o=(base?(base+" "):"")+"(credit extra: "+cut+" h)";return cut;}
 /* și ce era deja în date (de dinainte de regulă, sau sosit prin sincronizare de pe un telefon cu
    versiunea veche): trece la fiecare deschidere a Arhivei, doar la cine poate edita */
 function repCapAll(){var n=0,R=arhRep();Object.keys(R).forEach(function(id){Object.keys(R[id]||{}).forEach(function(k){if(repCapCr(id,k,R[id][k]))n++;});});
