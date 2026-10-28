@@ -724,7 +724,7 @@ Object.assign(IC,{
  box:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h18v13H3z"/><path d="M3 7l2-4h14l2 4"/><path d="M10 11h4"/></svg>',
  mark:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15.5 4.5l4 4-9.5 9.5H6v-4z"/><path d="M12.5 7.5l4 4M5 21h14"/></svg>'
 });
-const VERSION="4.2.0";
+const VERSION="4.2.1";
 /* Versiunea minima care are voie sa SCRIE in cloud. Se trece in gist la fiecare trimitere;
    un dispozitiv ramas pe un build mai vechi decat atat nu mai poate suprascrie datele —
    doar citeste si se actualizeaza singur. Asa nu mai poate un singur telefon uitat deschis
@@ -7160,8 +7160,14 @@ function bReportedWithin(id,k,n){for(var i=0;i<n;i++){if(repOf(id,ymShift(k,-i))
 function isActivePub(b,k){if(!b||b.active===false||!isPublisher(b)||isArch(b,k))return false;
   var _n=_nowK();if(k>_n)k=_n;/* o lună care n-a început încă nu face pe nimeni inactiv */
   var c=pioAt(b,k);if(c==="Pionier special"||c==="Misionar")return true;
-  if(!bHasAnyReport(b.id))return true;
+  if(!bHasAnyReport(b.id))return _noRepActive(b,k);
   return bReportedWithin(b.id,k,arhInactiveN());}
+/* fără niciun raport în aplicație: e vestitor nou (activ) doar dacă a fost adăugat în ultimele șase
+   luni sau dacă aplicația nu are încă șase luni de rapoarte. Altfel n-a raportat de cel puțin șase
+   luni, deci e inactiv — înainte, cei care nu mai predică și n-au niciun raport aici ieșeau „activi". */
+function _addedK(b){var m=/^b(\d{13})/.exec((b&&b.id)||"");if(!m)return "";var d=new Date(+m[1]);return ymOf(d.getFullYear(),d.getMonth());}
+function arhFirstRepK(){var f="",R=arhRep();Object.keys(R).forEach(function(id){Object.keys(R[id]||{}).forEach(function(k){if(!f||k<f)f=k;});});return f;}
+function _noRepActive(b,k){var a=_addedK(b);if(a&&a>ymShift(k,-6))return true;var f=arhFirstRepK();return !f||f>ymShift(k,-5);}
 /* inactiv: șase luni fără raport SAU trecut de mână „Inactiv" în fișa vestitorului (Stare).
    Înainte, cei trecuți de mână nu erau nici activi, nici inactivi — lipseau din fișele S-21. */
 function isInactivePub(b,k){return isPublisher(b)&&!isArch(b,k)&&!isActivePub(b,k);}
@@ -12939,8 +12945,13 @@ function s21RenderSheet(){var ctx=s21Ctx(),P=ctx.P,bros=ctx.bros,cat=ctx.cat;
   /* și pe grupe de serviciu */
   var gchips=grpsAll().map(function(g){var n=bros.filter(function(b){return grpOf(b)===g.id&&cat[b.id]!=="inact";}).length;if(!n)return "";
     return '<button class="fchip '+(_s21grp===g.id?"on":"")+'" onclick="s21SetGrp(\''+g.id+'\')">'+esc(g.name)+' <span style="opacity:.65">'+n+'</span></button>';}).join("");
-  var list=s21Sections(bros.filter(function(b){return s21In(b,ctx);}),ctx.actK,ctx.refK).map(function(x){return x.b;});
-  var rows=list.map(function(b){return '<label class="ckrow" data-nm="'+esc((b.name||"").toLowerCase())+'"><input type="checkbox" class="s21ck" value="'+b.id+'" '+(_s21sel[b.id]?"checked":"")+' onchange="s21Toggle(\''+b.id+'\',this.checked)"><span>'+esc(b.name)+' <span class="muted" style="font-size:11px">· '+esc(s21CatShort(cat[b.id]))+'</span></span></label>';}).join("");
+  /* în ordinea din dosar (sfg 17:15), cu titlul fiecărei secțiuni: apeși titlul și bifezi / debifezi secțiunea */
+  var secs=s21Sections(bros.filter(function(b){return s21In(b,ctx);}),ctx.actK,ctx.refK);
+  _s21secs=[];var rows="";secs.forEach(function(x){var L=_s21secs[_s21secs.length-1];
+    if(!L||L.sec!==x.sec){L={sec:x.sec,ids:[]};_s21secs.push(L);
+      rows+='<div class="s21sech" data-si="'+(_s21secs.length-1)+'" onclick="s21SecTog('+(_s21secs.length-1)+')" style="display:flex;align-items:center;gap:8px;margin:12px 2px 4px;padding:6px 10px;border-radius:9px;background:var(--surf2);cursor:pointer;font-size:12px;font-weight:800;color:var(--ink2)"><span style="flex:1">'+esc(x.sec)+'</span><span class="muted" style="font-weight:600">bifează / debifează</span></div>';}
+    L.ids.push(x.b.id);var b=x.b;
+    rows+='<label class="ckrow" data-nm="'+esc((b.name||"").toLowerCase())+'"><input type="checkbox" class="s21ck" value="'+b.id+'" '+(_s21sel[b.id]?"checked":"")+' onchange="s21Toggle(\''+b.id+'\',this.checked)"><span>'+esc(b.name)+' <span class="muted" style="font-size:11px">· '+esc(s21CatShort(cat[b.id]))+'</span></span></label>';});
   var selN=s21SelCount();
   var H='<div class="perl" style="margin:0 2px 7px">Perioada</div>'+perUiHtml("s21")
     +'<div class="perl" style="margin:16px 2px 4px">Pentru cine</div>'
@@ -12953,6 +12964,8 @@ function s21RenderSheet(){var ctx=s21Ctx(),P=ctx.P,bros=ctx.bros,cat=ctx.cat;
     +'<div class="muted" style="margin:6px 2px 0;font-size:11.5px">Ordinea din dosar (sfg 17:15): activii — întâi pionierii regulari, speciali și misionarii, apoi ceilalți vestitori pe grupe —, la urmă inactivii. Toate alfabetic.</div>'
     +'<button class="btn pri" style="width:100%;margin-top:12px" onclick="s21Gen()">Generează <span id="s21n">'+selN+'</span> fișe · '+esc(P.short)+'</button>';
   sheet("S-21","Fișe S-21",H);}
+var _s21secs=[];
+function s21SecTog(i){var S0=_s21secs[i];if(!S0)return;var all=S0.ids.every(function(id){return _s21sel[id];});S0.ids.forEach(function(id){_s21sel[id]=!all;});s21RenderSheet();}
 function s21Search(){var el=document.getElementById("s21q");var q=(el&&el.value||"").toLowerCase().trim();var rows=document.querySelectorAll("#s21list .ckrow");for(var i=0;i<rows.length;i++){var nm=rows[i].getAttribute("data-nm")||"";rows[i].style.display=(!q||nm.indexOf(q)>=0)?"":"none";}}
 function s21SetCat(c){var ctx=s21Ctx();_s21cat=c;_s21grp="";_s21sel={};ctx.bros.forEach(function(b){if(s21In(b,ctx))_s21sel[b.id]=true;});s21RenderSheet();}
 function s21SetGrp(gid){var ctx=s21Ctx();_s21cat="";_s21grp=gid;_s21sel={};ctx.bros.forEach(function(b){if(s21In(b,ctx))_s21sel[b.id]=true;});s21RenderSheet();}
