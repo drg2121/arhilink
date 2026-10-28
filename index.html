@@ -7167,7 +7167,7 @@ function isInactivePub(b,k){return isPublisher(b)&&b.active!==false&&!isArch(b,k
 /* lunile fără raport din ultimele șase (luna k inclusă) ale unui vestitor activ. Nu se socotesc
    lunile de dinainte de primul lui raport (vestitor nou), cele în care era arhivat, nici pionierii
    speciali / misionarii, care raportează la filială. Un raport predat târziu stă pe luna lui. */
-function irregMissing(b,k){if(!isActivePub(b,k))return [];var c=pioAt(b,k);if(c==="Pionier special"||c==="Misionar")return [];
+function irregMissing(b,k){var _n=_nowK();if(k>_n)k=_n;if(!isActivePub(b,k))return [];var c=pioAt(b,k);if(c==="Pionier special"||c==="Misionar")return [];
   var rr=arhRep()[b.id]||{},first=Object.keys(rr).sort()[0]||"";if(!first)return [];
   var out=[];for(var i=0;i<6;i++){var m=ymShift(k,-i);if(m<first)break;if(isArch(b,m))continue;if(!rr[m])out.push(m);}return out;}
 /* activi, iregulari și inactivi într-o lună */
@@ -7830,7 +7830,6 @@ function arhEditReport(id,k,pre){if(!_canEditReport(id))return;window._afterRep=
   if(canCredit){H+='<div><label class="fl">Credit proiect teocratic</label><input id="rp_cr" class="fld" type="number" min="0" inputmode="numeric" value="'+(r.cr!=null?r.cr:"")+'"></div>';}else{H+='<div></div>';}
   H+='</div>';
   if(canCredit)H+='<label class="fl">Credit școală teocratică</label><input id="rp_cs" class="fld" type="number" min="0" inputmode="numeric" value="'+(r.cs!=null?r.cs:"")+'">';
-  if(canCredit)H+='<div class="muted" style="font-size:11.5px;margin-top:5px">Creditele se afișează pe fișă dar NU se adună în totalurile S-1.'+(pio!=="Pionier special"&&pio!=="Misionar"?(' Proiect: ore + credit cel mult '+CR_MAX+' pe lună — ce trece se taie singur. Școală: vine peste, fără plafon.'):'')+'</div>';
   H+='<label class="fl">Observații</label><input id="rp_o" class="fld" value="'+esc(r.o||"").replace(/"/g,"&quot;")+'">';
   var _own=(id===_myBro());/* propriul raport se TRIMITE (și la admini/editori), nu doar se salvează */
   H+='<div class="rowflex" style="gap:9px;margin-top:18px">'+(repOf(id,k)?'<button class="btn danger sm" onclick="arhDelReport(\''+id+'\',\''+k+'\')">Șterge</button>':'')+'<div class="spacer"></div><button class="btn ghost sm" style="width:auto" onclick="closeSheet()">Anulează</button><button class="btn pri sm" style="width:auto" onclick="arhSaveReport(\''+id+'\',\''+k+'\')">'+(_own?"Trimite":"Salvează")+'</button></div>';
@@ -7886,7 +7885,7 @@ function arhReportPreview(entries){var months={};entries.forEach(function(e){e.m
   /* lunile editate MANUAL în aplicație (de admin sau de vestitor) nu se suprascriu cu rândurile
      vechi din fișier — sunt protejate implicit; bifa de mai jos le suprascrie doar la cerere */
   var prot=auto.filter(function(e){var ex=repOf(e.match.id,e.k);if(!ex)return false;if(ex.src==="od"||ex.src==="imp")return false;
-    repCapCr(e.match.id,e.k,e);return _repSig(ex)!==_repSig({p:e.p,st:e.st,aux:e.aux,h:e.h,cr:e.cr});}).length;
+    var ec={h:e.h,cr:e.cr};repCapCr(e.match.id,e.k,ec);return _repSig(ex)!==_repSig({p:e.p,st:e.st,aux:e.aux,h:e.h,cr:ec.cr});}).length;
   var mlist=ks.map(function(k){return monthName(k)+" ("+months[k]+")";}).join(", ");
   var tot=entries.length+(entries.dup||0);
   var H='<div class="muted" style="margin:0 2px 10px">'+(entries.dup?(tot+' rânduri în fișier − '+entries.dup+' duplicate (păstrat ultimul răspuns) = <b>'+entries.length+' rapoarte</b>'):('<b>'+entries.length+' rapoarte</b>'))+' · luni: '+esc(mlist)+'<br><b style="color:var(--teal)">'+auto.length+'</b> potrivite automat · <b style="color:var(--maroon)">'+unm.length+'</b> de confirmat'+(nOld?(' · '+nOld+' nepotrivite din lunile vechi — ignorate automat'):'')+'</div>';
@@ -17127,8 +17126,12 @@ function s10Reset(start,f){
    în care se împlinesc cele șase, dacă acea lună cade în anul de serviciu.
    „Redevenit activ" e luna în care raportează din nou cineva care era inactiv. */
 function s10Flow(start){
- var months=theoMonths(start).map(function(m){return m.k;});
  var R=arhRep(),newIn=[],back=[];
+ /* doar lunile care au trecut și au rapoarte: o lună din viitor (anul de serviciu abia început)
+    n-are rapoarte, așa că toți ar ieși „inactivi noi" în martie */
+ var lim=_nowK(),lastRep="";Object.keys(R).forEach(function(id){Object.keys(R[id]||{}).forEach(function(k){if(k>lastRep)lastRep=k;});});
+ if(lastRep&&lastRep<lim)lim=lastRep;
+ var months=theoMonths(start).map(function(m){return m.k;}).filter(function(k){return k<=lim;});
  (S.bros||[]).forEach(function(b){
   if(!b||!isPublisher(b))return;
   var rr=R[b.id];if(!rr)return;
