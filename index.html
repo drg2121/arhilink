@@ -7162,7 +7162,9 @@ function isActivePub(b,k){if(!b||b.active===false||!isPublisher(b)||isArch(b,k))
   var c=pioAt(b,k);if(c==="Pionier special"||c==="Misionar")return true;
   if(!bHasAnyReport(b.id))return true;
   return bReportedWithin(b.id,k,arhInactiveN());}
-function isInactivePub(b,k){return isPublisher(b)&&b.active!==false&&!isArch(b,k)&&!isActivePub(b,k);}
+/* inactiv: șase luni fără raport SAU trecut de mână „Inactiv" în fișa vestitorului (Stare).
+   Înainte, cei trecuți de mână nu erau nici activi, nici inactivi — lipseau din fișele S-21. */
+function isInactivePub(b,k){return isPublisher(b)&&!isArch(b,k)&&!isActivePub(b,k);}
 /* lunile fără raport din ultimele șase (luna k inclusă) ale unui vestitor activ. Nu se socotesc
    lunile de dinainte de primul lui raport (vestitor nou), cele în care era arhivat, nici pionierii
    speciali / misionarii, care raportează la filială. Un raport predat târziu stă pe luna lui. */
@@ -7740,7 +7742,8 @@ function arhRapHtml(){ensureGrpCSS();var h=arhMonthPicker();
     h+='<details class="a-cgrp"'+(arhGrpF?' open':'')+'><summary>'+catLabel(c)+' ('+groups[c].length+')</summary><div class="a-cgrp-body">';
     groups[c].forEach(function(b){h+=arhRapRow(b,broCat(b,arhYM));});
     h+='</div></details>';});
-  if(inactive.length){h+='<details class="a-inact"><summary>Inactivi ('+inactive.length+') — fără raport de '+arhInactiveN()+'+ luni · apasă pentru a raporta</summary>';
+  if(inactive.length){h+='<details class="a-inact"><summary>Inactivi ('+inactive.length+') — fără raport de '+arhInactiveN()+'+ luni sau trecuți inactivi · apasă pentru a raporta</summary>'
+    +'<button class="btn ghost sm" style="width:100%;margin:6px 0 8px" onclick="pdfS21Inact()">'+IC.pdf+' Descarcă fișele S-21 ale inactivilor</button>';
     inactive.sort(function(a,b){return a.name.localeCompare(b.name,"ro");}).forEach(function(b){h+=arhRapRow(b,broCat(b,arhYM));});h+='</details>';}
   return h;}
 /* rapoartele care par incomplete: pionier fără ore, sau ore scrise la cineva care în luna aceea
@@ -12522,6 +12525,8 @@ function arhExpHtml(){var h=arhMonthPicker();
   var e6=_perClampNow(arhYM);
   h+='<button class="pmrow" onclick="pdfS21Pick()">'+IC.pdf+'<span><b>Fișe S-21</b> — în ordinea din dosar (activi: pionieri, apoi pe grupe; inactivi); pe an de serviciu, 6 luni, o lună sau un interval</span></button>';
   h+='<button class="pmrow" onclick="pdfS21Pick(\'6\')">'+IC.pdf+'<span><b>Fișe S-21 · ultimele 6 luni</b> — '+esc(perRangeLabel(ymShift(e6,-5),e6))+', pentru toți, pionieri sau altă categorie</span></button>';
+  var _nIn=s21InactList().length;
+  if(_nIn)h+='<button class="pmrow" onclick="pdfS21Inact()">'+IC.pdf+'<span><b>Fișe S-21 · inactivi ('+_nIn+')</b> — dintr-o apăsare, alfabetic, fiecare pe anul în care a raportat ultima dată</span></button>';
   h+='<button class="pmrow" onclick="arhPickS21()">'+IC.pdf+'<span>Fișă S-21 pentru un vestitor</span></button>';
   h+='<button class="pmrow" onclick="pdfGrupe()">'+IC.pdf+'<span><b>Grupele de serviciu</b> — listă pe grupe cu S/A și privilegii</span></button>';
   h+='<button class="pmrow" onclick="pdfResp()">'+IC.pdf+'<span><b>Responsabilități în congregație</b> — bătrâni, slujitori, pionieri, departamente</span></button>';
@@ -12892,6 +12897,12 @@ function s21Sections(list,actK,refK){var pio=[],rest=[],inact=[],cmp=function(a,
   return out;}
 /* cine are fișă într-o lună: activii și inactivii (nu arhivații, nici cei scoși din evidență) */
 function s21People(k){return (S.bros||[]).filter(function(b){return isActivePub(b,k)||isInactivePub(b,k);});}
+/* fișele inactivilor, dintr-o apăsare (sfg 17:15, secțiunea „Inactivi"): alfabetic, fiecare pe anul
+   de serviciu în care a raportat ultima dată — acolo e activitatea lui; fără niciun raport, anul de acum */
+function s21InactList(){var k=_perClampNow(arhYM);return (S.bros||[]).filter(function(b){return isInactivePub(b,k);}).sort(function(a,b){return (a.name||"").localeCompare(b.name||"","ro");});}
+function pdfS21Inact(){var L=s21InactList(),k=_perClampNow(arhYM);if(!L.length){toast("Niciun vestitor inactiv");return;}
+  var R=arhRep(),pages=L.map(function(b){var last=Object.keys(R[b.id]||{}).sort().pop();return s21PageHtml(b,last?theoStartOf(last):theoStartOf(k),null,"Inactivi");}).join("");
+  arhPdfWindow("Fise S-21 inactivi "+monthName(k)+".pdf",pages,S21P_CSS);}
 function pdfS21All(start){var k=(theoStartOf(arhYM)===start)?arhYM:_perClampNow(ymOf(start+1,7));
   var secs=s21Sections(s21People(k),k,_pioYearK(start));if(!secs.length){toast("Niciun vestitor");return;}
   arhPdfWindow("Fise S-21 "+theoLabel(start)+".pdf",secs.map(function(x){return s21PageHtml(x.b,start,null,x.sec);}).join(""),S21P_CSS);}
