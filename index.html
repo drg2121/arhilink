@@ -7155,6 +7155,7 @@ function _fixCursanti(arr){(arr||[]).forEach(function(b){if(b&&b.isPub===false&&
 function bHasAnyReport(id){var r=arhRep()[id];return !!(r&&Object.keys(r).length);}
 function bReportedWithin(id,k,n){for(var i=0;i<n;i++){if(repOf(id,ymShift(k,-i)))return true;}return false;}
 function isActivePub(b,k){if(!b||b.active===false||!isPublisher(b)||isArch(b,k))return false;
+  var _n=_nowK();if(k>_n)k=_n;/* o lună care n-a început încă nu face pe nimeni inactiv */
   var c=pioAt(b,k);if(c==="Pionier special"||c==="Misionar")return true;
   if(!bHasAnyReport(b.id))return true;
   return bReportedWithin(b.id,k,arhInactiveN());}
@@ -7624,13 +7625,26 @@ function arhGo(s){if(s===arhSub)return;
  arhSub=s;_arhLastSub=null;renderArhRoute();$("#body").scrollTop=0;try{window.scrollTo(0,0);}catch(e){}}
 
 /* selector lună (an teocratic + lună) */
-function arhMonthPicker(){var years=theoYearsAvail();
+/* câte rapoarte are fiecare lună — ca să se vadă din listă unde sunt rapoartele */
+function arhRepCountByMonth(){var c={},R=arhRep();Object.keys(R).forEach(function(id){Object.keys(R[id]||{}).forEach(function(k){c[k]=(c[k]||0)+1;});});return c;}
+/* Lunile din viitor nu se pot alege: anul de serviciu începe în septembrie, iar „Februarie" din
+   anul care abia a început e februarie de anul viitor — fără rapoarte, cu toți socotiți inactivi.
+   În listă, lângă fiecare lună, câte rapoarte are. */
+function arhMonthPicker(){var years=theoYearsAvail(),now=_nowK(),cnt=arhRepCountByMonth();
   var yopt=years.map(function(y){return '<option value="'+y+'" '+(theoStartOf(arhYM)===y?"selected":"")+'>An '+theoLabel(y)+'</option>';}).join("");
   var months=theoMonths(theoStartOf(arhYM));
-  var mopt=months.map(function(m){return '<option value="'+m.k+'" '+(m.k===arhYM?"selected":"")+'>'+m.name+'</option>';}).join("");
+  var mopt=months.map(function(m){var fut=m.k>now&&m.k!==arhYM;return '<option value="'+m.k+'" '+(m.k===arhYM?"selected":"")+(fut?" disabled":"")+'>'+m.name+' '+m.y+(cnt[m.k]?(' · '+cnt[m.k]):(m.k>now?' · viitor':''))+'</option>';}).join("");
   /* rotița „Ani de serviciu" s-a mutat în butonul plutitor ⋮ (Sumar S-1) — bara rămâne doar cu cele două selectoare */
   return '<div class="arh-picker" style="margin-bottom:12px"><select class="fld" onchange="arhSetTheo(this.value)">'+yopt+'</select><select class="fld" onchange="arhYM=this.value;renderArh()">'+mopt+'</select></div>';}
-function arhSetTheo(y){y=+y;var months=theoMonths(y);var same=months.find(function(m){return ymM(m.k)===ymM(arhYM);});arhYM=same?same.k:months[months.length>=8?8:0].k;arhTheo=y;renderArh();}
+/* la schimbarea anului: aceeași lună, dacă are rapoarte; altfel ultima lună cu rapoarte din anul
+   acela; altfel ultima lună care a început (în anul în curs) sau august */
+function arhSetTheo(y){y=+y;var months=theoMonths(y),now=_nowK(),cnt=arhRepCountByMonth();
+  var same=months.find(function(m){return ymM(m.k)===ymM(arhYM);});
+  var withRep=months.filter(function(m){return cnt[m.k];});
+  if(same&&cnt[same.k])arhYM=same.k;
+  else if(withRep.length)arhYM=withRep[withRep.length-1].k;
+  else{var past=months.filter(function(m){return m.k<=now;});arhYM=(past.length?past[past.length-1]:months[0]).k;}
+  arhTheo=y;renderArh();}
 
 /* ---------- SUMAR S-1 ---------- */
 function arhStatCard(title,big,sub,cls){return '<div class="a-stat '+(cls||"")+'"><div class="k">'+esc(title)+'</div><div class="v">'+big+'</div>'+(sub?'<div class="k" style="margin-top:5px">'+esc(sub)+'</div>':'')+'</div>';}
