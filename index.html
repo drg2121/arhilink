@@ -724,7 +724,7 @@ Object.assign(IC,{
  box:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h18v13H3z"/><path d="M3 7l2-4h14l2 4"/><path d="M10 11h4"/></svg>',
  mark:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15.5 4.5l4 4-9.5 9.5H6v-4z"/><path d="M12.5 7.5l4 4M5 21h14"/></svg>'
 });
-const VERSION="4.3.0";
+const VERSION="4.3.1";
 /* Versiunea minima care are voie sa SCRIE in cloud. Se trece in gist la fiecare trimitere;
    un dispozitiv ramas pe un build mai vechi decat atat nu mai poate suprascrie datele —
    doar citeste si se actualizeaza singur. Asa nu mai poate un singur telefon uitat deschis
@@ -4819,10 +4819,12 @@ function _j(o){return ContentService.createTextOutput(JSON.stringify(o)).setMime
     <input class="fld" value="${esc((st.od&&st.od.rap)||'')}" placeholder="Link OneDrive al fișierului Excel" onchange="_od().rap=this.value.trim();save()">
     <input class="fld" style="margin-top:8px" value="${esc((st.od&&st.od.frap)||'')}" placeholder="Link Forms → Răspunsuri (opțional)" onchange="_od().frap=this.value.trim();save()">
     <div class="two" style="margin-top:8px"><button class="btn pri sm" onclick="odRefresh('rap')">${IC.auto} Excel →</button><button class="btn ghost sm" onclick="odPullRap()">${IC.dl} Adu</button></div>
+    <button class="btn ghost sm" style="width:100%;margin-top:8px" onclick="tutGoArh('rap','rap');arhImportReports()">${IC.dl} Import manual — fișier Excel / CSV</button>
     <div class="bf-lbl" style="margin-top:16px">Prezența</div>
     <input class="fld" value="${esc((st.od&&st.od.prez)||'')}" placeholder="Link OneDrive al fișierului Excel" onchange="_od().prez=this.value.trim();save()">
     <input class="fld" style="margin-top:8px" value="${esc((st.od&&st.od.fprez)||'')}" placeholder="Link Forms → Răspunsuri (opțional)" onchange="_od().fprez=this.value.trim();save()">
     <div class="two" style="margin-top:8px"><button class="btn pri sm" onclick="odRefresh('prez')">${IC.auto} Excel →</button><button class="btn ghost sm" onclick="odPullPrez()">${IC.dl} Adu</button></div>
+    <button class="btn ghost sm" style="width:100%;margin-top:8px" onclick="tutGoArh('rap','prez');arhImportAtt()">${IC.dl} Import manual — fișier Excel / CSV</button>
     <div class="bf-box" style="margin-top:14px">${sw(!(st.od&&st.od.auto===false),"_od().auto=this.checked;save()","Adu automat","la deschidere și din când în când")}</div>
     <div class="sx-time"><span>La fiecare (minute)</span><input type="number" min="10" value="${Math.max(10,(st.od&&+st.od.every)||60)}" class="fld" style="width:90px" onchange="_od().every=Math.max(10,(+this.value)||60);this.value=_od().every;save()"></div>
     ${(st.od&&(st.od.tRap||st.od.tPrez))?`<div class="bf-note" style="margin:10px 2px 0">${st.od.clr?`Se numără răspunsurile de după golirea Forms (${fmtDT(st.od.clr)}) · limita: 200/formular.`:`Numerele sunt rândurile din fișier; contorul real de 200 îl vezi în Forms.`}</div>`:''}
@@ -7962,6 +7964,8 @@ function arhRapHtml(){ensureGrpCSS();var h=arhMonthPicker();
       +(od.rap?('<button class="arh-yrmng" style="width:40px;height:36px;border-color:var(--acc);color:var(--acc)" onclick="odRefresh(\'rap\')" title="Actualizează din Excel — deschide fișierul, așteaptă răspunsurile noi și importă">'+IC.auto+'</button>'):'')):'')
    +'</div>'/* sincronizarea rămâne în pagină (ușor de accesat); restul uneltelor sunt în butonul plutitor ⋮ */
    +'<div class="muted" style="margin-top:7px;font-size:11.5px">'+monthName(arhYM)+(arhGrpF?(' · '+esc(arhGrpF==="-"?"Fără grupă":grpName(arhGrpF))):'')+' — '+(miss.length?('<b style="color:var(--maroon)">'+miss.length+' fără raport</b>'):'<b style="color:var(--tealtx,var(--teal))">toate rapoartele introduse ✓</b>')+(showSync&&od.tRap?(' · Forms '+fmtDT(od.tRap)):'')+'</div>'
+   /* importul manual: alegi tu fișierul (Excel / CSV descărcat din Forms) — pe lângă sincronizarea automată */
+   +(_canEditArh()?('<button class="miniact" style="margin-top:10px;width:100%;justify-content:center" onclick="arhImportReports()" title="Alegi fișierul Excel / CSV descărcat din Forms">'+IC.dl+' Import manual rapoarte — fișier Excel / CSV</button>'):'')
    +(grpsAll().length?('<select class="fld" style="margin-top:10px" onchange="arhGrpF=this.value;renderArh()"><option value="">Toate grupele</option>'+grpsAll().map(function(g){return '<option value="'+g.id+'" '+(arhGrpF===g.id?"selected":"")+'>'+esc(g.name)+'</option>';}).join("")+'<option value="-" '+(arhGrpF==="-"?"selected":"")+'>Fără grupă</option></select>'):'')
    +'</div>';
   /* cine lipsește — grupat pe grupe, apeși numele și introduci raportul */
@@ -8105,11 +8109,15 @@ function arhDelReport(id,k){if(!_canEditReport(id))return;var _ex=repOf(id,k);re
   if(window._afterRep){var _f=window._afterRep;window._afterRep=null;_f();}}
 
 /* bară „Sincronizează" (Microsoft Forms) pentru Rapoarte / Prezență */
-function _odSyncBar(kind){var od=(S.settings&&S.settings.od)||{};if(!_isAdmin())return "";
+function _odSyncBar(kind){var od=(S.settings&&S.settings.od)||{};var adm=_isAdmin();if(!adm&&!_canEditArh())return "";
+  /* importul manual: alegi tu fișierul (Excel / CSV descărcat din Forms) — pe lângă sincronizarea automată */
+  var imp='<button class="miniact" style="justify-content:center" onclick="'+(kind==="rap"?"arhImportReports()":"arhImportAtt()")+'" title="Alegi fișierul Excel / CSV descărcat din Forms">'+IC.dl+' Import manual</button>';
+  if(!adm)return '<div style="margin:0 2px 12px">'+imp+'</div>';
   var link=kind==="rap"?od.rap:od.prez;var t=kind==="rap"?od.tRap:od.tPrez;
   var info=link?(t?("ultima actualizare: "+fmtDT(t)):"încă nesincronizat"):"linkul OneDrive nu e setat — Setări → Microsoft Forms";
   return '<div style="margin:0 2px 12px"><div class="rowflex" style="gap:8px;align-items:center;flex-wrap:wrap"><button class="miniact" style="justify-content:center" onclick="'+(kind==="rap"?"odPullRap()":"odPullPrez()")+'">'+IC.sync+' Sincronizează</button>'
    +(link?('<button class="miniact" style="justify-content:center;border-color:var(--acc);color:var(--acc)" onclick="odRefresh(\''+kind+'\')">'+IC.auto+' Actualizează din Excel</button>'):'')
+   +imp
    +'<span class="muted" style="font-size:11.5px">'+info+'</span></div>'
    +(link?'<div class="muted" style="font-size:11px;margin-top:6px">Forms pune răspunsurile noi în fișierul Excel doar când fișierul e deschis în Excel pentru web. „Actualizează din Excel” îl deschide pentru tine, așteaptă și importă la final.</div>':'')+'</div>';}
 /* import rapoarte */
