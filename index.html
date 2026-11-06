@@ -724,12 +724,12 @@ Object.assign(IC,{
  box:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h18v13H3z"/><path d="M3 7l2-4h14l2 4"/><path d="M10 11h4"/></svg>',
  mark:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15.5 4.5l4 4-9.5 9.5H6v-4z"/><path d="M12.5 7.5l4 4M5 21h14"/></svg>'
 });
-const VERSION="4.2.2";
+const VERSION="4.3.0";
 /* Versiunea minima care are voie sa SCRIE in cloud. Se trece in gist la fiecare trimitere;
    un dispozitiv ramas pe un build mai vechi decat atat nu mai poate suprascrie datele —
    doar citeste si se actualizeaza singur. Asa nu mai poate un singur telefon uitat deschis
    sa intoarca datele intregii congregatii la o varianta veche. */
-const MINV="3.7.0";
+const MINV="4.3.0";
 const SEED_WEEKS=[];
 const SEED_WEEKS_PRE=[];
 const SEED_WEEKS_POST=[];
@@ -2812,7 +2812,7 @@ function renderBros(){
    Niciun vestitor adăugat.<br>Apasă <b>+</b> ca să începi baza de date.</div>`;return;}
 const srch=`<div class="brosrch"><span class="brosrch-ic">${IC.search}</span><input id="broq" class="brosrch-in" type="search" autocomplete="off" enterkeyhint="search" placeholder="Caută vestitor…" value="${esc(broSearch)}" oninput="broSearchUpd(this.value)"><button class="brosrch-x" tabindex="-1" title="Șterge căutarea" onclick="broClear()">×</button></div>`;
 ensureGrpCSS();
-b.innerHTML=`${srch}<div class="pfbar2 pfbar4">${BRO_FILTERS.map(f=>broFGroup(f[0],f[1])).join("")}</div><div id="broList"></div>`;
+b.innerHTML=`${apprBanner()}${srch}<div class="pfbar2 pfbar4">${BRO_FILTERS.map(f=>broFGroup(f[0],f[1])).join("")}</div><div id="broList"></div>`;
 renderBroList();
 }
 /* Lista e o singură înșiruire alfabetică a TUTUROR vestitorilor — așa se găsește un nume
@@ -3099,11 +3099,16 @@ function saveBro(bid,exists){if(!_needEdit())return;const name=$("#bn").value.tr
  syncFamily(o.id,o.famIds||[]);if(typeof userSyncBro==="function")userSyncBro(o,!exists);logAct((exists?"Vestitor modificat: ":"Vestitor adăugat: ")+(o.name||""));save();closeSheet();renderBros();toast("Salvat");}
 function syncFamily(id,fam){S.bros.forEach(function(b){if(b.id===id)return;b.famIds=b.famIds||[];var has=b.famIds.indexOf(id)>=0;if(fam.indexOf(b.id)>=0){if(!has)b.famIds.push(id);}else if(has){b.famIds=b.famIds.filter(function(x){return x!==id;});}});}
 function filterFam(q){q=(q||"").toLowerCase();document.querySelectorAll("#famlist .famrow").forEach(function(r){r.style.display=(r.dataset.nm||"").indexOf(q)>=0?"":"none";});}
-async function delBro(id){if(!_needEdit())return;if(!(await uiConfirm("Ștergi definitiv „"+broDisp(id)+"”? Dispare din listă, din grupă și de la responsabilități (rapoartele salvate rămân în backup-uri).")))return;
+async function delBro(id){if(!_needEdit())return;
+ if(apprNeed()){apprAsk("del",id,{});return;}/* ștergerea trece întâi pe la secretar */
+ if(!(await uiConfirm("Ștergi definitiv „"+broDisp(id)+"”? Dispare din listă, din grupă și de la responsabilități (rapoartele salvate rămân în backup-uri).")))return;
+ _delBroDo(id);closeSheet();_archRerender();}
+/* ștergerea propriu-zisă — din fișă (fără secretar) sau la aprobarea cererii */
+function _delBroDo(id){
  logAct("Vestitor șters: "+broDisp(id));S.bros=S.bros.filter(x=>x.id!==id);S.bros.forEach(function(b){if(b.famIds)b.famIds=b.famIds.filter(function(x){return x!==id;});});
  var us=(S.settings&&S.settings.users)||[];var ui=us.findIndex(function(u){return u.bro===id;});
  if(ui>=0){var rest=us.slice(0,ui).concat(us.slice(ui+1));if(!rest.length||rest.some(function(x){return x.r==="admin";}))S.settings.users=rest;}
- save();closeSheet();renderBros();}
+ save();}
 
 /* ============ ARHIVA VESTITORILOR ============
    Trecerea în arhivă („mutat" / „altele") scoate persoana din toate listele congregației
@@ -3122,7 +3127,7 @@ function archFutureAssign(id,k){var out=[];
   if(keys.length)out.push({wi:wi,keys:keys});}
  return out;}
 function _archUserOf(id){var us=_users()||[];for(var i=0;i<us.length;i++)if(us[i].bro===id)return us[i];return null;}
-function _archRerender(){if(tab==="arh")renderArh();else renderBros();}
+function _archRerender(){if(tab==="arh")renderArh();else if(tab==="bros")renderBros();else{try{go(tab);}catch(e){}}}
 /* eliberează locul persoanei arhivate: contul, grupa, rolul din grupă și responsabilitățile.
    Ce i se ia se notează în b.arch, ca să i se dea înapoi dacă e readusă în congregație. */
 function _archStrip(b){var a=b&&b.arch;if(!a||a.done)return false;var id=b.id;
@@ -3148,7 +3153,7 @@ function archYears(id){var set={},R=(S.reports||{})[id]||{},b=(S.bros||[]).find(
 
 /* --- blocul din fișa vestitorului --- */
 function archEditSum(b){var a=archOf(b);return a?(archLabel(a)+" · "+archWhen(a)):"în congregație";}
-function archEditBlock(b){var a=archOf(b),h='';
+function archEditBlock(b){var a=archOf(b),h=apprBroHint(b.id);
  var past=archAll(b).filter(function(p){return p.end&&curYM()>=p.end&&p.st!=="nou";});
  /* perioada dinainte de venire (vestitor adus din fișa altei congregații): lunile acelea sunt doar pe fișa lui */
  var came=archAll(b).filter(function(p){return p.st==="nou"&&p.end&&curYM()>=p.end;}).pop();
@@ -3190,16 +3195,21 @@ function archStChg(){var s=$("#amSt"),n=$("#amN"),l=$("#amNl");if(!s||!n||!l)ret
 function archApply(id){if(!_needEdit())return;var b=(S.bros||[]).find(function(x){return x.id===id;});if(!b)return;
  var st=$("#amSt")?$("#amSt").value:"mutat",k=$("#amK")?$("#amK").value:curYM(),note=$("#amN")?$("#amN").value.trim():"";
  if(st!=="mutat"&&!note){toast("Scrie pe scurt motivul");return;}
+ if(apprNeed()){apprAsk("arch",id,{st:st,k:k,note:note});return;}/* mutarea trece întâi pe la secretar */
+ var nA=_archApplyDo(b,st,k,note,"");
+ closeSheet();_archRerender();
+ okSplash("Trecut în arhivă",(b.disp||b.name||"")+" — din "+monthName(k)+(nA?(" · "+nA+" teme eliberate"):""));}
+/* trecerea propriu-zisă în arhivă — din fișă (fără secretar) sau la aprobarea cererii; by = cine a cerut-o */
+function _archApplyDo(b,st,k,note,by){var id=b.id;
  var fut=archFutureAssign(id,k),nA=0;
  fut.forEach(function(f){f.keys.forEach(function(key){delete S.plans[f.wi].a[key];nA++;});});
  if(b.arch&&b.arch.k){b.archPast=(b.archPast||[]).concat([b.arch]);}   /* o perioadă mai veche nu se pierde */
- b.arch={st:st,note:note,k:k,t:Date.now(),by:(_curUser()&&_curUser().n)||""};
+ b.arch={st:st,note:note,k:k,t:Date.now(),by:by||(_curUser()&&_curUser().n)||""};
  /* grupa, contul și rolurile se eliberează abia când arhivarea intră în vigoare — până atunci
     persoana e încă în congregație și trebuie să-și păstreze locul */
  if(k<=curYM())_archStrip(b);
  logAct("Vestitor în arhivă: "+(b.name||"")+" ("+archLabel(b.arch)+", din "+monthName(k)+")");
- save();closeSheet();_archRerender();
- okSplash("Trecut în arhivă",(b.disp||b.name||"")+" — din "+monthName(k)+(nA?(" · "+nA+" teme eliberate"):""));}
+ save();return nA;}
 
 /* --- readucerea în congregație --- */
 function archRestoreSheet(id){if(!_needEdit())return;var b=(S.bros||[]).find(function(x){return x.id===id;});if(!b||!archOf(b))return;
@@ -3232,8 +3242,12 @@ function archUnrestore(id){if(!_needEdit())return;var b=(S.bros||[]).find(functi
 /* --- ștergerea definitivă --- */
 async function archPurge(id){if(!_needEdit())return;var b=(S.bros||[]).find(function(x){return x.id===id;});if(!b)return;
  var nm=b.name||"",R=(S.reports||{})[id]||{},nr=Object.keys(R).length;
+ if(apprNeed()){apprAsk("purge",id,{});return;}/* ștergerea definitivă trece întâi pe la secretar */
  if(!(await uiConfirm("ȘTERGERE DEFINITIVĂ: „"+nm+"”\n\nSe șterg persoana și "+nr+(nr===1?" raport lunar":" rapoarte lunare") + ", din toate lunile. Fișele S-21 nu vor mai putea fi generate, iar sumarele S-1 recalculate pentru lunile trecute nu-l vor mai include.\n\nNu se poate anula. Continui?")))return;
  if(!(await uiConfirm("Sigur? Apasă OK ca să ștergi definitiv „"+nm+"”.")))return;
+ _archPurgeDo(id);closeSheet();_archRerender();toast("Șters definitiv");}
+/* ștergerea definitivă propriu-zisă — din arhivă (fără secretar) sau la aprobarea cererii */
+function _archPurgeDo(id){var b=(S.bros||[]).find(function(x){return x.id===id;});var nm=(b&&b.name)||"";
  S.bros=(S.bros||[]).filter(function(x){return x.id!==id;});
  (S.bros||[]).forEach(function(x){if(x.famIds)x.famIds=x.famIds.filter(function(y){return y!==id;});});
  grpsAll().forEach(function(g){if(g.sup===id)g.sup="";if(g.asis===id)g.asis="";});
@@ -3246,7 +3260,7 @@ async function archPurge(id){if(!_needEdit())return;var b=(S.bros||[]).find(func
  var us=_users(),ui=-1;us.forEach(function(u,i){if(u.bro===id)ui=i;});
  if(ui>=0){var rest=us.slice(0,ui).concat(us.slice(ui+1));if(!rest.length||rest.some(function(x){return x.r==="admin"&&!x.off;}))S.settings.users=rest;}
  logAct("Vestitor șters definitiv din arhivă: "+nm);
- save();closeSheet();_archRerender();toast("Șters definitiv");}
+ save();}
 
 /* --- subtabul „Arhivați" --- */
 /* ============================================================================
@@ -3631,12 +3645,20 @@ function respEdit(i){if(!_needEdit())return;var d=(i>=0)?respAll()[i]:{n:"",r:""
   '<label class="fl">Departament / responsabilitate</label><input id="rd_n" class="fld" value="'+esc(d.n).replace(/"/g,"&quot;")+'">'
  +'<div class="two" style="margin-top:8px"><div><label class="fl">Responsabil</label><select id="rd_r" class="fld">'+opt(d.r)+'</select></div><div><label class="fl">Asistent</label><select id="rd_a" class="fld">'+opt(d.a)+'</select></div></div>'
  +'<div class="rowflex" style="gap:9px;margin-top:18px">'+(i>=0?'<button class="btn danger sm" onclick="respDel('+i+')">Șterge</button>':'')+'<div class="spacer"></div><button class="btn ghost sm" style="width:auto" onclick="closeSheet()">Anulează</button><button class="btn pri sm" style="width:auto" onclick="respSave('+i+')">Salvează</button></div>');}
+/* cât timp adminul n-a ales secretarul în Setări, secretarul e responsabilul departamentului „Secretarul" —
+   deci doar un administrator îl poate schimba de aici (altfel un editor s-ar putea face singur secretar) */
+function _secDeptLock(old,nw){if(_isAdmin()||(S.settings&&S.settings.secr))return false;
+ var rx=/secretar/i,inv=(old&&rx.test(old.n||""))||(nw&&rx.test(nw.n||""));if(!inv)return false;
+ var chg=!old||!nw||old.r!==nw.r||old.n!==nw.n;if(!chg)return false;
+ toast("Doar administratorii schimbă secretarul — el aprobă mutările și ștergerile",5000);return true;}
 function respSave(i){if(!_needEdit())return;var n=$("#rd_n").value.trim();if(!n){toast("Pune numele departamentului");return;}
  var o={n:n,r:$("#rd_r").value,a:$("#rd_a").value};
+ if(_secDeptLock(i>=0?respAll()[i]:null,o))return;
  if(i>=0)respAll()[i]=o;else respAll().push(o);
  respAll().sort(function(a,b){return a.n.localeCompare(b.n,"ro");});
  logAct("Departament salvat: "+n);save();closeSheet();renderArh();toast("Salvat");}
 async function respDel(i){if(!_needEdit())return;var d=respAll()[i];if(!d)return;
+ if(_secDeptLock(d,null))return;
  if(!(await uiConfirm("Ștergi departamentul „"+d.n+"”?")))return;
  respAll().splice(i,1);logAct("Departament șters: "+d.n);save();closeSheet();renderArh();}
 
@@ -4824,6 +4846,8 @@ function _j(o){return ContentService.createTextOutput(JSON.stringify(o)).setMime
     <input type="file" id="imp" accept=".json" style="display:none" onchange="importJSON(this)">
     <div class="bf-note" style="margin:10px 2px 0">Fișierul are tot: datele, tokenul și Gist ID-ul.</div>`,false,"bkp")
  +_setLink(IC.clock,"Istoric activitate","cine a făcut modificări și când","openHistory()")
+ +(_isAdmin()?_setLink(IC.ppl,"Secretar",secrSub(),"secrSheet()"):'')
+ +((_canEdit()||isSecr())?_setLink(IC.check,"Aprobări secretar",apprSub(),"apprSheet()"):'')
  +(_canEdit()?_setLink(IC.ppl,"Persoane șterse","readu o fișă ștearsă din greșeală, cu contul și rapoartele ei","openDeletedBros()"):'')
  +_setLink(IC.star,"Ce e nou",NEWS.length?("v"+esc(NEWS[0].label||NEWS[0].v)+" · "+esc(NEWS[0].t||"")):"ultimele schimbări","openNews(false)")
  +`<div class="ver">ArhiLink · v${VERSION}</div>`;
@@ -5847,6 +5871,10 @@ function startApp(){_dirty=computeDirty();applyTheme();try{bkpMigrate();}catch(e
    `v` = cheia de „văzut deja"; `label` = versiunea afișată.
    ============================================================================ */
 var NEWS=[
+ {v:"4.3.0",label:"4.3",d:"06.11.2026",t:"Mutările și ștergerile, cu aprobarea secretarului",items:[
+  {ic:"check",who:"ed",t:"Secretarul aprobă mutările și ștergerile",s:"Mutarea unei persoane în arhivă, ștergerea ei din listă și ștergerea definitivă din arhivă pleacă acum ca cerere la secretar. Până o aprobă, nu se schimbă nimic. Cererile se văd sus în Vestitori și în Setări → Aprobări secretar."},
+  {ic:"ppl",who:"admin",t:"Secretarul îl alege administratorul",s:"Setări → Secretar. Până îl alegi, secretar e responsabilul departamentului „Secretarul” din Responsabilități."},
+  {ic:"ppl",who:"ed",t:"Persoanele șterse se pot readuce",s:"Setări → Persoane șterse: fișa, contul de acces (același PIN) și rapoartele, luate din versiunile anterioare."}]},
  {v:"4.2.0",label:"4.2",d:"28.10.2026",quiet:1,t:"Fișele S-21 și rapoartele, după îndrumări (sfg 17:13-15)",items:[
   {ic:"form",who:function(){return _arhReports();},t:"Fișele S-21 în ordinea din dosar",s:"Întâi activii: pionierii regulari, speciali și misionarii, alfabetic; apoi ceilalți vestitori, pe grupe de serviciu. La urmă inactivii, alfabetic. Fiecare fișă are secțiunea în subsol. Pe aceeași cale merge și Arhiva completă.",go:"arhexp",gl:"Deschide Exportul"},
   {ic:"chart",who:function(){return _arhReports();},t:"Activi, iregulari, inactivi",s:"Activ = a raportat cel puțin o dată în ultimele șase luni; inactiv = șase luni la rând fără raport; iregular = a lipsit cel puțin o lună. Statisticile arată câți sunt și cine. Numărul vestitorilor activi din S-1 se socotește la fel.",go:"arhstat",gl:"Deschide Statisticile"},
@@ -6651,6 +6679,128 @@ async function dbRestore(id){if(!_needEdit())return;var f=_dbFound[id];if(!f)ret
  logAct("Vestitor readus după ștergere: "+nm);save();delete _dbFound[id];_dbRender();
  try{if(typeof tab!=="undefined"&&tab==="bros")renderBros();}catch(e){}
  toast("Readus: "+nm+acc);}
+/* ============ APROBAREA SECRETARULUI — mutări în arhivă și ștergeri de persoane ============
+   Trecerea unei persoane în arhivă (mutat / altele), ștergerea ei din listă și ștergerea definitivă
+   din arhivă nu se mai fac direct: pleacă o cerere la secretar, care o aprobă sau o respinge. Abia la
+   aprobare se face schimbarea, cu datele din cerere. Secretarul îl alege administratorul (Setări →
+   Secretar); cât timp nu l-a ales, e responsabilul departamentului „Secretarul". Cererile stau în
+   S.appr — listă cu id, se îmbină pe trei căi ca vestitorii. Când secretarul însuși face schimbarea,
+   ea merge direct. Fără conturi (nimeni nu e identificat) sau fără un secretar cu cont care poate
+   modifica, nu ar avea cine aproba, deci acțiunile merg direct, ca înainte (Setări arată de ce). */
+var APPR_K={del:"Ștergere din listă",arch:"Mutare în arhivă",purge:"Ștergere definitivă din arhivă"};
+function apprAll(){if(!Array.isArray(S.appr))S.appr=[];return S.appr;}
+function _apprList(){return Array.isArray(S.appr)?S.appr:[];}
+function _broById(id){return (S.bros||[]).find(function(b){return b.id===id;})||null;}
+function _secDept(){var d=((S.resp&&S.resp.deps)||[]).find(function(x){return /secretar/i.test(x.n||"");});return (d&&d.r)||"";}
+function _secOk(id){var b=id&&_broById(id);return !!(b&&!isArchNow(b));}
+function secrId(){var s=S.settings&&S.settings.secr;if(_secOk(s))return s;var d=_secDept();return _secOk(d)?d:"";}
+function secrUser(){var id=secrId();if(!id)return null;return _users().find(function(u){return u.bro===id&&!u.off;})||null;}
+function _meUser(){var cu=_curUser();if(!cu)return null;return _users().find(function(u){return u.n===cu.n;})||null;}
+function isSecr(){var id=secrId(),u=_meUser();return !!(id&&u&&u.bro===id);}
+/* de ce nu se pot cere aprobări acum ("" = merg) */
+function secrWhyOff(){if(!_users().length)return "nu sunt conturi — nu se știe cine face schimbarea";
+ var id=secrId();if(!id)return "nu e ales niciun secretar";var u=secrUser();
+ if(!u)return broDisp(id)+" nu are cont în aplicație";if(u.r!=="admin"&&u.r!=="editor")return "contul lui "+broDisp(id)+" nu are drept de modificare";return "";}
+function apprNeed(){return !secrWhyOff()&&!isSecr();}
+function apprPend(){return _apprList().filter(function(q){return q&&q.st==="pend";});}
+function apprPending(id,k){return apprPend().find(function(q){return q.bro===id&&(!k||q.k===k);})||null;}
+function _apprDesc(q){var s=APPR_K[q.k]||q.k,p=q.p||{};
+ if(q.k==="arch")s+=" — "+(p.st==="mutat"?"mutat la altă congregație":"altele")+(p.note?(" ("+p.note+")"):"")+", din "+monthName(p.k||curYM());return s;}
+function _apprPushTo(ids,title,body){try{if(!pushReady())return;var to=[];
+ ids.forEach(function(id){var e=_pubEmail(_broById(id));if(e&&to.indexOf(e)<0)to.push(e);});
+ if(to.length)pushQueue({action:"send",to:to,title:title,body:body});}catch(e){}}
+/* cererile decise se păstrează doar ultimele 40 — cele în așteptare rămân toate */
+function _apprTrim(){var A=apprAll(),done=A.filter(function(q){return q.st!=="pend";});
+ if(done.length<=40)return;var drop={};done.sort(function(a,b){return (a.dt||a.t)-(b.dt||b.t);}).slice(0,done.length-40).forEach(function(q){drop[q.id]=1;});
+ S.appr=A.filter(function(q){return !drop[q.id];});}
+/* înregistrează cererea (fără întrebări) — întoarce cererea sau null dacă există deja una */
+function apprAdd(k,id,p){var b=_broById(id);if(!b||apprPending(id,k))return null;var u=_meUser();
+ var q={id:"q"+Date.now()+Math.random().toString(36).slice(2,6),t:Date.now(),k:k,bro:id,nm:broDisp(id)||b.name||"",p:p||{},by:(u&&u.n)||_userGet()||"?",byB:(u&&u.bro)||"",st:"pend"};
+ apprAll().push(q);_apprTrim();
+ logAct("Cerere la secretar: "+_apprDesc(q)+" — "+q.nm);
+ _apprPushTo([secrId()],"Cerere de aprobat",q.by+": "+_apprDesc(q)+" — "+q.nm);
+ return q;}
+async function apprAsk(k,id,p){var sn=broDisp(secrId());
+ if(apprPending(id,k)){toast("Există deja o cerere în așteptare pentru "+broDisp(id));return;}
+ if(!(await uiConfirm(_apprDesc({k:k,p:p})+" — „"+broDisp(id)+"”\n\nSchimbarea trebuie aprobată de secretar ("+sn+"). Până atunci nu se modifică nimic.",{title:"Cere aprobarea secretarului",yes:"Trimite cererea"})))return;
+ var q=apprAdd(k,id,p);if(!q)return;save();closeSheet();_archRerender();
+ okSplash("Cerere trimisă","la secretar ("+sn+") — "+q.nm);}
+function _apprBg(){try{if(tab==="bros")renderBros();else if(tab==="arh")renderArh();else if(tab==="set")renderSet();}catch(e){}}
+async function apprOk(qid){var q=_apprList().find(function(x){return x.id===qid;});if(!q||q.st!=="pend")return;
+ if(!isSecr()){toast("Doar secretarul aprobă");return;}if(!_needEdit())return;
+ var b=_broById(q.bro);
+ if(!b){q.st="no";q.dt=Date.now();q.dby=(_meUser()||{}).n||"";q.why="persoana nu mai e în listă";save();apprSheet();toast("Persoana nu mai e în listă — cererea s-a închis");return;}
+ var msg="Aprobi: "+_apprDesc(q)+" — „"+q.nm+"”?\n\nCerut de "+q.by+", "+fmtHist(q.t)+"."
+  +(q.k==="purge"?"\n\nȘtergerea definitivă ia și rapoartele lui, din toate lunile. Nu se poate anula.":"")
+  +(q.k==="del"?"\n\nDispare din listă, din grupă și de la responsabilități; contul lui se șterge.":"");
+ if(!(await uiConfirm(msg,{title:"Aprobare",yes:"Aprobă",danger:q.k!=="arch"})))return;
+ var extra="";
+ if(q.k==="del")_delBroDo(q.bro);
+ else if(q.k==="purge")_archPurgeDo(q.bro);
+ else if(q.k==="arch"){if(archOf(b))extra=" (era deja în arhivă)";else{var p=q.p||{};_archApplyDo(b,p.st||"mutat",p.k||curYM(),p.note||"",q.by);}}
+ q.st="ok";q.dt=Date.now();q.dby=(_meUser()||{}).n||"";
+ logAct("Aprobat de secretar: "+_apprDesc(q)+" — "+q.nm+" (cerut de "+q.by+")"+extra);
+ if(q.byB)_apprPushTo([q.byB],"Cerere aprobată",_apprDesc(q)+" — "+q.nm);
+ save();apprSheet();_apprBg();toast("Aprobat"+extra);}
+async function apprNo(qid){var q=_apprList().find(function(x){return x.id===qid;});if(!q||q.st!=="pend")return;
+ if(!isSecr()){toast("Doar secretarul respinge");return;}if(!_needEdit())return;
+ var why=await uiPrompt("Respingi cererea?","",{msg:_apprDesc(q)+" — "+q.nm+". Motivul (opțional) îl vede cel care a cerut.",yes:"Respinge"});
+ if(why===null)return;
+ q.st="no";q.dt=Date.now();q.dby=(_meUser()||{}).n||"";if(why.trim())q.why=why.trim();
+ logAct("Respins de secretar: "+_apprDesc(q)+" — "+q.nm+(q.why?(" ("+q.why+")"):""));
+ if(q.byB)_apprPushTo([q.byB],"Cerere respinsă",_apprDesc(q)+" — "+q.nm+(q.why?(" · "+q.why):""));
+ save();apprSheet();_apprBg();toast("Respins");}
+/* cel care a cerut (sau un administrator) își poate retrage cererea */
+async function apprCancel(qid){var q=_apprList().find(function(x){return x.id===qid;});if(!q||q.st!=="pend")return;
+ var me=_meUser();if(!(_isAdmin()||(me&&me.n===q.by))){toast("Doar cel care a cerut o poate retrage");return;}
+ if(!(await uiConfirm("Retragi cererea: "+_apprDesc(q)+" — „"+q.nm+"”?",{yes:"Retrage"})))return;
+ q.st="anul";q.dt=Date.now();q.dby=(me&&me.n)||"";logAct("Cerere retrasă: "+_apprDesc(q)+" — "+q.nm);
+ save();apprSheet();_apprBg();}
+function apprSheet(){var P=apprPend().slice().sort(function(a,b){return a.t-b.t;}),me=_meUser(),sec=isSecr()&&_canEdit(),why=secrWhyOff(),sid=secrId();
+ var h='<div class="muted" style="margin:2px 2px 12px;font-size:12.5px;line-height:1.45">Mutarea unei persoane în arhivă și ștergerea ei se fac abia după aprobarea secretarului'+(sid?(' (<b>'+esc(broDisp(sid))+'</b>)'):'')+'.'
+  +(why?('<br><span style="color:var(--maroon)">Acum nu se cer aprobări: '+esc(why)+'.</span>'):'')+'</div>';
+ h+='<div class="grpttl">În așteptare'+(P.length?(' · '+P.length):'')+'</div>';
+ if(!P.length)h+='<div class="muted" style="padding:8px 2px 4px">Nicio cerere în așteptare.</div>';
+ else h+='<div class="hist">'+P.map(function(q){var mine=me&&me.n===q.by;
+   var btn=sec?('<div style="grid-column:1/-1;display:flex;gap:8px;margin-top:8px"><button class="btn pri sm" style="width:auto" onclick="apprOk(\''+q.id+'\')">Aprobă</button><button class="btn ghost sm" style="width:auto" onclick="apprNo(\''+q.id+'\')">Respinge</button></div>')
+    :((mine||_isAdmin())?('<div style="grid-column:1/-1;margin-top:8px"><button class="btn ghost sm" style="width:auto" onclick="apprCancel(\''+q.id+'\')">Retrage cererea</button></div>'):'');
+   return '<div class="hrow"><div class="hwho">'+esc(q.nm)+'</div><div class="hwhen">'+fmtHist(q.t)+'</div><div class="hact">'+esc(_apprDesc(q))+' · cerut de '+esc(q.by)+'</div>'+btn+'</div>';}).join("")+'</div>';
+ var D=_apprList().filter(function(q){return q&&q.st!=="pend";}).sort(function(a,b){return (b.dt||b.t)-(a.dt||a.t);}).slice(0,15);
+ if(D.length)h+='<div class="grpttl" style="margin-top:20px">Decise recent</div><div class="hist">'+D.map(function(q){
+   var st=q.st==="ok"?("aprobat de "+(q.dby||"secretar")):(q.st==="no"?("respins de "+(q.dby||"secretar")+(q.why?(" — "+q.why):"")):("retras de "+(q.dby||"?")));
+   return '<div class="hrow"><div class="hwho">'+esc(q.nm)+'</div><div class="hwhen">'+fmtHist(q.dt||q.t)+'</div><div class="hact">'+esc(_apprDesc(q))+' · cerut de '+esc(q.by)+' · <b>'+esc(st)+'</b></div></div>';}).join("")+'</div>';
+ sheet("","Aprobări secretar",h);}
+function apprSub(){var n=apprPend().length,w=secrWhyOff();
+ if(n)return '<span class="on">'+n+(n===1?" cerere":" cereri")+' în așteptare</span>'+(isSecr()?" · de aprobat de tine":"");
+ return w?('<span class="off">oprite</span> — '+esc(w)):"mutările și ștergerile de persoane";}
+/* banner sus în Vestitori */
+function apprBanner(){var n=apprPend().length;if(!n||!(isSecr()||_canEdit()))return "";
+ var t=isSecr()?("Ai "+n+(n===1?" cerere de aprobat":" cereri de aprobat")):(n+(n===1?" cerere așteaptă":" cereri așteaptă")+" aprobarea secretarului");
+ return '<button class="hint" style="display:flex;align-items:center;gap:10px;width:100%;margin:0 0 12px;border-left:3px solid var(--acc);text-align:left;cursor:pointer;font:inherit;color:inherit" onclick="apprSheet()"><span style="flex:1"><b>'+esc(t)+'</b><br><span class="muted" style="font-size:12px">Mutări în arhivă și ștergeri de persoane</span></span><span style="font-weight:800;color:var(--acc)">Vezi</span></button>';}
+/* în fișa vestitorului: cererea care așteaptă pentru el */
+function apprBroHint(id){var q=apprPending(id);if(!q)return "";
+ return '<div class="hint" style="margin-top:11px;border-left:3px solid var(--acc)">Cerere la secretar, în așteptare: <b>'+esc(_apprDesc(q))+'</b> · cerut de '+esc(q.by)+', '+fmtHist(q.t)+'.</div>';}
+/* secretarul află la deschidere (și după fiecare sincronizare) de cererile noi */
+var _apprSeen={};
+function apprCheck(){if(!isSecr())return;var nw=apprPend().filter(function(q){return !_apprSeen[q.id];});if(!nw.length)return;
+ nw.forEach(function(q){_apprSeen[q.id]=1;});
+ notice({ic:"ppl",t:nw.length===1?"Cerere de aprobat":(nw.length+" cereri de aprobat"),s:nw.length===1?(nw[0].by+": "+_apprDesc(nw[0])+" — "+nw[0].nm):"Mutări în arhivă și ștergeri de persoane",act:["Vezi",apprSheet],ms:12000});}
+/* --- alegerea secretarului (doar administratorii) --- */
+function secrSub(){var id=secrId(),w=secrWhyOff();if(!id)return '<span class="off">neales</span> — mutările și ștergerile merg fără aprobare';
+ return '<span class="on">'+esc(broDisp(id))+'</span>'+((S.settings&&S.settings.secr===id)?"":" · din Responsabilități")+(w?(' · <span class="off">'+esc(w)+'</span>'):" · aprobă mutările și ștergerile");}
+function secrSheet(){if(!_isAdmin()){toast("Doar administratorii aleg secretarul");return;}
+ var cur=(S.settings&&S.settings.secr)||"",dep=_secDept();
+ var bros=(S.bros||[]).filter(function(b){return b.gen!=="F"&&b.active!==false&&!isArchNow(b);}).sort(function(a,b){return (a.name||"").localeCompare(b.name||"","ro");});
+ var opt='<option value="">'+(dep&&_secOk(dep)?("Din Responsabilități — "+esc(broDisp(dep))):"— niciunul (fără aprobări) —")+'</option>'
+  +bros.map(function(b){return '<option value="'+b.id+'" '+(b.id===cur?"selected":"")+'>'+esc(b.name)+'</option>';}).join("");
+ var w=secrWhyOff();
+ sheet("","Secretar",'<div class="muted" style="margin:2px 2px 12px;font-size:12.5px;line-height:1.45">Secretarul aprobă mutarea persoanelor în arhivă, ștergerea lor din listă și ștergerea definitivă din arhivă. Până la aprobare nu se schimbă nimic. Ce face chiar el merge direct.</div>'
+  +'<label class="fl">Secretarul congregației</label><select id="secrSel" class="fld">'+opt+'</select>'
+  +(w?('<div class="hint" style="margin-top:10px;border-left:3px solid var(--maroon)">Acum nu se cer aprobări: '+esc(w)+'. Secretarul are nevoie de un cont de administrator sau editor.</div>'):'')
+  +'<div class="rowflex" style="gap:9px;margin-top:18px"><div class="spacer"></div><button class="btn ghost sm" style="width:auto" onclick="closeSheet()">Anulează</button><button class="btn pri sm" style="width:auto" onclick="secrSave()">Salvează</button></div>');}
+function secrSave(){if(!_isAdmin())return;var v=($("#secrSel")&&$("#secrSel").value)||"";
+ S.settings.secr=v;var id=secrId();logAct("Secretar ales: "+(id?broDisp(id):"niciunul")+(v?"":" (din Responsabilități)"));
+ save();closeSheet();renderSet();toast(id?("Secretar: "+broDisp(id)):"Fără secretar — mutările și ștergerile merg direct");}
 /* subsecțiunea „Erori": doar locale, tehnice — separate de „cine a făcut ce", care e istoricul de congregație */
 function _errSectionHtml(){var E=_errList().slice().reverse();
  var h='<div class="grpttl" style="margin-top:20px">Erori<span class="muted" style="font-weight:400"> — doar pe acest dispozitiv</span></div>';
@@ -6979,7 +7129,7 @@ function go(t){if(_wkDraft&&!_wkGuard()){_wkAsk(function(){go(t);});return;}/* n
  if(!_tabAllowed(t))t=_firstTab();tab=t;document.querySelectorAll(".nb").forEach(b=>b.classList.toggle("on",b.dataset.tab===t));
  _applyNavVis();
  var R={prog:renderProg,meu:renderMeu,bros:renderBros,arh:renderArhRoute,set:renderSet};
- (R[t]||renderProg)();window.scrollTo(0,0);var _ap=document.querySelector(".app");if(_ap)_ap.classList.remove("headhide");if(window._headReset)window._headReset();var _bd=document.getElementById("body");if(_bd){_bd.scrollTop=0;_bd.classList.remove("tin");void _bd.offsetWidth;_bd.classList.add("tin");}}
+ (R[t]||renderProg)();try{apprCheck();}catch(e){}window.scrollTo(0,0);var _ap=document.querySelector(".app");if(_ap)_ap.classList.remove("headhide");if(window._headReset)window._headReset();var _bd=document.getElementById("body");if(_bd){_bd.scrollTop=0;_bd.classList.remove("tin");void _bd.offsetWidth;_bd.classList.add("tin");}}
 /* Bara de subtaburi din Arhivă se derulează pe orizontală. Pe telefon o tragi cu degetul, dar pe
    calculator rotița dă doar derulare verticală, iar bara nu se mișca. Traducem rotirea verticală în
    derulare laterală (dacă mouse-ul dă și deltaX — trackpad, mouse cu roată laterală — îl folosim pe acela). */
@@ -9697,7 +9847,7 @@ async function _gpApplyGo(p,rec){if(!_gpEd())return;
   +(gone.length?("\nSe șterg "+gone.length+" grupe: "+gone.map(function(g){return g.name;}).join(", ")):"")
   +(st.none?("\nRămân "+st.none+" nerepartizați"):"")
   +(rec.add.length?("\n\nSE DESCHID "+rec.add.length+" fișe de vestitor:\n"+rec.add.map(function(aid){var a=gpProv(p,aid);return "· "+((a&&a.name)||"");}).join("\n")):"")
-  +(rec.out.length?("\n\nTREC ÎN ARHIVĂ "+rec.out.length+(rec.out.length===1?" vestitor":" vestitori")+", din "+monthName(rec.k)+":\n"+rec.out.map(function(bid){return "· "+broDisp(bid);}).join("\n")):"")
+  +(rec.out.length?((apprNeed()?("\n\nCERERE LA SECRETAR ("+broDisp(secrId())+") — trec în arhivă după aprobare, "):"\n\nTREC ÎN ARHIVĂ ")+rec.out.length+(rec.out.length===1?" vestitor":" vestitori")+", din "+monthName(rec.k)+":\n"+rec.out.map(function(bid){return "· "+broDisp(bid);}).join("\n")):"")
   /* ce n-a fost bifat rămâne cum era — se spune limpede, ca să nu pară că s-a pierdut */
   +(keptAdd>0?("\n\n"+keptAdd+(keptAdd===1?" persoană adăugată provizoriu rămâne":" persoane adăugate provizoriu rămân")+" doar în schiță — fără fișă în aplicație"):"")
   +(keptOut>0?("\n"+keptOut+(keptOut===1?" scos provizoriu rămâne vestitor în aplicație, în grupa lui de acum":" scoși provizoriu rămân vestitori în aplicație, în grupele lor de acum")):"")
@@ -9723,13 +9873,15 @@ async function _gpApplyGo(p,rec){if(!_gpEd())return;
  S.grps.forEach(function(g){[g.sup,g.asis].forEach(function(bid){if(!bid)return;
   var b=(S.bros||[]).find(function(x){return x.id===bid;});if(b)b.grp=g.id;});});
  /* 5. scoaterile: aceeași arhivare ca din fișa vestitorului, ca să fie reversibilă la fel */
- var nArh=0;rec.out.forEach(function(bid){if(_gpArchive(bid,rec))nArh++;});
+ /* cu secretar: scoaterile devin cereri — persoanele trec în arhivă abia la aprobare */
+ var nArh=0,nReq=0,_viaS=apprNeed();
+ rec.out.forEach(function(bid){if(_viaS){if(apprAdd("arch",bid,{st:rec.st,k:rec.k,note:rec.note}))nReq++;}else if(_gpArchive(bid,rec))nArh++;});
  p.applied=Date.now();
  logAct("Grupe puse în aplicare din schița „"+(p.name||"")+"” — "+st.mv+" mutări"
   +(rec.add.length?(", "+rec.add.length+" vestitori adăugați"):"")+(nArh?(", "+nArh+" trecuți în arhivă"):""));
  save();gpOpen="";renderArhRoute();
  toast("Grupele au fost schimbate · "+st.mv+" mutări"
-  +(rec.add.length?(" · +"+rec.add.length+" adăugați"):"")+(nArh?(" · "+nArh+" în arhivă"):""),5000);}
+  +(rec.add.length?(" · +"+rec.add.length+" adăugați"):"")+(nArh?(" · "+nArh+" în arhivă"):"")+(nReq?(" · "+nReq+(nReq===1?" cerere trimisă":" cereri trimise")+" secretarului"):""),5000);}
 /* fișă nouă pornind de la o intrare provizorie — doar câmpurile pe care schița le știe */
 function _gpMakeBro(a,gid){var name=String(a.name||"").trim();
  var o={id:"b"+Date.now()+Math.random().toString(36).slice(2,5),name:name,disp:shortName(name),dispExp:true,
