@@ -724,7 +724,7 @@ Object.assign(IC,{
  box:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h18v13H3z"/><path d="M3 7l2-4h14l2 4"/><path d="M10 11h4"/></svg>',
  mark:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15.5 4.5l4 4-9.5 9.5H6v-4z"/><path d="M12.5 7.5l4 4M5 21h14"/></svg>'
 });
-const VERSION="4.3.1";
+const VERSION="4.3.2";
 /* Versiunea minima care are voie sa SCRIE in cloud. Se trece in gist la fiecare trimitere;
    un dispozitiv ramas pe un build mai vechi decat atat nu mai poate suprascrie datele —
    doar citeste si se actualizeaza singur. Asa nu mai poate un singur telefon uitat deschis
@@ -3059,7 +3059,7 @@ function editBro(id,openSec){if(!_needEdit())return;ensureEdCSS();ensureBfCSS();
  const pane=(p,h)=>`<div class="bf-pane${p===t0?" on":""}" data-p="${p}" role="tabpanel">${h}</div>`;
  sheet("Vestitor",(id?"Fișa vestitorului":"Vestitor nou"),
   `<div id="edform" data-id="${esc(id||"")}" oninput="edSumAll()" onchange="edSumAll()">${hero}${acts}${info}${tabs}${pane("d",paneD)}${pane("p",paneP)}${pane("c",paneC)}${pane("a",paneA)}</div>
-  <div class="edbar">${id?`<button class="btn danger sm" style="width:auto" onclick="delBro('${id}')">Șterge</button>`:""}<div class="spacer"></div>
+  <div class="edbar">${(id&&!archOf(b))?`<button class="btn ghost sm" style="width:auto" onclick="archSheet('${id}')" title="A plecat din congregație — mutat sau altceva">Mută</button>`:""}<div class="spacer"></div>
    <button class="btn ghost sm" style="width:auto" onclick="closeSheet()">Anulează</button>
    <button class="btn pri sm" style="width:auto" onclick="saveBro('${b.id}',${id?1:0})">Salvează</button></div>`);
  edSumAll();
@@ -3165,7 +3165,11 @@ function archEditBlock(b){var a=archOf(b),h=apprBroHint(b.id);
  return h
   +'<div class="hint" style="margin-top:11px">A plecat din congregație (mutat sau altceva)? Trece-l în arhivă: dispare din liste, din grupe și de la numărul de vestitori <b>începând cu luna pe care o alegi</b>. Lunile de dinainte rămân neatinse, iar rapoartele și fișele lui rămân disponibile în tabul Arhivă.</div>'
   +pastTxt
-  +'<button class="miniact" style="margin-top:8px;width:100%;justify-content:center" onclick="archSheet(\''+b.id+'\')">Mută în arhivă — mutat / altele</button>';}
+  +'<button class="miniact" style="margin-top:8px;width:100%;justify-content:center" onclick="archSheet(\''+b.id+'\')">Mută în arhivă — mutat / altele</button>'
+  /* ștergerea stă aici, după mutare: cine a plecat se mută, nu se șterge (rapoartele și fișele lui rămân).
+     Înainte „Șterge" era jos, primul buton din fișă, și se apăsa din obișnuință. */
+  +'<div class="muted" style="margin:14px 2px 0;font-size:11.5px">Ștergerea e doar pentru o fișă greșită sau o dublură. Dacă persoana a plecat, folosește <b>Mută</b>.</div>'
+  +'<button class="miniact" style="margin-top:6px;width:100%;justify-content:center;color:var(--maroon)" onclick="delBro(\''+b.id+'\')">Șterge fișa</button>';}
 
 /* --- trecerea în arhivă --- */
 function archSheet(id){if(!_needEdit())return;var b=(S.bros||[]).find(function(x){return x.id===id;});if(!b)return;
