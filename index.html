@@ -724,7 +724,7 @@ Object.assign(IC,{
  box:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h18v13H3z"/><path d="M3 7l2-4h14l2 4"/><path d="M10 11h4"/></svg>',
  mark:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15.5 4.5l4 4-9.5 9.5H6v-4z"/><path d="M12.5 7.5l4 4M5 21h14"/></svg>'
 });
-const VERSION="4.2.1";
+const VERSION="4.2.2";
 /* Versiunea minima care are voie sa SCRIE in cloud. Se trece in gist la fiecare trimitere;
    un dispozitiv ramas pe un build mai vechi decat atat nu mai poate suprascrie datele —
    doar citeste si se actualizeaza singur. Asa nu mai poate un singur telefon uitat deschis
@@ -4824,6 +4824,7 @@ function _j(o){return ContentService.createTextOutput(JSON.stringify(o)).setMime
     <input type="file" id="imp" accept=".json" style="display:none" onchange="importJSON(this)">
     <div class="bf-note" style="margin:10px 2px 0">Fișierul are tot: datele, tokenul și Gist ID-ul.</div>`,false,"bkp")
  +_setLink(IC.clock,"Istoric activitate","cine a făcut modificări și când","openHistory()")
+ +(_canEdit()?_setLink(IC.ppl,"Persoane șterse","readu o fișă ștearsă din greșeală, cu contul și rapoartele ei","openDeletedBros()"):'')
  +_setLink(IC.star,"Ce e nou",NEWS.length?("v"+esc(NEWS[0].label||NEWS[0].v)+" · "+esc(NEWS[0].t||"")):"ultimele schimbări","openNews(false)")
  +`<div class="ver">ArhiLink · v${VERSION}</div>`;
 }
@@ -6564,10 +6565,92 @@ function setPassSave(){var a=($("#pw1")?$("#pw1").value:"").trim(),b=($("#pw2")?
 async function rmPass(){if(!(await uiConfirm("Ștergi parola?")))return;S.settings.passHash="";save();renderSet();toast("Parolă ștearsă");}
 function logAct(t){try{if(!S.log)S.log=[];S.log.push({t:Date.now(),u:_userGet()||"?",a:t});if(S.log.length>250)S.log=S.log.slice(-250);}catch(e){}}
 function fmtHist(ts){var d=new Date(ts),n=new Date(),z=function(x){return ("0"+x).slice(-2);};var hm=z(d.getHours())+":"+z(d.getMinutes());if(d.toDateString()===n.toDateString())return "azi "+hm;var y=new Date(n.getTime()-864e5);if(d.toDateString()===y.toDateString())return "ieri "+hm;return z(d.getDate())+"."+z(d.getMonth()+1)+" "+hm;}
-function openHistory(){var L=(S.log||[]).slice().reverse(),h="";if(!L.length){h='<div class="muted" style="text-align:center;padding:26px 8px;line-height:1.5">Nicio activitate încă.<br>Aici vei vedea cine a făcut modificări și când.</div>';}else{h='<div class="hist">';for(var i=0;i<L.length;i++){var e=L[i];h+='<div class="hrow"><div class="hwho">'+esc(e.u||"?")+'</div><div class="hwhen">'+fmtHist(e.t)+'</div><div class="hact">'+esc(e.a||"")+'</div></div>';}h+='</div>';if(L.length>3)h+='<button class="btn ghost sm" style="width:100%;margin-top:14px" onclick="clearHistory()">Golește istoricul</button>';}
+function openHistory(){var L=(S.log||[]).slice().reverse(),h="";if(!L.length){h='<div class="muted" style="text-align:center;padding:26px 8px;line-height:1.5">Nicio activitate încă.<br>Aici vei vedea cine a făcut modificări și când.</div>';}else{h='<div class="hist">';for(var i=0;i<L.length;i++){var e=L[i];h+='<div class="hrow"><div class="hwho">'+esc(e.u||"?")+'</div><div class="hwhen">'+fmtHist(e.t)+'</div><div class="hact">'+esc(e.a||"")+'</div>'+((/^Vestitor șters/.test(e.a||"")&&_canEdit())?'<button class="btn ghost sm" style="grid-column:1/-1;justify-self:start;width:auto;margin-top:6px" onclick="openDeletedBros()">Readu persoana</button>':'')+'</div>';}h+='</div>';if(L.length>3)h+='<button class="btn ghost sm" style="width:100%;margin-top:14px" onclick="clearHistory()">Golește istoricul</button>';}
  h+=_errSectionHtml();
  sheet("","Cine a făcut ce",h);}
 async function clearHistory(){if(!(await uiConfirm("Golești istoricul de activitate?")))return;S.log=[];save();closeSheet();toast("Istoric golit");}
+/* ============ PERSOANE ȘTERSE — readucere ============
+   „Vestitor șters" scoate fișa din listă și contul persoanei (rapoartele rămân); „șters definitiv din
+   arhivă" ia și rapoartele. Fișa veche se mai găsește în backup-urile automate de pe acest dispozitiv
+   și în reviziile anterioare ale gistului (GitHub păstrează fiecare trimitere). De aici o readucem cu
+   ACELAȘI id: rapoartele, familia și contul (cu PIN-ul lui) se leagă din nou, iar restul datelor
+   congregației rămâne neatins — nu e o restaurare a întregii copii. */
+var _dbFound={},_dbRevs=null,_dbDone={},_dbOld=0,_dbMsg="";
+/* același nume ca broDisp — așa apare și în istoric („Vestitor șters: …") */
+function _dbName(b){try{var m=_dispManual(b);if(m)return m;}catch(e){}try{return (b.gen==="F"?shortName(b.name||""):fullName(b.name||""))||b.name||"";}catch(e){return b.name||"";}}
+function _dbClone(x){return x==null?x:JSON.parse(JSON.stringify(x));}
+function _dbScan(R,t,src){if(!R||!R.bros||!R.bros.length)return;var cur={};(S.bros||[]).forEach(function(b){cur[b.id]=1;});
+ var us=(R.settings&&R.settings.users)||[];
+ R.bros.forEach(function(b){if(!b||!b.id||cur[b.id])return;var f=_dbFound[b.id];if(f&&f.t>=t)return;
+  _dbFound[b.id]={t:t,src:src,b:b,user:us.find(function(u){return u&&u.bro===b.id;})||null,
+   rep:(R.reports&&R.reports[b.id])||null,repDel:(R.repDel&&R.repDel[b.id])||null,repFlags:(R.repFlags&&R.repFlags[b.id])||null};});}
+function _dbGh(){var g=S.settings&&S.settings.gh;return (g&&g.token&&g.gist)?g:null;}
+function _dbHdr(g){return {headers:{Authorization:"token "+g.token,Accept:"application/vnd.github+json"}};}
+async function _dbRevList(g){if(_dbRevs)return _dbRevs;var out=[];
+ for(var p=1;p<=5;p++){var r=await _gfetch("https://api.github.com/gists/"+g.gist+"/commits?per_page=100&page="+p,_dbHdr(g));
+  if(!r.ok){if(!out.length)throw new Error("HTTP "+r.status);break;}
+  var a=await r.json();if(!a||!a.length)break;
+  a.forEach(function(c){if(c&&c.version)out.push({v:c.version,t:Date.parse(c.committed_at)||0});});if(a.length<100)break;}
+ out.sort(function(a,b){return b.t-a.t;});_dbRevs=out;return out;}
+async function _dbRevLoad(g,rev){if(_dbDone[rev.v])return;_dbDone[rev.v]=1;
+ var r=await _gfetch("https://api.github.com/gists/"+g.gist+"/"+rev.v,_dbHdr(g));if(!r.ok)return;
+ var d=await r.json();var pf=(d.files&&d.files["plan.json"])||{},txt=pf.content||"";
+ if(pf.truncated&&pf.raw_url){var r2=await _gfetch(pf.raw_url,{},0);if(r2.ok)txt=await r2.text();}
+ var R=null;try{R=JSON.parse(txt);}catch(e){return;}_dbScan(R,rev.t,"cloud");if(!_dbOld||rev.t<_dbOld)_dbOld=rev.t;}
+/* ultima revizie trimisă înainte de momentul t (cu 5 minute rezervă pentru ceasul telefonului) */
+function _dbRevBefore(revs,t){for(var i=0;i<revs.length;i++)if(revs[i].t<t-300000)return i;return -1;}
+/* ștergerile din istoricul de activitate — de aici știm spre ce revizii să ne uităm */
+function _dbLogDel(){return (S.log||[]).filter(function(e){return e&&/^Vestitor șters/.test(e.a||"");});}
+function _dbLogFor(nm){var L=_dbLogDel(),o=null;L.forEach(function(e){var x=(e.a||"").replace(/^Vestitor șters( definitiv din arhivă)?:\s*/,"");if(x===nm&&(!o||e.t>o.t))o=e;});return o;}
+function _dbRender(){var el=document.getElementById("dbList");if(!el)return;
+ var ids=Object.keys(_dbFound).sort(function(a,b){return _dbName(_dbFound[a].b).localeCompare(_dbName(_dbFound[b].b),"ro");});
+ var curNm={};(S.bros||[]).forEach(function(b){curNm[(b.name||"").trim().toLowerCase()]=1;});
+ var h='<div class="muted" style="margin:2px 2px 12px;font-size:12.5px;line-height:1.45">Fișele care lipsesc acum din listă, găsite în copiile anterioare. „Readu" o pune la loc cu rapoartele, familia și contul de acces (același PIN). Restul datelor rămâne cum e.</div>';
+ if(!ids.length)h+='<div class="muted" style="text-align:center;padding:16px 6px">'+(_dbMsg?"":"Nicio persoană ștearsă găsită încă.")+'</div>';
+ else{h+='<div class="hist">'+ids.map(function(id){var f=_dbFound[id],nm=_dbName(f.b),lg=_dbLogFor(nm);
+   var sub=(f.src==="cloud"?"cloud":"backup local")+" · "+fmtHist(f.t)+(lg?(" · șters de "+esc(lg.u||"?")+", "+fmtHist(lg.t)):"")+(f.user?" · avea cont":"");
+   var dup=curNm[(f.b.name||"").trim().toLowerCase()]?'<div style="font-size:11.5px;color:var(--warn,#b45309);margin-top:3px">Există deja în listă cineva cu același nume — verifică să nu fie dublură.</div>':"";
+   return '<div class="hrow"><div class="hwho">'+esc(nm)+'</div><button class="btn pri sm" style="width:auto" onclick="dbRestore(\''+esc(id)+'\')">Readu</button><div class="hact">'+sub+dup+'</div></div>';}).join("")+'</div>';}
+ if(_dbMsg)h+='<div class="muted" style="text-align:center;padding:12px 4px 2px;font-size:12.5px">'+esc(_dbMsg)+'</div>';
+ if(_dbGh()&&_dbRevs&&_dbRevs.length)h+='<button class="btn ghost sm" style="width:100%;margin-top:14px" onclick="dbOlder()">Caută mai în urmă în cloud</button>';
+ el.innerHTML=h;}
+async function openDeletedBros(){if(!_needEdit())return;_dbFound={};_dbRevs=null;_dbDone={};_dbOld=0;_dbMsg="Caut în backup-urile de pe acest dispozitiv…";
+ sheet("","Persoane șterse",'<div id="dbList"></div>');_dbRender();
+ try{var arr=await bkpList();(arr||[]).forEach(function(s){try{_dbScan(JSON.parse(s.data),s.t||0,"local");}catch(e){}});}catch(e){}
+ var g=_dbGh();if(!g){_dbMsg="Fără sincronizare în cloud, caut doar în backup-urile de pe acest dispozitiv.";_dbRender();return;}
+ _dbMsg="Caut în versiunile anterioare din cloud…";_dbRender();
+ try{var revs=await _dbRevList(g);var want=[];
+  _dbLogDel().forEach(function(e){var i=_dbRevBefore(revs,e.t);if(i>=0){want.push(revs[i]);if(revs[i+1])want.push(revs[i+1]);}});
+  if(!want.length&&revs.length){want.push(revs[Math.min(1,revs.length-1)]);}
+  for(var k=0;k<want.length;k++){await _dbRevLoad(g,want[k]);_dbRender();}
+  _dbMsg="";}catch(e){_dbMsg="Nu am putut citi istoricul din cloud ("+_errMsg(e)+").";}
+ _dbRender();}
+/* „mai în urmă": câte o revizie la 1, 3 și 7 zile înaintea celei mai vechi citite */
+async function dbOlder(){var g=_dbGh();if(!g||!_dbRevs)return;var base=_dbOld||Date.now(),got=0;_dbMsg="Caut mai în urmă…";_dbRender();
+ try{for(var d of [1,3,7]){var i=_dbRevBefore(_dbRevs,base-d*864e5+300000);if(i<0)continue;if(_dbDone[_dbRevs[i].v])continue;await _dbRevLoad(g,_dbRevs[i]);got++;_dbRender();}
+  _dbMsg=got?"":"Nu mai sunt versiuni mai vechi în cloud.";}catch(e){_dbMsg="Eroare: "+_errMsg(e);}
+ _dbRender();}
+async function dbRestore(id){if(!_needEdit())return;var f=_dbFound[id];if(!f)return;
+ if((S.bros||[]).some(function(x){return x.id===id;})){delete _dbFound[id];_dbRender();toast("E deja în listă");return;}
+ var nm=_dbName(f.b);
+ if(!(await uiConfirm("Readuci „"+nm+"” așa cum era ("+(f.src==="cloud"?"cloud":"backup local")+", "+fmtHist(f.t)+")?\n\nSe pun la loc fișa"+(f.user?", contul de acces":"")+" și rapoartele care lipsesc. Restul datelor nu se schimbă.")))return;
+ if(!S.bros)S.bros=[];var ids={};S.bros.forEach(function(x){ids[x.id]=1;});
+ var b=_dbClone(f.b);b.famIds=(b.famIds||[]).filter(function(x){return ids[x];});
+ S.bros.push(b);try{syncFamily(b.id,b.famIds);}catch(e){}
+ if(f.rep){if(!S.reports)S.reports={};var cr=S.reports[id];if(!cr)S.reports[id]=_dbClone(f.rep);
+  else Object.keys(f.rep).forEach(function(k){if(!(k in cr))cr[k]=_dbClone(f.rep[k]);});}
+ if(f.repDel&&S.repDel&&!S.repDel[id])S.repDel[id]=_dbClone(f.repDel);
+ if(f.repFlags){if(!S.repFlags)S.repFlags={};if(!S.repFlags[id])S.repFlags[id]=_dbClone(f.repFlags);}
+ var acc="";
+ if(f.user&&S.settings){var us=S.settings.users||(S.settings.users=[]);
+  if(!us.some(function(u){return u.bro===id;})){var u=_dbClone(f.user),names={};us.forEach(function(x){names[x.n]=1;});
+   if(names[u.n]){var k0=u.n,c=2;while(names[k0+" ("+c+")"])c++;u.n=k0+" ("+c+")";}
+   if(u.pin&&_usedPins()[u.pin]){u.pin=_genPin(_usedPins());u.p=_hash(u.pin);acc=" · PIN nou "+u.pin;}else acc=" · contul e din nou activ";
+   us.push(u);}}
+ try{ensureBroRoles(S.bros);}catch(e){}
+ logAct("Vestitor readus după ștergere: "+nm);save();delete _dbFound[id];_dbRender();
+ try{if(typeof tab!=="undefined"&&tab==="bros")renderBros();}catch(e){}
+ toast("Readus: "+nm+acc);}
 /* subsecțiunea „Erori": doar locale, tehnice — separate de „cine a făcut ce", care e istoricul de congregație */
 function _errSectionHtml(){var E=_errList().slice().reverse();
  var h='<div class="grpttl" style="margin-top:20px">Erori<span class="muted" style="font-weight:400"> — doar pe acest dispozitiv</span></div>';
