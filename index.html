@@ -724,7 +724,7 @@ Object.assign(IC,{
  box:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h18v13H3z"/><path d="M3 7l2-4h14l2 4"/><path d="M10 11h4"/></svg>',
  mark:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15.5 4.5l4 4-9.5 9.5H6v-4z"/><path d="M12.5 7.5l4 4M5 21h14"/></svg>'
 });
-const VERSION="4.3.2";
+const VERSION="4.3.3";
 /* Versiunea minima care are voie sa SCRIE in cloud. Se trece in gist la fiecare trimitere;
    un dispozitiv ramas pe un build mai vechi decat atat nu mai poate suprascrie datele —
    doar citeste si se actualizeaza singur. Asa nu mai poate un singur telefon uitat deschis
@@ -3096,7 +3096,7 @@ function saveBro(bid,exists){if(!_needEdit())return;const name=$("#bn").value.tr
     fișa se rescria de la zero și o salvare ștergea, de exemplu, arhivarea persoanei */
  const o=Object.assign({},_oldB||{},{id:bid,name,disp,dispExp,famIds,canPartner,pio,pioFrom:pioFrom||"",pioPrev:pioFrom?pioPrev:"",phone,email,addr,ecn,ecp,ec2n,ec2p,ec3n,ec3p,cT,cC,hope,bdate,baptism,isPub,grp,duties,wm:wmParts,mpl,ft:ftLead,gen,rol,active:$("#ba").value==="1",roles,rSeed:1});
  if(exists){const i=S.bros.findIndex(x=>x.id===bid);S.bros[i]=o;}else S.bros.push(o);
- syncFamily(o.id,o.famIds||[]);if(typeof userSyncBro==="function")userSyncBro(o,!exists);logAct((exists?"Vestitor modificat: ":"Vestitor adăugat: ")+(o.name||""));save();closeSheet();renderBros();toast("Salvat");}
+ syncFamily(o.id,o.famIds||[]);if(typeof userSyncBro==="function")userSyncBro(o,!exists,_oldB);logAct((exists?"Vestitor modificat: ":"Vestitor adăugat: ")+(o.name||""));save();closeSheet();renderBros();toast("Salvat");}
 function syncFamily(id,fam){S.bros.forEach(function(b){if(b.id===id)return;b.famIds=b.famIds||[];var has=b.famIds.indexOf(id)>=0;if(fam.indexOf(b.id)>=0){if(!has)b.famIds.push(id);}else if(has){b.famIds=b.famIds.filter(function(x){return x!==id;});}});}
 function filterFam(q){q=(q||"").toLowerCase();document.querySelectorAll("#famlist .famrow").forEach(function(r){r.style.display=(r.dataset.nm||"").indexOf(q)>=0?"":"none";});}
 async function delBro(id){if(!_needEdit())return;
@@ -6535,9 +6535,12 @@ function usersGenerate(){if(!_isAdmin()){toast("Doar administratorul");return;}i
  if(!n){toast("Toți vestitorii au deja cont");return;}
  S.settings.passHash="";/* parola veche pe congregație nu mai are sens cu conturi+PIN */
  logAct("Conturi generate automat: "+n);save();_usersRefresh();toast(n+" conturi create"+(adm?(" · "+adm+" administratori (bătrâni)"):""));}
-function userSyncBro(b,isNew){var us=_users();if(!us.length||!b||!b.id)return;var u=null;for(var i=0;i<us.length;i++){if(us[i].bro===b.id){u=us[i];break;}}
+function userSyncBro(b,isNew,prev){var us=_users();if(!us.length||!b||!b.id)return;var u=null;for(var i=0;i<us.length;i++){if(us[i].bro===b.id){u=us[i];break;}}
  if(!u){if(!isNew||b.active===false||b.pio==="Cursant")return;var used=_usedPins(),names={};us.forEach(function(x){names[x.n]=1;});var k=b.name,c=2;while(names[k]){k=b.name+" ("+c+")";c++;}
   var pin=_genPin(used);us.push({n:k,r:_isElder(b)?"admin":"vestitor",p:_hash(pin),pin:pin,mods:null,bro:b.id,attV:_isElder(b)?1:0,attE:_isElder(b)?1:0});toast("Cont creat pentru "+b.name+" · PIN "+pin);return;}
+ /* rolul contului se schimbă doar când se schimbă statutul de bătrân — altfel o salvare a fișei
+    anula alegerea făcută manual în Utilizatori (ex. bătrân trecut pe Editor redevenea Administrator) */
+ if(prev&&_isElder(prev)===_isElder(b))return;
  if(_isElder(b)&&u.r!=="admin"){u.r="admin";u.mods=null;u.attV=1;u.attE=1;}
  else if(!_isElder(b)&&u.r==="admin"&&u.pin&&us.filter(function(x){return x.r==="admin";}).length>1){u.r="vestitor";u.mods=null;}}
 function ueGenPin(){var p=_genPin(_usedPins());var i=document.getElementById("uePass");if(i)i.value=p;toast("PIN generat: "+p+" — apasă Salvează");}
