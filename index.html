@@ -724,7 +724,7 @@ Object.assign(IC,{
  box:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h18v13H3z"/><path d="M3 7l2-4h14l2 4"/><path d="M10 11h4"/></svg>',
  mark:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15.5 4.5l4 4-9.5 9.5H6v-4z"/><path d="M12.5 7.5l4 4M5 21h14"/></svg>'
 });
-const VERSION="4.3.3";
+const VERSION="4.4.0";
 /* Versiunea minima care are voie sa SCRIE in cloud. Se trece in gist la fiecare trimitere;
    un dispozitiv ramas pe un build mai vechi decat atat nu mai poate suprascrie datele —
    doar citeste si se actualizeaza singur. Asa nu mai poate un singur telefon uitat deschis
@@ -5877,6 +5877,9 @@ function startApp(){_dirty=computeDirty();applyTheme();try{bkpMigrate();}catch(e
    `v` = cheia de „văzut deja"; `label` = versiunea afișată.
    ============================================================================ */
 var NEWS=[
+ {v:"4.4.0",label:"4.4",d:"13.11.2026",t:"Mărturia publică și Terenul, în Programări",items:[
+  {ic:"ppl",t:"Mărturia publică, pentru toți",s:"În Programări e o foaie nouă: turele săptămânii, pe zile și ore, cu locația și numele de la fiecare tură."},
+  {ic:"clock",t:"Întrunirile de teren, pentru toți",s:"Foaia „Teren” din Programări: ziua, ora, locul și fratele care conduce, plus vizita supraveghetorului serviciului. Pe telefon, bara foilor se derulează în lateral."}]},
  {v:"4.3.0",label:"4.3",d:"06.11.2026",t:"Mutările și ștergerile, cu aprobarea secretarului",items:[
   {ic:"check",who:"ed",t:"Secretarul aprobă mutările și ștergerile",s:"Mutarea unei persoane în arhivă, ștergerea ei din listă și ștergerea definitivă din arhivă pleacă acum ca cerere la secretar. Până o aprobă, nu se schimbă nimic. Cererile se văd sus în Vestitori și în Setări → Aprobări secretar."},
   {ic:"ppl",who:"admin",t:"Secretarul îl alege administratorul",s:"Setări → Secretar. Până îl alegi, secretar e responsabilul departamentului „Secretarul” din Responsabilități."},
@@ -7601,7 +7604,15 @@ var _arhLastSub=null;
    Așa e la fel pentru toți: se citește într-un loc, se scrie în altul.
    ============================================================================ */
 var progSub="vcp";
-function _progTabs(){return [["vcp","Viața creștină",IC.book],["wm","Întrunirea publică",IC.tower],["sarc","Sarcini",IC.mark],["cal","Calendar",IC.cal]];}
+/* Mărturia publică și Terenul apar doar dacă foaia lor are ture / zile — altfel ar fi o foaie goală.
+   Citim direct din S, fără mpD()/ftD(): acelea pun foaia de pornire în stare, iar o simplă
+   privire în Programări nu trebuie să schimbe datele (și să le trimită în cloud). */
+function _progHasMp(){return !!(S.mp&&S.mp.shifts&&S.mp.shifts.length);}
+function _progHasFt(){return !!(S.ft&&S.ft.slots&&S.ft.slots.length);}
+function _progTabs(){var t=[["vcp","Viața creștină",IC.book],["wm","Întrunirea publică",IC.tower],["sarc","Sarcini",IC.mark]];
+ if(_progHasMp())t.push(["mp","Mărturia publică",IC.ppl]);
+ if(_progHasFt())t.push(["teren","Teren",IC.clock]);
+ t.push(["cal","Calendar",IC.cal]);return t;}
 /* O SINGURĂ săptămână pentru tot ecranul: cele trei foi sunt trei fețe ale aceleiași
    săptămâni, deci schimbată pe una, e schimbată pe toate. Înainte fiecare foaie își ținea
    săptămâna ei și o uita la ieșire: treceai de pe „Viața creștină" pe „Întrunirea publică"
@@ -7623,11 +7634,15 @@ function renderProg(){
  try{arhEnsureCSS();}catch(e){}/* stilul de pastile al barei stă în foaia Arhivei */
  var tabs=_progTabs();
  if(!tabs.some(function(t){return t[0]===progSub;}))progSub=tabs[0][0];
- var wi=progWeek();if(wi>=0){vcpW=wi;wmW=wi;dutyW=wi;}
+ var wi=progWeek();if(wi>=0){vcpW=wi;wmW=wi;dutyW=wi;mpW=wi;ftW=wi;}
  /* fiecare foaie își are butonul ei de descărcare, ca la programul săptămânii */
  if(progSub==="vcp"){renderVcp();}
  else if(progSub==="wm"){ensureDutyCSS();ensureMpCSS();
   $("#body").innerHTML=arhWmHtml();_fabDl(wmPdfSheet);}
+ else if(progSub==="mp"){ensureDutyCSS();ensureMpCSS();
+  $("#body").innerHTML=arhMpHtml();_fabDl(mpPdfSheet);}
+ else if(progSub==="teren"){ensureDutyCSS();ensureMpCSS();ensureFtCSS();
+  $("#body").innerHTML=arhFtHtml();_fabDl(ftPdfSheet);}
  else if(progSub==="cal"){/* calendarul n-are ce descărca: butonul rotund nu-și are rostul aici */
   $("#body").innerHTML=progCalHtml();var _fc=$("#fab");if(_fc)_fc.style.display="none";}
  else{ensureDutyCSS();
@@ -7643,19 +7658,22 @@ function _progNavHtml(){return '<div class="segbar">'+_progTabs().map(function(t
    +'<span class="segic">'+(t[2]||"")+'</span><span class="segtx">'+esc(t[1])+'</span></button>';}).join("")+'</div>';}
 function _progNavFix(){if(tab!=="prog")return;
  var b=$("#body");if(!b||b.querySelector(".segbar"))return;
- b.insertAdjacentHTML("afterbegin",_progNavHtml());}
+ b.insertAdjacentHTML("afterbegin",_progNavHtml());
+ /* cu șase foi, pe telefon bara se derulează: foaia deschisă trebuie să rămână la vedere */
+ try{var bar=b.querySelector(".segbar"),on=bar&&bar.querySelector(".seg.on");
+  if(on&&bar.scrollWidth>bar.clientWidth){var x=on.offsetLeft-(bar.clientWidth-on.offsetWidth)/2;bar.scrollLeft=Math.max(0,x);}}catch(e){}}
 /* Creionul stă chiar în rândul în care alegi săptămâna, la capătul din dreapta — o bandă
    lată „Modifică" peste tot ecranul striga mai tare decât ce era de citit. Apare doar
    celor care chiar pot modifica foaia deschisă, și doar în „Programări". */
 function _progEditBtn(){
  if(tab!=="prog"||!_tabAllowed("arh"))return "";
- var may=(progSub==="vcp")?_canEditVcp():(progSub==="wm")?_mayEditWm():_mayEditDuty();
+ var may=(progSub==="vcp")?_canEditVcp():(progSub==="wm")?_mayEditWm():(progSub==="mp")?_mayEditMp():(progSub==="teren")?_mayEditFt():_mayEditDuty();
  if(!may)return "";
  return '<button class="wkb wkedit progedit" title="Modifică în Arhivă" onclick="progEdit()">'+IC.edit+'</button>';}
 function progEdit(){
  if(progSub==="vcp"){vcpEdit();return;}
  if(!_tabAllowed("arh")){toast("Nu ai acces la Arhivă");return;}
- arhGrp="plan";arhSub=(progSub==="wm")?"wm":"sarc";_arhLastSub=null;go("arh");}
+ arhGrp="plan";arhSub=(progSub==="wm"||progSub==="mp"||progSub==="teren")?progSub:"sarc";_arhLastSub=null;go("arh");}
 
 /* ============================================================================
    ARHIVA — ecran de pornire cu două grupuri
@@ -10060,6 +10078,8 @@ function _canEditFt(){if(tab==="prog")return false;if(_isAdmin())return true;var
 /* dreptul „adevărat", fără masca de vizualizare — pentru butoanele de trimitere în Arhivă */
 function _mayEditDuty(){if(_isAdmin())return true;var u=_curUser();return !!(u&&u.sarE);}
 function _mayEditWm(){if(_isAdmin())return true;var u=_curUser();return !!(u&&u.wmE);}
+function _mayEditMp(){if(_isAdmin())return true;var u=_curUser();return !!(u&&u.mpE);}
+function _mayEditFt(){if(_isAdmin())return true;var u=_curUser();return !!(u&&u.ftE);}
 /* orice drum de editare trece pe aici, deci tot aici deschidem ciorna — instantaneul se ia
    ÎNAINTE de prima modificare, ca „Anulează" să poată reveni complet */
 function _needClean(){if(_canEditClean()){_secBegin("cur");return true;}toast("Doar vizualizare — dreptul de editare se dă din Setări → Utilizatori");return false;}
@@ -11089,7 +11109,7 @@ function ensureMpCSS(){if(document.getElementById("mpcss"))return;var st=documen
 function arhMpHtml(){ensureDutyCSS();ensureMpCSS();
  if(mpW>=0&&S.weeks[mpW])return mpWeekHtml(mpW);
  mpW=-1;return mpListHtml();}
-function mpGo(wi){mpW=wi;_arhLastSub=null;renderArhRoute();}
+function mpGo(wi){mpW=wi;progSetWeek(wi);_arhLastSub=null;renderArhRoute();}
 function mpBack(){mpW=-1;_arhLastSub=null;renderArhRoute();}
 function mpListHtml(){var D=mpD(),ed=_canEditMp();
  var h=_secBar("mp")+'<div class="dsh"><div class="dst"><div class="dstt">'+esc(D.title||"Mărturia Publică")+'</div>'
@@ -11131,7 +11151,7 @@ function _wkYearGroups(){var base=+(S.settings.baseYear||2026),year=base,prev=-1
  return years;}
 function mpWeekHtml(wi){var w=S.weeks[wi],ed=_canEditMp();
  var np=function(i){return (i>=0&&i<S.weeks.length);};
- var h=_secBar("mp")+_wkHeadHtml(wi,"mpGo",{sub:""});
+ var h=_secBar("mp")+_wkHeadHtml(wi,"mpGo",{sub:"",acts:[_progEditPill()]});
  if(w.event&&ed)h+='<div class="hint" style="margin:0 0 10px">Mărturia publică se ține și în săptămâna cu eveniment — scoate tura care nu se ține.</div>';
  h+=awBanner(wi,"mp");
  var ss=mpShiftsSorted();
@@ -11427,6 +11447,7 @@ function ensureFtCSS(){if(document.getElementById("ftcss"))return;var st=documen
 +"@media(max-width:430px){.ftf{flex-wrap:wrap;gap:5px}.ftf .ftl{flex:1 1 100%;max-width:none}.ftf .ftr{flex:1 1 0}}"
 +".ftnb{width:100%;text-align:left;background:var(--bg);border:1px solid var(--bd);border-radius:11px;padding:9px 11px;color:var(--ink);font-size:13px;line-height:1.4;cursor:pointer;white-space:normal}"
 +".ftnb.ph{color:var(--ink3)}"
++".ftnb:disabled{background:transparent;border-color:transparent;padding:5px 0 6px;cursor:default;font-size:15px}"
 +".ftnote{background:var(--accsoft);color:var(--acc);border-radius:10px;padding:7px 11px;font-size:12px;font-weight:700;margin:0 0 9px;line-height:1.4}"
 +".ftssb{display:flex;align-items:center;gap:9px;width:100%;text-align:left;background:var(--surf);border:1px dashed var(--bd);border-radius:11px;padding:9px 12px;margin:0 0 10px;color:var(--ink3);font-size:12.5px;font-weight:700;cursor:pointer;line-height:1.35}"
 +".ftssb.on{border-style:solid;border-color:var(--acc);color:var(--ink)}"
@@ -11439,7 +11460,7 @@ function ensureFtCSS(){if(document.getElementById("ftcss"))return;var st=documen
 function arhFtHtml(){ensureDutyCSS();ensureMpCSS();ensureFtCSS();
  if(ftW>=0&&S.weeks[ftW])return ftWeekHtml(ftW);
  ftW=-1;return ftListHtml();}
-function ftGo(wi){ftW=wi;_arhLastSub=null;renderArhRoute();}
+function ftGo(wi){ftW=wi;progSetWeek(wi);_arhLastSub=null;renderArhRoute();}
 function ftBack(){ftW=-1;_arhLastSub=null;renderArhRoute();}
 function ftListHtml(){var D=ftD(),ed=_canEditFt();
  var h=_secBar("teren")+'<div class="dsh"><div class="dst"><div class="dstt">'+esc(D.title||"Întrunirile pentru serviciul de Teren")+'</div>'
@@ -11479,7 +11500,7 @@ function ftListHtml(){var D=ftD(),ed=_canEditFt();
  return h;}
 function ftWeekHtml(wi){var w=S.weeks[wi],ed=_canEditFt();
  var np=function(i){return (i>=0&&i<S.weeks.length);};
- var h=_secBar("teren")+_wkHeadHtml(wi,"ftGo",{sub:""});
+ var h=_secBar("teren")+_wkHeadHtml(wi,"ftGo",{sub:"",acts:[_progEditPill()]});
  var ev=_ftEvTxt(wi),ssl=ftSSLbl(wi);
  if(ev)h+='<div class="ftnote">'+esc(ev)+'</div>';
  if(ed)h+='<button class="ftssb'+(ssl?' on':'')+'" onclick="ftSSPick('+wi+')">'+IC.star
@@ -16850,6 +16871,8 @@ function _fndSections(){
   L.push({t:"Programări — Viața creștină",k:"programul întrunirii din timpul săptămânii",ic:IC.book,a:function(){findClose();progSub="vcp";go("prog");}});
   L.push({t:"Programări — Întrunirea publică",k:"vorbitor, titlu, ospitalitate",ic:IC.tower,a:function(){findClose();progSub="wm";go("prog");}});
   L.push({t:"Programări — Sarcini",k:"audio-video, ordine, podium",ic:IC.mark,a:function(){findClose();progSub="sarc";go("prog");}});
+  if(_progHasMp())L.push({t:"Programări — Mărturia publică",k:"turele, locațiile și cine e la fiecare",ic:IC.ppl,a:function(){findClose();progSub="mp";go("prog");}});
+  if(_progHasFt())L.push({t:"Programări — Teren",k:"întrunirile de teren: ziua, ora, locul, cine conduce",ic:IC.clock,a:function(){findClose();progSub="teren";go("prog");}});
   L.push({t:"Programări — Calendar",k:"luna întreagă, cu întruniri și sarcini",ic:IC.cal,a:function(){findClose();progSub="cal";go("prog");}});}
  if(_fndAllowed("bros"))L.push({t:"Vestitori",k:"lista congregației, fișele și grupele",ic:IC.ppl,a:function(){findClose();go("bros");}});
  if(_fndAllowed("arh"))try{
